@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "E-Commerce",
+    "search": "Search",
+    "add": "Add",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "empty": "Nothing found",
+    "continue": "Continue",
+    "back": "Back"
+  },
+  "nav": {
+    "home": "Home",
+    "catalog": "Catalog",
+    "cart": "Cart",
+    "orders": "Orders",
+    "profile": "Profile",
+    "login": "Log in",
+    "register": "Sign up",
+    "logout": "Log out"
+  },
+  "auth": {
+    "phone": "Phone number",
+    "email": "Email",
+    "password": "Password",
+    "passwordConfirm": "Confirm password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "sendCode": "Send code",
+    "enterCode": "Enter the code",
+    "loginWithGoogle": "Continue with Google",
+    "loginWithApple": "Continue with Apple",
+    "loginWithTelegram": "Continue with Telegram"
+  },
+  "product": {
+    "addToCart": "Add to cart",
+    "buyNow": "Buy now",
+    "outOfStock": "Out of stock",
+    "inStock": "In stock",
+    "reviews": "Reviews",
+    "questions": "Questions",
+    "specifications": "Specifications"
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": "Your cart is empty",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "discount": "Discount",
+    "total": "Total",
+    "checkout": "Checkout"
+  },
+  "order": {
+    "status": {
+      "PENDING": "Pending",
+      "CONFIRMED": "Confirmed",
+      "PAID": "Paid",
+      "PROCESSING": "Processing",
+      "PACKED": "Packed",
+      "SHIPPED": "Shipped",
+      "OUT_FOR_DELIVERY": "Out for delivery",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled",
+      "RETURNED": "Returned",
+      "REFUNDED": "Refunded"
+    }
+  }
+}

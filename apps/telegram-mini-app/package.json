@@ -1,0 +1,36 @@
+{
+  "name": "@ecom/telegram-mini-app",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Telegram Mini App (Next.js + Telegram WebApp SDK)",
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "start": "next start -p 3003",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ecom/types": "workspace:*",
+    "@ecom/ui": "workspace:*",
+    "@ecom/utils": "workspace:*",
+    "@telegram-apps/sdk-react": "^1.1.0",
+    "@tanstack/react-query": "^5.32.0",
+    "next": "^14.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@ecom/eslint-config": "workspace:*",
+    "@ecom/tsconfig": "workspace:*",
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.3",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5"
+  }
+}

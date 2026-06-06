@@ -1,0 +1,30 @@
+{
+  "name": "@ecom/telegram-bot",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Telegram bot — grammY asosida",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ecom/database": "workspace:*",
+    "@ecom/utils": "workspace:*",
+    "@grammyjs/conversations": "^1.2.0",
+    "@grammyjs/menu": "^1.2.2",
+    "dotenv": "^16.4.5",
+    "grammy": "^1.24.0",
+    "pino": "^9.0.0"
+  },
+  "devDependencies": {
+    "@ecom/eslint-config": "workspace:*",
+    "@ecom/tsconfig": "workspace:*",
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.5"
+  }
+}

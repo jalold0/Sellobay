@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "E-Commerce",
+    "search": "Поиск",
+    "add": "Добавить",
+    "cancel": "Отмена",
+    "confirm": "Подтвердить",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "loading": "Загрузка...",
+    "error": "Произошла ошибка",
+    "empty": "Ничего не найдено",
+    "continue": "Продолжить",
+    "back": "Назад"
+  },
+  "nav": {
+    "home": "Главная",
+    "catalog": "Каталог",
+    "cart": "Корзина",
+    "orders": "Заказы",
+    "profile": "Профиль",
+    "login": "Войти",
+    "register": "Регистрация",
+    "logout": "Выйти"
+  },
+  "auth": {
+    "phone": "Номер телефона",
+    "email": "Email",
+    "password": "Пароль",
+    "passwordConfirm": "Подтвердите пароль",
+    "firstName": "Имя",
+    "lastName": "Фамилия",
+    "sendCode": "Отправить код",
+    "enterCode": "Введите код",
+    "loginWithGoogle": "Войти через Google",
+    "loginWithApple": "Войти через Apple",
+    "loginWithTelegram": "Войти через Telegram"
+  },
+  "product": {
+    "addToCart": "В корзину",
+    "buyNow": "Купить сейчас",
+    "outOfStock": "Нет в наличии",
+    "inStock": "В наличии",
+    "reviews": "Отзывы",
+    "questions": "Вопросы и ответы",
+    "specifications": "Характеристики"
+  },
+  "cart": {
+    "title": "Корзина",
+    "empty": "Корзина пуста",
+    "subtotal": "Сумма товаров",
+    "shipping": "Доставка",
+    "discount": "Скидка",
+    "total": "Итого",
+    "checkout": "Оформить заказ"
+  },
+  "order": {
+    "status": {
+      "PENDING": "Ожидает",
+      "CONFIRMED": "Подтверждён",
+      "PAID": "Оплачен",
+      "PROCESSING": "Готовится",
+      "PACKED": "Упакован",
+      "SHIPPED": "В пути",
+      "OUT_FOR_DELIVERY": "Доставляется",
+      "DELIVERED": "Доставлен",
+      "CANCELLED": "Отменён",
+      "RETURNED": "Возвращён",
+      "REFUNDED": "Возврат средств"
+    }
+  }
+}

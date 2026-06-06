@@ -1,0 +1,73 @@
+{
+  "common": {
+    "appName": "E-Commerce",
+    "search": "Qidirish",
+    "add": "Qo'shish",
+    "cancel": "Bekor qilish",
+    "confirm": "Tasdiqlash",
+    "save": "Saqlash",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "loading": "Yuklanmoqda...",
+    "error": "Xatolik yuz berdi",
+    "empty": "Ma'lumot topilmadi",
+    "continue": "Davom etish",
+    "back": "Orqaga"
+  },
+  "nav": {
+    "home": "Bosh sahifa",
+    "catalog": "Katalog",
+    "cart": "Savatcha",
+    "orders": "Buyurtmalar",
+    "profile": "Profil",
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "logout": "Chiqish"
+  },
+  "auth": {
+    "phone": "Telefon raqami",
+    "email": "Email",
+    "password": "Parol",
+    "passwordConfirm": "Parolni tasdiqlang",
+    "firstName": "Ism",
+    "lastName": "Familiya",
+    "sendCode": "Kod yuborish",
+    "enterCode": "Kodni kiriting",
+    "loginWithGoogle": "Google bilan kirish",
+    "loginWithApple": "Apple bilan kirish",
+    "loginWithTelegram": "Telegram bilan kirish"
+  },
+  "product": {
+    "addToCart": "Savatga qo'shish",
+    "buyNow": "Hozir sotib olish",
+    "outOfStock": "Mavjud emas",
+    "inStock": "Mavjud",
+    "reviews": "Sharhlar",
+    "questions": "Savol-javoblar",
+    "specifications": "Texnik xususiyatlar"
+  },
+  "cart": {
+    "title": "Savatcha",
+    "empty": "Savatcha bo'sh",
+    "subtotal": "Mahsulotlar summasi",
+    "shipping": "Yetkazib berish",
+    "discount": "Chegirma",
+    "total": "Jami",
+    "checkout": "Buyurtmani tasdiqlash"
+  },
+  "order": {
+    "status": {
+      "PENDING": "Kutilmoqda",
+      "CONFIRMED": "Tasdiqlandi",
+      "PAID": "To'landi",
+      "PROCESSING": "Tayyorlanmoqda",
+      "PACKED": "Qadoqlandi",
+      "SHIPPED": "Yo'lda",
+      "OUT_FOR_DELIVERY": "Yetkazilmoqda",
+      "DELIVERED": "Yetkazildi",
+      "CANCELLED": "Bekor qilindi",
+      "RETURNED": "Qaytarildi",
+      "REFUNDED": "Pul qaytarildi"
+    }
+  }
+}

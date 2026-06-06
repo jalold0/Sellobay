@@ -1,0 +1,5 @@
+{
+  "extends": "@ecom/tsconfig/base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "noEmit": true, "resolveJsonModule": true },
+  "include": ["src/**/*"]
+}

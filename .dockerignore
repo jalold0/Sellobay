@@ -1,0 +1,16 @@
+node_modules
+.next
+.turbo
+.expo
+dist
+build
+coverage
+.env
+.env.*
+!.env.example
+.git
+.github
+.vscode
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# Conventional Commits qisqacha tekshiruvi (kelajakda commitlint qo'shilishi mumkin)
+COMMIT_MSG=$(cat "$1")
+echo "$COMMIT_MSG" | grep -qE '^(feat|fix|chore|docs|refactor|perf|test|build|ci|revert)(\(.+\))?: .{3,}' || {
+  echo "✖  Commit message Conventional Commits formatida bo'lishi shart:"
+  echo "    type(scope): short summary"
+  echo "  Misol: feat(orders): add abandoned cart recovery"
+  exit 1
+}
