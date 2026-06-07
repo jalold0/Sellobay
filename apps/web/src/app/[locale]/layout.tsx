@@ -1,20 +1,53 @@
 import '@ecom/ui/globals.css';
 
-import type { Metadata } from 'next';
+import { Toaster, TooltipProvider } from '@ecom/ui';
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
-import { QueryProvider } from '../../providers/query-provider';
+import { CookieBanner } from '../../components/layout/cookie-banner';
 import { Footer } from '../../components/layout/footer';
 import { Header } from '../../components/layout/header';
+import { ScrollToTop } from '../../components/layout/scroll-to-top';
+import { SkipLink } from '../../components/layout/skip-link';
+import { QueryProvider } from '../../providers/query-provider';
+import { OrganizationJsonLd } from '../../components/seo/structured-data';
+import { StoreHydrator } from '../../store/hydrate';
+
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: {
     template: '%s · E-Commerce',
     default: "E-Commerce — O'zbekistondagi eng yirik onlayn savdo platformasi",
   },
   description:
     "Kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar. Asl mahsulotlar, tezkor yetkazib berish, 14 kun qaytarish.",
+  keywords: ['e-commerce', "o'zbekiston", 'onlayn savdo', 'kiyim', 'poyabzal', 'atir', 'kosmetika'],
+  openGraph: {
+    type: 'website',
+    siteName: 'E-Commerce',
+    locale: 'uz_UZ',
+  },
+  twitter: { card: 'summary_large_image' },
+  robots: { index: true, follow: true },
+  icons: { icon: '/favicon.ico' },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default async function LocaleLayout({
@@ -26,15 +59,25 @@ export default async function LocaleLayout({
 }) {
   const messages = await getMessages();
   return (
-    <html lang={locale}>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+    <html lang={locale} className={inter.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <OrganizationJsonLd />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="container flex-1 py-6 md:py-10">{children}</main>
-              <Footer />
-            </div>
+            <TooltipProvider delayDuration={150}>
+              <StoreHydrator />
+              <SkipLink />
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main id="main" className="container flex-1 py-6 md:py-10">
+                  {children}
+                </main>
+                <Footer />
+              </div>
+              <ScrollToTop />
+              <CookieBanner />
+              <Toaster />
+            </TooltipProvider>
           </QueryProvider>
         </NextIntlClientProvider>
       </body>

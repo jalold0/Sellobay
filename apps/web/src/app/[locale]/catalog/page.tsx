@@ -1,14 +1,13 @@
-import { ProductCard } from '@ecom/ui';
 import { ChevronRight, Filter } from 'lucide-react';
-import { useLocale } from 'next-intl';
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
 
+import { ProductCardClient } from '../../../components/product/product-card-client';
 import {
   brands,
   categories,
   findBySlug,
   pickLocale,
-  productImage,
   products,
   type Locale,
 } from '../../../lib/mock-data';
@@ -28,9 +27,10 @@ export default function CatalogPage({ searchParams }: CatalogPageProps) {
   if (selectedBrand) list = list.filter((p) => p.brandId === selectedBrand.id);
   if (searchParams.q) {
     const q = searchParams.q.toLowerCase();
-    list = list.filter((p) =>
-      Object.values(p.name).some((n) => n.toLowerCase().includes(q)) ||
-      p.brand.toLowerCase().includes(q),
+    list = list.filter(
+      (p) =>
+        Object.values(p.name).some((n) => n.toLowerCase().includes(q)) ||
+        p.brand.toLowerCase().includes(q),
     );
   }
 
@@ -55,15 +55,20 @@ export default function CatalogPage({ searchParams }: CatalogPageProps) {
     ? pickLocale(selectedCategory.name, locale)
     : selectedBrand
       ? selectedBrand.name
-      : 'Barcha mahsulotlar';
+      : searchParams.q
+        ? `"${searchParams.q}" bo'yicha natijalar`
+        : 'Barcha mahsulotlar';
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">Bosh sahifa</Link>
+        <Link href="/" className="hover:text-foreground">
+          Bosh sahifa
+        </Link>
         <ChevronRight size={14} />
-        <Link href="/catalog" className="hover:text-foreground">Katalog</Link>
+        <Link href="/catalog" className="hover:text-foreground">
+          Katalog
+        </Link>
         {selectedCategory && (
           <>
             <ChevronRight size={14} />
@@ -107,7 +112,6 @@ export default function CatalogPage({ searchParams }: CatalogPageProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        {/* Filters sidebar */}
         <aside className="space-y-6 lg:sticky lg:top-32 lg:self-start">
           <div className="rounded-xl border bg-card p-4">
             <div className="mb-3 flex items-center gap-2 font-semibold">
@@ -185,29 +189,17 @@ export default function CatalogPage({ searchParams }: CatalogPageProps) {
           </div>
         </aside>
 
-        {/* Grid */}
         <div>
           {list.length === 0 ? (
             <div className="rounded-xl border bg-card p-10 text-center">
-              <p className="text-muted-foreground">Hech narsa topilmadi. Filtrlarni o&apos;zgartirib ko&apos;ring.</p>
+              <p className="text-muted-foreground">
+                Hech narsa topilmadi. Filtrlarni o&apos;zgartirib ko&apos;ring.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
               {list.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  name={pickLocale(p.name, locale)}
-                  brand={p.brand}
-                  imageUrl={productImage(p.imageSeed)}
-                  href={`/product/${p.slug}`}
-                  price={p.price}
-                  oldPrice={p.oldPrice}
-                  currency={p.currency}
-                  rating={p.rating}
-                  reviewCount={p.reviewCount}
-                  badge={p.badge}
-                  inStock={p.inStock}
-                />
+                <ProductCardClient key={p.id} product={p} locale={locale} />
               ))}
             </div>
           )}

@@ -32,12 +32,15 @@ const badgeStyles: Record<NonNullable<ProductCardProps['badge']>, { label: strin
   TOP: { label: 'TOP', className: 'bg-amber-500 hover:bg-amber-500' },
 };
 
-function formatPrice(value: number, currency = 'UZS', locale = 'uz-UZ'): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
+// Deterministik formatter — SSR/CSR ICU farqlariga moyil emas.
+function formatPrice(value: number, currency = 'UZS'): string {
+  const fixed = Math.abs(Math.trunc(value)).toString();
+  const grouped = fixed.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const num = value < 0 ? `-${grouped}` : grouped;
+  if (currency === 'UZS') return `${num} so'm`;
+  if (currency === 'USD') return `$${num}`;
+  if (currency === 'EUR') return `€${num}`;
+  return `${num} ${currency}`;
 }
 
 const NativeLink = (props: { href: string; className?: string; children: React.ReactNode }) => (
@@ -133,11 +136,11 @@ export function ProductCard({
           <div className="flex flex-col">
             {oldPrice && oldPrice > price && (
               <span className="text-xs text-muted-foreground line-through">
-                {formatPrice(oldPrice, currency, locale)}
+                {formatPrice(oldPrice, currency)}
               </span>
             )}
             <span className={cn('text-base font-bold', oldPrice && 'text-rose-600')}>
-              {formatPrice(price, currency, locale)}
+              {formatPrice(price, currency)}
             </span>
           </div>
           {onAddToCart && inStock && (

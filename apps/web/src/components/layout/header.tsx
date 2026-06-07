@@ -1,8 +1,19 @@
-import { Heart, Menu, Phone, Search, ShoppingCart, User } from 'lucide-react';
+import { Heart, Phone, Search, ShoppingCart, User } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 
+import { CartBadge } from './cart-badge';
 import { LocaleSwitcher } from './locale-switcher';
+import { MobileNav } from './mobile-nav';
+
+const CATEGORIES = [
+  { slug: 'clothing', label: 'Kiyim-kechak' },
+  { slug: 'shoes', label: 'Poyabzal' },
+  { slug: 'perfume', label: 'Atirlar' },
+  { slug: 'cosmetics', label: 'Kosmetika' },
+  { slug: 'beauty', label: "Go'zallik" },
+  { slug: 'accessories', label: 'Aksessuarlar' },
+];
 
 export function Header() {
   const common = useTranslations('common');
@@ -12,19 +23,19 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       {/* Top thin line */}
-      <div className="border-b bg-secondary/40">
+      <div className="hidden border-b bg-secondary/40 md:block">
         <div className="container flex h-9 items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Phone size={12} />
             <span>+998 71 200 00 00</span>
-            <span className="mx-2 hidden md:inline">·</span>
-            <span className="hidden md:inline">24/7 qo&apos;llab-quvvatlash</span>
+            <span className="mx-2">·</span>
+            <span>24/7 qo&apos;llab-quvvatlash</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/orders" className="hidden hover:text-foreground md:inline">
+            <Link href="/orders" className="hover:text-foreground">
               Buyurtmamni kuzatish
             </Link>
-            <Link href="/sell" className="hidden hover:text-foreground md:inline">
+            <Link href="/sell" className="hover:text-foreground">
               Sotuvchi bo&apos;lish
             </Link>
             <LocaleSwitcher current={locale} />
@@ -34,13 +45,7 @@ export function Header() {
 
       {/* Main bar */}
       <div className="container flex h-16 items-center gap-3 md:gap-6">
-        <button
-          type="button"
-          className="grid h-10 w-10 place-items-center rounded-md hover:bg-accent md:hidden"
-          aria-label="Menu"
-        >
-          <Menu size={20} />
-        </button>
+        <MobileNav />
 
         <Link href="/" className="flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-primary to-rose-500 font-black text-primary-foreground">
@@ -50,11 +55,7 @@ export function Header() {
         </Link>
 
         {/* Search */}
-        <form
-          action="/catalog"
-          className="relative ml-2 hidden flex-1 md:block"
-          role="search"
-        >
+        <form action={`/${locale}/catalog`} className="relative ml-2 hidden flex-1 md:block" role="search">
           <Search
             size={18}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -85,26 +86,24 @@ export function Header() {
           <Link
             href="/profile/wishlist"
             className="grid h-10 w-10 place-items-center rounded-md hover:bg-accent"
-            aria-label="Wishlist"
+            aria-label="Sevimlilar"
           >
             <Heart size={20} />
           </Link>
           <Link
             href="/cart"
             className="relative grid h-10 w-10 place-items-center rounded-md hover:bg-accent"
-            aria-label="Cart"
+            aria-label="Savatcha"
           >
             <ShoppingCart size={20} />
-            <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-              0
-            </span>
+            <CartBadge />
           </Link>
         </div>
       </div>
 
       {/* Mobile search */}
       <div className="container pb-3 md:hidden">
-        <form action="/catalog" role="search" className="relative">
+        <form action={`/${locale}/catalog`} role="search" className="relative">
           <Search
             size={16}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -119,19 +118,12 @@ export function Header() {
       </div>
 
       {/* Categories nav */}
-      <nav className="border-t bg-secondary/30">
+      <nav className="hidden border-t bg-secondary/30 md:block">
         <div className="container flex h-11 items-center gap-1 overflow-x-auto text-sm">
           <Link href="/catalog" className="rounded-md px-3 py-1.5 font-medium hover:bg-background">
             {nav('catalog')}
           </Link>
-          {[
-            { slug: 'clothing', label: 'Kiyim-kechak' },
-            { slug: 'shoes', label: 'Poyabzal' },
-            { slug: 'perfume', label: 'Atirlar' },
-            { slug: 'cosmetics', label: 'Kosmetika' },
-            { slug: 'beauty', label: "Go'zallik" },
-            { slug: 'accessories', label: 'Aksessuarlar' },
-          ].map((c) => (
+          {CATEGORIES.map((c) => (
             <Link
               key={c.slug}
               href={`/catalog?category=${c.slug}`}

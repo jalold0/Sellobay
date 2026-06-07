@@ -1,19 +1,14 @@
-import { Button, CategoryCard, ProductCard, SectionTitle } from '@ecom/ui';
+import { Button, CategoryCard, SectionTitle } from '@ecom/ui';
 import { ChevronRight, ShieldCheck, Sparkles, Truck, Undo2 } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
 
-import {
-  brands,
-  categories,
-  pickLocale,
-  productImage,
-  products,
-  type Locale,
-} from '../../lib/mock-data';
+import { NewsletterForm } from '../../components/layout/newsletter';
+import { ProductCardClient } from '../../components/product/product-card-client';
+import { brands, categories, pickLocale, productImage, products, type Locale } from '../../lib/mock-data';
 
 export default function HomePage() {
-  const t = useTranslations('product');
   const locale = useLocale() as Locale;
   const featured = products.slice(0, 8);
   const sale = products.filter((p) => p.badge === 'SALE' || p.badge === 'TOP').slice(0, 4);
@@ -35,7 +30,8 @@ export default function HomePage() {
               <span className="text-white/90">moda va go&apos;zallik</span> bozori
             </h1>
             <p className="max-w-md text-base text-white/80 md:text-lg">
-              Kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar — bitta joyda. Tezkor yetkazib berish va 14 kunda qaytarish.
+              Kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar — bitta joyda. Tezkor yetkazib berish va 14
+              kunda qaytarish.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" variant="secondary" className="font-semibold">
@@ -58,15 +54,17 @@ export default function HomePage() {
             {featured.slice(0, 4).map((p, i) => (
               <div
                 key={p.id}
-                className={`aspect-square overflow-hidden rounded-2xl shadow-xl ${
+                className={`relative aspect-square overflow-hidden rounded-2xl shadow-xl ${
                   i === 0 || i === 3 ? 'rotate-[-3deg]' : 'rotate-[3deg]'
                 }`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={productImage(p.imageSeed, 300)}
+                <Image
+                  src={productImage(p.imageSeed, 400)}
                   alt={pickLocale(p.name, locale)}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 25vw, 200px"
+                  className="object-cover"
+                  priority={i < 2}
                 />
               </div>
             ))}
@@ -126,21 +124,7 @@ export default function HomePage() {
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {featured.map((p) => (
-            <ProductCard
-              key={p.id}
-              name={pickLocale(p.name, locale)}
-              brand={p.brand}
-              imageUrl={productImage(p.imageSeed)}
-              href={`/product/${p.slug}`}
-              price={p.price}
-              oldPrice={p.oldPrice}
-              currency={p.currency}
-              locale={locale === 'uz' ? 'uz-UZ' : locale === 'ru' ? 'ru-RU' : 'en-US'}
-              rating={p.rating}
-              reviewCount={p.reviewCount}
-              badge={p.badge}
-              inStock={p.inStock}
-            />
+            <ProductCardClient key={p.id} product={p} locale={locale} />
           ))}
         </div>
       </section>
@@ -150,20 +134,7 @@ export default function HomePage() {
         <SectionTitle title="🔥 Aksiyada" description="Cheklangan vaqt — chegirma" actionHref="/sale" actionLabel="Barchasi" />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {sale.map((p) => (
-            <ProductCard
-              key={p.id}
-              name={pickLocale(p.name, locale)}
-              brand={p.brand}
-              imageUrl={productImage(p.imageSeed)}
-              href={`/product/${p.slug}`}
-              price={p.price}
-              oldPrice={p.oldPrice}
-              currency={p.currency}
-              rating={p.rating}
-              reviewCount={p.reviewCount}
-              badge={p.badge}
-              inStock={p.inStock}
-            />
+            <ProductCardClient key={p.id} product={p} locale={locale} />
           ))}
         </div>
       </section>
@@ -189,22 +160,14 @@ export default function HomePage() {
       <section className="rounded-3xl bg-gradient-to-br from-secondary to-muted p-6 md:p-10">
         <div className="grid items-center gap-6 md:grid-cols-2">
           <div>
-            <h3 className="text-2xl font-bold tracking-tight">Yangi tushgan mahsulotlardan birinchi bo&apos;lib xabardor bo&apos;ling</h3>
+            <h3 className="text-2xl font-bold tracking-tight">
+              Yangi tushgan mahsulotlardan birinchi bo&apos;lib xabardor bo&apos;ling
+            </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling.
             </p>
           </div>
-          <form className="flex gap-2">
-            <input
-              type="email"
-              required
-              placeholder="email@example.uz"
-              className="h-12 flex-1 rounded-full border border-input bg-background px-5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-            <Button size="lg" className="rounded-full px-6">
-              Obuna bo&apos;lish
-            </Button>
-          </form>
+          <NewsletterForm />
         </div>
       </section>
     </div>
