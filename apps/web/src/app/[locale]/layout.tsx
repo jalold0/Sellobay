@@ -11,6 +11,8 @@ import { Footer } from '../../components/layout/footer';
 import { Header } from '../../components/layout/header';
 import { ScrollToTop } from '../../components/layout/scroll-to-top';
 import { SkipLink } from '../../components/layout/skip-link';
+import { InstallPrompt } from '../../components/pwa/install-prompt';
+import { ServiceWorkerRegister } from '../../components/pwa/service-worker-register';
 import { QueryProvider } from '../../providers/query-provider';
 import { OrganizationJsonLd } from '../../components/seo/structured-data';
 import { StoreHydrator } from '../../store/hydrate';
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
     default: "E-Commerce — O'zbekistondagi eng yirik onlayn savdo platformasi",
   },
   description:
-    "Kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar. Asl mahsulotlar, tezkor yetkazib berish, 14 kun qaytarish.",
+    'Kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar. Asl mahsulotlar, tezkor yetkazib berish, 14 kun qaytarish.',
   keywords: ['e-commerce', "o'zbekiston", 'onlayn savdo', 'kiyim', 'poyabzal', 'atir', 'kosmetika'],
   openGraph: {
     type: 'website',
@@ -37,7 +39,14 @@ export const metadata: Metadata = {
   },
   twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
-  icons: { icon: '/favicon.ico' },
+  // PWA — app-style ko'rinish iOS Safari'da, Android Chrome'da
+  appleWebApp: {
+    capable: true,
+    title: 'E-Commerce',
+    statusBarStyle: 'default',
+  },
+  applicationName: 'E-Commerce',
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -60,7 +69,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
   return (
     <html lang={locale} className={inter.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+      <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <OrganizationJsonLd />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
@@ -76,6 +85,8 @@ export default async function LocaleLayout({
               </div>
               <ScrollToTop />
               <CookieBanner />
+              <InstallPrompt />
+              <ServiceWorkerRegister />
               <Toaster />
             </TooltipProvider>
           </QueryProvider>

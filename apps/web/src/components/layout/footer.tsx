@@ -44,27 +44,28 @@ const PAY_METHODS = ['Click', 'Payme', 'Uzum', 'Uzcard', 'Humo', 'Visa', 'Master
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t bg-secondary/30">
+    <footer className="bg-secondary/30 mt-16 border-t">
       {/* Top: brand + columns */}
       <div className="container grid gap-10 py-12 md:grid-cols-12">
         <div className="space-y-4 md:col-span-4">
           <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-primary to-rose-500 font-black text-primary-foreground">
+            <div className="from-primary text-primary-foreground grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br to-rose-500 font-black">
               E
             </div>
             <span className="text-lg font-bold tracking-tight">E-Commerce Ekosistema</span>
           </div>
-          <p className="max-w-xs text-sm text-muted-foreground">
-            O&apos;zbekistondagi eng yirik ko&apos;p toifali onlayn savdo platformasi. Sevimli mahsulotlaringiz bir joyda.
+          <p className="text-muted-foreground max-w-xs text-sm">
+            O&apos;zbekistondagi eng yirik ko&apos;p toifali onlayn savdo platformasi. Sevimli
+            mahsulotlaringiz bir joyda.
           </p>
           <div className="space-y-1.5 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Phone size={14} /> <span>+998 71 200 00 00</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Mail size={14} /> <span>info@example.uz</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <MapPin size={14} />
               <span>Toshkent sh., Mirzo Ulug&apos;bek tumani</span>
             </div>
@@ -81,7 +82,7 @@ export function Footer() {
                 href={href}
                 target="_blank"
                 rel="noreferrer"
-                className="grid h-9 w-9 place-items-center rounded-full border bg-background text-muted-foreground transition hover:border-primary hover:text-primary"
+                className="bg-background text-muted-foreground hover:border-primary hover:text-primary grid h-9 w-9 place-items-center rounded-full border transition"
               >
                 <Icon size={16} />
               </a>
@@ -96,7 +97,10 @@ export function Footer() {
               <ul className="space-y-2">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-muted-foreground hover:text-foreground">
+                    <Link
+                      href={l.href}
+                      className="text-muted-foreground hover:text-foreground text-sm"
+                    >
                       {l.label}
                     </Link>
                   </li>
@@ -115,34 +119,30 @@ export function Footer() {
             {PAY_METHODS.map((m) => (
               <span
                 key={m}
-                className="rounded-md border bg-background px-2 py-1 text-xs font-semibold uppercase text-muted-foreground"
+                className="bg-background text-muted-foreground rounded-md border px-2 py-1 text-xs font-semibold uppercase"
               >
                 {m}
               </span>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Mobil ilovani yuklab oling:</span>
-            <a
-              href="#"
-              className="rounded-md border bg-foreground px-3 py-1.5 text-xs font-semibold text-background"
+            <span className="text-sm font-medium">Ilovani yuklab oling:</span>
+            <Link
+              href="/download"
+              className="bg-foreground text-background rounded-md border px-3 py-1.5 text-xs font-semibold hover:opacity-90"
             >
-              App Store
-            </a>
-            <a
-              href="#"
-              className="rounded-md border bg-foreground px-3 py-1.5 text-xs font-semibold text-background"
-            >
-              Google Play
-            </a>
+              📱 Barcha platformalar
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Bottom */}
       <div className="border-t">
-        <div className="container flex flex-col items-center justify-between gap-2 py-5 text-xs text-muted-foreground md:flex-row">
-          <div>© {new Date().getFullYear()} E-Commerce Ekosistema. Barcha huquqlar himoyalangan.</div>
+        <div className="text-muted-foreground container flex flex-col items-center justify-between gap-2 py-5 text-xs md:flex-row">
+          <div>
+            © {new Date().getFullYear()} E-Commerce Ekosistema. Barcha huquqlar himoyalangan.
+          </div>
           <div>Made in Uzbekistan 🇺🇿</div>
         </div>
       </div>
