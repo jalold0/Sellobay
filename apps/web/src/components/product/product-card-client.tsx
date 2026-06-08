@@ -37,12 +37,14 @@ interface Props extends Pick<ProductCardProps, 'className'> {
   product: MockProduct;
   locale: 'uz' | 'ru' | 'en';
   priority?: boolean;
+  stockLeft?: number; // TZ §5: "Faqat X ta qoldi!" — sale section'da ishlatamiz
 }
 
-export function ProductCardClient({ product, locale, className }: Props) {
+export function ProductCardClient({ product, locale, className, stockLeft }: Props) {
   const name = pickLocale(product.name, locale);
   const addItem = useCart((s) => s.addItem);
   const toggleWishlist = useWishlist((s) => s.toggle);
+  const isWishlisted = useWishlist((s) => s.ids.includes(product.id));
 
   const onAddToCart = React.useCallback(() => {
     addItem({
@@ -61,8 +63,11 @@ export function ProductCardClient({ product, locale, className }: Props) {
 
   const onToggleWishlist = React.useCallback(() => {
     toggleWishlist(product.id);
-    toast({ title: 'Sevimlilar yangilandi', duration: 1500 });
-  }, [toggleWishlist, product.id]);
+    toast({
+      title: isWishlisted ? 'Sevimlilardan olib tashlandi' : 'Sevimlilarga qo`shildi',
+      duration: 1500,
+    });
+  }, [toggleWishlist, product.id, isWishlisted]);
 
   return (
     <ProductCard
@@ -77,6 +82,8 @@ export function ProductCardClient({ product, locale, className }: Props) {
       reviewCount={product.reviewCount}
       badge={product.badge}
       inStock={product.inStock}
+      stockLeft={stockLeft}
+      isWishlisted={isWishlisted}
       onAddToCart={product.inStock ? onAddToCart : undefined}
       onToggleWishlist={onToggleWishlist}
       LinkComponent={NextLink}

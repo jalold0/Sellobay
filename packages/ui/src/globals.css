@@ -4,48 +4,78 @@
 
 @layer base {
   :root {
+    /* Background */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 6.7%; /* #111111 */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 6.7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 0 0% 6.7%;
+
+    /* Brand primary — TZ #C8102E qizil */
+    --primary: 351 86% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-bright: 357 82% 51%; /* #E8192C */
+
+    /* Secondary — TZ #1A0A1E to'q binafsha-qora */
+    --secondary: 280 51% 8%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Accent — TZ #FF6B35 to'q sariq, urgency */
+    --accent: 16 100% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Neutral / muted */
+    --muted: 240 9% 97%; /* #F7F7F8 */
+    --muted-foreground: 220 9% 46%; /* #6B7280 */
+
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 351 86% 42%;
+
+    --radius: 0.75rem;
+
+    /* Brand-specific tokens (Trendyol/Musinsa style) */
+    --brand-red: 351 86% 42%; /* #C8102E */
+    --brand-red-bright: 357 82% 51%; /* #E8192C */
+    --brand-red-dark: 350 100% 28%; /* #8B0020 */
+    --brand-dark: 280 51% 8%; /* #1A0A1E */
+    --brand-orange: 16 100% 60%; /* #FF6B35 */
+    --brand-flame: 18 100% 50%; /* #FF4500 */
+    --footer-bg: 222 20% 7%; /* #0F1117 */
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: 222 20% 7%;
+    --foreground: 0 0% 98%;
+    --card: 222 20% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 222 20% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 357 82% 51%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 280 30% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --accent: 16 100% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 222 14% 17%;
+    --muted-foreground: 220 9% 65%;
+
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 222 14% 17%;
+    --input: 222 14% 17%;
+    --ring: 357 82% 51%;
   }
 
   * {
@@ -54,5 +84,118 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Hero gradient (TZ §2) */
+  .bg-hero-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--brand-dark)) 0%,
+      hsl(var(--brand-red-dark)) 50%,
+      hsl(var(--brand-red)) 80%,
+      hsl(var(--brand-flame)) 100%
+    );
+  }
+
+  /* Brand gradient — for buttons, badges */
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, hsl(var(--brand-red)) 0%, hsl(var(--brand-red-bright)) 100%);
+  }
+
+  /* Glass morphism (TZ §2 badge) */
+  .glass {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .glass-light {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .glass-dark {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Nav hover underline (TZ §1) */
+  .nav-underline {
+    position: relative;
+  }
+  .nav-underline::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 4px;
+    height: 2px;
+    background-color: hsl(var(--primary));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.2s ease;
+  }
+  .nav-underline:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Card lift (TZ §4) */
+  .card-lift {
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+  }
+
+  /* Flash sale glow (TZ §5) */
+  .flash-glow {
+    animation: flash-pulse 2s ease-in-out infinite;
+  }
+  @keyframes flash-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(255, 69, 0, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 24px rgba(255, 69, 0, 0.9);
+    }
+  }
+
+  /* Staggered entrance (TZ §3) */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fade-up 0.6s ease forwards;
+  }
+  @keyframes fade-up {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
