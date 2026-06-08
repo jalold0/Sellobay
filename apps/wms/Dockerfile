@@ -12,7 +12,10 @@ RUN pnpm install --frozen-lockfile --filter @ecom/wms...
 FROM deps AS build
 WORKDIR /repo
 COPY . .
+# Prisma client kerak — TypeScript compile vaqtida @ecom/database imports uchun
 RUN pnpm --filter @ecom/database generate
+# Workspace bog'liqliklarni qarorlash uchun typescript yo'l xaritalari yarating
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm --filter @ecom/wms build
 
 FROM base AS runtime

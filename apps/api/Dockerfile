@@ -7,7 +7,6 @@ WORKDIR /repo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
 COPY packages ./packages
-RUN pnpm fetch
 RUN pnpm install --frozen-lockfile --filter @ecom/api...
 
 FROM deps AS build

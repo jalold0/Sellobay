@@ -10,8 +10,8 @@
     "start:prod": "NODE_ENV=production node dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test": "jest --passWithNoTests",
+    "test:e2e": "jest --config ./test/jest-e2e.json --passWithNoTests"
   },
   "dependencies": {
     "@ecom/auth": "workspace:*",

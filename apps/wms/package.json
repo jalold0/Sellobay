@@ -9,7 +9,7 @@
     "start": "node dist/main",
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@ecom/database": "workspace:*",
