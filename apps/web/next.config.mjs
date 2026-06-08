@@ -6,6 +6,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Docker uchun — minimal runtime image
+  output: 'standalone',
   transpilePackages: ['@ecom/ui', '@ecom/i18n', '@ecom/utils', '@ecom/types'],
   images: {
     remotePatterns: [

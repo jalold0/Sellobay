@@ -10,6 +10,8 @@ jobs:
   build-push:
     runs-on: ubuntu-latest
     strategy:
+      # Bittasi xato bo'lsa boshqalarini bekor qilmasin
+      fail-fast: false
       matrix:
         app: [api, wms, web, admin, seller, telegram-mini-app, telegram-bot]
     permissions:
@@ -29,7 +31,13 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository }}/${{ matrix.app }}
+          # ghcr.io repo nomlari kichik harf bo'lishi kerak
+          images: ghcr.io/${{ github.repository_owner }}/ecom-${{ matrix.app }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - uses: docker/build-push-action@v5
         with:
@@ -38,5 +46,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
