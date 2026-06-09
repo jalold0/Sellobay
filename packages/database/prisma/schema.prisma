@@ -1,13 +1,13 @@
 // ===================================================================
-// E-Commerce Ekosistema — Prisma Schema (PostgreSQL)
-// TZ v1.0 (2026-yil May) asosida
+// Sellobay — Prisma Schema (PostgreSQL on Neon)
+// TZ v2.0 (2026-yil Iyun) — Sellobay marketplace ekotizimi
 // Domains: Users, Catalog, Orders, Inventory, Warehouses, Marketing,
 //          Couriers, CRM, Finance, Reviews, Sellers, Notifications
 // ===================================================================
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres", "postgresqlExtensions"]
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
 }
 
 datasource db {
