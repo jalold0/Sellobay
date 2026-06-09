@@ -106,12 +106,7 @@ export function Footer() {
           {/* Brand column */}
           <div className="space-y-4 md:col-span-4">
             <div className="flex items-center gap-2.5">
-              <div
-                className="bg-bordeaux-gradient grid h-10 w-10 place-items-center rounded-xl font-serif text-lg font-black text-white shadow"
-                style={{ letterSpacing: '-0.08em' }}
-              >
-                SB
-              </div>
+              <SellobayMark size={40} className="shadow" />
               <div className="leading-tight">
                 <div className="text-lg font-bold tracking-tight text-white">Sellobay</div>
                 <div className="text-[10px] uppercase tracking-widest text-white/60">

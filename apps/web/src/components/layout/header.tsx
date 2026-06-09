@@ -75,12 +75,7 @@ export function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <div
-              className="bg-bordeaux-gradient grid h-10 w-10 place-items-center rounded-xl font-serif text-lg font-black text-white shadow-sm"
-              style={{ letterSpacing: '-0.08em' }}
-            >
-              SB
-            </div>
+            <SellobayMark size={40} className="shadow-sm" priority />
             <div className="hidden flex-col leading-tight md:flex">
               <span className="text-base font-bold tracking-tight">{common('appName')}</span>
               <span className="text-muted-foreground text-[10px] uppercase tracking-widest">
