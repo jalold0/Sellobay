@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sellobay-seller-v5'; // ⚠️ Rasmiy logo PNG
+const CACHE_NAME = 'sellobay-seller-v6'; // ⚠️ Sidebar Sellobay branding
 const STATIC = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {

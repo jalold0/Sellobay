@@ -8,6 +8,7 @@ import * as React from 'react';
 
 import { adminNav, groupNav } from '../../lib/nav';
 import { useSession } from '../../providers/session-provider';
+import { SellobayMark } from '../brand/sellobay-mark';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -25,31 +26,29 @@ export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'flex h-screen flex-col border-r bg-card transition-[width] duration-200',
+        'bg-card flex h-screen flex-col border-r transition-[width] duration-200',
         collapsed ? 'w-[68px]' : 'w-64',
         className,
       )}
     >
       <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
         <Link href="/" className="flex items-center gap-2 overflow-hidden">
-          <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground font-bold">
-            E
-          </div>
+          <SellobayMark size={32} className="shrink-0" priority />
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold">E-Commerce</span>
-              <span className="text-[10px] text-muted-foreground">Admin Panel</span>
+              <span className="text-sm font-semibold">Sellobay</span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-widest">
+                Admin Panel
+              </span>
             </div>
           )}
         </Link>
         <button
           onClick={onToggle}
-          className="hidden h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent lg:flex"
+          className="text-muted-foreground hover:bg-accent hidden h-8 w-8 items-center justify-center rounded-md lg:flex"
           aria-label="Toggle sidebar"
         >
-          <ChevronLeft
-            className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')}
-          />
+          <ChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
         </button>
       </div>
 
@@ -58,15 +57,14 @@ export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
           {groups.map((g) => (
             <div key={g.group} className="space-y-1">
               {!collapsed && g.group ? (
-                <div className="px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="text-muted-foreground px-2 text-[10px] font-semibold uppercase tracking-wider">
                   {g.group}
                 </div>
               ) : null}
               {g.items.map((item) => {
                 const Icon = item.icon;
                 const active =
-                  pathname === item.href ||
-                  (item.href !== '/' && pathname.startsWith(item.href));
+                  pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
@@ -94,7 +92,7 @@ export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
         <Link
           href="/help"
           className={cn(
-            'flex items-center gap-3 rounded-md px-2.5 py-2 text-xs text-muted-foreground hover:bg-accent',
+            'text-muted-foreground hover:bg-accent flex items-center gap-3 rounded-md px-2.5 py-2 text-xs',
             collapsed && 'justify-center',
           )}
         >

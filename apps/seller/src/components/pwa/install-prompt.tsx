@@ -4,12 +4,14 @@ import { Button } from '@ecom/ui';
 import { Download, X } from 'lucide-react';
 import * as React from 'react';
 
+import { SellobayMark } from '../brand/sellobay-mark';
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const DISMISS_KEY = 'ecom_seller_pwa_install_dismissed_v1';
+const DISMISS_KEY = 'sellobay_seller_pwa_install_dismissed_v2';
 const DISMISS_DAYS = 14;
 
 export function InstallPrompt() {
@@ -64,11 +66,9 @@ export function InstallPrompt() {
         <X size={14} />
       </button>
       <div className="flex items-start gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-lg font-black text-white">
-          S
-        </div>
+        <SellobayMark size={48} className="shrink-0 shadow-md" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold">Sotuvchi panelni o&apos;rnating</div>
+          <div className="text-sm font-semibold">Sellobay Sotuvchi panelni o&apos;rnating</div>
           <div className="text-muted-foreground mt-0.5 text-xs">
             Tezda buyurtmalarni boshqaring — push xabarlar, offline rejim.
           </div>
