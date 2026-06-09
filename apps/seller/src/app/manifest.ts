@@ -2,15 +2,15 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'E-Commerce Sotuvchi paneli',
-    short_name: 'Sotuvchi',
-    description: 'Marketplace sotuvchi paneli — do`koningizni boshqaring',
+    name: 'Sellobay Sotuvchi paneli',
+    short_name: 'SB Sotuvchi',
+    description: 'Sellobay marketplace sotuvchi paneli — do`koningizni boshqaring',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'any',
     background_color: '#ffffff',
-    theme_color: '#6366f1',
+    theme_color: '#8B0020',
     lang: 'uz',
     categories: ['business', 'productivity'],
     icons: [

@@ -4,6 +4,7 @@ export const runtime = 'edge';
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
+// Sellobay Seller Panel — bordo gradient + SB monogram
 export default function AppleIcon() {
   return new ImageResponse(
     <div
@@ -13,13 +14,15 @@ export default function AppleIcon() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+        background: 'linear-gradient(135deg, #1A0A0F 0%, #5C0015 50%, #8B0020 100%)',
         color: '#fff',
-        fontSize: 128,
+        fontSize: 84,
         fontWeight: 900,
+        letterSpacing: -4,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
-      S
+      SB
     </div>,
     { ...size },
   );

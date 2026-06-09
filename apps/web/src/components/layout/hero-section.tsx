@@ -28,8 +28,8 @@ export function HeroSection({ locale, heroProducts }: Props) {
       <div className="relative mx-auto mb-10 flex max-w-3xl items-center justify-between rounded-full border border-white/60 bg-white/90 px-5 py-3 shadow-lg backdrop-blur md:mb-16">
         {/* Sellobay wordmark */}
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="bg-bordeaux-gradient grid h-9 w-9 place-items-center rounded-xl text-sm font-black text-white shadow-md">
-            S
+          <div className="bg-bordeaux-gradient grid h-9 w-9 place-items-center rounded-xl text-[13px] font-black tracking-tighter text-white shadow-md">
+            SB
           </div>
           <span className="text-foreground text-lg font-extrabold tracking-tight">Sellobay</span>
         </Link>

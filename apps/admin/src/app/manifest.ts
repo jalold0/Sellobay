@@ -2,15 +2,15 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'E-Commerce Admin Panel',
-    short_name: 'Admin',
-    description: 'Platforma boshqaruv markazi',
+    name: 'Sellobay Admin Panel',
+    short_name: 'SB Admin',
+    description: 'Sellobay marketplace boshqaruv markazi',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'any',
     background_color: '#ffffff',
-    theme_color: '#0f172a',
+    theme_color: '#0A0A0C',
     lang: 'uz',
     categories: ['business', 'productivity'],
     icons: [

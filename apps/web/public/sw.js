@@ -1,25 +1,35 @@
-// Service Worker — minimal offline cache strategy.
+// Sellobay Service Worker — minimal offline cache strategy.
+// CACHE VERSION'NI O'ZGARTIRGAN HAR SAFAR — eski cache avtomatik tozalanadi.
 // Network-first for HTML/API, cache-first for static assets.
 
-const CACHE_NAME = 'ecom-v1';
+const CACHE_NAME = 'sellobay-v3'; // ⚠️ Brand update — eski 'ecom-v1' cache'larini tozalash
 const STATIC_ASSETS = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => null)),
   );
+  // Yangi SW darhol kuchga kiradi (eski versiyani kutmaydi)
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
-      ),
+    (async () => {
+      // 1. Eski cache'larni o'chiramiz (ecom-v1, sellobay-v1, sellobay-v2 va boshqalar)
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+
+      // 2. Hozirgi sahifalarni darhol nazoratga olamiz
+      await self.clients.claim();
+
+      // 3. Barcha ochiq sahifalarga "yangilandi" signali yuboramiz
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach((client) => {
+        client.postMessage({ type: 'SW_UPDATED', version: CACHE_NAME });
+      });
+    })(),
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -55,7 +65,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML/dynamic: network-first, cache fallback (offline)
+  // HTML/dynamic: NETWORK-FIRST — har doim eng yangi versiyani olib keladi
+  // Cache faqat offline holatda fallback sifatida
   event.respondWith(
     fetch(request)
       .then((res) => {
@@ -69,12 +80,12 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push notifications uchun (kelajakda)
+// Push notifications uchun
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   const data = event.data.json();
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'E-Commerce', {
+    self.registration.showNotification(data.title ?? 'Sellobay', {
       body: data.body,
       icon: '/apple-icon',
       badge: '/icon',
@@ -87,4 +98,11 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data?.url ?? '/';
   event.waitUntil(self.clients.openWindow(url));
+});
+
+// Foydalanuvchi qo'lda yangilashni so'rasa
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

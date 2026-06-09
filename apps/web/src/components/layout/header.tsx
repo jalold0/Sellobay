@@ -74,8 +74,8 @@ export function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
-            <div className="bg-bordeaux-gradient grid h-10 w-10 place-items-center rounded-xl font-black text-white shadow-sm">
-              S
+            <div className="bg-bordeaux-gradient grid h-10 w-10 place-items-center rounded-xl text-sm font-black tracking-tighter text-white shadow-sm">
+              SB
             </div>
             <div className="hidden flex-col leading-tight md:flex">
               <span className="text-base font-bold tracking-tight">{common('appName')}</span>

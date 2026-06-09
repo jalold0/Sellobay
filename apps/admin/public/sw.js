@@ -1,5 +1,5 @@
 // Admin panel Service Worker — minimal.
-const CACHE_NAME = 'ecom-admin-v1';
+const CACHE_NAME = 'sellobay-admin-v3'; // ⚠️ Brand update — eski cache'lar tozalanadi
 const STATIC = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {

@@ -4,16 +4,16 @@ import type { MetadataRoute } from 'next';
 // Foydalanuvchi brauzerda "Install app" tugmasini bosib home screen'ga qo'shadi.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'E-Commerce — Onlayn savdo platformasi',
-    short_name: 'E-Commerce',
+    name: 'Sellobay — Marketplace ekotizimi',
+    short_name: 'Sellobay',
     description:
-      "O'zbekistondagi eng yirik ko'p toifali onlayn savdo platformasi. Asl mahsulot, tezkor yetkazib berish, 14 kun qaytarish.",
+      "Minglab sotuvchilar, premium brendlar, tezkor yetkazib berish. O'zbekistondagi eng yirik marketplace — Sellobay.",
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait-primary',
     background_color: '#ffffff',
-    theme_color: '#0f172a',
+    theme_color: '#8B0020', // Bordo — yangi brand
     lang: 'uz',
     dir: 'ltr',
     categories: ['shopping', 'lifestyle', 'business'],
@@ -30,7 +30,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: 'Katalog',
         short_name: 'Katalog',
-        description: 'Barcha mahsulotlarni ko`rish',
+        description: "Barcha mahsulotlarni ko'rish",
         url: '/catalog',
         icons: [{ src: '/icon.svg', sizes: 'any' }],
       },

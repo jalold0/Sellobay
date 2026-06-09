@@ -105,8 +105,8 @@ export function Footer() {
           {/* Brand column */}
           <div className="space-y-4 md:col-span-4">
             <div className="flex items-center gap-2.5">
-              <div className="bg-bordeaux-gradient grid h-10 w-10 place-items-center rounded-xl font-black text-white shadow">
-                S
+              <div className="bg-bordeaux-gradient grid h-10 w-10 place-items-center rounded-xl text-sm font-black tracking-tighter text-white shadow">
+                SB
               </div>
               <div className="leading-tight">
                 <div className="text-lg font-bold tracking-tight text-white">Sellobay</div>
