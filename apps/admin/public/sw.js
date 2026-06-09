@@ -1,5 +1,5 @@
 // Admin panel Service Worker — minimal.
-const CACHE_NAME = 'sellobay-admin-v6'; // ⚠️ Sidebar Sellobay branding
+const CACHE_NAME = 'sellobay-admin-v7'; // ⚠️ V2 clean logo
 const STATIC = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {
