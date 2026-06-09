@@ -10,19 +10,28 @@ import { Providers } from '../providers';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3002'),
-  title: { default: 'Sotuvchi paneli — E-Commerce', template: '%s | Sotuvchi' },
-  description: 'Marketplace sotuvchi paneli',
-  applicationName: 'E-Commerce Sotuvchi',
+  title: { default: 'Sellobay Sotuvchi paneli', template: '%s | Sellobay Sotuvchi' },
+  description: 'Sellobay marketplace sotuvchi paneli — do`koningizni boshqaring',
+  applicationName: 'Sellobay Sotuvchi',
   appleWebApp: {
     capable: true,
-    title: 'E-Commerce Sotuvchi',
+    title: 'Sellobay Sotuvchi',
     statusBarStyle: 'default',
   },
   formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: '/icon.svg',
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+    other: [{ rel: 'mask-icon', url: '/icon.svg', color: '#8B0020' }],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#6366f1',
+  themeColor: '#8B0020',
   width: 'device-width',
   initialScale: 1,
 };

@@ -57,6 +57,22 @@ export const metadata: Metadata = {
   },
   applicationName: 'Sellobay',
   formatDetection: { telephone: false },
+  // Sellobay favikon — barcha qurilmalar uchun
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon', sizes: '32x32', type: 'image/png' }, // Next.js auto-generated PNG
+    ],
+    shortcut: '/icon.svg',
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+    other: [
+      {
+        rel: 'mask-icon',
+        url: '/icon.svg',
+        color: '#8B0020', // Safari pinned tab — bordo
+      },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

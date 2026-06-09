@@ -23,7 +23,7 @@ import { PageHero } from '../../../components/static/page-hero';
 export const metadata: Metadata = {
   title: 'Ilovani yuklab olish',
   description:
-    "E-Commerce ilovasini iPhone, Android yoki kompyuteringizga yuklab oling. PWA — alohida o'rnatish kerak emas, brauzer orqali.",
+    "Sellobay ilovasini iPhone, Android yoki kompyuteringizga yuklab oling. PWA — alohida o'rnatish kerak emas, brauzer orqali.",
 };
 
 // EAS Build orqali yaratilgan APK fayli URL'i.
@@ -48,7 +48,7 @@ export default function DownloadPage() {
       <PageHero
         icon={Download}
         title="Ilovani yuklab olish"
-        description="E-Commerce'ni qurilmangizga o'rnating — alohida ro'yxatdan o'tish shart emas, brauzer orqali bir bosishda."
+        description="Sellobay'ni qurilmangizga o'rnating — alohida ro'yxatdan o'tish shart emas, brauzer orqali bir bosishda."
         accent="primary"
       />
 
@@ -117,7 +117,7 @@ export default function DownloadPage() {
             accent="sky"
             steps={[
               "Manzil qatorining o'ng tomonidagi 'Install' ikonkasini bosing",
-              "Yoki menyu (⋮) → 'Install E-Commerce' / 'Cast, save and share' → 'Install page as app'",
+              "Yoki menyu (⋮) → 'Install Sellobay' / 'Cast, save and share' → 'Install page as app'",
               "Ish stoli va Start menyusiga ikon qo'shiladi",
             ]}
             pwaButton
@@ -171,12 +171,12 @@ export default function DownloadPage() {
             <div className="border-foreground/10 bg-muted relative aspect-[9/16] w-40 overflow-hidden rounded-3xl border-4 shadow-xl md:w-48">
               <div className="bg-foreground/5 absolute inset-x-0 top-0 h-6" />
               <div className="bg-card absolute inset-x-3 top-8 rounded-lg p-3 text-[10px]">
-                <div className="font-semibold">E-Commerce</div>
+                <div className="font-semibold">Sellobay</div>
                 <div className="text-muted-foreground">Bosh ekranga qo&apos;shish</div>
               </div>
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-                <div className="from-primary grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br to-rose-500 text-white shadow-lg">
-                  <div className="text-xl font-black">E</div>
+                <div className="bg-bordeaux-gradient grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg">
+                  <div className="text-sm font-black tracking-tighter">SB</div>
                 </div>
               </div>
             </div>

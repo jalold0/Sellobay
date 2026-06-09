@@ -11,21 +11,30 @@ import { Providers } from '../providers';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001'),
   title: {
-    default: 'Admin Panel — E-Commerce',
-    template: '%s | Admin',
+    default: 'Sellobay Admin Panel',
+    template: '%s | Sellobay Admin',
   },
-  description: 'E-Commerce ekosistemasini boshqaruv markazi',
-  applicationName: 'E-Commerce Admin',
+  description: 'Sellobay marketplace boshqaruv markazi',
+  applicationName: 'Sellobay Admin',
   appleWebApp: {
     capable: true,
-    title: 'E-Commerce Admin',
-    statusBarStyle: 'default',
+    title: 'Sellobay Admin',
+    statusBarStyle: 'black',
   },
   formatDetection: { telephone: false },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: '/icon.svg',
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+    other: [{ rel: 'mask-icon', url: '/icon.svg', color: '#0A0A0C' }],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  themeColor: '#0A0A0C',
   width: 'device-width',
   initialScale: 1,
 };

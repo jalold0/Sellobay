@@ -7,7 +7,7 @@ export const metadata = { title: 'Foydalanish shartlari' };
 const SECTIONS = [
   {
     title: 'Umumiy qoidalar',
-    body: "Ushbu shartnoma E-Commerce platformasidan foydalanish qoidalarini belgilaydi. Saytdan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz.",
+    body: 'Ushbu shartnoma Sellobay marketplace platformasidan foydalanish qoidalarini belgilaydi. Saytdan foydalanish orqali siz ushbu shartlarga rozilik bildirasiz.',
   },
   {
     title: 'Foydalanuvchi majburiyatlari',
@@ -19,7 +19,7 @@ const SECTIONS = [
   },
   {
     title: 'Yetkazib berish va qaytarish',
-    body: "Mahsulot yetkazib berilgandan keyin 14 kun ichida qaytarish mumkin. Qaytarish shartlari /returns sahifasida.",
+    body: 'Mahsulot yetkazib berilgandan keyin 14 kun ichida qaytarish mumkin. Qaytarish shartlari /returns sahifasida.',
   },
   {
     title: 'Mas`uliyatni cheklash',

@@ -1,17 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="sellobay-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+    <linearGradient id="sb-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#1A0A0F"/>
       <stop offset="0.5" stop-color="#5C0015"/>
       <stop offset="1" stop-color="#8B0020"/>
     </linearGradient>
+    <linearGradient id="sb-gold" x1="0" y1="0" x2="64" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C9A961"/>
+      <stop offset="1" stop-color="#E5C77A"/>
+    </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#sellobay-bg)"/>
+
+  <!-- Bordo gradient background — rounded square -->
+  <rect width="64" height="64" rx="14" fill="url(#sb-bg)"/>
+
+  <!-- "SB" wordmark — system fontlar, max compatibility -->
   <text x="32" y="44"
         text-anchor="middle"
-        font-family="'Manrope', 'Inter', system-ui, sans-serif"
+        font-family="'Helvetica Neue', 'Arial Black', 'Inter', system-ui, sans-serif"
         font-size="32"
         font-weight="900"
-        letter-spacing="-1.5"
+        letter-spacing="-2"
         fill="#fff">SB</text>
+
+  <!-- Premium oltin accent — kichik dot top-right (yulduzcha kabi) -->
+  <circle cx="50" cy="14" r="2.5" fill="url(#sb-gold)"/>
 </svg>

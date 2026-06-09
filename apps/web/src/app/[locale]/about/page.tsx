@@ -6,7 +6,7 @@ import { PageHero } from '../../../components/static/page-hero';
 export const metadata = { title: 'Biz haqimizda' };
 
 const STATS = [
-  { label: "Faol mijozlar", value: '120 000+' },
+  { label: 'Faol mijozlar', value: '120 000+' },
   { label: 'Sotuvchilar', value: '850+' },
   { label: 'Mahsulot turlari', value: '50 000+' },
   { label: 'Shaharlar', value: '14' },
@@ -33,7 +33,7 @@ export default function AboutPage() {
         {STATS.map((s) => (
           <Card key={s.label} className="p-4 text-center">
             <div className="text-2xl font-bold md:text-3xl">{s.value}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{s.label}</div>
+            <div className="text-muted-foreground mt-1 text-xs">{s.label}</div>
           </Card>
         ))}
       </section>
@@ -41,13 +41,15 @@ export default function AboutPage() {
       <section className="grid gap-6 md:grid-cols-2">
         <div className="prose prose-sm max-w-none">
           <h2 className="text-2xl font-bold">Bizning hikoyamiz</h2>
-          <p className="mt-3 leading-relaxed text-muted-foreground">
-            E-Commerce 2026-yilda O&apos;zbekiston mijozlariga onlayn savdo qulayligini olib kelish maqsadida tashkil etildi.
-            Birinchi yiliyoq biz minglab sotuvchilar va yuz minglab mijozlarga ega bo&apos;ldik.
+          <p className="text-muted-foreground mt-3 leading-relaxed">
+            Sellobay 2026-yilda O&apos;zbekiston mijozlariga premium marketplace tajribasini olib
+            kelish maqsadida tashkil etildi. Birinchi yiliyoq biz minglab sotuvchilar va yuz minglab
+            mijozlarga ega bo&apos;ldik.
           </p>
-          <p className="mt-3 leading-relaxed text-muted-foreground">
-            Hozir biz kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar bo&apos;yicha eng katta katalogga egamiz —
-            kelajakda esa elektronika, uy-ro&apos;zg&apos;or buyumlari, oziq-ovqat va xizmatlarni ham qo&apos;shamiz.
+          <p className="text-muted-foreground mt-3 leading-relaxed">
+            Hozir biz kiyim-kechak, poyabzal, atirlar, kosmetika va aksessuarlar bo&apos;yicha eng
+            katta katalogga egamiz — kelajakda esa elektronika, uy-ro&apos;zg&apos;or buyumlari,
+            oziq-ovqat va xizmatlarni ham qo&apos;shamiz.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -55,11 +57,11 @@ export default function AboutPage() {
             const Icon = v.icon;
             return (
               <Card key={v.title} className="p-4">
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                <div className="bg-primary/10 text-primary grid h-10 w-10 place-items-center rounded-lg">
                   <Icon size={18} />
                 </div>
                 <div className="mt-3 font-semibold">{v.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{v.text}</div>
+                <div className="text-muted-foreground mt-1 text-xs">{v.text}</div>
               </Card>
             );
           })}
