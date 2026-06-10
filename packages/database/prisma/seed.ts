@@ -223,7 +223,17 @@ async function main() {
     const productImage = `https://picsum.photos/seed/${p.imageSeed}/600/600`;
     const product = await prisma.product.upsert({
       where: { slug: p.slug },
-      update: {},
+      // Mavjud mahsulotlarda ham status/narxni tuzatib qo'yamiz (idempotent seed)
+      update: {
+        status: ProductStatus.ACTIVE,
+        publishedAt: new Date(),
+        isFeatured: p.isFeatured ?? false,
+        basePrice: p.basePrice,
+        compareAtPrice: p.compareAtPrice ?? null,
+        rating: p.rating,
+        reviewCount: p.reviewCount,
+        soldCount: p.soldCount,
+      },
       create: {
         slug: p.slug,
         sku: p.sku,

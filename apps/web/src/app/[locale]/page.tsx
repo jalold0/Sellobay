@@ -1,6 +1,6 @@
 import { SectionTitle } from '@ecom/ui';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { getLocale } from 'next-intl/server';
 
 import { CategoryGrid } from '../../components/layout/category-grid';
 import { FeaturedCollection } from '../../components/layout/featured-collection';
@@ -8,19 +8,21 @@ import { HeroSection } from '../../components/layout/hero-section';
 import { SaleSection } from '../../components/layout/sale-section';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
-import { brands, products, type Locale } from '../../lib/mock-data';
+import { fetchHomeProducts } from '../../lib/catalog';
+import { brands, type Locale } from '../../lib/mock-data';
 
-export default function HomePage() {
-  const locale = useLocale() as Locale;
-  const heroProducts = products.slice(0, 3); // UMBRA: 3 ta staggered
-  const collection = products.slice(3, 6); // Featured Collection: keyingi 3 ta
-  const featured = products.slice(0, 8);
-  const sale = products.filter((p) => p.badge === 'SALE' || p.badge === 'TOP').slice(0, 8);
+// ISR — har 2 daqiqada DB'dan yangilanadi (Neon serverless'ni tejaydi)
+export const revalidate = 120;
+
+export default async function HomePage() {
+  const locale = (await getLocale()) as Locale;
+  // Haqiqiy DB'dan (Neon) — xato bo'lsa avtomatik mock fallback
+  const { hero, featured, collection, sale } = await fetchHomeProducts();
 
   return (
     <div className="space-y-12 md:space-y-20">
       {/* Hero — UMBRA editorial style */}
-      <HeroSection locale={locale} heroProducts={heroProducts} />
+      <HeroSection locale={locale} heroProducts={hero} />
 
       {/* Categories with per-category colors */}
       <CategoryGrid locale={locale} />
