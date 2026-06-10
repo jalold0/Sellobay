@@ -73,8 +73,8 @@ export function ProductCard({ product, locale = 'uz' }: Props) {
           >
             <Heart
               size={14}
-              color={wishlistHas ? '#e11d48' : '#475569'}
-              fill={wishlistHas ? '#e11d48' : 'transparent'}
+              color={wishlistHas ? '#B30029' : '#6B6B73'}
+              fill={wishlistHas ? '#B30029' : 'transparent'}
             />
           </Pressable>
           {!product.inStock ? (

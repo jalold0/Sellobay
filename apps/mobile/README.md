@@ -1,8 +1,12 @@
-# @ecom/mobile — Mijoz mobil ilovasi (Expo)
+# Sellobay — Mijoz mobil ilovasi (Expo)
 
 React Native (Expo SDK 51, Expo Router v3) iOS/Android ilova. NativeWind 4 (Tailwind for RN).
+Bitta kodbaza → **Android + iOS** bir vaqtda. Jonli API: `sellobay-web.vercel.app/api` (Neon DB).
 
-## Ishga tushirish
+- Nom: **Sellobay**, bundle: `uz.sellobay.app`
+- Ranglar: bordo `#8B0020` + qora `#0A0A0C` + oltin `#C9A961` (web bilan bir xil)
+
+## Ishga tushirish (Expo Go — bepul, build kerak emas)
 
 ```bash
 pnpm --filter @ecom/mobile dev      # Expo Dev Server (QR kod)
@@ -11,6 +15,20 @@ pnpm --filter @ecom/mobile ios      # iOS simulator (faqat macOS)
 ```
 
 Birinchi marta: telefoningizga **Expo Go** ilovasini o'rnating, QR kodni skan qiling.
+Sellobay telefoningizda ochiladi, kod o'zgarsa real-time yangilanadi.
+
+## Haqiqiy build (EAS)
+
+```bash
+npm install -g eas-cli
+eas login                                            # expo.dev hisobi (GitHub bilan bepul)
+eas build:configure                                  # eas project id biriktiradi
+eas build --platform android --profile preview       # Android APK (bepul)
+eas build --platform ios --profile preview           # iOS (Apple Developer $99/yil kerak)
+eas build --platform android --profile production     # AAB (Play Store)
+```
+
+API manzili: `app.json` → `expo.extra.apiBaseUrl`. Custom domain tayyor bo'lganda shu yerni yangilang.
 
 ## Struktura
 
@@ -31,8 +49,10 @@ app/                          # Expo Router fayllari
 
 src/
 ├── lib/
+│   ├── api.ts                # Jonli API client (sellobay-web.vercel.app/api, mock fallback)
+│   ├── hooks.ts              # React Query: useProducts, useProduct
 │   ├── format.ts             # Deterministik money/date/relative
-│   ├── mock-data.ts          # products/brands/categories
+│   ├── mock-data.ts          # fallback products/brands/categories
 │   └── storage.ts            # MMKV + expo-secure-store helperlari
 ├── store/
 │   ├── cart.ts               # Zustand + MMKV persist
@@ -57,7 +77,8 @@ src/
 
 ## Kelajakda kengaytirish
 
-- **Backend ulashi:** `lib/storage.ts` da api-client qo'shing, `useQuery({ queryFn: ... })` ga ko'chiring
+- **Backend ulashi:** ✅ bajarildi — `lib/api.ts` + `lib/hooks.ts` orqali jonli API (Home, Catalog, Product, Wishlist)
+- **Auth:** ro'yxatdan o'tish/kirish API'ga ulanishi kerak (web Auth bosqichidan keyin)
 - **Push bildirishnomalar:** `expo-notifications` qo'shing, server orqali token registratsiya
 - **Tahliy:** `expo-analytics` yoki Sentry
 - **i18n:** `expo-localization` + `react-intl` yoki o'zimizning `pickLocalized`

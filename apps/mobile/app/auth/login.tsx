@@ -27,7 +27,7 @@ export default function LoginScreen() {
           hitSlop={8}
           className="active:bg-muted h-10 w-10 items-center justify-center rounded-full"
         >
-          <X size={20} color="#0f172a" />
+          <X size={20} color="#0A0A0C" />
         </Pressable>
         <Text className="text-base font-semibold">Kirish</Text>
         <View className="w-10" />
@@ -53,14 +53,14 @@ export default function LoginScreen() {
           <TabButton
             active={tab === 'phone'}
             onPress={() => setTab('phone')}
-            icon={<Phone size={14} color={tab === 'phone' ? '#0f172a' : '#64748b'} />}
+            icon={<Phone size={14} color={tab === 'phone' ? '#0A0A0C' : '#6B6B73'} />}
           >
             Telefon
           </TabButton>
           <TabButton
             active={tab === 'email'}
             onPress={() => setTab('email')}
-            icon={<Mail size={14} color={tab === 'email' ? '#0f172a' : '#64748b'} />}
+            icon={<Mail size={14} color={tab === 'email' ? '#0A0A0C' : '#6B6B73'} />}
           >
             Email
           </TabButton>
@@ -206,7 +206,7 @@ function PhoneForm({ onSuccess }: { onSuccess: () => void }) {
           placeholder="+998 90 123 45 67"
           keyboardType="phone-pad"
           autoComplete="tel"
-          leftIcon={<Phone size={16} color="#64748b" />}
+          leftIcon={<Phone size={16} color="#6B6B73" />}
           hint="SMS orqali tasdiqlash kodi yuboramiz"
         />
         <Button fullWidth size="lg" loading={loading} onPress={sendCode}>
@@ -223,7 +223,7 @@ function PhoneForm({ onSuccess }: { onSuccess: () => void }) {
         className="flex-row items-center gap-1 self-start"
         hitSlop={4}
       >
-        <ArrowLeft size={12} color="#64748b" />
+        <ArrowLeft size={12} color="#6B6B73" />
         <Text className="text-muted-foreground text-xs">Raqamni o&apos;zgartirish</Text>
       </Pressable>
       <Input
@@ -283,7 +283,7 @@ function EmailForm({ onSuccess }: { onSuccess: () => void }) {
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
-        leftIcon={<Mail size={16} color="#64748b" />}
+        leftIcon={<Mail size={16} color="#6B6B73" />}
       />
       <Input
         label="Parol"
@@ -292,7 +292,7 @@ function EmailForm({ onSuccess }: { onSuccess: () => void }) {
         placeholder="••••••••"
         secureTextEntry
         autoComplete="current-password"
-        leftIcon={<Lock size={16} color="#64748b" />}
+        leftIcon={<Lock size={16} color="#6B6B73" />}
       />
       <Button fullWidth size="lg" loading={loading} onPress={submit}>
         Kirish

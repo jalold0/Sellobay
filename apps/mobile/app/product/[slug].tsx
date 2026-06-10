@@ -13,11 +13,21 @@ import {
   Undo2,
 } from 'lucide-react-native';
 import * as React from 'react';
-import { FlatList, Image, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { discountPercent, formatMoney, pickLocalized } from '../../src/lib/format';
-import { findBySlug, getRelatedProducts, productImage, products } from '../../src/lib/mock-data';
+import { useProduct, useProducts } from '../../src/lib/hooks';
+import { productImage } from '../../src/lib/mock-data';
 import { useCart } from '../../src/store/cart';
 import { toast } from '../../src/store/toast';
 import { useWishlist } from '../../src/store/wishlist';
@@ -28,7 +38,7 @@ import { ProductCard } from '../../src/ui/product-card';
 
 const GALLERY_EXTRAS = ['-2', '-3', '-4', '-5'];
 const COLORS = [
-  { id: 'black', label: 'Qora', hex: '#0f172a' },
+  { id: 'black', label: 'Qora', hex: '#0A0A0C' },
   { id: 'red', label: 'Qizil', hex: '#ef4444' },
   { id: 'blue', label: "Ko'k", hex: '#3b82f6' },
   { id: 'amber', label: 'Sariq', hex: '#f59e0b' },
@@ -41,15 +51,35 @@ export default function ProductDetailScreen() {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
 
-  const product = findBySlug(products, slug ?? '');
+  // Jonli API'dan — slug bo'yicha (xato bo'lsa mock fallback)
+  const { data: product, isLoading } = useProduct(slug);
   const [activeImage, setActiveImage] = React.useState(0);
   const [color, setColor] = React.useState(COLORS[0].id);
   const [size, setSize] = React.useState<string | undefined>(undefined);
   const [qty, setQty] = React.useState(1);
 
   const addItem = useCart((s) => s.addItem);
-  const wishlistHas = useWishlist((s) => (product ? s.ids.includes(product.id) : false));
+  const productId = product?.id ?? '';
+  const wishlistHas = useWishlist((s) => (productId ? s.ids.includes(productId) : false));
   const toggleWishlist = useWishlist((s) => s.toggle);
+
+  // O'xshash mahsulotlar — bir kategoriyadan
+  const { data: relatedAll = [] } = useProducts({
+    category: product?.categoryId || undefined,
+    limit: 6,
+  });
+
+  if (isLoading) {
+    return (
+      <View
+        className="bg-background flex-1 items-center justify-center"
+        style={{ paddingTop: insets.top }}
+      >
+        <ActivityIndicator size="large" color="#8B0020" />
+        <Text className="text-muted-foreground mt-3 text-sm">Yuklanmoqda...</Text>
+      </View>
+    );
+  }
 
   if (!product) {
     return (
@@ -73,10 +103,11 @@ export default function ProductDetailScreen() {
   const name = pickLocalized(product.name, 'uz');
   const discount = discountPercent(product.price, product.oldPrice);
   const gallery = [product.imageSeed, ...GALLERY_EXTRAS.map((s) => `${product.imageSeed}${s}`)];
-  const isFootwear = product.categoryId === 'c2';
-  const isClothing = product.categoryId === 'c1';
+  // categoryId endi slug ('shoes' / 'clothing') — API'dan keladi
+  const isFootwear = product.categoryId === 'shoes' || product.categoryId === 'c2';
+  const isClothing = product.categoryId === 'clothing' || product.categoryId === 'c1';
   const sizes = isFootwear ? SIZES_FOOTWEAR : isClothing ? SIZES_CLOTHING : [];
-  const related = getRelatedProducts(product.id, 4);
+  const related = relatedAll.filter((p) => p.id !== product.id).slice(0, 4);
   const selectedColor = COLORS.find((c) => c.id === color);
 
   const onAdd = (buyNow = false) => {
@@ -137,7 +168,7 @@ export default function ProductDetailScreen() {
               className="h-10 w-10 items-center justify-center rounded-full bg-white/90 active:opacity-75"
               hitSlop={6}
             >
-              <ChevronLeft size={20} color="#0f172a" />
+              <ChevronLeft size={20} color="#0A0A0C" />
             </Pressable>
             <View className="flex-row gap-2">
               <Pressable
@@ -145,7 +176,7 @@ export default function ProductDetailScreen() {
                 className="h-10 w-10 items-center justify-center rounded-full bg-white/90 active:opacity-75"
                 hitSlop={6}
               >
-                <Share2 size={18} color="#0f172a" />
+                <Share2 size={18} color="#0A0A0C" />
               </Pressable>
               <Pressable
                 onPress={() => toggleWishlist(product.id)}
@@ -154,8 +185,8 @@ export default function ProductDetailScreen() {
               >
                 <Heart
                   size={18}
-                  color={wishlistHas ? '#e11d48' : '#0f172a'}
-                  fill={wishlistHas ? '#e11d48' : 'transparent'}
+                  color={wishlistHas ? '#B30029' : '#0A0A0C'}
+                  fill={wishlistHas ? '#B30029' : 'transparent'}
                 />
               </Pressable>
             </View>
@@ -313,7 +344,7 @@ export default function ProductDetailScreen() {
                 className="h-9 w-9 items-center justify-center"
                 hitSlop={4}
               >
-                <Minus size={14} color="#0f172a" />
+                <Minus size={14} color="#0A0A0C" />
               </Pressable>
               <Text className="min-w-6 text-center text-base font-semibold">{qty}</Text>
               <Pressable
@@ -321,7 +352,7 @@ export default function ProductDetailScreen() {
                 className="h-9 w-9 items-center justify-center"
                 hitSlop={4}
               >
-                <Plus size={14} color="#0f172a" />
+                <Plus size={14} color="#0A0A0C" />
               </Pressable>
             </View>
           </View>
@@ -336,7 +367,7 @@ export default function ProductDetailScreen() {
               const Icon = d.icon;
               return (
                 <View key={d.text} className="flex-row items-center gap-2">
-                  <Icon size={14} color="#0f172a" />
+                  <Icon size={14} color="#0A0A0C" />
                   <Text className="text-foreground flex-1 text-xs">{d.text}</Text>
                 </View>
               );
@@ -406,7 +437,7 @@ export default function ProductDetailScreen() {
             size="lg"
             onPress={() => onAdd(false)}
             disabled={!product.inStock}
-            leftIcon={<ShoppingBag size={16} color="#0f172a" />}
+            leftIcon={<ShoppingBag size={16} color="#0A0A0C" />}
             style={{ flex: 1 }}
           >
             Savatga

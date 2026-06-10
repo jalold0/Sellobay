@@ -163,7 +163,7 @@ function CartItemRow({
             hitSlop={6}
             className="active:bg-muted h-7 w-7 items-center justify-center rounded-full"
           >
-            <Trash2 size={14} color="#64748b" />
+            <Trash2 size={14} color="#6B6B73" />
           </Pressable>
         </View>
         <View className="mt-auto flex-row items-end justify-between">
@@ -173,7 +173,7 @@ function CartItemRow({
               hitSlop={4}
               className="h-7 w-7 items-center justify-center"
             >
-              <Minus size={12} color="#0f172a" />
+              <Minus size={12} color="#0A0A0C" />
             </Pressable>
             <Text className="min-w-5 text-center text-sm font-semibold">{item.quantity}</Text>
             <Pressable
@@ -181,7 +181,7 @@ function CartItemRow({
               hitSlop={4}
               className="h-7 w-7 items-center justify-center"
             >
-              <Plus size={12} color="#0f172a" />
+              <Plus size={12} color="#0A0A0C" />
             </Pressable>
           </View>
           <Text className="text-foreground text-sm font-bold">

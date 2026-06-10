@@ -3,7 +3,7 @@ import { Heart } from 'lucide-react-native';
 import { FlatList, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { products } from '../../src/lib/mock-data';
+import { useProducts } from '../../src/lib/hooks';
 import { useWishlist } from '../../src/store/wishlist';
 import { Button } from '../../src/ui/button';
 import { EmptyState } from '../../src/ui/empty-state';
@@ -13,7 +13,9 @@ export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const ids = useWishlist((s) => s.ids);
-  const items = products.filter((p) => ids.includes(p.id));
+  // Barcha mahsulotlar (jonli API) — sevimli id'lar bo'yicha filtrlаymiz
+  const { data: allProducts = [] } = useProducts({ limit: 48 });
+  const items = allProducts.filter((p) => ids.includes(p.id));
 
   return (
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>

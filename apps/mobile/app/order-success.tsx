@@ -42,7 +42,7 @@ export default function OrderSuccessScreen() {
           variant="outline"
           size="lg"
           onPress={() => router.replace('/(tabs)/profile')}
-          leftIcon={<Package size={16} color="#0f172a" />}
+          leftIcon={<Package size={16} color="#0A0A0C" />}
         >
           Buyurtmalarimga o&apos;tish
         </Button>

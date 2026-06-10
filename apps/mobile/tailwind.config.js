@@ -5,26 +5,39 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Custom palette — web bilan moslashtirilgan
+        // Sellobay palette — web bilan bir xil (bordo + qora + oltin)
         primary: {
-          DEFAULT: '#0f172a',
-          foreground: '#f8fafc',
+          DEFAULT: '#8B0020', // bordo — CTA, hero, active tab, badge
+          foreground: '#ffffff',
+        },
+        bordeaux: {
+          DEFAULT: '#8B0020',
+          deep: '#5C0015',
+          bright: '#B30029',
+        },
+        dark: {
+          DEFAULT: '#0A0A0C', // brand black
+          soft: '#16161A',
+        },
+        gold: {
+          DEFAULT: '#C9A961', // premium aksent (oq matn UCHUN EMAS)
+          bright: '#E5C77A',
         },
         accent: {
-          DEFAULT: '#e11d48',
-          foreground: '#fff1f2',
+          DEFAULT: '#B30029', // bordo-bright — cart badge, hot (oq matn bilan ishlaydi)
+          foreground: '#ffffff',
         },
         muted: {
-          DEFAULT: '#f1f5f9',
-          foreground: '#64748b',
+          DEFAULT: '#FAF6F4', // iliq neytral fon (web editorial bilan mos)
+          foreground: '#6B6B73',
         },
         card: '#ffffff',
-        border: '#e2e8f0',
+        border: '#EAEAEC',
         background: '#ffffff',
-        foreground: '#0f172a',
-        success: '#10b981',
-        warning: '#f59e0b',
-        danger: '#ef4444',
+        foreground: '#0A0A0C',
+        success: '#16A34A',
+        warning: '#F59E0B',
+        danger: '#DC2626',
       },
       fontFamily: {
         sans: ['System'],

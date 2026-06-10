@@ -4,10 +4,14 @@ import * as React from 'react';
 import { FlatList, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { brands, categories, productImage, products } from '../../src/lib/mock-data';
+import { useProducts } from '../../src/lib/hooks';
+import { brands, categories } from '../../src/lib/mock-data';
 import { CategoryChip } from '../../src/ui/category-chip';
 import { ProductCard } from '../../src/ui/product-card';
 import { SectionHeader } from '../../src/ui/section-header';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const LOGO = require('../../assets/icon.png');
 
 const PERKS = [
   { icon: Truck, title: 'Tezkor', sub: '24 soat' },
@@ -18,8 +22,10 @@ const PERKS = [
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const featured = products.slice(0, 4);
-  const sale = products.filter((p) => p.badge === 'SALE' || p.badge === 'TOP').slice(0, 6);
+  // Jonli API'dan (Neon DB) — xato bo'lsa mock fallback
+  const { data: allProducts = [] } = useProducts({ sort: 'popularity', limit: 12 });
+  const featured = allProducts.slice(0, 4);
+  const sale = allProducts.filter((p) => p.badge === 'SALE' || p.badge === 'TOP').slice(0, 6);
 
   return (
     <ScrollView
@@ -30,22 +36,27 @@ export default function HomeScreen() {
       {/* Top bar */}
       <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-3">
         <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-muted-foreground text-xs">Xush kelibsiz</Text>
-            <Text className="text-foreground text-lg font-bold">E-Commerce</Text>
+          <View className="flex-row items-center gap-2.5">
+            <Image source={LOGO} style={{ width: 38, height: 38, borderRadius: 10 }} />
+            <View>
+              <Text className="text-foreground text-lg font-black tracking-tight">Sellobay</Text>
+              <Text className="text-muted-foreground text-[10px] uppercase tracking-widest">
+                Marketplace
+              </Text>
+            </View>
           </View>
           <Pressable
             hitSlop={8}
             className="bg-muted h-10 w-10 items-center justify-center rounded-full active:opacity-75"
           >
-            <Bell size={18} color="#0f172a" />
+            <Bell size={18} color="#0A0A0C" />
           </Pressable>
         </View>
 
         {/* Search */}
         <Link href="/catalog" asChild>
           <Pressable className="bg-muted mt-3 flex-row items-center gap-2 rounded-full px-4 py-3 active:opacity-75">
-            <Search size={16} color="#64748b" />
+            <Search size={16} color="#6B6B73" />
             <Text className="text-muted-foreground text-sm">Mahsulot, brend qidiring...</Text>
           </Pressable>
         </Link>
@@ -58,11 +69,11 @@ export default function HomeScreen() {
           <Text className="text-[10px] font-medium text-white">Yangi 2026</Text>
         </View>
         <Text className="mt-3 text-2xl font-black leading-tight text-white">
-          Moda va go&apos;zallik
-          <Text className="text-white/80">{'\n'}bozori — yagona joyda</Text>
+          Minglab sotuvchilar
+          <Text className="text-white/80">{'\n'}yagona platformada</Text>
         </Text>
         <Text className="mt-2 max-w-[80%] text-xs text-white/80">
-          Tezkor yetkazib berish, asl mahsulot kafolati va 14 kun qaytarish.
+          Premium brendlar, tezkor yetkazib berish va 14 kun qaytarish.
         </Text>
         <Link href="/catalog" asChild>
           <Pressable className="mt-4 self-start rounded-full bg-white px-5 py-2.5 active:opacity-85">
@@ -81,7 +92,7 @@ export default function HomeScreen() {
               className="border-border bg-card flex-1 items-center rounded-2xl border p-3"
             >
               <View className="bg-muted h-8 w-8 items-center justify-center rounded-full">
-                <Icon size={14} color="#0f172a" />
+                <Icon size={14} color="#8B0020" />
               </View>
               <Text className="text-foreground mt-1.5 text-[11px] font-semibold">{p.title}</Text>
               <Text className="text-muted-foreground text-[10px]">{p.sub}</Text>

@@ -92,7 +92,7 @@ export default function ProfileScreen() {
             <Button
               variant="secondary"
               onPress={() => router.push('/auth/login')}
-              leftIcon={<LogIn size={16} color="#0f172a" />}
+              leftIcon={<LogIn size={16} color="#0A0A0C" />}
               fullWidth
             >
               Kirish yoki ro&apos;yxatdan o&apos;tish
@@ -130,7 +130,7 @@ export default function ProfileScreen() {
                       }`}
                     >
                       <View className="bg-muted h-9 w-9 items-center justify-center rounded-full">
-                        <Icon size={16} color="#0f172a" />
+                        <Icon size={16} color="#0A0A0C" />
                       </View>
                       <Text className="text-foreground flex-1 text-sm font-medium">{it.label}</Text>
                       {it.badge ? (
@@ -159,9 +159,7 @@ export default function ProfileScreen() {
           </Pressable>
         ) : null}
 
-        <Text className="text-muted-foreground text-center text-[10px]">
-          v0.1 · 2026 E-Commerce
-        </Text>
+        <Text className="text-muted-foreground text-center text-[10px]">v1.0 · 2026 Sellobay</Text>
       </View>
     </ScrollView>
   );

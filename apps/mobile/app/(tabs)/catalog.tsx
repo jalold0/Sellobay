@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronDown, Filter, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import * as React from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { pickLocalized } from '../../src/lib/format';
-import { brands, categories, findBySlug, products } from '../../src/lib/mock-data';
+import { useProducts } from '../../src/lib/hooks';
+import { brands, categories, findBySlug } from '../../src/lib/mock-data';
 import { ProductCard } from '../../src/ui/product-card';
 
 type SortKey = 'popularity' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
@@ -32,39 +33,23 @@ export default function CatalogScreen() {
   const [sort, setSort] = React.useState<SortKey>((params.sort as SortKey) ?? 'popularity');
   const [sortOpen, setSortOpen] = React.useState(false);
 
+  // Qidiruvni debounce qilamiz — har harfda so'rov yubormaslik uchun
+  const [debouncedSearch, setDebouncedSearch] = React.useState(search);
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const selectedCategory = params.category ? findBySlug(categories, params.category) : undefined;
   const selectedBrand = params.brand ? findBySlug(brands, params.brand) : undefined;
 
-  const filtered = React.useMemo(() => {
-    let list = products.slice();
-    if (selectedCategory) list = list.filter((p) => p.categoryId === selectedCategory.id);
-    if (selectedBrand) list = list.filter((p) => p.brandId === selectedBrand.id);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          Object.values(p.name).some((n) => n.toLowerCase().includes(q)) ||
-          p.brand.toLowerCase().includes(q),
-      );
-    }
-    switch (sort) {
-      case 'price-asc':
-        list.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        list.sort((a, b) => b.price - a.price);
-        break;
-      case 'rating':
-        list.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'newest':
-        list.sort((a, b) => (a.badge === 'NEW' ? -1 : b.badge === 'NEW' ? 1 : 0));
-        break;
-      default:
-        list.sort((a, b) => b.reviewCount - a.reviewCount);
-    }
-    return list;
-  }, [selectedCategory, selectedBrand, search, sort]);
+  // Jonli API — filtering/sorting backend'da (Postgres)
+  const { data: filtered = [], isLoading } = useProducts({
+    category: params.category,
+    brand: params.brand,
+    q: debouncedSearch.trim() || undefined,
+    sort,
+  });
 
   const clearFilters = () => router.setParams({ category: undefined, brand: undefined });
 
@@ -74,7 +59,7 @@ export default function CatalogScreen() {
       <View className="gap-3 px-4 pb-3 pt-2">
         <View className="flex-row items-center gap-2">
           <View className="bg-muted flex-1 flex-row items-center gap-2 rounded-full px-4 py-2.5">
-            <Search size={16} color="#64748b" />
+            <Search size={16} color="#6B6B73" />
             <TextInput
               value={search}
               onChangeText={setSearch}
@@ -85,7 +70,7 @@ export default function CatalogScreen() {
             />
             {search ? (
               <Pressable hitSlop={6} onPress={() => setSearch('')}>
-                <X size={14} color="#64748b" />
+                <X size={14} color="#6B6B73" />
               </Pressable>
             ) : null}
           </View>
@@ -94,7 +79,7 @@ export default function CatalogScreen() {
             className="border-border bg-card active:bg-muted h-11 w-11 items-center justify-center rounded-full border"
             hitSlop={8}
           >
-            <SlidersHorizontal size={18} color="#0f172a" />
+            <SlidersHorizontal size={18} color="#0A0A0C" />
           </Pressable>
         </View>
 
@@ -159,34 +144,41 @@ export default function CatalogScreen() {
             className="flex-row items-center gap-1"
             hitSlop={4}
           >
-            <Filter size={12} color="#64748b" />
+            <Filter size={12} color="#6B6B73" />
             <Text className="text-muted-foreground text-xs">
               {SORT_OPTIONS.find((o) => o.key === sort)?.label}
             </Text>
-            <ChevronDown size={12} color="#64748b" />
+            <ChevronDown size={12} color="#6B6B73" />
           </Pressable>
         </View>
       </View>
 
       {/* Grid */}
-      <FlatList
-        data={filtered}
-        keyExtractor={(p) => p.id}
-        numColumns={2}
-        columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-        contentContainerStyle={{ gap: 12, paddingBottom: 24, paddingTop: 4 }}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={{ flex: 1, maxWidth: '48.5%' }}>
-            <ProductCard product={item} />
-          </View>
-        )}
-        ListEmptyComponent={
-          <View className="items-center px-6 py-16">
-            <Text className="text-muted-foreground text-sm">Hech narsa topilmadi</Text>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center py-20">
+          <ActivityIndicator size="large" color="#8B0020" />
+          <Text className="text-muted-foreground mt-3 text-sm">Yuklanmoqda...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(p) => p.id}
+          numColumns={2}
+          columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
+          contentContainerStyle={{ gap: 12, paddingBottom: 24, paddingTop: 4 }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <View style={{ flex: 1, maxWidth: '48.5%' }}>
+              <ProductCard product={item} />
+            </View>
+          )}
+          ListEmptyComponent={
+            <View className="items-center px-6 py-16">
+              <Text className="text-muted-foreground text-sm">Hech narsa topilmadi</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 }

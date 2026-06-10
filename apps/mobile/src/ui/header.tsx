@@ -30,7 +30,7 @@ export function Header({ title, showBack, fallbackHref, right, transparent }: Pr
             hitSlop={10}
             className="active:bg-muted h-10 w-10 items-center justify-center rounded-full"
           >
-            <ChevronLeft size={22} color="#0f172a" />
+            <ChevronLeft size={22} color="#0A0A0C" />
           </Pressable>
         ) : (
           <View className="w-10" />

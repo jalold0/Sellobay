@@ -142,7 +142,7 @@ export default function CheckoutScreen() {
               {done ? (
                 <Check size={12} color="#059669" />
               ) : (
-                <Icon size={12} color={active ? '#fff' : '#64748b'} />
+                <Icon size={12} color={active ? '#fff' : '#6B6B73'} />
               )}
               <Text
                 className={cn(
@@ -266,7 +266,7 @@ export default function CheckoutScreen() {
                   <Text className="font-medium">{p.label}</Text>
                   <Text className="text-muted-foreground text-xs">{p.sub}</Text>
                 </View>
-                {payment === p.id ? <Check size={16} color="#0f172a" /> : null}
+                {payment === p.id ? <Check size={16} color="#0A0A0C" /> : null}
               </Pressable>
             ))}
             <View className="bg-muted mt-2 flex-row items-center gap-2 rounded-md p-2.5">
@@ -358,7 +358,7 @@ function Header({ onBack, title }: { onBack: () => void; title: string }) {
         hitSlop={8}
         className="active:bg-muted h-10 w-10 items-center justify-center rounded-full"
       >
-        <ChevronLeft size={22} color="#0f172a" />
+        <ChevronLeft size={22} color="#0A0A0C" />
       </Pressable>
       <Text className="flex-1 text-center text-base font-semibold">{title}</Text>
       <View className="w-10" />

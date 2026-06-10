@@ -80,7 +80,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'default' || variant === 'destructive' ? '#fff' : '#0f172a'}
+          color={variant === 'default' || variant === 'destructive' ? '#fff' : '#0A0A0C'}
         />
       ) : (
         leftIcon

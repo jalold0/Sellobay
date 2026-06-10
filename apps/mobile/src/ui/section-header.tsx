@@ -20,7 +20,7 @@ export function SectionHeader({ title, description, actionLabel, actionHref }: P
         <Link href={actionHref as never} asChild>
           <Pressable className="flex-row items-center gap-0.5">
             <Text className="text-primary text-xs">{actionLabel}</Text>
-            <ChevronRight size={12} color="#0f172a" />
+            <ChevronRight size={12} color="#0A0A0C" />
           </Pressable>
         </Link>
       ) : null}
