@@ -1,13 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronDown, Filter, Search, SlidersHorizontal, X } from 'lucide-react-native';
 import * as React from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { pickLocalized } from '../../src/lib/format';
+import { haptics } from '../../src/lib/haptics';
 import { useProducts } from '../../src/lib/hooks';
 import { brands, categories, findBySlug } from '../../src/lib/mock-data';
 import { ProductCard } from '../../src/ui/product-card';
+import { ProductGridSkeleton } from '../../src/ui/skeleton';
 
 type SortKey = 'popularity' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
 
@@ -117,6 +119,7 @@ export default function CatalogScreen() {
               <Pressable
                 key={o.key}
                 onPress={() => {
+                  haptics.select();
                   setSort(o.key);
                   setSortOpen(false);
                 }}
@@ -155,10 +158,7 @@ export default function CatalogScreen() {
 
       {/* Grid */}
       {isLoading ? (
-        <View className="flex-1 items-center justify-center py-20">
-          <ActivityIndicator size="large" color="#8B0020" />
-          <Text className="text-muted-foreground mt-3 text-sm">Yuklanmoqda...</Text>
-        </View>
+        <ProductGridSkeleton count={6} />
       ) : (
         <FlatList
           data={filtered}

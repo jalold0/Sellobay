@@ -1,24 +1,20 @@
 'use client';
 
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@ecom/ui';
 import { ChevronDown, Globe } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
 
 const LOCALES = [
   { code: 'uz', label: "O'zbek", flag: '🇺🇿' },
   { code: 'ru', label: 'Русский', flag: '🇷🇺' },
   { code: 'en', label: 'English', flag: '🇬🇧' },
-];
+] as const;
 
 export function LocaleSwitcher({ current }: { current: string }) {
-  const [open, setOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
-  const activeFlag = LOCALES.find((l) => l.code === current)?.flag ?? '🇺🇿';
-
   const switchTo = (code: string) => {
-    setOpen(false);
     if (code === current) return;
     const segments = pathname.split('/');
     if (LOCALES.some((l) => l.code === segments[1])) {
@@ -27,40 +23,31 @@ export function LocaleSwitcher({ current }: { current: string }) {
       segments.splice(1, 0, code);
     }
     router.push(segments.join('/') || `/${code}`);
+    router.refresh();
   };
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-accent"
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold outline-none transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/30"
+        aria-label="Til tanlash"
       >
-        <Globe size={12} />
-        <span>{activeFlag}</span>
-        <span className="uppercase">{current}</span>
-        <ChevronDown size={12} />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-lg border bg-background shadow-lg">
-            {LOCALES.map((l) => (
-              <button
-                key={l.code}
-                type="button"
-                onClick={() => switchTo(l.code)}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent ${
-                  l.code === current ? 'bg-accent font-medium' : ''
-                }`}
-              >
-                <span>{l.flag}</span>
-                <span>{l.label}</span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+        <Globe size={13} />
+        <span className="uppercase tracking-wider">{current}</span>
+        <ChevronDown size={12} className="opacity-70" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={6} className="min-w-[160px]">
+        {LOCALES.map((l) => (
+          <DropdownMenuItem
+            key={l.code}
+            onSelect={() => switchTo(l.code)}
+            className={l.code === current ? 'bg-accent font-medium' : ''}
+          >
+            <span className="mr-2 text-base leading-none">{l.flag}</span>
+            <span>{l.label}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

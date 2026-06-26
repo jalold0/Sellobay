@@ -2,13 +2,15 @@
 
 import { Button, Card, CardContent, Checkbox, Input, Label, toast } from '@ecom/ui';
 import { Loader2, Lock, Mail, Phone, User } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
+import { registerWithEmail } from '@/lib/auth/client';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const params = useSearchParams();
   const isSellerRole = params.get('role') === 'seller';
 
@@ -25,18 +27,31 @@ export default function RegisterPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.accept) {
-      toast({ title: 'Shartlarga roziligingizni bildiring', variant: 'warning' });
+      toast({ title: t('acceptWarning'), variant: 'warning' });
       return;
     }
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitting(false);
-    toast({
-      title: isSellerRole ? "Sotuvchi arizasi qabul qilindi" : "Hisob yaratildi",
-      description: isSellerRole ? "24 soat ichida xabarlashamiz" : "Profil bo'limiga o'tamiz",
-      variant: 'success',
+    const result = await registerWithEmail({
+      email: form.email.trim() || undefined,
+      phone: form.phone.trim() || undefined,
+      password: form.password,
+      firstName: form.firstName.trim() || undefined,
+      lastName: form.lastName.trim() || undefined,
+      role: isSellerRole ? 'seller' : 'customer',
     });
-    router.push(isSellerRole ? '/' : '/profile');
+    setSubmitting(false);
+    if (!result.success) {
+      toast({ title: result.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: isSellerRole ? t('sellerApplied') : t('accountCreated'),
+      description: isSellerRole ? t('sellerAppliedHint') : t('accountCreatedHint'),
+      variant: 'success',
+      duration: isSellerRole ? 6000 : 3000,
+    });
+    router.push(isSellerRole ? '/sell' : '/profile');
+    router.refresh();
   };
 
   return (
@@ -45,21 +60,19 @@ export default function RegisterPage() {
         <CardContent className="space-y-5 p-6 md:p-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight">
-              {isSellerRole ? "Sotuvchi bo'lish" : "Ro'yxatdan o'tish"}
+              {isSellerRole ? t('sellerApplyTitle') : t('registerTitle')}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isSellerRole
-                ? 'Tayyorlangan formani to`ldiring, biz bog`lanamiz'
-                : "Bir necha soniyada hisob yarating"}
+            <p className="text-muted-foreground mt-1 text-sm">
+              {isSellerRole ? t('sellerSubtitle') : t('registerSubtitle')}
             </p>
           </div>
 
           <form onSubmit={submit} className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label className="text-xs">Ism</Label>
+                <Label className="text-xs">{t('firstName')}</Label>
                 <div className="relative">
-                  <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <User className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                   <Input
                     value={form.firstName}
                     onChange={(e) => setForm({ ...form, firstName: e.target.value })}
@@ -69,7 +82,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div>
-                <Label className="text-xs">Familiya</Label>
+                <Label className="text-xs">{t('lastName')}</Label>
                 <Input
                   value={form.lastName}
                   onChange={(e) => setForm({ ...form, lastName: e.target.value })}
@@ -78,22 +91,22 @@ export default function RegisterPage() {
               </div>
             </div>
             <div>
-              <Label className="text-xs">Telefon</Label>
+              <Label className="text-xs">{t('phone')}</Label>
               <div className="relative">
-                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Phone className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                 <Input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                   className="pl-9"
-                  placeholder="+998 90 123 45 67"
+                  placeholder={t('phonePlaceholder')}
                   required
                 />
               </div>
             </div>
             <div>
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">{t('email')}</Label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Mail className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                 <Input
                   type="email"
                   value={form.email}
@@ -104,9 +117,9 @@ export default function RegisterPage() {
               </div>
             </div>
             <div>
-              <Label className="text-xs">Parol</Label>
+              <Label className="text-xs">{t('password')}</Label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Lock className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                 <Input
                   type="password"
                   value={form.password}
@@ -116,9 +129,7 @@ export default function RegisterPage() {
                   required
                 />
               </div>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Kamida 8 ta belgi, harf va raqam aralash
-              </p>
+              <p className="text-muted-foreground mt-1 text-[11px]">{t('passwordHint')}</p>
             </div>
 
             <label className="flex items-start gap-2 pt-1 text-xs">
@@ -128,30 +139,30 @@ export default function RegisterPage() {
                 className="mt-0.5"
               />
               <span>
-                Men{' '}
+                {t('acceptTermsPrefix')}{' '}
                 <Link href="/terms" className="text-primary hover:underline">
-                  foydalanish shartlari
+                  {t('termsLinkLower')}
                 </Link>{' '}
-                va{' '}
+                {t('acceptTermsMid')}{' '}
                 <Link href="/privacy" className="text-primary hover:underline">
-                  maxfiylik siyosati
+                  {t('privacyLinkLower')}
                 </Link>
-                ga roziman
+                {t('acceptTermsSuffix')}
               </span>
             </label>
 
             <Button type="submit" disabled={submitting} className="w-full">
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSellerRole ? 'Ariza yuborish' : "Ro'yxatdan o'tish"}
+              {isSellerRole ? t('sellerSubmit') : t('registerSubmit')}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <p className="mt-4 text-center text-sm text-muted-foreground">
-        Hisobingiz bormi?{' '}
-        <Link href="/login" className="font-medium text-primary hover:underline">
-          Kirish
+      <p className="text-muted-foreground mt-4 text-center text-sm">
+        {t('haveAccount')}{' '}
+        <Link href="/login" className="text-primary font-medium hover:underline">
+          {t('loginLink')}
         </Link>
       </p>
     </div>

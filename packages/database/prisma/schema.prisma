@@ -7,7 +7,8 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+  // relationJoins: bitta LATERAL JOIN bilan relation yuklash (N+1 IN-query'lar o'rniga)
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions", "relationJoins"]
 }
 
 datasource db {
@@ -467,6 +468,14 @@ model Product {
   @@index([status])
   @@index([slug])
   @@index([searchVector], type: Gin)
+  // Katalog filter+sort patternlari uchun composite indexlar.
+  // Filtr: status=ACTIVE AND deletedAt IS NULL, keyin sort ustuni bo'yicha.
+  // Bitta index scan'da ham filtr ham sort bajariladi (sort qadami tushib qoladi).
+  @@index([status, deletedAt, soldCount(sort: Desc)])
+  @@index([status, deletedAt, publishedAt(sort: Desc)])
+  @@index([status, deletedAt, rating(sort: Desc)])
+  @@index([status, deletedAt, basePrice])
+  @@index([isFeatured, status])
 }
 
 model ProductCategory {

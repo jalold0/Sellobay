@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { UpdateBanner } from '../src/components/update-banner';
 import { useSession } from '../src/store/session';
 import { Toaster } from '../src/ui/toaster';
 
@@ -33,6 +34,7 @@ export default function RootLayout() {
           />
           <Stack.Screen name="checkout" options={{ presentation: 'card' }} />
         </Stack>
+        <UpdateBanner />
         <Toaster />
         <StatusBar style="dark" />
       </SafeAreaProvider>

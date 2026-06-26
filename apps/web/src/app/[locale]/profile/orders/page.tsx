@@ -1,34 +1,63 @@
 'use client';
 
-import { Card, EmptyState, StatusBadge } from '@ecom/ui';
+import { Card, EmptyState, Skeleton, StatusBadge } from '@ecom/ui';
 import { Package } from 'lucide-react';
 import Link from 'next/link';
+import * as React from 'react';
 
 import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '../../../../lib/order-status';
 import { formatDate as fmtDate, formatMoney } from '../../../../lib/format';
 
-// Mock buyurtmalar — backend tayyor bo'lganda useQuery'ga ko'chiriladi
-const MOCK_ORDERS: Array<{
+interface OrderItem {
   id: string;
   number: string;
   status: keyof typeof ORDER_STATUS_LABELS;
-  total: number;
-  itemsCount: number;
+  grandTotal: string;
   placedAt: string;
-}> = [
-  { id: 'o1', number: 'ORD-2026-00001234', status: 'DELIVERED', total: 2_350_000, itemsCount: 3, placedAt: '2026-05-15' },
-  { id: 'o2', number: 'ORD-2026-00001456', status: 'SHIPPED', total: 890_000, itemsCount: 1, placedAt: '2026-06-01' },
-  { id: 'o3', number: 'ORD-2026-00001789', status: 'PROCESSING', total: 1_490_000, itemsCount: 2, placedAt: '2026-06-04' },
-];
+  itemCount: number;
+}
+
+interface ApiResult<T> {
+  success: boolean;
+  data?: T;
+  error?: { message: string };
+}
 
 export default function MyOrdersPage() {
-  if (MOCK_ORDERS.length === 0) {
+  const [orders, setOrders] = React.useState<OrderItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch('/api/orders', { credentials: 'same-origin' })
+      .then((r) => r.json() as Promise<ApiResult<{ items: OrderItem[] }>>)
+      .then((res) => {
+        if (res.success && res.data) setOrders(res.data.items);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
     return (
-      <EmptyState
-        icon={Package}
-        title="Hali buyurtmalar yo`q"
-        description="Birinchi buyurtmangizni amalga oshiring"
-      />
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-48" />
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-20" />
+        ))}
+      </div>
+    );
+  }
+
+  if (orders.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Buyurtmalarim</h1>
+        <EmptyState
+          icon={Package}
+          title="Hali buyurtmalar yo`q"
+          description="Birinchi buyurtmangizni amalga oshiring"
+        />
+      </div>
     );
   }
 
@@ -36,21 +65,29 @@ export default function MyOrdersPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Buyurtmalarim</h1>
       <ul className="space-y-3">
-        {MOCK_ORDERS.map((o) => (
+        {orders.map((o) => (
           <Card key={o.id} className="p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Link href={`/profile/orders/${o.id}`} className="font-mono font-semibold hover:underline">
+                <Link
+                  href={`/profile/orders/${o.id}`}
+                  className="font-mono font-semibold hover:underline"
+                >
                   {o.number}
                 </Link>
-                <div className="mt-0.5 text-xs text-muted-foreground">
-                  {fmtDate(o.placedAt)} · {o.itemsCount} ta mahsulot
+                <div className="text-muted-foreground mt-0.5 text-xs">
+                  {fmtDate(o.placedAt)} · {o.itemCount} ta mahsulot
                 </div>
               </div>
-              <StatusBadge tone={ORDER_STATUS_TONE[o.status]}>{ORDER_STATUS_LABELS[o.status]}</StatusBadge>
+              <StatusBadge tone={ORDER_STATUS_TONE[o.status] ?? 'neutral'}>
+                {ORDER_STATUS_LABELS[o.status] ?? o.status}
+              </StatusBadge>
               <div className="text-right">
-                <div className="text-base font-bold">{formatMoney(o.total)}</div>
-                <Link href={`/profile/orders/${o.id}`} className="text-xs text-primary hover:underline">
+                <div className="text-base font-bold">{formatMoney(Number(o.grandTotal))}</div>
+                <Link
+                  href={`/profile/orders/${o.id}`}
+                  className="text-primary text-xs hover:underline"
+                >
                   Batafsil
                 </Link>
               </div>

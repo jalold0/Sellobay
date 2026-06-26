@@ -1,176 +1,121 @@
 import { Button } from '@ecom/ui';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Sparkles, Truck } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { pickLocale, productImage, type Locale, type MockProduct } from '../../lib/mock-data';
-import { SellobayMark } from '../brand/sellobay-mark';
+import { type Locale, type MockProduct } from '../../lib/mock-data';
 
 interface Props {
   locale: Locale;
-  heroProducts: MockProduct[]; // 3 ta — UMBRA-style staggered editorial
+  heroProducts: MockProduct[];
 }
 
-// Sellobay Hero — UMBRA editorial inspiration: 3 staggered tilted images + light bg + bordo CTA
-export function HeroSection({ locale, heroProducts }: Props) {
-  // 3 ta xaqqoniy mahsulot (yo'q bo'lsa fallback)
-  const products = heroProducts.slice(0, 3);
-  while (products.length < 3 && heroProducts.length > 0) {
-    products.push(heroProducts[0]!);
-  }
+export function HeroSection({ locale: _locale, heroProducts: _heroProducts }: Props) {
+  const t = useTranslations('hero');
 
   return (
-    <section className="bg-editorial relative overflow-hidden rounded-[2rem] px-4 py-12 md:px-10 md:py-20">
-      {/* Subtle decorative orbs — premium soft light */}
-      <div className="bg-brand-bordeaux/[0.04] absolute -right-32 -top-32 h-96 w-96 rounded-full blur-3xl" />
-      <div className="bg-brand-gold/[0.06] absolute -bottom-32 -left-32 h-80 w-80 rounded-full blur-3xl" />
+    <section className="relative -mx-4 overflow-hidden md:-mx-6 lg:-mx-8 xl:mx-0 xl:rounded-[2rem]">
+      <div className="relative h-[560px] w-full md:h-[640px] lg:h-[720px]">
+        <Image
+          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=2400&q=85&auto=format&fit=crop"
+          alt="Sellobay marketplace"
+          fill
+          sizes="100vw"
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-      {/* ===== Brand bar — UMBRA-style horizontal pill (yuqori markaz) ===== */}
-      <div className="relative mx-auto mb-10 flex max-w-3xl items-center justify-between rounded-full border border-white/60 bg-white/90 px-5 py-3 shadow-lg backdrop-blur md:mb-16">
-        {/* Sellobay wordmark */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <SellobayMark size={36} className="shadow-md" priority />
-          <span className="text-foreground text-lg font-extrabold tracking-tight">Sellobay</span>
-        </Link>
+        <div className="absolute inset-0 flex items-center">
+          <div className="mx-auto w-full max-w-7xl px-6 md:px-10 lg:px-14">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur">
+                <Sparkles size={12} className="text-brand-gold" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/95">
+                  {t('eyebrow')}
+                </span>
+              </div>
 
-        {/* Center tagline — desktop only */}
-        <div className="text-muted-foreground hidden items-center gap-1.5 text-xs font-medium uppercase tracking-[0.15em] md:flex">
-          <Sparkles size={12} className="text-brand-gold" />
-          Marketplace · 50,000+ sotuvchi
+              <h1 className="font-display mt-5 text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
+                {t('headlineLine1')}
+                <br />
+                <span className="via-brand-gold bg-gradient-to-r from-white to-white bg-clip-text text-transparent">
+                  {t('headlineLine2')}
+                </span>
+              </h1>
+
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-white/85 sm:text-lg">
+                {t('subheadline')}
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-bordeaux-gradient shadow-bordeaux px-7 text-base font-semibold text-white hover:opacity-95"
+                >
+                  <Link href="/catalog">
+                    {t('ctaShop')}
+                    <ArrowRight size={18} className="ml-2" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 bg-white/10 px-7 text-base font-semibold text-white backdrop-blur hover:bg-white/20"
+                >
+                  <Link href="/sell">{t('ctaSell')}</Link>
+                </Button>
+              </div>
+
+              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-white/15 pt-6 text-xs font-medium text-white/85">
+                <div className="flex items-center gap-1.5">
+                  <Truck size={14} className="text-brand-gold" />
+                  <span>{t('trustFast')}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck size={14} className="text-brand-gold" />
+                  <span>{t('trustAuthentic')}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-brand-gold" />
+                  <span>{t('trustReturn')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Shop Now CTA — bordo pill */}
-        <Button
-          asChild
-          size="sm"
-          className="bg-bordeaux-gradient shadow-bordeaux rounded-full px-5 font-semibold text-white hover:opacity-95"
-        >
-          <Link href="/catalog">
-            Xarid qilish
-            <ArrowRight size={14} className="ml-1" />
+        {_heroProducts[0] ? (
+          <Link
+            href={`/product/${_heroProducts[0].slug}`}
+            className="absolute right-10 top-1/2 hidden -translate-y-1/2 lg:block"
+          >
+            <div className="group relative w-[280px] overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-2xl">
+              <div className="relative aspect-[4/5]">
+                <Image
+                  src={`https://picsum.photos/seed/${_heroProducts[0].imageSeed}/600/750`}
+                  alt={_heroProducts[0].brand}
+                  fill
+                  sizes="280px"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                <div className="text-brand-gold text-[10px] font-bold uppercase tracking-[0.2em]">
+                  {t('editorsPick')}
+                </div>
+                <div className="mt-1 line-clamp-2 text-sm font-semibold leading-tight">
+                  {_heroProducts[0].brand}
+                </div>
+              </div>
+            </div>
           </Link>
-        </Button>
-      </div>
-
-      {/* ===== Editorial heading — markaziy ===== */}
-      <div className="relative mx-auto mb-12 max-w-4xl px-4 text-center md:mb-16">
-        <span className="text-brand-bordeaux mb-4 inline-block text-[11px] font-bold uppercase tracking-[0.25em]">
-          Premium · 2026 Kolleksiya
-        </span>
-        <h1 className="fade-up text-foreground font-display text-4xl font-black leading-[1.02] tracking-tight md:text-6xl lg:text-7xl">
-          Minglab sotuvchilar.
-          <br />
-          <span className="from-brand-bordeaux via-brand-bordeaux-deep to-brand-black bg-gradient-to-r bg-clip-text text-transparent">
-            Yagona platforma.
-          </span>
-        </h1>
-        <p className="text-muted-foreground mx-auto mt-5 max-w-xl text-base md:text-lg">
-          O&apos;zbekistondagi eng yirik marketplace. Premium brendlar, mahalliy sotuvchilar va
-          tezkor yetkazib berish — bitta joyda.
-        </p>
-      </div>
-
-      {/* ===== 3 staggered tilted images — UMBRA bento ===== */}
-      <div className="relative mx-auto grid max-w-6xl grid-cols-12 items-end gap-3 md:gap-6">
-        {/* Image 1 — Chap, kichik, qiya, biroz pastroqda */}
-        <Link
-          href={`/product/${products[0]?.slug ?? 'featured-1'}`}
-          className="col-span-4 -mb-4 md:col-span-3 md:col-start-2 md:-mb-12"
-        >
-          <div className="editorial-card tilt-left aspect-[3/4] bg-white">
-            <Image
-              src={productImage(products[0]?.imageSeed ?? 'hero-1', 600)}
-              alt={products[0] ? pickLocale(products[0].name, locale) : 'Featured 1'}
-              fill
-              sizes="(max-width: 768px) 30vw, 250px"
-              className="object-cover"
-              priority
-            />
-            <div className="absolute bottom-3 left-3 right-3">
-              <div className="text-[9px] font-bold uppercase tracking-widest text-white/90 drop-shadow">
-                {products[0]?.brand ?? 'Brand'}
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* Image 2 — Markaz, katta, dramatic, dominant */}
-        <Link
-          href={`/product/${products[1]?.slug ?? 'featured-2'}`}
-          className="col-span-8 md:col-span-5"
-        >
-          <div className="editorial-card aspect-[4/5] bg-white">
-            <Image
-              src={productImage(products[1]?.imageSeed ?? 'hero-2', 900)}
-              alt={products[1] ? pickLocale(products[1].name, locale) : 'Hero product'}
-              fill
-              sizes="(max-width: 768px) 60vw, 500px"
-              className="object-cover"
-              priority
-            />
-            {/* Dramatic overlay for that UMBRA glow */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-
-            {/* Brand mark + label */}
-            <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
-              <div className="text-white">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-90">
-                  {products[1]?.brand ?? 'Premium'}
-                </div>
-                <div className="mt-1 text-base font-bold leading-tight md:text-lg">
-                  {products[1] ? pickLocale(products[1].name, locale) : "Eng so'nggi tushgan"}
-                </div>
-              </div>
-              <span className="glass-light text-foreground rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider">
-                Ko&apos;rish →
-              </span>
-            </div>
-          </div>
-        </Link>
-
-        {/* Image 3 — O'ng, o'rta, biroz qiya teskari */}
-        <Link
-          href={`/product/${products[2]?.slug ?? 'featured-3'}`}
-          className="col-span-4 -mb-6 md:col-span-3 md:-mb-10"
-        >
-          <div className="editorial-card tilt-right aspect-[3/4] bg-white">
-            <Image
-              src={productImage(products[2]?.imageSeed ?? 'hero-3', 600)}
-              alt={products[2] ? pickLocale(products[2].name, locale) : 'Featured 3'}
-              fill
-              sizes="(max-width: 768px) 30vw, 250px"
-              className="object-cover"
-              priority
-            />
-            <div className="absolute bottom-3 left-3 right-3">
-              <div className="text-[9px] font-bold uppercase tracking-widest text-white/90 drop-shadow">
-                {products[2]?.brand ?? 'Brand'}
-              </div>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* ===== Bottom trust micro-stats ===== */}
-      <div className="relative mx-auto mt-16 grid max-w-4xl grid-cols-3 gap-4 px-4 md:mt-24">
-        <div className="text-center">
-          <div className="text-brand-bordeaux text-2xl font-black md:text-3xl">50,000+</div>
-          <div className="text-muted-foreground mt-1 text-[10px] font-bold uppercase tracking-widest md:text-xs">
-            Sotuvchi
-          </div>
-        </div>
-        <div className="text-center">
-          <div className="text-brand-bordeaux text-2xl font-black md:text-3xl">2M+</div>
-          <div className="text-muted-foreground mt-1 text-[10px] font-bold uppercase tracking-widest md:text-xs">
-            Mahsulot
-          </div>
-        </div>
-        <div className="text-center">
-          <div className="text-brand-bordeaux text-2xl font-black md:text-3xl">99.2%</div>
-          <div className="text-muted-foreground mt-1 text-[10px] font-bold uppercase tracking-widest md:text-xs">
-            Ishonch
-          </div>
-        </div>
+        ) : null}
       </div>
     </section>
   );

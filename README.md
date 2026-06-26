@@ -37,8 +37,10 @@ packages/
   types/, utils/, auth/, i18n/
 
 docs/
-  TZ_SELLOBAY.md   — Texnik vazifa (700+ qator)
+  ROADMAP.md          — ⭐ Master roadmap & progress (yagona haqiqat manbai)
+  TZ_SELLOBAY.md      — Texnik vazifa (700+ qator)
   ARCHITECTURE.md, API.md, DEPLOYMENT.md
+  SELLOBAY_GLOBAL.md  — Chegaralararo integratsiya rejasi (Xitoy → Turkiya/Koreya → ...)
 ```
 
 ## 🚀 Lokal ishga tushirish

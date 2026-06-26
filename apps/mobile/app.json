@@ -28,11 +28,27 @@
         "backgroundColor": "#8B0020"
       }
     },
-    "web": { "bundler": "metro", "favicon": "./assets/favicon.png" },
-    "plugins": ["expo-router", "expo-secure-store"],
-    "experiments": { "typedRoutes": true },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router", "expo-secure-store", "expo-asset", "expo-font"],
+    "experiments": {
+      "typedRoutes": true
+    },
     "extra": {
-      "apiBaseUrl": "https://sellobay-web.vercel.app"
+      "apiBaseUrl": "https://sellobay-web.vercel.app",
+      "router": {},
+      "eas": {
+        "projectId": "c2816815-4df2-4c21-9559-2bfa640d6254"
+      }
+    },
+    "owner": "jalold0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c2816815-4df2-4c21-9559-2bfa640d6254"
     }
   }
 }

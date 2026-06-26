@@ -2,14 +2,16 @@
 
 import { create } from 'zustand';
 
-import { secureStorage, STORAGE_KEYS } from '../lib/storage';
+import { secureStorage, storage, STORAGE_KEYS } from '../lib/storage';
+
+const USER_KEY = 'ecom_user_v1';
 
 interface User {
   id: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  email?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  email?: string | null;
 }
 
 interface SessionState {
@@ -28,17 +30,9 @@ export const useSession = create<SessionState>((set) => ({
   hydrate: async () => {
     try {
       const access = await secureStorage.get(STORAGE_KEYS.accessToken);
-      // Real holatda token'dan user info ajratiladi (JWT decode)
-      if (access) {
-        set({
-          user: {
-            id: 'demo',
-            firstName: 'Foydalanuvchi',
-            phone: '+998 90 *** ** 00',
-          },
-          isAuthenticated: true,
-          loading: false,
-        });
+      const userRaw = storage.getString(USER_KEY);
+      if (access && userRaw) {
+        set({ user: JSON.parse(userRaw) as User, isAuthenticated: true, loading: false });
       } else {
         set({ user: null, isAuthenticated: false, loading: false });
       }
@@ -49,11 +43,13 @@ export const useSession = create<SessionState>((set) => ({
   signIn: async (user, accessToken, refreshToken) => {
     await secureStorage.set(STORAGE_KEYS.accessToken, accessToken);
     await secureStorage.set(STORAGE_KEYS.refreshToken, refreshToken);
+    storage.setString(USER_KEY, JSON.stringify(user));
     set({ user, isAuthenticated: true });
   },
   signOut: async () => {
     await secureStorage.remove(STORAGE_KEYS.accessToken);
     await secureStorage.remove(STORAGE_KEYS.refreshToken);
+    storage.delete(USER_KEY);
     set({ user: null, isAuthenticated: false });
   },
 }));

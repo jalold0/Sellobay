@@ -3,78 +3,72 @@
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { apiClient } from '../lib/api-client';
-import {
-  type AdminSession,
-  canAccessAdmin,
-  decodeJwt,
-  getStoredSession,
-  hasRole,
-  type UserRole,
-} from '../lib/auth';
+import { logoutAdmin, meAdmin, type AdminUser } from '@/lib/auth/client';
+
+// Admin sessiya — cookie-based (httpOnly), real /api/auth/me orqali olinadi.
+// Eski localStorage tokenli api-client o'rnatildi.
+export interface AdminSession {
+  userId: string;
+  email: string | null;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  roles: string[];
+  avatarUrl?: string | null;
+}
 
 interface SessionContextValue {
   session: AdminSession | null;
   isLoading: boolean;
-  signIn: (accessToken: string, refreshToken?: string) => void;
-  signOut: () => void;
-  has: (...roles: UserRole[]) => boolean;
+  signOut: () => Promise<void>;
+  has: (...roles: string[]) => boolean;
 }
 
 const SessionContext = React.createContext<SessionContextValue | null>(null);
 
-// Demo session — useMockData rejimida login bo'lmasa ham admin'ga kirish.
-const DEMO_SESSION: AdminSession = {
-  userId: 'demo-admin',
-  roles: ['SUPER_ADMIN'],
-  firstName: 'Demo',
-  lastName: 'Admin',
-  email: 'admin@example.uz',
-  exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
-};
+function userToSession(u: AdminUser): AdminSession {
+  return {
+    userId: u.id,
+    email: u.email,
+    phone: u.phone,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    roles: u.roles ?? [],
+  };
+}
 
-export function SessionProvider({
-  children,
-  allowDemo = true,
-}: {
-  children: React.ReactNode;
-  allowDemo?: boolean;
-}) {
+export function SessionProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [session, setSession] = React.useState<AdminSession | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const stored = getStoredSession();
-    if (stored && canAccessAdmin(stored)) {
-      setSession(stored);
-    } else if (allowDemo) {
-      setSession(DEMO_SESSION);
-    }
-    setIsLoading(false);
-  }, [allowDemo]);
-
-  const signIn = React.useCallback((accessToken: string, refreshToken?: string) => {
-    apiClient.setTokens(accessToken, refreshToken);
-    const decoded = decodeJwt(accessToken);
-    setSession(decoded);
+    let mounted = true;
+    meAdmin().then((res) => {
+      if (!mounted) return;
+      if (res.success) setSession(userToSession(res.data.user));
+      setIsLoading(false);
+    });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const signOut = React.useCallback(() => {
-    apiClient.clearTokens();
+  const signOut = React.useCallback(async () => {
+    await logoutAdmin();
     setSession(null);
     router.push('/login');
+    router.refresh();
   }, [router]);
 
+  const has = React.useCallback(
+    (...roles: string[]) => !!session && roles.some((r) => session.roles.includes(r)),
+    [session],
+  );
+
   const value = React.useMemo<SessionContextValue>(
-    () => ({
-      session,
-      isLoading,
-      signIn,
-      signOut,
-      has: (...roles) => hasRole(session, ...roles),
-    }),
-    [session, isLoading, signIn, signOut],
+    () => ({ session, isLoading, signOut, has }),
+    [session, isLoading, signOut, has],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

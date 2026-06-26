@@ -2,36 +2,44 @@
 
 import { Sheet, SheetContent, SheetTrigger } from '@ecom/ui';
 import { ChevronRight, Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
-const CATEGORIES = [
-  { slug: 'clothing', label: 'Kiyim-kechak', emoji: '👕' },
-  { slug: 'shoes', label: 'Poyabzal', emoji: '👟' },
-  { slug: 'perfume', label: 'Atirlar', emoji: '🌸' },
-  { slug: 'cosmetics', label: 'Kosmetika', emoji: '💄' },
-  { slug: 'beauty', label: "Go'zallik", emoji: '✨' },
-  { slug: 'accessories', label: 'Aksessuarlar', emoji: '👜' },
+type CatSlug = 'clothing' | 'shoes' | 'perfume' | 'cosmetics' | 'beauty' | 'accessories';
+const CATEGORIES: { slug: CatSlug; emoji: string }[] = [
+  { slug: 'clothing', emoji: '👕' },
+  { slug: 'shoes', emoji: '👟' },
+  { slug: 'perfume', emoji: '🌸' },
+  { slug: 'cosmetics', emoji: '💄' },
+  { slug: 'beauty', emoji: '✨' },
+  { slug: 'accessories', emoji: '👜' },
 ];
 
-const QUICK_LINKS = [
-  { href: '/profile', label: 'Profil', icon: User },
-  { href: '/profile/wishlist', label: 'Sevimlilar', icon: Heart },
-  { href: '/orders', label: 'Buyurtmalarim', icon: ShoppingBag },
+type NavKey = 'profile' | 'wishlist' | 'myOrders';
+const QUICK_LINKS: { href: string; key: NavKey; icon: typeof User }[] = [
+  { href: '/profile', key: 'profile', icon: User },
+  { href: '/profile/wishlist', key: 'wishlist', icon: Heart },
+  { href: '/orders', key: 'myOrders', icon: ShoppingBag },
 ];
 
-const SUPPORT_LINKS = [
-  { href: '/download', label: '📱 Ilovani yuklab olish' },
-  { href: '/help', label: "Qo'llab-quvvatlash" },
-  { href: '/delivery', label: 'Yetkazib berish' },
-  { href: '/returns', label: 'Qaytarish' },
-  { href: '/faq', label: 'FAQ' },
-  { href: '/sell', label: "Sotuvchi bo'lish" },
+type SupportKey = 'downloadApp' | 'help' | 'delivery' | 'returns' | 'faq' | 'becomeSeller';
+const SUPPORT_LINKS: { href: string; key: SupportKey; emoji?: string }[] = [
+  { href: '/download', key: 'downloadApp', emoji: '📱' },
+  { href: '/help', key: 'help' },
+  { href: '/delivery', key: 'delivery' },
+  { href: '/returns', key: 'returns' },
+  { href: '/faq', key: 'faq' },
+  { href: '/sell', key: 'becomeSeller' },
 ];
 
 export function MobileNav() {
   const [open, setOpen] = React.useState(false);
   const close = () => setOpen(false);
+  const nav = useTranslations('nav');
+  const common = useTranslations('common');
+  const cat = useTranslations('categories');
+  const footerLinks = useTranslations('footer.links');
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -39,7 +47,7 @@ export function MobileNav() {
         <button
           type="button"
           className="hover:bg-accent grid h-10 w-10 place-items-center rounded-md md:hidden"
-          aria-label="Menyu"
+          aria-label={common('menu')}
         >
           <Menu size={20} />
         </button>
@@ -50,8 +58,10 @@ export function MobileNav() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/sellobay-icon-64.png" alt="Sellobay" className="h-9 w-9 rounded-lg shadow" />
             <div className="leading-tight">
-              <div className="text-base font-bold">Sellobay</div>
-              <div className="text-[10px] uppercase tracking-widest opacity-80">Marketplace</div>
+              <div className="text-base font-bold">{common('appName')}</div>
+              <div className="text-[10px] uppercase tracking-widest opacity-80">
+                {common('marketplace')}
+              </div>
             </div>
           </div>
           <div className="mt-4 flex gap-2">
@@ -60,14 +70,14 @@ export function MobileNav() {
               onClick={close}
               className="text-foreground flex-1 rounded-full bg-white px-3 py-2 text-center text-sm font-medium"
             >
-              Kirish
+              {nav('login')}
             </Link>
             <Link
               href="/register"
               onClick={close}
               className="flex-1 rounded-full border border-white/40 px-3 py-2 text-center text-sm font-medium"
             >
-              Ro&apos;yxatdan
+              {nav('registerShort')}
             </Link>
           </div>
         </div>
@@ -83,7 +93,7 @@ export function MobileNav() {
                 className="hover:bg-accent flex items-center gap-3 rounded-md px-3 py-2.5 text-sm"
               >
                 <Icon size={18} className="text-muted-foreground" />
-                <span>{l.label}</span>
+                <span>{nav(l.key)}</span>
                 <ChevronRight size={14} className="text-muted-foreground ml-auto" />
               </Link>
             );
@@ -92,7 +102,7 @@ export function MobileNav() {
 
         <div className="border-t p-3">
           <div className="text-muted-foreground mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest">
-            Kategoriyalar
+            {cat('title')}
           </div>
           <div className="space-y-0.5">
             {CATEGORIES.map((c) => (
@@ -103,7 +113,7 @@ export function MobileNav() {
                 className="hover:bg-accent flex items-center gap-3 rounded-md px-3 py-2 text-sm"
               >
                 <span className="text-base">{c.emoji}</span>
-                <span>{c.label}</span>
+                <span>{cat(c.slug)}</span>
                 <ChevronRight size={14} className="text-muted-foreground ml-auto" />
               </Link>
             ))}
@@ -112,7 +122,7 @@ export function MobileNav() {
 
         <div className="border-t p-3">
           <div className="text-muted-foreground mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest">
-            Yordam
+            {common('help')}
           </div>
           <div className="space-y-0.5">
             {SUPPORT_LINKS.map((l) => (
@@ -122,7 +132,8 @@ export function MobileNav() {
                 onClick={close}
                 className="hover:bg-accent block rounded-md px-3 py-2 text-sm"
               >
-                {l.label}
+                {l.emoji ? `${l.emoji} ` : ''}
+                {l.key === 'downloadApp' ? nav('downloadApp') : footerLinks(l.key)}
               </Link>
             ))}
           </div>
@@ -136,9 +147,7 @@ export function MobileNav() {
             <Phone size={16} className="text-primary" />
             <span>+998 71 200 00 00</span>
           </a>
-          <div className="text-muted-foreground mt-1 px-3 text-xs">
-            24/7 qo&apos;llab-quvvatlash
-          </div>
+          <div className="text-muted-foreground mt-1 px-3 text-xs">{nav('support247')}</div>
         </div>
       </SheetContent>
     </Sheet>

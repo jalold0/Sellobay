@@ -1,11 +1,14 @@
 import { SectionTitle } from '@ecom/ui';
 import Link from 'next/link';
-import { getLocale } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { CategoryGrid } from '../../components/layout/category-grid';
 import { FeaturedCollection } from '../../components/layout/featured-collection';
 import { HeroSection } from '../../components/layout/hero-section';
 import { SaleSection } from '../../components/layout/sale-section';
+import { SellerBanner } from '../../components/layout/seller-banner';
+import { Testimonials } from '../../components/layout/testimonials';
+import { TrustStrip } from '../../components/layout/trust-strip';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
 import { fetchHomeProducts } from '../../lib/catalog';
@@ -16,24 +19,28 @@ export const revalidate = 120;
 
 export default async function HomePage() {
   const locale = (await getLocale()) as Locale;
-  // Haqiqiy DB'dan (Neon) — xato bo'lsa avtomatik mock fallback
   const { hero, featured, collection, sale } = await fetchHomeProducts();
+  const t = await getTranslations('home');
+  const common = await getTranslations('common');
 
   return (
     <div className="space-y-12 md:space-y-20">
-      {/* Hero — UMBRA editorial style */}
+      {/* 1. Cinematic hero — full-bleed Unsplash imagery + bold typography + dual CTAs */}
       <HeroSection locale={locale} heroProducts={hero} />
 
-      {/* Categories with per-category colors */}
+      {/* 2. Trust strip — bold metrics horizontal bar (50k sellers, 2M products, 24h delivery, 99% satisfaction) */}
+      <TrustStrip />
+
+      {/* 3. Categories — visual grid */}
       <CategoryGrid locale={locale} />
 
-      {/* Featured products — bestsellers grid */}
+      {/* 4. Bestsellers */}
       <section className="space-y-5">
         <SectionTitle
-          title="Eng ko'p sotilganlar"
-          description="Bizning bestseller'larimiz — eng ko'p tanlangan mahsulotlar"
+          title={t('bestSellersTitle')}
+          description={t('bestSellersSubtitle')}
           actionHref="/catalog?sort=popularity"
-          actionLabel="Barchasi"
+          actionLabel={common('viewAll')}
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {featured.map((p) => (
@@ -42,23 +49,24 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Featured Collection — UMBRA editorial 3-image showcase */}
-      <FeaturedCollection
-        locale={locale}
-        products={collection}
-        title="Tanlangan kolleksiya"
-        subtitle="Tahririyat tomonidan tanlangan eng yaxshi mahsulotlar — premium sotuvchilardan"
-      />
+      {/* 5. Featured collection — editorial 3-image showcase */}
+      <FeaturedCollection locale={locale} products={collection} />
 
-      {/* Sale section with countdown */}
+      {/* 6. Sale section with countdown */}
       <SaleSection locale={locale} saleProducts={sale} />
 
-      {/* PWA install CTA */}
+      {/* 7. Seller CTA banner — million customers reach, perks list */}
+      <SellerBanner />
+
+      {/* 8. Testimonials — social proof */}
+      <Testimonials />
+
+      {/* 9. PWA install CTA */}
       <InstallHeroCard />
 
-      {/* Brands */}
+      {/* 10. Brands */}
       <section className="space-y-5">
-        <SectionTitle title="Mashhur brendlar" description="Eng yaxshi brendlar Sellobay'da" />
+        <SectionTitle title={t('popularBrands')} description={`Sellobay × ${brands.length}+`} />
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
           {brands.map((b) => (
             <Link

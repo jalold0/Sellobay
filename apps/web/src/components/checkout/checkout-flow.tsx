@@ -1,13 +1,24 @@
 'use client';
 
 import { Button, Input, Label, Separator, toast } from '@ecom/ui';
-import { Check, ChevronLeft, ChevronRight, CreditCard, MapPin, Package, ShieldCheck } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Coins,
+  CreditCard,
+  MapPin,
+  Package,
+  ShieldCheck,
+} from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { formatMoney } from '../../lib/format';
+import { COIN_VALUE_SOM, coinsForOrder } from '../../lib/loyalty';
 import { productImage } from '../../lib/mock-data';
 import { useCart } from '../../store/cart';
 
@@ -37,24 +48,30 @@ interface PaymentForm {
   provider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
 }
 
-const STEPS: { id: Step; label: string; icon: typeof MapPin }[] = [
-  { id: 'address', label: 'Manzil', icon: MapPin },
-  { id: 'shipping', label: 'Yetkazib berish', icon: Package },
-  { id: 'payment', label: "To'lov", icon: CreditCard },
-  { id: 'review', label: 'Tasdiqlash', icon: Check },
-];
+const STEP_KEYS: Step[] = ['address', 'shipping', 'payment', 'review'];
+const STEP_ICONS: Record<Step, typeof MapPin> = {
+  address: MapPin,
+  shipping: Package,
+  payment: CreditCard,
+  review: Check,
+};
 
-const PAYMENT_OPTIONS: { id: PaymentForm['provider']; label: string; sub: string; emoji: string }[] = [
-  { id: 'CLICK', label: 'Click', sub: 'Tezkor mobil to`lov', emoji: '💳' },
-  { id: 'PAYME', label: 'Payme', sub: 'Onlayn to`lov tizimi', emoji: '💰' },
-  { id: 'UZUM_BANK', label: 'Uzum Bank', sub: 'Bank ilovasi orqali', emoji: '🏦' },
-  { id: 'UZCARD', label: 'Uzcard', sub: 'Plastik karta', emoji: '💳' },
-  { id: 'HUMO', label: 'Humo', sub: 'Plastik karta', emoji: '💳' },
-  { id: 'CASH_ON_DELIVERY', label: 'Naqd pul', sub: "Kuryer kelganda to'laysiz", emoji: '💵' },
+const PAYMENT_OPTIONS: {
+  id: PaymentForm['provider'];
+  key: 'click' | 'payme' | 'uzumBank' | 'uzcard' | 'humo' | 'cash';
+  emoji: string;
+}[] = [
+  { id: 'CLICK', key: 'click', emoji: '💳' },
+  { id: 'PAYME', key: 'payme', emoji: '💰' },
+  { id: 'UZUM_BANK', key: 'uzumBank', emoji: '🏦' },
+  { id: 'UZCARD', key: 'uzcard', emoji: '💳' },
+  { id: 'HUMO', key: 'humo', emoji: '💳' },
+  { id: 'CASH_ON_DELIVERY', key: 'cash', emoji: '💵' },
 ];
 
 export function CheckoutFlow() {
   const router = useRouter();
+  const t = useTranslations('checkout');
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const [mounted, setMounted] = React.useState(false);
@@ -78,6 +95,22 @@ export function CheckoutFlow() {
   const [payment, setPayment] = React.useState<PaymentForm>({ provider: 'CLICK' });
   const [submitting, setSubmitting] = React.useState(false);
 
+  // Sello Coins — login user balansi (guest uchun 0; 401 → 0)
+  const [coinBalance, setCoinBalance] = React.useState(0);
+  const [useCoins, setUseCoins] = React.useState(false);
+  React.useEffect(() => {
+    let active = true;
+    fetch('/api/loyalty', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (active && res?.success && res.data) setCoinBalance(res.data.coins ?? 0);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
     shipping.method === 'PICKUP_POINT'
@@ -87,49 +120,100 @@ export function CheckoutFlow() {
         : subtotal >= FREE_SHIPPING_THRESHOLD
           ? 0
           : SHIPPING_FEE;
-  const total = subtotal + shippingFee;
+  const baseTotal = subtotal + shippingFee;
+  // Ishlatish mumkin bo'lgan coinlar: balansdan va summadan oshmaydi
+  const redeemableCoins = Math.min(coinBalance, Math.floor(baseTotal / COIN_VALUE_SOM));
+  const coinsToRedeem = useCoins ? redeemableCoins : 0;
+  const coinDiscount = coinsToRedeem * COIN_VALUE_SOM;
+  const total = baseTotal - coinDiscount;
 
-  const stepIdx = STEPS.findIndex((s) => s.id === step);
+  const stepIdx = STEP_KEYS.indexOf(step);
 
   if (!mounted) return <div className="h-96" aria-hidden />;
 
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
-        <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h1 className="mt-4 text-2xl font-bold">Avval savatchaga mahsulot qo&apos;shing</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Buyurtma rasmiylashtirish uchun kamida bitta mahsulot kerak.</p>
+        <Package className="text-muted-foreground mx-auto h-12 w-12" />
+        <h1 className="mt-4 text-2xl font-bold">{t('emptyTitle')}</h1>
+        <p className="text-muted-foreground mt-2 text-sm">{t('emptyHint')}</p>
         <Button asChild className="mt-6">
-          <Link href="/catalog">Katalogga o&apos;tish</Link>
+          <Link href="/catalog">{t('openCatalog')}</Link>
         </Button>
       </div>
     );
   }
 
   const canNextFromAddress =
-    address.firstName.trim() && address.lastName.trim() && address.phone.length >= 12 && address.city.trim() && address.street.trim();
+    address.firstName.trim() &&
+    address.lastName.trim() &&
+    address.phone.length >= 12 &&
+    address.city.trim() &&
+    address.street.trim();
 
   const nextStep = () => {
     if (step === 'address' && !canNextFromAddress) {
-      toast({ title: 'Majburiy maydonlarni to`ldiring', variant: 'warning' });
+      toast({ title: t('errors.required'), variant: 'warning' });
       return;
     }
-    const i = STEPS.findIndex((s) => s.id === step);
-    if (i < STEPS.length - 1) setStep(STEPS[i + 1]!.id);
+    const i = STEP_KEYS.indexOf(step);
+    if (i < STEP_KEYS.length - 1) setStep(STEP_KEYS[i + 1]!);
   };
   const prevStep = () => {
-    const i = STEPS.findIndex((s) => s.id === step);
-    if (i > 0) setStep(STEPS[i - 1]!.id);
+    const i = STEP_KEYS.indexOf(step);
+    if (i > 0) setStep(STEP_KEYS[i - 1]!);
   };
 
   const placeOrder = async () => {
     setSubmitting(true);
-    // Real backend: apiClient.post('/orders', { items, address, shipping, payment })
-    await new Promise((r) => setTimeout(r, 800));
-    const orderNumber = `ORD-2026-${String(Math.floor(Math.random() * 99_999_999)).padStart(8, '0')}`;
+    const payload = {
+      items: items.map((it) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        variantId: it.variantId ?? undefined,
+      })),
+      recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
+      phone: address.phone.trim(),
+      region: address.region.trim() || 'Toshkent',
+      city: address.city.trim(),
+      street: address.street.trim(),
+      apartment: address.apartment.trim() || undefined,
+      deliveryMethod: shipping.method,
+      paymentProvider: payment.provider,
+      notes: address.notes.trim() || undefined,
+      redeemCoins: coinsToRedeem,
+    };
+
+    let result: {
+      success: boolean;
+      data?: { order: { number: string } };
+      error?: { message: string };
+    } = { success: false };
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+      result = await res.json();
+    } catch {
+      result = { success: false, error: { message: t('errors.network') } };
+    }
+    setSubmitting(false);
+
+    if (!result.success || !result.data) {
+      toast({
+        title: result.error?.message ?? t('errors.failed'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const orderNumber = result.data.order.number;
     clear();
     toast({
-      title: 'Buyurtma qabul qilindi!',
+      title: t('success'),
       description: `№ ${orderNumber}`,
       variant: 'success',
       duration: 4000,
@@ -139,16 +223,15 @@ export function CheckoutFlow() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Buyurtmani rasmiylashtirish</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
 
-      {/* Stepper */}
       <ol className="flex items-center gap-2 overflow-x-auto pb-2">
-        {STEPS.map((s, i) => {
-          const Icon = s.icon;
+        {STEP_KEYS.map((s, i) => {
+          const Icon = STEP_ICONS[s];
           const done = i < stepIdx;
           const active = i === stepIdx;
           return (
-            <React.Fragment key={s.id}>
+            <React.Fragment key={s}>
               <li
                 className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
                   active
@@ -160,11 +243,11 @@ export function CheckoutFlow() {
               >
                 {done ? <Check size={14} /> : <Icon size={14} />}
                 <span className="whitespace-nowrap">
-                  {i + 1}. {s.label}
+                  {i + 1}. {t(`steps.${s}`)}
                 </span>
               </li>
-              {i < STEPS.length - 1 && (
-                <span className="h-px w-4 shrink-0 bg-border sm:w-8" aria-hidden />
+              {i < STEP_KEYS.length - 1 && (
+                <span className="bg-border h-px w-4 shrink-0 sm:w-8" aria-hidden />
               )}
             </React.Fragment>
           );
@@ -172,66 +255,66 @@ export function CheckoutFlow() {
       </ol>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="space-y-4 rounded-xl border bg-card p-5 md:p-6">
+        <div className="bg-card space-y-4 rounded-xl border p-5 md:p-6">
           {step === 'address' && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold">Yetkazib berish manzili</h2>
+                <MapPin className="text-primary h-4 w-4" />
+                <h2 className="text-base font-semibold">{t('address.title')}</h2>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Ism*">
+                <Field label={t('address.firstName')}>
                   <Input
                     value={address.firstName}
                     onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
                   />
                 </Field>
-                <Field label="Familiya*">
+                <Field label={t('address.lastName')}>
                   <Input
                     value={address.lastName}
                     onChange={(e) => setAddress({ ...address, lastName: e.target.value })}
                   />
                 </Field>
-                <Field label="Telefon*">
+                <Field label={t('address.phone')}>
                   <Input
                     value={address.phone}
                     onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                    placeholder="+998 90 123 45 67"
+                    placeholder={t('address.phonePlaceholder')}
                   />
                 </Field>
-                <Field label="Viloyat">
+                <Field label={t('address.region')}>
                   <Input
                     value={address.region}
                     onChange={(e) => setAddress({ ...address, region: e.target.value })}
-                    placeholder="Toshkent"
+                    placeholder={t('address.regionPlaceholder')}
                   />
                 </Field>
-                <Field label="Shahar/tuman*">
+                <Field label={t('address.city')}>
                   <Input
                     value={address.city}
                     onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                    placeholder="Yunusobod"
+                    placeholder={t('address.cityPlaceholder')}
                   />
                 </Field>
-                <Field label="Ko'cha, uy raqami*">
+                <Field label={t('address.street')}>
                   <Input
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                    placeholder="Mustaqillik ko'chasi, 12"
+                    placeholder={t('address.streetPlaceholder')}
                   />
                 </Field>
-                <Field label="Kvartira/podyezd" className="sm:col-span-2">
+                <Field label={t('address.apartment')} className="sm:col-span-2">
                   <Input
                     value={address.apartment}
                     onChange={(e) => setAddress({ ...address, apartment: e.target.value })}
-                    placeholder="25-uy, 4-podyezd"
+                    placeholder={t('address.apartmentPlaceholder')}
                   />
                 </Field>
-                <Field label="Eslatma (ixtiyoriy)" className="sm:col-span-2">
+                <Field label={t('address.notes')} className="sm:col-span-2">
                   <Input
                     value={address.notes}
                     onChange={(e) => setAddress({ ...address, notes: e.target.value })}
-                    placeholder="Mo'ljal, qo'shimcha ma'lumot..."
+                    placeholder={t('address.notesPlaceholder')}
                   />
                 </Field>
               </div>
@@ -241,27 +324,27 @@ export function CheckoutFlow() {
           {step === 'shipping' && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold">Yetkazib berish usulini tanlang</h2>
+                <Package className="text-primary h-4 w-4" />
+                <h2 className="text-base font-semibold">{t('shipping.title')}</h2>
               </div>
               <div className="space-y-2">
                 {[
                   {
                     id: 'HOME_DELIVERY' as const,
-                    label: 'Uyga yetkazib berish',
-                    sub: '24-48 soat ichida',
+                    label: t('shipping.home'),
+                    sub: t('shipping.homeSub'),
                     price: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE,
                   },
                   {
                     id: 'EXPRESS' as const,
-                    label: 'Express yetkazib berish',
-                    sub: 'Toshkent bo`yicha 3 soat ichida',
+                    label: t('shipping.express'),
+                    sub: t('shipping.expressSub'),
                     price: EXPRESS_FEE,
                   },
                   {
                     id: 'PICKUP_POINT' as const,
-                    label: 'Olib ketish punkti',
-                    sub: 'Eng yaqin punktdan olib ketish',
+                    label: t('shipping.pickup'),
+                    sub: t('shipping.pickupSub'),
                     price: 0,
                   },
                 ].map((opt) => {
@@ -272,16 +355,18 @@ export function CheckoutFlow() {
                       type="button"
                       onClick={() => setShipping((s) => ({ ...s, method: opt.id }))}
                       className={`flex w-full items-center justify-between rounded-lg border-2 p-4 text-left transition ${
-                        active ? 'border-primary bg-primary/5' : 'border-input hover:border-foreground/30'
+                        active
+                          ? 'border-primary bg-primary/5'
+                          : 'border-input hover:border-foreground/30'
                       }`}
                     >
                       <div>
                         <div className="font-medium">{opt.label}</div>
-                        <div className="text-xs text-muted-foreground">{opt.sub}</div>
+                        <div className="text-muted-foreground text-xs">{opt.sub}</div>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">
-                          {opt.price === 0 ? 'Tekin' : formatMoney(opt.price)}
+                          {opt.price === 0 ? t('shipping.free') : formatMoney(opt.price)}
                         </div>
                       </div>
                     </button>
@@ -294,8 +379,8 @@ export function CheckoutFlow() {
           {step === 'payment' && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold">To&apos;lov usulini tanlang</h2>
+                <CreditCard className="text-primary h-4 w-4" />
+                <h2 className="text-base font-semibold">{t('payment.title')}</h2>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 {PAYMENT_OPTIONS.map((p) => {
@@ -306,54 +391,86 @@ export function CheckoutFlow() {
                       type="button"
                       onClick={() => setPayment({ provider: p.id })}
                       className={`flex items-center gap-3 rounded-lg border-2 p-3.5 text-left transition ${
-                        active ? 'border-primary bg-primary/5' : 'border-input hover:border-foreground/30'
+                        active
+                          ? 'border-primary bg-primary/5'
+                          : 'border-input hover:border-foreground/30'
                       }`}
                     >
-                      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-muted text-xl">
+                      <div className="bg-muted grid h-10 w-10 shrink-0 place-items-center rounded-md text-xl">
                         {p.emoji}
                       </div>
                       <div className="min-w-0">
-                        <div className="truncate font-medium">{p.label}</div>
-                        <div className="truncate text-xs text-muted-foreground">{p.sub}</div>
+                        <div className="truncate font-medium">{t(`payment.${p.key}`)}</div>
+                        <div className="text-muted-foreground truncate text-xs">
+                          {t(`payment.${p.key}Sub`)}
+                        </div>
                       </div>
                     </button>
                   );
                 })}
               </div>
-              <div className="rounded-md bg-secondary/40 p-3 text-xs text-muted-foreground">
+              <div className="bg-secondary/40 text-muted-foreground rounded-md p-3 text-xs">
                 <ShieldCheck size={12} className="mr-1 inline text-emerald-600" />
-                Karta ma&apos;lumotlaringiz to&apos;lov tizimi serverida xavfsiz saqlanadi, biz ko&apos;rmaymiz.
+                {t('payment.secureNote')}
               </div>
             </div>
           )}
 
           {step === 'review' && (
             <div className="space-y-4">
-              <h2 className="text-base font-semibold">Buyurtmangizni tekshiring</h2>
+              <h2 className="text-base font-semibold">{t('review.title')}</h2>
 
-              <ReviewBlock title="Manzil" onEdit={() => setStep('address')}>
-                <div>{address.firstName} {address.lastName} · {address.phone}</div>
-                <div className="text-muted-foreground">
-                  {[address.region, address.city, address.street, address.apartment].filter(Boolean).join(', ')}
+              <ReviewBlock
+                title={t('review.addressLabel')}
+                editLabel={t('review.edit')}
+                onEdit={() => setStep('address')}
+              >
+                <div>
+                  {address.firstName} {address.lastName} · {address.phone}
                 </div>
-                {address.notes && <div className="text-muted-foreground">Eslatma: {address.notes}</div>}
+                <div className="text-muted-foreground">
+                  {[address.region, address.city, address.street, address.apartment]
+                    .filter(Boolean)
+                    .join(', ')}
+                </div>
+                {address.notes && (
+                  <div className="text-muted-foreground">
+                    {t('address.notesLabel')}: {address.notes}
+                  </div>
+                )}
               </ReviewBlock>
 
-              <ReviewBlock title="Yetkazib berish" onEdit={() => setStep('shipping')}>
+              <ReviewBlock
+                title={t('review.shippingLabel')}
+                editLabel={t('review.edit')}
+                onEdit={() => setStep('shipping')}
+              >
                 <div>
                   {shipping.method === 'HOME_DELIVERY'
-                    ? 'Uyga yetkazib berish'
+                    ? t('shipping.home')
                     : shipping.method === 'EXPRESS'
-                      ? 'Express'
-                      : 'Pickup punkti'}
+                      ? t('shipping.express')
+                      : t('shipping.pickup')}
                 </div>
               </ReviewBlock>
 
-              <ReviewBlock title="To`lov" onEdit={() => setStep('payment')}>
-                <div>{PAYMENT_OPTIONS.find((p) => p.id === payment.provider)?.label}</div>
+              <ReviewBlock
+                title={t('review.paymentLabel')}
+                editLabel={t('review.edit')}
+                onEdit={() => setStep('payment')}
+              >
+                <div>
+                  {(() => {
+                    const opt = PAYMENT_OPTIONS.find((p) => p.id === payment.provider);
+                    return opt ? t(`payment.${opt.key}`) : '';
+                  })()}
+                </div>
               </ReviewBlock>
 
-              <ReviewBlock title={`Mahsulotlar (${items.length})`}>
+              <ReviewBlock
+                title={t('review.itemsLabel', { count: items.length })}
+                editLabel={t('review.edit')}
+              >
                 <ul className="-my-2 divide-y">
                   {items.map((i) => (
                     <li key={i.id} className="flex items-center gap-3 py-2">
@@ -368,11 +485,13 @@ export function CheckoutFlow() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm">{i.name}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {i.quantity} × {formatMoney(i.unitPrice)}
                         </div>
                       </div>
-                      <div className="text-sm font-medium">{formatMoney(i.quantity * i.unitPrice)}</div>
+                      <div className="text-sm font-medium">
+                        {formatMoney(i.quantity * i.unitPrice)}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -380,7 +499,6 @@ export function CheckoutFlow() {
             </div>
           )}
 
-          {/* Step nav */}
           <div className="flex items-center justify-between gap-2 pt-2">
             <Button
               variant="ghost"
@@ -389,52 +507,91 @@ export function CheckoutFlow() {
               className="gap-1"
               type="button"
             >
-              <ChevronLeft size={16} /> Orqaga
+              <ChevronLeft size={16} /> {t('back')}
             </Button>
             {step === 'review' ? (
               <Button onClick={placeOrder} disabled={submitting} size="lg">
-                {submitting ? 'Yuborilmoqda...' : 'Buyurtmani tasdiqlash'}
+                {submitting ? t('submitting') : t('placeOrder')}
               </Button>
             ) : (
               <Button onClick={nextStep} size="lg" className="gap-1">
-                Davom etish <ChevronRight size={16} />
+                {t('next')} <ChevronRight size={16} />
               </Button>
             )}
           </div>
         </div>
 
-        {/* Summary aside */}
         <aside className="lg:sticky lg:top-32 lg:self-start">
-          <div className="space-y-3 rounded-xl border bg-card p-5">
-            <div className="text-base font-semibold">Buyurtma</div>
+          <div className="bg-card space-y-3 rounded-xl border p-5">
+            <div className="text-base font-semibold">{t('summary')}</div>
             <ul className="space-y-2 text-sm">
               {items.slice(0, 3).map((i) => (
                 <li key={i.id} className="flex justify-between gap-2">
-                  <span className="line-clamp-1 text-muted-foreground">
+                  <span className="text-muted-foreground line-clamp-1">
                     {i.quantity} × {i.name}
                   </span>
                   <span className="whitespace-nowrap">{formatMoney(i.quantity * i.unitPrice)}</span>
                 </li>
               ))}
               {items.length > 3 && (
-                <li className="text-xs text-muted-foreground">
-                  Va yana {items.length - 3} ta mahsulot...
+                <li className="text-muted-foreground text-xs">
+                  {t('summaryMore', { count: items.length - 3 })}
                 </li>
               )}
             </ul>
             <Separator />
             <div className="space-y-1 text-sm">
-              <Row label="Mahsulotlar" value={formatMoney(subtotal)} />
+              <Row label={t('summaryItems')} value={formatMoney(subtotal)} />
               <Row
-                label="Yetkazib berish"
-                value={shippingFee === 0 ? 'Tekin' : formatMoney(shippingFee)}
+                label={t('summaryShipping')}
+                value={shippingFee === 0 ? t('shipping.free') : formatMoney(shippingFee)}
                 highlight={shippingFee === 0}
               />
+              {coinDiscount > 0 && (
+                <Row label={t('coinDiscount')} value={`−${formatMoney(coinDiscount)}`} highlight />
+              )}
             </div>
+
+            {/* Sello Coins redeem toggle — faqat balans > 0 bo'lsa */}
+            {redeemableCoins > 0 && (
+              <button
+                type="button"
+                onClick={() => setUseCoins((v) => !v)}
+                className={`flex w-full items-center gap-2.5 rounded-lg border p-3 text-left transition ${
+                  useCoins
+                    ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30'
+                    : 'border-input hover:border-amber-300'
+                }`}
+              >
+                <span
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded border-2 ${
+                    useCoins ? 'border-amber-500 bg-amber-500 text-white' : 'border-input'
+                  }`}
+                >
+                  {useCoins ? <Check size={13} /> : null}
+                </span>
+                <Coins size={16} className="shrink-0 text-amber-500" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-medium">{t('useCoinsTitle')}</span>
+                  <span className="text-muted-foreground block text-xs">
+                    {t('useCoinsAvail', {
+                      coins: redeemableCoins,
+                      som: formatMoney(redeemableCoins * COIN_VALUE_SOM),
+                    })}
+                  </span>
+                </span>
+              </button>
+            )}
+
             <Separator />
             <div className="flex justify-between text-base font-bold">
-              <span>Jami</span>
+              <span>{t('summaryTotal')}</span>
               <span>{formatMoney(total)}</span>
+            </div>
+            {/* Sello Coins earn hint — conversion + signup driver */}
+            <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+              <Coins size={14} className="shrink-0" />
+              <span>{t('coinsEarn', { coins: coinsForOrder(total) })}</span>
             </div>
           </div>
         </aside>
@@ -472,21 +629,23 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
 function ReviewBlock({
   title,
   onEdit,
+  editLabel,
   children,
 }: {
   title: string;
   onEdit?: () => void;
+  editLabel: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border bg-background p-3 text-sm">
+    <div className="bg-background rounded-md border p-3 text-sm">
       <div className="mb-1 flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
           {title}
         </div>
         {onEdit && (
-          <button type="button" onClick={onEdit} className="text-xs text-primary hover:underline">
-            O&apos;zgartirish
+          <button type="button" onClick={onEdit} className="text-primary text-xs hover:underline">
+            {editLabel}
           </button>
         )}
       </div>

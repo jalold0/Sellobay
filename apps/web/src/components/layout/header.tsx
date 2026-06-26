@@ -1,28 +1,30 @@
 'use client';
 
-import { Heart, Phone, ShoppingCart, User } from 'lucide-react';
+import { Heart, Phone, ShoppingCart } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { SellobayMark } from '../brand/sellobay-mark';
 import { AnimatedSearch } from './animated-search';
+import { AuthMenu } from './auth-menu';
 import { CartBadge } from './cart-badge';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 
-const CATEGORIES = [
-  { slug: 'clothing', label: 'Kiyim-kechak' },
-  { slug: 'shoes', label: 'Poyabzal' },
-  { slug: 'perfume', label: 'Atirlar' },
-  { slug: 'cosmetics', label: 'Kosmetika' },
-  { slug: 'beauty', label: "Go'zallik" },
-  { slug: 'accessories', label: 'Aksessuarlar' },
-];
+const CATEGORY_SLUGS = [
+  'clothing',
+  'shoes',
+  'perfume',
+  'cosmetics',
+  'beauty',
+  'accessories',
+] as const;
 
 export function Header() {
   const common = useTranslations('common');
   const nav = useTranslations('nav');
+  const cat = useTranslations('categories');
   const locale = useLocale();
 
   // TZ §1: Top bar scroll bilan yashirinadi
@@ -54,14 +56,14 @@ export function Header() {
               +998 71 200 00 00
             </a>
             <span className="mx-2 text-white/30">·</span>
-            <span className="hidden md:inline">24/7 qo&apos;llab-quvvatlash</span>
+            <span className="hidden md:inline">{nav('support247')}</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/orders" className="hidden hover:text-white md:inline">
-              Buyurtmamni kuzatish
+              {nav('trackOrder')}
             </Link>
             <Link href="/sell" className="hidden hover:text-white md:inline">
-              Sotuvchi bo&apos;lish
+              {nav('becomeSeller')}
             </Link>
             <LocaleSwitcher current={locale} />
           </div>
@@ -79,7 +81,7 @@ export function Header() {
             <div className="hidden flex-col leading-tight md:flex">
               <span className="text-base font-bold tracking-tight">{common('appName')}</span>
               <span className="text-muted-foreground text-[10px] uppercase tracking-widest">
-                Marketplace
+                {common('marketplace')}
               </span>
             </div>
           </Link>
@@ -91,24 +93,18 @@ export function Header() {
 
           {/* Right actions */}
           <div className="ml-auto flex items-center gap-1">
-            <Link
-              href="/login"
-              className="hover:bg-muted hidden h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium md:flex"
-            >
-              <User size={18} />
-              <span>{nav('login')}</span>
-            </Link>
+            <AuthMenu />
             <Link
               href="/profile/wishlist"
               className="hover:bg-muted grid h-10 w-10 place-items-center rounded-lg"
-              aria-label="Sevimlilar"
+              aria-label={nav('wishlist')}
             >
               <Heart size={20} />
             </Link>
             <Link
               href="/cart"
               className="hover:bg-muted relative grid h-10 w-10 place-items-center rounded-lg"
-              aria-label="Savatcha"
+              aria-label={nav('cart')}
             >
               <ShoppingCart size={20} />
               <CartBadge />
@@ -131,20 +127,20 @@ export function Header() {
           >
             ≡ {nav('catalog')}
           </Link>
-          {CATEGORIES.map((c) => (
+          {CATEGORY_SLUGS.map((slug) => (
             <Link
-              key={c.slug}
-              href={`/catalog?category=${c.slug}`}
+              key={slug}
+              href={`/catalog?category=${slug}`}
               className="nav-underline text-muted-foreground hover:text-foreground whitespace-nowrap rounded-md px-3 py-1.5"
             >
-              {c.label}
+              {cat(slug)}
             </Link>
           ))}
           <Link
             href="/download"
             className="nav-underline ml-auto whitespace-nowrap rounded-md px-3 py-1.5 font-medium"
           >
-            📱 Ilovani yuklab olish
+            📱 {nav('downloadApp')}
           </Link>
           {/* TZ §1: Aksiyalar — gradient pill + animated emoji */}
           <Link
@@ -152,7 +148,7 @@ export function Header() {
             className="from-primary to-brand-orange group inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-sm hover:shadow-md"
           >
             <span className="animate-bounce-slow inline-block">🔥</span>
-            Aksiyalar
+            {nav('sale')}
           </Link>
         </div>
       </nav>

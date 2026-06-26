@@ -7,6 +7,15 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
+// SDK 54 + Reanimated 4 + Worklets: inlineRequires majburiy
+// (Expo default'da o'chirilgan, lekin worklets initialize pipeline shu bilan ishlaydi)
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: false,
+    inlineRequires: true,
+  },
+});
+
 // Monorepo: workspace root paketlarini ham kuzatish
 config.watchFolders = [workspaceRoot];
 config.resolver.nodeModulesPaths = [

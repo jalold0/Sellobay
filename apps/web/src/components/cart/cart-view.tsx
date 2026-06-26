@@ -11,6 +11,7 @@ import {
   Trash2,
   Truck,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
@@ -23,6 +24,7 @@ const FREE_SHIPPING_THRESHOLD = 500_000;
 const SHIPPING_FEE = 20_000;
 
 export function CartView() {
+  const t = useTranslations('cart');
   const items = useCart((s) => s.items);
   const removeItem = useCart((s) => s.removeItem);
   const updateQuantity = useCart((s) => s.updateQuantity);
@@ -32,7 +34,9 @@ export function CartView() {
   React.useEffect(() => setMounted(true), []);
 
   const [promo, setPromo] = React.useState('');
-  const [appliedPromo, setAppliedPromo] = React.useState<{ code: string; discount: number } | null>(null);
+  const [appliedPromo, setAppliedPromo] = React.useState<{ code: string; discount: number } | null>(
+    null,
+  );
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const discount = appliedPromo?.discount ?? 0;
@@ -42,15 +46,14 @@ export function CartView() {
   const applyPromo = () => {
     const code = promo.trim().toUpperCase();
     if (!code) return;
-    // Mock: WELCOME10 → 10%, FREESHIP — yetkazib berish bekor
     if (code === 'WELCOME10') {
       setAppliedPromo({ code, discount: Math.round(subtotal * 0.1) });
-      toast({ title: 'Promo-kod qo`llanildi', description: '10% chegirma', variant: 'success' });
+      toast({ title: t('promoApplied'), description: t('promoApplied10'), variant: 'success' });
     } else if (code === 'FREESHIP') {
       setAppliedPromo({ code, discount: shipping });
-      toast({ title: 'Tekin yetkazib berish', variant: 'success' });
+      toast({ title: t('promoFreeShip'), variant: 'success' });
     } else {
-      toast({ title: 'Noto`g`ri promo-kod', variant: 'destructive' });
+      toast({ title: t('promoInvalid'), variant: 'destructive' });
     }
   };
 
@@ -61,14 +64,14 @@ export function CartView() {
   if (items.length === 0) {
     return (
       <div className="mx-auto max-w-xl py-8">
-        <h1 className="mb-6 text-3xl font-bold">Savatcha</h1>
+        <h1 className="mb-6 text-3xl font-bold">{t('title')}</h1>
         <EmptyState
           icon={ShoppingBag}
-          title="Savatcha bo`sh"
-          description="Mahsulotlarni katalogdan tanlab, savatga qo`shing"
+          title={t('empty')}
+          description={t('emptyHint')}
           action={
             <Button asChild size="lg">
-              <Link href="/catalog">Katalogni ochish</Link>
+              <Link href="/catalog">{t('openCatalog')}</Link>
             </Button>
           }
         />
@@ -80,20 +83,23 @@ export function CartView() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Savatcha</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {items.length} ta mahsulot · jami {items.reduce((s, i) => s + i.quantity, 0)} dona
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {t('itemSummary', {
+              items: items.length,
+              pieces: items.reduce((s, i) => s + i.quantity, 0),
+            })}
           </p>
         </div>
         <button
           type="button"
           onClick={() => {
             clear();
-            toast({ title: 'Savatcha tozalandi', duration: 1500 });
+            toast({ title: t('cleared'), duration: 1500 });
           }}
-          className="text-sm text-muted-foreground hover:text-red-600"
+          className="text-muted-foreground text-sm hover:text-red-600"
         >
-          Hammasini tozalash
+          {t('clearAll')}
         </button>
       </div>
 
@@ -105,7 +111,7 @@ export function CartView() {
               item={item}
               onRemove={() => {
                 removeItem(item.id);
-                toast({ title: 'O`chirildi', description: item.name, duration: 1500 });
+                toast({ title: t('itemRemoved'), description: item.name, duration: 1500 });
               }}
               onQty={(q) => updateQuantity(item.id, q)}
             />
@@ -113,45 +119,44 @@ export function CartView() {
         </ul>
 
         <aside className="lg:sticky lg:top-32 lg:self-start">
-          <div className="space-y-4 rounded-xl border bg-card p-5">
-            <div className="text-base font-semibold">Buyurtma xulosasi</div>
+          <div className="bg-card space-y-4 rounded-xl border p-5">
+            <div className="text-base font-semibold">{t('summary')}</div>
 
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Mahsulotlar</span>
+                <span className="text-muted-foreground">{t('subtotal')}</span>
                 <span>{formatMoney(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Yetkazib berish</span>
+                <span className="text-muted-foreground">{t('shipping')}</span>
                 <span className={shipping === 0 ? 'font-medium text-emerald-700' : ''}>
-                  {shipping === 0 ? 'Tekin' : formatMoney(shipping)}
+                  {shipping === 0 ? t('shippingFree') : formatMoney(shipping)}
                 </span>
               </div>
               {appliedPromo && (
                 <div className="flex justify-between text-emerald-700">
-                  <span>Promo: {appliedPromo.code}</span>
+                  <span>
+                    {t('promoCode')}: {appliedPromo.code}
+                  </span>
                   <span>−{formatMoney(appliedPromo.discount)}</span>
                 </div>
               )}
               {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
                 <div className="rounded-md bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                   <Truck size={12} className="mr-1 inline" />
-                  Yana{' '}
-                  <strong>{formatMoney(FREE_SHIPPING_THRESHOLD - subtotal)}</strong>{' '}
-                  qo&apos;shing — tekin yetkazib berish!
+                  {t('freeShipHint', { amount: formatMoney(FREE_SHIPPING_THRESHOLD - subtotal) })}
                 </div>
               )}
               <Separator />
               <div className="flex justify-between text-base font-bold">
-                <span>Jami</span>
+                <span>{t('total')}</span>
                 <span>{formatMoney(total)}</span>
               </div>
             </div>
 
-            {/* Promo */}
-            <div className="rounded-md border bg-background p-3">
-              <div className="mb-2 flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <Tag size={12} /> Promo-kod
+            <div className="bg-background rounded-md border p-3">
+              <div className="text-muted-foreground mb-2 flex items-center gap-1 text-xs font-medium">
+                <Tag size={12} /> {t('promoCode')}
               </div>
               <div className="flex gap-2">
                 <Input
@@ -161,7 +166,7 @@ export function CartView() {
                   className="h-9 flex-1 uppercase"
                 />
                 <Button size="sm" variant="outline" onClick={applyPromo}>
-                  Qo&apos;llash
+                  {t('promoApply')}
                 </Button>
               </div>
               {appliedPromo && (
@@ -171,22 +176,22 @@ export function CartView() {
                     setAppliedPromo(null);
                     setPromo('');
                   }}
-                  className="mt-1 text-[11px] text-muted-foreground hover:text-red-600"
+                  className="text-muted-foreground mt-1 text-[11px] hover:text-red-600"
                 >
-                  Bekor qilish
+                  {t('promoCancel')}
                 </button>
               )}
             </div>
 
             <Button asChild size="lg" className="w-full rounded-full">
               <Link href="/checkout">
-                Buyurtmani rasmiylashtirish <ArrowRight size={16} className="ml-1" />
+                {t('checkout')} <ArrowRight size={16} className="ml-1" />
               </Link>
             </Button>
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
               <ShieldCheck size={14} className="text-emerald-600" />
-              Sizning ma&apos;lumotlaringiz xavfsiz himoyalangan
+              {t('secure')}
             </div>
           </div>
         </aside>
@@ -204,11 +209,12 @@ function CartItemRow({
   onRemove: () => void;
   onQty: (q: number) => void;
 }) {
+  const t = useTranslations('cart');
   return (
-    <li className="flex gap-4 rounded-xl border bg-card p-4">
+    <li className="bg-card flex gap-4 rounded-xl border p-4">
       <Link
         href={`/product/${item.slug}`}
-        className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md bg-muted sm:h-28 sm:w-28"
+        className="bg-muted relative h-24 w-24 shrink-0 overflow-hidden rounded-md sm:h-28 sm:w-28"
       >
         <Image
           src={productImage(item.imageSeed, 200)}
@@ -221,38 +227,48 @@ function CartItemRow({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{item.brand}</div>
+            <div className="text-muted-foreground text-xs uppercase tracking-wide">
+              {item.brand}
+            </div>
             <Link
               href={`/product/${item.slug}`}
-              className="line-clamp-2 text-sm font-medium hover:text-primary"
+              className="hover:text-primary line-clamp-2 text-sm font-medium"
             >
               {item.name}
             </Link>
             {(item.color || item.size) && (
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                {item.color && <span>Rang: {item.color}</span>}
+              <div className="text-muted-foreground mt-0.5 text-xs">
+                {item.color && (
+                  <span>
+                    {t('color')}: {item.color}
+                  </span>
+                )}
                 {item.color && item.size && <span> · </span>}
-                {item.size && <span>O&apos;lcham: {item.size}</span>}
+                {item.size && (
+                  <span>
+                    {t('size')}: {item.size}
+                  </span>
+                )}
               </div>
             )}
           </div>
           <button
             type="button"
             onClick={onRemove}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-red-600"
-            aria-label="O`chirish"
+            className="text-muted-foreground hover:bg-accent grid h-8 w-8 shrink-0 place-items-center rounded-md hover:text-red-600"
+            aria-label={t('remove')}
           >
             <Trash2 size={16} />
           </button>
         </div>
 
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-3">
-          <div className="flex h-9 items-center rounded-full border border-input">
+          <div className="border-input flex h-9 items-center rounded-full border">
             <button
               type="button"
               onClick={() => onQty(Math.max(1, item.quantity - 1))}
-              className="grid h-9 w-9 place-items-center text-muted-foreground hover:text-foreground"
-              aria-label="Kamaytirish"
+              className="text-muted-foreground hover:text-foreground grid h-9 w-9 place-items-center"
+              aria-label={t('decrease')}
             >
               <Minus size={14} />
             </button>
@@ -268,15 +284,15 @@ function CartItemRow({
             <button
               type="button"
               onClick={() => onQty(item.quantity + 1)}
-              className="grid h-9 w-9 place-items-center text-muted-foreground hover:text-foreground"
-              aria-label="Oshirish"
+              className="text-muted-foreground hover:text-foreground grid h-9 w-9 place-items-center"
+              aria-label={t('increase')}
             >
               <Plus size={14} />
             </button>
           </div>
           <div className="text-right">
             {item.oldPrice && item.oldPrice > item.unitPrice && (
-              <div className="text-xs text-muted-foreground line-through">
+              <div className="text-muted-foreground text-xs line-through">
                 {formatMoney(item.oldPrice * item.quantity)}
               </div>
             )}

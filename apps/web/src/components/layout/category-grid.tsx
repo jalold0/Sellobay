@@ -1,5 +1,6 @@
 import { SectionTitle } from '@ecom/ui';
 import { ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -38,13 +39,15 @@ interface Props {
 }
 
 export function CategoryGrid({ locale }: Props) {
+  const t = useTranslations('home');
+  const common = useTranslations('common');
   return (
     <section className="space-y-5">
       <SectionTitle
-        title="Kategoriyalar"
-        description="Sevimli kategoriyangizni tanlang"
+        title={t('categoriesTitle')}
+        description={t('categoriesSubtitle')}
         actionHref="/catalog"
-        actionLabel="Barchasi"
+        actionLabel={common('viewAll')}
       />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {categories.map((c, i) => {
@@ -76,7 +79,9 @@ export function CategoryGrid({ locale }: Props) {
               {/* Glass count badge — top right */}
               <div className="absolute right-2.5 top-2.5">
                 <span className="glass inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white">
-                  {c.productCount.toLocaleString('en-US').replace(/,/g, ' ')}+ mahsulot
+                  {t('productCount', {
+                    count: c.productCount.toLocaleString('en-US').replace(/,/g, ' '),
+                  })}
                 </span>
               </div>
 
@@ -87,7 +92,7 @@ export function CategoryGrid({ locale }: Props) {
                   {pickLocale(c.name, locale)}
                 </div>
                 <div className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-white/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  Ko&apos;rish
+                  {t('view')}
                   <ChevronRight size={12} />
                 </div>
               </div>

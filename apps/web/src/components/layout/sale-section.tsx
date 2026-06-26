@@ -2,6 +2,7 @@
 
 import { Button } from '@ecom/ui';
 import { ArrowRight, Flame, Zap } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -16,8 +17,7 @@ interface Props {
 
 // TZ §5: Aksiyalar bloki — countdown + gradient banner + qizil chegarali kartalar
 export function SaleSection({ locale, saleProducts }: Props) {
-  // Aksiya tugashi — joriy vaqtdan 3 kun 14 soat 22 daqiqa keyin (TZ misol)
-  // Real holatda backend'dan keladi
+  const t = useTranslations('sale');
   const endTime = React.useMemo(() => Date.now() + (3 * 86_400 + 14 * 3600 + 22 * 60) * 1000, []);
 
   return (
@@ -27,10 +27,10 @@ export function SaleSection({ locale, saleProducts }: Props) {
         <div>
           <div className="bg-brand-orange/15 text-brand-orange mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider">
             <Flame size={12} className="flash-glow" />
-            Flash Sale
+            {t('flashSale')}
           </div>
-          <h2 className="text-2xl font-black tracking-tight md:text-3xl">🔥 Aksiyada</h2>
-          <p className="text-muted-foreground mt-1 text-sm">Cheklangan vaqt — chegirma 70%gacha</p>
+          <h2 className="text-2xl font-black tracking-tight md:text-3xl">{t('homeTitle')}</h2>
+          <p className="text-muted-foreground mt-1 text-sm">{t('limitedTime')}</p>
         </div>
 
         <div className="flex flex-col items-start gap-3 md:items-end">
@@ -39,7 +39,7 @@ export function SaleSection({ locale, saleProducts }: Props) {
             href="/sale"
             className="text-primary inline-flex items-center gap-1 text-sm font-semibold hover:underline"
           >
-            Barchasini ko&apos;rish <ArrowRight size={14} />
+            {t('viewAll')} <ArrowRight size={14} />
           </Link>
         </div>
       </div>
@@ -63,25 +63,23 @@ export function SaleSection({ locale, saleProducts }: Props) {
         <div className="relative grid items-center gap-6 md:grid-cols-2">
           <div className="text-white">
             <div className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
-              <Zap size={12} /> Cheklangan vaqt
+              <Zap size={12} /> {t('limitedTimeShort')}
             </div>
             <h3 className="mt-3 text-3xl font-black leading-tight md:text-5xl">
-              −70%
+              {t('bannerHeadline1')}
               <br />
               <span className="from-brand-orange bg-gradient-to-r to-white bg-clip-text text-transparent">
-                gacha chegirma
+                {t('bannerHeadline2')}
               </span>
             </h3>
-            <p className="mt-3 max-w-md text-white/85">
-              Eng yaxshi brendlar — eng past narxlar. Cheklangan miqdor — shoshiling!
-            </p>
+            <p className="mt-3 max-w-md text-white/85">{t('bannerSubtitle')}</p>
             <Button
               asChild
               size="lg"
               className="text-foreground mt-5 rounded-full bg-white px-6 font-semibold hover:bg-white/90"
             >
               <Link href="/sale">
-                Aksiyani ko&apos;rish <ArrowRight size={16} className="ml-1" />
+                {t('bannerCta')} <ArrowRight size={16} className="ml-1" />
               </Link>
             </Button>
           </div>

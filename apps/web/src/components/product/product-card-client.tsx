@@ -1,6 +1,7 @@
 'use client';
 
 import { ProductCard, toast, type ProductCardProps } from '@ecom/ui';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
@@ -41,6 +42,7 @@ interface Props extends Pick<ProductCardProps, 'className'> {
 }
 
 export function ProductCardClient({ product, locale, className, stockLeft }: Props) {
+  const t = useTranslations('product');
   const name = pickLocale(product.name, locale);
   const addItem = useCart((s) => s.addItem);
   const toggleWishlist = useWishlist((s) => s.toggle);
@@ -58,16 +60,16 @@ export function ProductCardClient({ product, locale, className, stockLeft }: Pro
       currency: product.currency,
       quantity: 1,
     });
-    toast({ title: 'Savatga qo`shildi', description: name, variant: 'success', duration: 2500 });
-  }, [addItem, name, product]);
+    toast({ title: t('addedToCart'), description: name, variant: 'success', duration: 2500 });
+  }, [addItem, name, product, t]);
 
   const onToggleWishlist = React.useCallback(() => {
     toggleWishlist(product.id);
     toast({
-      title: isWishlisted ? 'Sevimlilardan olib tashlandi' : 'Sevimlilarga qo`shildi',
+      title: isWishlisted ? t('removedFromWishlist') : t('addedToWishlist'),
       duration: 1500,
     });
-  }, [toggleWishlist, product.id, isWishlisted]);
+  }, [toggleWishlist, product.id, isWishlisted, t]);
 
   return (
     <ProductCard

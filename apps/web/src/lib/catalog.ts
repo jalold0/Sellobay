@@ -2,9 +2,21 @@
 // DB (Neon PostgreSQL, Prisma) dan o'qiydi va frontend komponentlar kutadigan
 // MockProduct shape'iga moslaydi. DB ishlamasa (env yo'q, network) — mock fallback.
 // Faqat Server Component'lardan chaqiriladi.
+//
+// Optimizatsiya (Sprint 3):
+//  • relationLoadStrategy: 'join' — brand/images/categories bitta LATERAL JOIN'da
+//    yuklanadi (avval har biri alohida IN-query edi — N+1 pattern).
+//  • unstable_cache — bir xil so'rov 120s ichida DB'ga qayta urmaydi (Neon
+//    serverless cold-start va connection overhead'ini tejaydi). 'products' tag
+//    orqali invalidatsiya qilinadi (mahsulot o'zgarsa revalidateTag('products')).
+
+import { unstable_cache } from 'next/cache';
 
 import { prisma } from './db';
 import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
+
+export const CATALOG_CACHE_TAG = 'products';
+const CATALOG_REVALIDATE_SECONDS = 120;
 
 // ─── DB → MockProduct mapping ────────────────────────────────────
 
@@ -82,8 +94,8 @@ export interface CatalogQuery {
   limit?: number;
 }
 
-/** Katalog mahsulotlari — DB'dan, xato bo'lsa mock fallback. */
-export async function fetchProducts(query: CatalogQuery = {}): Promise<{
+/** DB'dan o'qish — kesh ichida ishlaydi (chaqiruvchi to'g'ridan-to'g'ri chaqirmaydi). */
+async function queryProductsFromDb(query: CatalogQuery): Promise<{
   items: MockProduct[];
   source: 'db' | 'mock';
 }> {
@@ -119,6 +131,8 @@ export async function fetchProducts(query: CatalogQuery = {}): Promise<{
       orderBy,
       take: limit,
       select: PRODUCT_SELECT,
+      // Brand/images/categories'ni bitta LATERAL JOIN'da yuklash (N+1 ni yo'qotadi)
+      relationLoadStrategy: 'join',
     });
 
     // Filtersiz so'rov bo'sh qaytsa — DB hali seed qilinmagan, mock ko'rsatamiz
@@ -131,6 +145,21 @@ export async function fetchProducts(query: CatalogQuery = {}): Promise<{
     console.error('[catalog] DB xato, mock fallback:', err);
     return { items: filterMock(query), source: 'mock' };
   }
+}
+
+// Keshlangan o'rama — bir xil query 120s ichida DB'ga qayta urmaydi.
+// unstable_cache argumentlarni avtomatik kalit qiladi (query obyekti serializatsiya bo'ladi).
+const cachedQueryProducts = unstable_cache(queryProductsFromDb, ['catalog-products-v1'], {
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+  tags: [CATALOG_CACHE_TAG],
+});
+
+/** Katalog mahsulotlari — keshlangan DB o'qish, xato bo'lsa mock fallback. */
+export async function fetchProducts(query: CatalogQuery = {}): Promise<{
+  items: MockProduct[];
+  source: 'db' | 'mock';
+}> {
+  return cachedQueryProducts(query);
 }
 
 /** Bosh sahifa data — bitta so'rovda hero/featured/sale bo'limlari uchun. */

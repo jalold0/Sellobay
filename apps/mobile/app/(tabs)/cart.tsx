@@ -1,13 +1,15 @@
 import { useRouter } from 'expo-router';
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react-native';
 import * as React from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMoney } from '../../src/lib/format';
+import { haptics } from '../../src/lib/haptics';
 import { productImage } from '../../src/lib/mock-data';
 import { useCart, type CartItem } from '../../src/store/cart';
 import { toast } from '../../src/store/toast';
+import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
 import { EmptyState } from '../../src/ui/empty-state';
 
@@ -136,10 +138,10 @@ function CartItemRow({
 }) {
   return (
     <View className="border-border bg-card flex-row gap-3 rounded-2xl border p-3">
-      <Image
-        source={{ uri: productImage(item.imageSeed, 200) }}
+      <AppImage
+        source={productImage(item.imageSeed, 200)}
         className="bg-muted h-20 w-20 rounded-lg"
-        resizeMode="cover"
+        contentFit="cover"
       />
       <View className="flex-1 gap-1">
         <View className="flex-row items-start justify-between gap-2">
@@ -169,7 +171,10 @@ function CartItemRow({
         <View className="mt-auto flex-row items-end justify-between">
           <View className="border-border flex-row items-center gap-2 rounded-full border">
             <Pressable
-              onPress={() => onQty(Math.max(1, item.quantity - 1))}
+              onPress={() => {
+                haptics.light();
+                onQty(Math.max(1, item.quantity - 1));
+              }}
               hitSlop={4}
               className="h-7 w-7 items-center justify-center"
             >
@@ -177,7 +182,10 @@ function CartItemRow({
             </Pressable>
             <Text className="min-w-5 text-center text-sm font-semibold">{item.quantity}</Text>
             <Pressable
-              onPress={() => onQty(item.quantity + 1)}
+              onPress={() => {
+                haptics.light();
+                onQty(item.quantity + 1);
+              }}
               hitSlop={4}
               className="h-7 w-7 items-center justify-center"
             >

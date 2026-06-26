@@ -2,7 +2,7 @@
 // CACHE VERSION'NI O'ZGARTIRGAN HAR SAFAR — eski cache avtomatik tozalanadi.
 // Network-first for HTML/API, cache-first for static assets.
 
-const CACHE_NAME = 'sellobay-v8'; // ⚠️ V2 clean logo (oq fonsiz, tight crop)
+const CACHE_NAME = 'sellobay-v10'; // ⚠️ V4 bold S logo (2026-06-17)
 const STATIC_ASSETS = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {

@@ -1,13 +1,25 @@
 import { useRouter } from 'expo-router';
-import { Check, ChevronLeft, CreditCard, MapPin, Package, ShieldCheck } from 'lucide-react-native';
+import {
+  Check,
+  ChevronLeft,
+  Coins,
+  CreditCard,
+  MapPin,
+  Package,
+  ShieldCheck,
+} from 'lucide-react-native';
 import * as React from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { createOrder, fetchLoyalty } from '../../src/lib/api';
 import { formatMoney } from '../../src/lib/format';
+import { haptics } from '../../src/lib/haptics';
+import { COIN_VALUE_SOM, coinsForOrder } from '../../src/lib/loyalty';
 import { productImage } from '../../src/lib/mock-data';
 import { useCart } from '../../src/store/cart';
 import { toast } from '../../src/store/toast';
+import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
 import { cn } from '../../src/ui/cn';
 import { EmptyState } from '../../src/ui/empty-state';
@@ -56,6 +68,21 @@ export default function CheckoutScreen() {
   const [payment, setPayment] = React.useState<(typeof PAYMENT_OPTIONS)[number]['id']>('CLICK');
   const [submitting, setSubmitting] = React.useState(false);
 
+  // Sello Coins — login bo'lsa real balans (Bearer). Aks holda 0 (redeem ko'rinmaydi).
+  const [coinBalance, setCoinBalance] = React.useState(0);
+  const [useCoins, setUseCoins] = React.useState(false);
+  React.useEffect(() => {
+    let active = true;
+    fetchLoyalty()
+      .then((data) => {
+        if (active && data) setCoinBalance(data.coins);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
     shipping === 'PICKUP_POINT'
@@ -65,7 +92,11 @@ export default function CheckoutScreen() {
         : subtotal >= FREE_SHIPPING_THRESHOLD
           ? 0
           : SHIPPING_FEE;
-  const total = subtotal + shippingFee;
+  const baseTotal = subtotal + shippingFee;
+  const redeemableCoins = Math.min(coinBalance, Math.floor(baseTotal / COIN_VALUE_SOM));
+  const coinsToRedeem = useCoins ? redeemableCoins : 0;
+  const coinDiscount = coinsToRedeem * COIN_VALUE_SOM;
+  const total = baseTotal - coinDiscount;
   const stepIdx = STEPS.findIndex((s) => s.id === step);
 
   if (items.length === 0) {
@@ -95,18 +126,46 @@ export default function CheckoutScreen() {
 
   const nextStep = () => {
     if (step === 'address' && !canNextFromAddress) {
+      haptics.warning();
       toast({ title: 'Majburiy maydonlarni to`ldiring', variant: 'warning' });
       return;
     }
+    haptics.light();
     const i = STEPS.findIndex((s) => s.id === step);
     if (i < STEPS.length - 1) setStep(STEPS[i + 1]!.id);
   };
 
   const placeOrder = async () => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
+    const result = await createOrder({
+      items: items.map((it) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        variantId: it.variantId,
+      })),
+      recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
+      phone: address.phone.trim(),
+      region: 'Toshkent',
+      city: address.city.trim(),
+      street: address.street.trim(),
+      apartment: address.apartment.trim() || undefined,
+      deliveryMethod: shipping,
+      paymentProvider: payment,
+      redeemCoins: coinsToRedeem,
+    });
     setSubmitting(false);
-    const orderNumber = `ORD-2026-${String(Math.floor(Math.random() * 99_999_999)).padStart(8, '0')}`;
+
+    if (!result.success || !result.order) {
+      haptics.error();
+      toast({
+        title: result.error?.message ?? 'Buyurtma yaratilmadi',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const orderNumber = result.order.number;
+    haptics.success();
     clear();
     toast({
       title: 'Buyurtma qabul qilindi!',
@@ -121,41 +180,69 @@ export default function CheckoutScreen() {
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
       <Header onBack={() => router.back()} title="Rasmiylashtirish" />
 
-      {/* Stepper */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, gap: 6 }}
-      >
-        {STEPS.map((s, i) => {
-          const Icon = s.icon;
-          const done = i < stepIdx;
-          const active = i === stepIdx;
-          return (
-            <View
-              key={s.id}
-              className={cn(
-                'flex-row items-center gap-1.5 rounded-full px-3 py-1.5',
-                active ? 'bg-primary' : done ? 'bg-emerald-100' : 'bg-muted',
-              )}
-            >
-              {done ? (
-                <Check size={12} color="#059669" />
-              ) : (
-                <Icon size={12} color={active ? '#fff' : '#6B6B73'} />
-              )}
-              <Text
-                className={cn(
-                  'text-xs font-medium',
-                  active ? 'text-white' : done ? 'text-emerald-700' : 'text-muted-foreground',
-                )}
-              >
-                {i + 1}. {s.label}
-              </Text>
-            </View>
-          );
-        })}
-      </ScrollView>
+      {/* Compact stepper: 4 ta circle + ulanish chiziq + active step label */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {STEPS.map((s, i) => {
+            const done = i < stepIdx;
+            const active = i === stepIdx;
+            return (
+              <React.Fragment key={s.id}>
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: done ? '#059669' : active ? '#8B0020' : '#E5E7EB',
+                  }}
+                >
+                  {done ? (
+                    <Check size={14} color="#fff" strokeWidth={3} />
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '700',
+                        color: active ? '#fff' : '#6B6B73',
+                      }}
+                    >
+                      {i + 1}
+                    </Text>
+                  )}
+                </View>
+                {i < STEPS.length - 1 ? (
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 2,
+                      marginHorizontal: 4,
+                      backgroundColor: done ? '#059669' : '#E5E7EB',
+                      borderRadius: 1,
+                    }}
+                  />
+                ) : null}
+              </React.Fragment>
+            );
+          })}
+        </View>
+        <Text
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            fontWeight: '600',
+            textAlign: 'center',
+            color: '#0A0A0C',
+          }}
+        >
+          {STEPS[stepIdx]!.label}
+          <Text style={{ color: '#6B6B73', fontWeight: '400' }}>
+            {'  ·  '}
+            {stepIdx + 1}/{STEPS.length}
+          </Text>
+        </Text>
+      </View>
 
       <ScrollView
         className="flex-1"
@@ -230,7 +317,10 @@ export default function CheckoutScreen() {
             ].map((opt) => (
               <Pressable
                 key={opt.id}
-                onPress={() => setShipping(opt.id)}
+                onPress={() => {
+                  haptics.select();
+                  setShipping(opt.id);
+                }}
                 className={cn(
                   'flex-row items-center justify-between rounded-2xl border-2 p-4',
                   shipping === opt.id ? 'border-primary bg-primary/5' : 'border-border',
@@ -253,7 +343,10 @@ export default function CheckoutScreen() {
             {PAYMENT_OPTIONS.map((p) => (
               <Pressable
                 key={p.id}
-                onPress={() => setPayment(p.id)}
+                onPress={() => {
+                  haptics.select();
+                  setPayment(p.id);
+                }}
                 className={cn(
                   'flex-row items-center gap-3 rounded-2xl border-2 p-3.5',
                   payment === p.id ? 'border-primary bg-primary/5' : 'border-border',
@@ -305,9 +398,10 @@ export default function CheckoutScreen() {
             <ReviewBlock title={`Mahsulotlar (${items.length})`}>
               {items.map((it) => (
                 <View key={it.id} className="flex-row items-center gap-2 py-1">
-                  <Image
-                    source={{ uri: productImage(it.imageSeed, 100) }}
+                  <AppImage
+                    source={productImage(it.imageSeed, 100)}
                     className="bg-muted h-10 w-10 rounded-md"
+                    contentFit="cover"
                   />
                   <View className="flex-1">
                     <Text numberOfLines={1} className="text-xs">
@@ -332,9 +426,51 @@ export default function CheckoutScreen() {
         style={{ paddingBottom: insets.bottom + 12 }}
         className="border-border bg-background absolute inset-x-0 bottom-0 gap-2 border-t px-4 pt-3"
       >
+        {/* Sello Coins redeem toggle — login + balans bo'lsa */}
+        {redeemableCoins > 0 ? (
+          <Pressable
+            onPress={() => {
+              haptics.select();
+              setUseCoins((v) => !v);
+            }}
+            className={cn(
+              'flex-row items-center gap-2 rounded-lg border p-2.5',
+              useCoins ? 'border-amber-400 bg-amber-50' : 'border-border',
+            )}
+          >
+            <View
+              className={cn(
+                'h-5 w-5 items-center justify-center rounded border-2',
+                useCoins ? 'border-amber-500 bg-amber-500' : 'border-border',
+              )}
+            >
+              {useCoins ? <Check size={13} color="#fff" strokeWidth={3} /> : null}
+            </View>
+            <Coins size={15} color="#d97706" />
+            <Text className="text-foreground flex-1 text-xs font-medium">
+              Sello Coins ishlatish · {redeemableCoins} coin
+            </Text>
+            <Text className="text-xs font-semibold text-amber-700">
+              −{formatMoney(redeemableCoins * COIN_VALUE_SOM)}
+            </Text>
+          </Pressable>
+        ) : null}
+        {coinDiscount > 0 ? (
+          <View className="flex-row justify-between">
+            <Text className="text-success text-sm">Sello Coins chegirmasi</Text>
+            <Text className="text-success text-sm font-medium">−{formatMoney(coinDiscount)}</Text>
+          </View>
+        ) : null}
         <View className="flex-row justify-between">
           <Text className="text-muted-foreground text-sm">Jami</Text>
           <Text className="text-base font-bold">{formatMoney(total)}</Text>
+        </View>
+        {/* Sello Coins earn hint — chegirmadan keyingi summa bo'yicha */}
+        <View className="flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5">
+          <Coins size={13} color="#d97706" />
+          <Text className="text-[11px] font-medium text-amber-700">
+            Bu buyurtma uchun +{coinsForOrder(total)} Sello Coin olasiz
+          </Text>
         </View>
         {step === 'review' ? (
           <Button fullWidth size="lg" loading={submitting} onPress={placeOrder}>

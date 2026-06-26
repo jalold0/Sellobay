@@ -5,6 +5,13 @@
 import Constants from 'expo-constants';
 
 import { products as mockProducts, type MockProduct, type LocalizedText } from './mock-data';
+import { secureStorage, STORAGE_KEYS } from './storage';
+
+/** Saqlangan access token'dan Authorization header (login bo'lmasa bo'sh). */
+async function authHeader(): Promise<Record<string, string>> {
+  const token = await secureStorage.get(STORAGE_KEYS.accessToken);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 const API_BASE =
   (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
@@ -154,6 +161,202 @@ function filterMock(params: FetchProductsParams): MockProduct[] {
       list.sort((a, b) => b.reviewCount - a.reviewCount);
   }
   return list.slice(0, params.limit ?? 48);
+}
+
+// ─── Buyurtma yaratish ──────────────────────────────────────────
+
+export interface CreateOrderInput {
+  items: Array<{ productId: string; quantity: number; variantId?: string }>;
+  recipientName: string;
+  phone: string;
+  region?: string;
+  city: string;
+  street: string;
+  apartment?: string;
+  deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
+  paymentProvider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
+  notes?: string;
+  redeemCoins?: number;
+}
+
+export interface CreateOrderResult {
+  success: boolean;
+  order?: { id: string; number: string; status: string; grandTotal: string };
+  error?: { code: string; message: string };
+}
+
+export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(await authHeader()),
+        },
+        body: JSON.stringify(input),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { order: { id: string; number: string; status: string; grandTotal: string } };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return {
+        success: false,
+        error: json.error ?? { code: 'UNKNOWN', message: 'Buyurtma yaratilmadi' },
+      };
+    }
+    return { success: true, order: json.data.order };
+  } catch (err) {
+    return {
+      success: false,
+      error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` },
+    };
+  }
+}
+
+// ─── Auth (login → token) ────────────────────────────────────────
+
+export interface AuthUser {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export interface LoginResult {
+  success: boolean;
+  user?: AuthUser;
+  tokens?: { access: string; refresh: string };
+  error?: { code: string; message: string };
+}
+
+/** Email/telefon + parol bilan kirish — token'larni body'dan oladi (mobile uchun). */
+export async function loginWithPassword(
+  identifier: string,
+  password: string,
+): Promise<LoginResult> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { user: AuthUser; tokens: { access: string; refresh: string } };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return {
+        success: false,
+        error: json.error ?? { code: 'UNKNOWN', message: 'Kirish amalga oshmadi' },
+      };
+    }
+    return { success: true, user: json.data.user, tokens: json.data.tokens };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
+/** OTP kod yuborish (telefon). */
+export async function sendOtp(
+  phone: string,
+): Promise<{ success: boolean; error?: { message: string } }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/otp/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const json = (await res.json()) as { success: boolean; error?: { message: string } };
+    return json;
+  } catch (err) {
+    return { success: false, error: { message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
+/** OTP kodni tasdiqlash → token'lar (mobile uchun body'da). */
+export async function verifyOtp(
+  phone: string,
+  code: string,
+  firstName?: string,
+): Promise<LoginResult> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ phone, code, firstName }),
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { user: AuthUser; tokens: { access: string; refresh: string } };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return {
+        success: false,
+        error: json.error ?? { code: 'UNKNOWN', message: 'Tasdiqlash amalga oshmadi' },
+      };
+    }
+    return { success: true, user: json.data.user, tokens: json.data.tokens };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
+// ─── Sello Coins (loyalty) ───────────────────────────────────────
+
+export interface LoyaltyData {
+  coins: number;
+  spentSom: number;
+  history: Array<{ id: string; type: string; amount: number; reasonKey: string; daysAgo: number }>;
+  checkedInToday?: boolean;
+}
+
+/** Joriy user loyalty balansi — login bo'lsa real, aks holda null (chaqiruvchi mock'ga tushadi). */
+export async function fetchLoyalty(): Promise<LoyaltyData | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/loyalty`, {
+      headers: { Accept: 'application/json', ...(await authHeader()) },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { success: boolean; data?: LoyaltyData };
+    return json.success && json.data ? json.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export interface CheckinResult {
+  alreadyClaimed: boolean;
+  awarded: number;
+  balance: number;
+}
+
+/** Kunlik check-in — +5 coin (kuniga 1 marta). Login kerak; null = mock rejim. */
+export async function checkinDaily(): Promise<CheckinResult | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/loyalty/checkin`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', ...(await authHeader()) },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { success: boolean; data?: CheckinResult };
+    return json.success && json.data ? json.data : null;
+  } catch {
+    return null;
+  }
 }
 
 export { API_BASE };

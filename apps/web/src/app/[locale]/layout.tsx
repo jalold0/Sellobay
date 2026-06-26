@@ -18,6 +18,7 @@ import { StickyInstallBar } from '../../components/pwa/sticky-install-bar';
 import { QueryProvider } from '../../providers/query-provider';
 import { OrganizationJsonLd } from '../../components/seo/structured-data';
 import { StoreHydrator } from '../../store/hydrate';
+import { StoreSync } from '../../store/store-sync';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -99,6 +100,7 @@ export default async function LocaleLayout({
           <QueryProvider>
             <TooltipProvider delayDuration={150}>
               <StoreHydrator />
+              <StoreSync />
               <SkipLink />
               <div className="flex min-h-screen flex-col">
                 <Header />

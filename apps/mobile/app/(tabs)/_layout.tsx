@@ -2,23 +2,30 @@ import { Tabs } from 'expo-router';
 import { Heart, Home, Search, ShoppingBag, User } from 'lucide-react-native';
 import * as React from 'react';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { haptics } from '../../src/lib/haptics';
 import { useCart } from '../../src/store/cart';
 
 export default function TabsLayout() {
   const cartCount = useCart((s) => s.totalQuantity());
+  const insets = useSafeAreaInsets();
+
+  // Android tizim nav bar yoki iOS home indicator uchun safe area
+  const bottomPadding = Math.max(insets.bottom, 8);
 
   return (
     <Tabs
+      screenListeners={{ tabPress: () => haptics.select() }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#8B0020',
         tabBarInactiveTintColor: '#6B6B73',
         tabBarShowLabel: true,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
         tabBarStyle: {
-          height: 64,
-          paddingBottom: 10,
+          height: 56 + bottomPadding,
+          paddingBottom: bottomPadding,
           paddingTop: 6,
           borderTopWidth: 1,
           borderTopColor: '#EAEAEC',

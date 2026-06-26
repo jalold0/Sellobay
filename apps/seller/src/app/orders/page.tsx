@@ -1,102 +1,116 @@
 'use client';
 
 import {
+  Badge,
   Button,
   Card,
-  DataTable,
-  KpiCard,
+  CardContent,
+  EmptyState,
   PageHeader,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Tabs,
-  TabsList,
-  TabsTrigger,
+  Skeleton,
+  toast,
 } from '@ecom/ui';
-import { type ColumnDef } from '@tanstack/react-table';
-import { ArrowDownToLine, ShoppingCart } from 'lucide-react';
-import Link from 'next/link';
+import { Phone, RefreshCw, ShoppingCart, Truck } from 'lucide-react';
 import * as React from 'react';
 
-import {
-  SELLER_ORDER_STATUS_LABELS,
-  SellerOrderStatusBadge,
-} from '../../components/order-status-badge';
-import { formatDateTime, formatMoney, formatNumber } from '../../lib/format';
-import { sellerOrders, type SellerOrder } from '../../lib/mock';
+import { formatDateTime, formatMoney } from '../../lib/format';
+
+interface OrderItem {
+  id: string;
+  sku: string;
+  name: { uz?: string; ru?: string; en?: string } | string;
+  quantity: number;
+  unitPrice: string;
+  totalPrice: string;
+}
+
+interface Order {
+  id: string;
+  number: string;
+  status: string;
+  placedAt: string;
+  deliveryMethod: string;
+  customer: { name: string; phone: string | null };
+  address: string | null;
+  sellerSubtotal: string;
+  itemCount: number;
+  items: OrderItem[];
+}
+
+interface ApiResult<T> {
+  success: boolean;
+  data?: T;
+  error?: { message: string };
+}
+
+const STATUS_TONE: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-800',
+  CONFIRMED: 'bg-blue-100 text-blue-800',
+  PAID: 'bg-blue-100 text-blue-800',
+  PROCESSING: 'bg-indigo-100 text-indigo-800',
+  PACKED: 'bg-indigo-100 text-indigo-800',
+  SHIPPED: 'bg-violet-100 text-violet-800',
+  OUT_FOR_DELIVERY: 'bg-violet-100 text-violet-800',
+  DELIVERED: 'bg-emerald-100 text-emerald-800',
+  CANCELLED: 'bg-red-100 text-red-800',
+  RETURNED: 'bg-red-100 text-red-800',
+  REFUNDED: 'bg-red-100 text-red-800',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Kutilmoqda',
+  CONFIRMED: 'Tasdiqlandi',
+  PAID: "To'landi",
+  PROCESSING: 'Tayyorlanmoqda',
+  PACKED: 'Qadoqlandi',
+  SHIPPED: "Jo'natildi",
+  OUT_FOR_DELIVERY: 'Yetkazilmoqda',
+  DELIVERED: 'Yetkazildi',
+  CANCELLED: 'Bekor qilindi',
+  RETURNED: 'Qaytarildi',
+  REFUNDED: 'Pul qaytarildi',
+};
+
+function localizeName(name: OrderItem['name']): string {
+  if (typeof name === 'string') return name;
+  return name.uz ?? name.ru ?? name.en ?? 'Mahsulot';
+}
 
 export default function SellerOrdersPage() {
-  const [tab, setTab] = React.useState('new');
-  const [cityFilter, setCityFilter] = React.useState('all');
+  const [orders, setOrders] = React.useState<Order[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  const counts = {
-    new: sellerOrders.filter((o) => ['PENDING', 'CONFIRMED', 'PAID'].includes(o.status)).length,
-    processing: sellerOrders.filter((o) => ['PROCESSING', 'PACKED'].includes(o.status)).length,
-    shipped: sellerOrders.filter((o) => ['SHIPPED'].includes(o.status)).length,
-    delivered: sellerOrders.filter((o) => o.status === 'DELIVERED').length,
-    issues: sellerOrders.filter((o) => ['CANCELLED', 'RETURNED'].includes(o.status)).length,
-    all: sellerOrders.length,
-  };
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/orders', { credentials: 'same-origin' });
+      const json = (await res.json()) as ApiResult<{ items: Order[] }>;
+      if (json.success && json.data) setOrders(json.data.items);
+      else
+        toast({
+          title: json.error?.message ?? "Buyurtmalarni olib bo'lmadi",
+          variant: 'destructive',
+        });
+    } catch {
+      toast({ title: 'Tarmoq xatosi', variant: 'destructive' });
+    }
+    setLoading(false);
+  }, []);
 
-  const data = React.useMemo(() => {
-    let list = sellerOrders;
-    if (tab === 'new') list = list.filter((o) => ['PENDING', 'CONFIRMED', 'PAID'].includes(o.status));
-    else if (tab === 'processing') list = list.filter((o) => ['PROCESSING', 'PACKED'].includes(o.status));
-    else if (tab === 'shipped') list = list.filter((o) => o.status === 'SHIPPED');
-    else if (tab === 'delivered') list = list.filter((o) => o.status === 'DELIVERED');
-    else if (tab === 'issues') list = list.filter((o) => ['CANCELLED', 'RETURNED'].includes(o.status));
-    if (cityFilter !== 'all') list = list.filter((o) => o.city === cityFilter);
-    return list;
-  }, [tab, cityFilter]);
+  React.useEffect(() => {
+    void load();
+  }, [load]);
 
-  const cities = Array.from(new Set(sellerOrders.map((o) => o.city)));
-  const revenue = data.reduce((s, o) => s + o.grandTotal, 0);
-
-  const columns: ColumnDef<SellerOrder>[] = [
-    {
-      accessorKey: 'number',
-      header: '№',
-      cell: ({ row }) => (
-        <Link href={`/orders/${row.original.id}`} className="font-mono font-medium hover:underline">
-          {row.original.number}
-        </Link>
-      ),
-    },
-    {
-      accessorKey: 'customerName',
-      header: 'Mijoz',
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.customerName}</div>
-          <div className="text-xs text-muted-foreground">{row.original.city}</div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => <SellerOrderStatusBadge status={row.original.status} />,
-    },
-    {
-      accessorKey: 'itemsCount',
-      header: () => <div className="text-right">Tovarlar</div>,
-      cell: ({ row }) => <div className="text-right">{row.original.itemsCount}</div>,
-    },
-    {
-      accessorKey: 'grandTotal',
-      header: () => <div className="text-right">Summa</div>,
-      cell: ({ row }) => <div className="text-right font-semibold">{formatMoney(row.original.grandTotal)}</div>,
-    },
-    {
-      accessorKey: 'placedAt',
-      header: 'Sana',
-      cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground">{formatDateTime(row.original.placedAt)}</span>
-      ),
-    },
-  ];
+  const counts = React.useMemo(() => {
+    return {
+      total: orders.length,
+      pending: orders.filter((o) => ['PENDING', 'CONFIRMED', 'PAID'].includes(o.status)).length,
+      shipping: orders.filter((o) =>
+        ['PROCESSING', 'PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY'].includes(o.status),
+      ).length,
+      delivered: orders.filter((o) => o.status === 'DELIVERED').length,
+    };
+  }, [orders]);
 
   return (
     <div className="space-y-6">
@@ -104,60 +118,115 @@ export default function SellerOrdersPage() {
         title="Buyurtmalar"
         description="Sizning mahsulotlaringizga tegishli buyurtmalar"
         actions={
-          <Button variant="outline" size="sm">
-            <ArrowDownToLine className="mr-2 h-4 w-4" /> Eksport
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+            <RefreshCw size={14} className="mr-1" />
+            Yangilash
           </Button>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Yangi" value={formatNumber(counts.new)} accent="warning" />
-        <KpiCard label="Jarayonda" value={formatNumber(counts.processing)} accent="info" />
-        <KpiCard label="Yetkazilgan" value={formatNumber(counts.delivered)} accent="success" />
-        <KpiCard label="Tanlangan davr daromad" value={formatMoney(revenue)} accent="primary" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-muted-foreground text-xs">Jami</div>
+            <div className="text-2xl font-bold">{counts.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-muted-foreground text-xs">Yangi</div>
+            <div className="text-2xl font-bold text-amber-600">{counts.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-muted-foreground text-xs">Jarayonda</div>
+            <div className="text-2xl font-bold text-violet-600">{counts.shipping}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-muted-foreground text-xs">Yetkazildi</div>
+            <div className="text-2xl font-bold text-emerald-600">{counts.delivered}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="new">Yangi ({counts.new})</TabsTrigger>
-          <TabsTrigger value="processing">Jarayonda ({counts.processing})</TabsTrigger>
-          <TabsTrigger value="shipped">Yo`lda ({counts.shipped})</TabsTrigger>
-          <TabsTrigger value="delivered">Yetkazildi ({counts.delivered})</TabsTrigger>
-          <TabsTrigger value="issues">Muammolar ({counts.issues})</TabsTrigger>
-          <TabsTrigger value="all">Barchasi ({counts.all})</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <Card className="p-4">
-        <div className="flex items-center gap-2">
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="h-9 w-[180px]">
-              <SelectValue placeholder="Shahar" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Barcha shaharlar</SelectItem>
-              {cities.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="ml-auto text-xs text-muted-foreground">{Object.keys(SELLER_ORDER_STATUS_LABELS).length} ta status mavjud</div>
+      {loading ? (
+        <div className="grid gap-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
         </div>
-      </Card>
+      ) : orders.length === 0 ? (
+        <EmptyState
+          icon={ShoppingCart}
+          title="Buyurtmalar yo'q"
+          description="Sizning mahsulotlaringizga hali buyurtma berilmagan"
+        />
+      ) : (
+        <div className="space-y-3">
+          {orders.map((o) => (
+            <Card key={o.id}>
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="font-mono text-sm font-semibold">{o.number}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {formatDateTime(o.placedAt)}
+                    </div>
+                  </div>
+                  <Badge className={STATUS_TONE[o.status] ?? 'bg-muted'}>
+                    {STATUS_LABEL[o.status] ?? o.status}
+                  </Badge>
+                  <div className="text-right">
+                    <div className="text-base font-bold">
+                      {formatMoney(Number(o.sellerSubtotal))}
+                    </div>
+                    <div className="text-muted-foreground text-[10px]">
+                      {o.itemCount} ta mahsulot
+                    </div>
+                  </div>
+                </div>
 
-      <DataTable
-        columns={columns}
-        data={data}
-        searchPlaceholder="Buyurtma raqami yoki mijoz..."
-        emptyState={
-          <div className="py-8 text-center">
-            <ShoppingCart className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Buyurtma yo`q</p>
-          </div>
-        }
-      />
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <div className="bg-muted/40 rounded-md p-2 text-xs">
+                    <div className="font-medium">{o.customer.name}</div>
+                    {o.customer.phone ? (
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <Phone size={10} /> {o.customer.phone}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="bg-muted/40 rounded-md p-2 text-xs">
+                    <div className="text-muted-foreground flex items-center gap-1">
+                      <Truck size={10} />
+                      {o.deliveryMethod === 'EXPRESS'
+                        ? 'Express'
+                        : o.deliveryMethod === 'PICKUP_POINT'
+                          ? 'Olib ketish'
+                          : 'Uyga'}
+                    </div>
+                    <div className="truncate">{o.address ?? '—'}</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-1 border-t pt-2">
+                  {o.items.map((it) => (
+                    <div key={it.id} className="flex items-center justify-between text-xs">
+                      <div className="min-w-0 flex-1 truncate">
+                        {localizeName(it.name)}{' '}
+                        <span className="text-muted-foreground">× {it.quantity}</span>
+                      </div>
+                      <div className="font-medium">{formatMoney(Number(it.totalPrice))}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

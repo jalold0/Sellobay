@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { loginWithPassword, sendOtp, verifyOtp, type AuthUser } from '../../src/lib/api';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { Button } from '../../src/ui/button';
@@ -12,12 +13,28 @@ import { Input } from '../../src/ui/input';
 
 type Tab = 'phone' | 'email';
 type PhoneStage = 'phone' | 'code';
+type AuthHandler = (user: AuthUser, access: string, refresh: string) => Promise<void>;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const signIn = useSession((s) => s.signIn);
   const [tab, setTab] = React.useState<Tab>('phone');
+
+  const handleAuth: AuthHandler = async (user, access, refresh) => {
+    await signIn(
+      {
+        id: user.id,
+        firstName: user.firstName ?? undefined,
+        lastName: user.lastName ?? undefined,
+        phone: user.phone ?? undefined,
+        email: user.email ?? undefined,
+      },
+      access,
+      refresh,
+    );
+    router.replace('/(tabs)');
+  };
 
   return (
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
@@ -67,29 +84,7 @@ export default function LoginScreen() {
         </View>
 
         <View className="mt-4">
-          {tab === 'phone' ? (
-            <PhoneForm
-              onSuccess={async () => {
-                await signIn(
-                  { id: 'demo', firstName: 'Foydalanuvchi', phone: '+998 90 123 45 67' },
-                  'mock-access',
-                  'mock-refresh',
-                );
-                router.replace('/(tabs)');
-              }}
-            />
-          ) : (
-            <EmailForm
-              onSuccess={async () => {
-                await signIn(
-                  { id: 'demo', firstName: 'Foydalanuvchi', email: 'user@example.uz' },
-                  'mock-access',
-                  'mock-refresh',
-                );
-                router.replace('/(tabs)');
-              }}
-            />
-          )}
+          {tab === 'phone' ? <PhoneForm onAuth={handleAuth} /> : <EmailForm onAuth={handleAuth} />}
         </View>
 
         {/* Divider */}
@@ -158,7 +153,7 @@ function TabButton({
   );
 }
 
-function PhoneForm({ onSuccess }: { onSuccess: () => void }) {
+function PhoneForm({ onAuth }: { onAuth: AuthHandler }) {
   const [stage, setStage] = React.useState<PhoneStage>('phone');
   const [phone, setPhone] = React.useState('+998 ');
   const [code, setCode] = React.useState('');
@@ -178,8 +173,12 @@ function PhoneForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
+    const res = await sendOtp(phone.trim());
     setLoading(false);
+    if (!res.success) {
+      toast({ title: res.error?.message ?? 'Kod yuborilmadi', variant: 'destructive' });
+      return;
+    }
     setStage('code');
     setResendIn(60);
     toast({ title: 'Kod yuborildi', description: phone, variant: 'success' });
@@ -191,9 +190,13 @@ function PhoneForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
+    const res = await verifyOtp(phone.trim(), code);
     setLoading(false);
-    onSuccess();
+    if (!res.success || !res.user || !res.tokens) {
+      toast({ title: res.error?.message ?? 'Kod noto`g`ri', variant: 'destructive' });
+      return;
+    }
+    await onAuth(res.user, res.tokens.access, res.tokens.refresh);
   };
 
   if (stage === 'phone') {
@@ -257,7 +260,7 @@ function PhoneForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-function EmailForm({ onSuccess }: { onSuccess: () => void }) {
+function EmailForm({ onAuth }: { onAuth: AuthHandler }) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -268,9 +271,13 @@ function EmailForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
+    const res = await loginWithPassword(email.trim(), password);
     setLoading(false);
-    onSuccess();
+    if (!res.success || !res.user || !res.tokens) {
+      toast({ title: res.error?.message ?? 'Kirish amalga oshmadi', variant: 'destructive' });
+      return;
+    }
+    await onAuth(res.user, res.tokens.access, res.tokens.refresh);
   };
 
   return (

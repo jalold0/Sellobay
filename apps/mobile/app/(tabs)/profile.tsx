@@ -106,7 +106,7 @@ export default function ProfileScreen() {
         <View className="border-border bg-card mx-4 -mt-4 flex-row gap-2 rounded-2xl border p-3 shadow-sm">
           <Stat label="Buyurtma" value="12" />
           <View className="bg-border w-px" />
-          <Stat label="Ball" value="1 240" />
+          <Stat label="Sello Coin" value="1 240" />
           <View className="bg-border w-px" />
           <Stat label="Daraja" value="Gold" />
         </View>

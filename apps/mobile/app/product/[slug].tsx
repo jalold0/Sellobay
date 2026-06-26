@@ -13,28 +13,22 @@ import {
   Undo2,
 } from 'lucide-react-native';
 import * as React from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Pressable,
-  ScrollView,
-  Share,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { discountPercent, formatMoney, pickLocalized } from '../../src/lib/format';
+import { haptics } from '../../src/lib/haptics';
 import { useProduct, useProducts } from '../../src/lib/hooks';
 import { productImage, type MockProduct } from '../../src/lib/mock-data';
 import { useCart } from '../../src/store/cart';
 import { toast } from '../../src/store/toast';
 import { useWishlist } from '../../src/store/wishlist';
+import { AppImage } from '../../src/ui/app-image';
 import { Badge } from '../../src/ui/badge';
 import { Button } from '../../src/ui/button';
 import { cn } from '../../src/ui/cn';
 import { ProductCard } from '../../src/ui/product-card';
+import { Skeleton } from '../../src/ui/skeleton';
 
 const GALLERY_EXTRAS = ['-2', '-3', '-4', '-5'];
 const COLORS = [
@@ -71,12 +65,24 @@ export default function ProductDetailScreen() {
 
   if (isLoading) {
     return (
-      <View
-        className="bg-background flex-1 items-center justify-center"
-        style={{ paddingTop: insets.top }}
-      >
-        <ActivityIndicator size="large" color="#8B0020" />
-        <Text className="text-muted-foreground mt-3 text-sm">Yuklanmoqda...</Text>
+      <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
+        {/* Hero rasm skeleton */}
+        <Skeleton className="aspect-square w-full rounded-none" />
+        <View className="flex-row gap-2 px-4 pt-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-16 rounded-lg" />
+          ))}
+        </View>
+        <View className="gap-3 px-4 pt-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-3 w-32" />
+          <View className="border-border border-y py-4">
+            <Skeleton className="h-8 w-40" />
+          </View>
+          <Skeleton className="h-9 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+        </View>
       </View>
     );
   }
@@ -112,9 +118,11 @@ export default function ProductDetailScreen() {
 
   const onAdd = (buyNow = false) => {
     if (sizes.length > 0 && !size) {
+      haptics.warning();
       toast({ title: "O'lcham tanlang", variant: 'warning' });
       return;
     }
+    haptics.success();
     addItem({
       productId: product.id,
       name,
@@ -152,10 +160,10 @@ export default function ProductDetailScreen() {
       >
         {/* Hero image */}
         <View className="bg-muted relative">
-          <Image
-            source={{ uri: productImage(gallery[activeImage]!, 800) }}
+          <AppImage
+            source={productImage(gallery[activeImage]!, 800)}
             style={{ width: '100%', aspectRatio: 1 }}
-            resizeMode="cover"
+            contentFit="cover"
           />
           {/* Top bar overlay */}
           <View
@@ -179,7 +187,10 @@ export default function ProductDetailScreen() {
                 <Share2 size={18} color="#0A0A0C" />
               </Pressable>
               <Pressable
-                onPress={() => toggleWishlist(product.id)}
+                onPress={() => {
+                  haptics.select();
+                  toggleWishlist(product.id);
+                }}
                 className="h-10 w-10 items-center justify-center rounded-full bg-white/90 active:opacity-75"
                 hitSlop={6}
               >
@@ -219,14 +230,19 @@ export default function ProductDetailScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, gap: 8 }}
           renderItem={({ item, index }) => (
-            <Pressable onPress={() => setActiveImage(index)}>
-              <Image
-                source={{ uri: productImage(item, 200) }}
+            <Pressable
+              onPress={() => {
+                haptics.select();
+                setActiveImage(index);
+              }}
+            >
+              <AppImage
+                source={productImage(item, 200)}
                 className={cn(
                   'bg-muted h-16 w-16 rounded-lg border-2',
                   index === activeImage ? 'border-primary' : 'border-transparent',
                 )}
-                resizeMode="cover"
+                contentFit="cover"
               />
             </Pressable>
           )}
@@ -340,7 +356,10 @@ export default function ProductDetailScreen() {
             <Text className="text-sm font-semibold">Miqdor:</Text>
             <View className="border-border flex-row items-center gap-2 rounded-full border">
               <Pressable
-                onPress={() => setQty((q) => Math.max(1, q - 1))}
+                onPress={() => {
+                  haptics.light();
+                  setQty((q) => Math.max(1, q - 1));
+                }}
                 className="h-9 w-9 items-center justify-center"
                 hitSlop={4}
               >
@@ -348,7 +367,10 @@ export default function ProductDetailScreen() {
               </Pressable>
               <Text className="min-w-6 text-center text-base font-semibold">{qty}</Text>
               <Pressable
-                onPress={() => setQty((q) => q + 1)}
+                onPress={() => {
+                  haptics.light();
+                  setQty((q) => q + 1);
+                }}
                 className="h-9 w-9 items-center justify-center"
                 hitSlop={4}
               >

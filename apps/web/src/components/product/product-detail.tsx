@@ -14,7 +14,9 @@ import {
   toast,
 } from '@ecom/ui';
 import {
+  BadgeCheck,
   Check,
+  Flame,
   Heart,
   HelpCircle,
   Minus,
@@ -24,9 +26,11 @@ import {
   ShoppingCart,
   Star,
   ThumbsUp,
+  TrendingUp,
   Truck,
   Undo2,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -45,14 +49,38 @@ interface Props {
 
 export function ProductDetail({ detail, locale }: Props) {
   const router = useRouter();
-  const { product, gallery, colors, sizes, description, features, specs, reviews, questions, ratingBreakdown } =
-    detail;
+  const t = useTranslations('product');
+  const {
+    product,
+    gallery,
+    colors,
+    sizes,
+    description,
+    features,
+    specs,
+    reviews,
+    questions,
+    ratingBreakdown,
+  } = detail;
   const name = pickLocale(product.name, locale);
 
   const [activeImageIdx, setActiveImageIdx] = React.useState(0);
   const [color, setColor] = React.useState(colors[0]?.id);
   const [size, setSize] = React.useState(sizes.find((s) => s.inStock !== false)?.id);
   const [quantity, setQuantity] = React.useState(1);
+
+  // Sticky CTA — asosiy tugma ekrandan chiqsa pastda paydo bo'ladi (conversion booster)
+  const ctaRef = React.useRef<HTMLDivElement>(null);
+  const [showSticky, setShowSticky] = React.useState(false);
+  React.useEffect(() => {
+    const el = ctaRef.current;
+    if (!el) return undefined;
+    const obs = new IntersectionObserver(([entry]) => setShowSticky(!entry!.isIntersecting), {
+      rootMargin: '0px 0px -80px 0px',
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const addItem = useCart((s) => s.addItem);
   const wishlistHas = useWishlist((s) => s.ids.includes(product.id));
@@ -69,11 +97,11 @@ export function ProductDetail({ detail, locale }: Props) {
 
   const handleAdd = (buyNow = false) => {
     if (sizes.length > 0 && !size) {
-      toast({ title: 'O`lcham tanlang', variant: 'warning' });
+      toast({ title: t('selectSize'), variant: 'warning' });
       return;
     }
     if (selectedSize && selectedSize.inStock === false) {
-      toast({ title: 'Bu o`lcham hozircha mavjud emas', variant: 'destructive' });
+      toast({ title: t('sizeUnavailable'), variant: 'destructive' });
       return;
     }
     addItem({
@@ -90,7 +118,7 @@ export function ProductDetail({ detail, locale }: Props) {
       size: selectedSize?.label,
     });
     toast({
-      title: 'Savatga qo`shildi',
+      title: t('addedToCart'),
       description: `${quantity} × ${name}`,
       variant: 'success',
       duration: 2500,
@@ -107,7 +135,7 @@ export function ProductDetail({ detail, locale }: Props) {
       }
     } else {
       void navigator.clipboard?.writeText(window.location.href);
-      toast({ title: 'Havola nusxalandi', variant: 'success', duration: 1500 });
+      toast({ title: t('linkCopied'), variant: 'success', duration: 1500 });
     }
   };
 
@@ -116,7 +144,7 @@ export function ProductDetail({ detail, locale }: Props) {
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Gallery */}
         <div className="space-y-3">
-          <div className="relative aspect-square overflow-hidden rounded-2xl border bg-muted">
+          <div className="bg-muted relative aspect-square overflow-hidden rounded-2xl border">
             <Image
               src={productImage(gallery[activeImageIdx]?.seed ?? product.imageSeed, 800)}
               alt={name}
@@ -133,8 +161,8 @@ export function ProductDetail({ detail, locale }: Props) {
             <button
               type="button"
               onClick={() => toggleWishlist(product.id)}
-              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-foreground shadow-sm transition hover:bg-white"
-              aria-label="Sevimlilar"
+              className="text-foreground absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow-sm transition hover:bg-white"
+              aria-label={t('addToWishlist')}
             >
               <Heart size={18} className={wishlistHas ? 'fill-rose-500 text-rose-500' : ''} />
             </button>
@@ -146,9 +174,9 @@ export function ProductDetail({ detail, locale }: Props) {
                 type="button"
                 onClick={() => setActiveImageIdx(i)}
                 className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${
-                  i === activeImageIdx ? 'border-primary' : 'border-transparent hover:border-input'
+                  i === activeImageIdx ? 'border-primary' : 'hover:border-input border-transparent'
                 }`}
-                aria-label={`Rasm ${i + 1}`}
+                aria-label={`${t('description')} ${i + 1}`}
               >
                 <Image
                   src={productImage(g.seed, 200)}
@@ -167,21 +195,48 @@ export function ProductDetail({ detail, locale }: Props) {
           <div className="flex items-center gap-2">
             <Link
               href={`/catalog?brand=${product.brand.toLowerCase().replace(/[^a-z0-9]/g, '')}`}
-              className="text-xs font-semibold uppercase tracking-widest text-primary hover:underline"
+              className="text-primary text-xs font-semibold uppercase tracking-widest hover:underline"
             >
               {product.brand}
             </Link>
             <span className="text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground">SKU: ECM-{product.id.toUpperCase()}</span>
+            <span className="text-muted-foreground text-xs">
+              SKU: ECM-{product.id.toUpperCase()}
+            </span>
           </div>
 
           <div>
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{name}</h1>
             <div className="mt-2 flex items-center gap-3">
-              <Rating value={product.rating} reviewCount={product.reviewCount} size={16} showValue />
-              <Link href="#reviews" className="text-sm text-muted-foreground hover:underline">
-                ({product.reviewCount} sharh)
+              <Rating
+                value={product.rating}
+                reviewCount={product.reviewCount}
+                size={16}
+                showValue
+              />
+              <Link href="#reviews" className="text-muted-foreground text-sm hover:underline">
+                ({t('reviewsCount', { count: product.reviewCount })})
               </Link>
+            </div>
+
+            {/* Trust / social-proof chiplari — real data (rating, reviewCount) asosida */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <BadgeCheck size={13} />
+                {t('trustVerified')}
+              </span>
+              {product.reviewCount >= 100 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">
+                  <Flame size={13} />
+                  {t('trustPopular')}
+                </span>
+              )}
+              {product.rating >= 4.8 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                  <TrendingUp size={13} />
+                  {t('trustTopRated')}
+                </span>
+              )}
             </div>
           </div>
 
@@ -203,11 +258,11 @@ export function ProductDetail({ detail, locale }: Props) {
           <div className="flex items-end gap-3 border-y py-5">
             <div>
               {product.oldPrice && (
-                <div className="text-sm text-muted-foreground line-through">
+                <div className="text-muted-foreground text-sm line-through">
                   {formatMoney(product.oldPrice)}
                 </div>
               )}
-              <div className="text-3xl font-bold text-foreground">{formatMoney(product.price)}</div>
+              <div className="text-foreground text-3xl font-bold">{formatMoney(product.price)}</div>
             </div>
             {discount > 0 && (
               <Badge className="bg-rose-600 text-white hover:bg-rose-600">−{discount}%</Badge>
@@ -216,10 +271,10 @@ export function ProductDetail({ detail, locale }: Props) {
               {product.inStock ? (
                 <>
                   <Check size={16} className="text-emerald-600" />
-                  <span className="text-emerald-700">Omborda mavjud</span>
+                  <span className="text-emerald-700">{t('inStock')}</span>
                 </>
               ) : (
-                <span className="text-muted-foreground">Mavjud emas</span>
+                <span className="text-muted-foreground">{t('outOfStock')}</span>
               )}
             </div>
           </div>
@@ -228,8 +283,8 @@ export function ProductDetail({ detail, locale }: Props) {
           {colors.length > 0 && (
             <div>
               <div className="mb-2 text-sm font-semibold">
-                Rang:{' '}
-                <span className="font-normal text-muted-foreground">{selectedColor?.label}</span>
+                {t('color')}:{' '}
+                <span className="text-muted-foreground font-normal">{selectedColor?.label}</span>
               </div>
               <div className="flex gap-2">
                 {colors.map((c) => (
@@ -241,7 +296,7 @@ export function ProductDetail({ detail, locale }: Props) {
                       c.id === color ? 'border-primary' : 'border-input hover:border-foreground'
                     }`}
                     style={{ backgroundColor: c.hex }}
-                    aria-label={`Rang: ${c.label}`}
+                    aria-label={`${t('color')}: ${c.label}`}
                   />
                 ))}
               </div>
@@ -253,13 +308,13 @@ export function ProductDetail({ detail, locale }: Props) {
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="font-semibold">
-                  O&apos;lcham:{' '}
-                  <span className="font-normal text-muted-foreground">
+                  {t('size')}:{' '}
+                  <span className="text-muted-foreground font-normal">
                     {selectedSize?.label ?? '—'}
                   </span>
                 </span>
-                <button type="button" className="text-xs text-primary hover:underline">
-                  O&apos;lchov jadvali
+                <button type="button" className="text-primary text-xs hover:underline">
+                  {t('sizeChart')}
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -276,7 +331,7 @@ export function ProductDetail({ detail, locale }: Props) {
                         active
                           ? 'border-primary bg-primary text-primary-foreground'
                           : disabled
-                            ? 'cursor-not-allowed border-input bg-muted text-muted-foreground line-through opacity-60'
+                            ? 'border-input bg-muted text-muted-foreground cursor-not-allowed line-through opacity-60'
                             : 'border-input bg-background hover:border-primary'
                       }`}
                     >
@@ -289,13 +344,13 @@ export function ProductDetail({ detail, locale }: Props) {
           )}
 
           {/* Quantity & buttons */}
-          <div className="flex flex-col gap-3 md:flex-row">
-            <div className="flex h-12 items-center rounded-full border border-input">
+          <div ref={ctaRef} className="flex flex-col gap-3 md:flex-row">
+            <div className="border-input flex h-12 items-center rounded-full border">
               <button
                 type="button"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="grid h-12 w-12 place-items-center text-muted-foreground hover:text-foreground"
-                aria-label="Kamaytirish"
+                className="text-muted-foreground hover:text-foreground grid h-12 w-12 place-items-center"
+                aria-label={t('decrease')}
               >
                 <Minus size={16} />
               </button>
@@ -312,8 +367,8 @@ export function ProductDetail({ detail, locale }: Props) {
               <button
                 type="button"
                 onClick={() => setQuantity((q) => q + 1)}
-                className="grid h-12 w-12 place-items-center text-muted-foreground hover:text-foreground"
-                aria-label="Oshirish"
+                className="text-muted-foreground hover:text-foreground grid h-12 w-12 place-items-center"
+                aria-label={t('increase')}
               >
                 <Plus size={16} />
               </button>
@@ -325,26 +380,23 @@ export function ProductDetail({ detail, locale }: Props) {
               disabled={!product.inStock}
             >
               <ShoppingCart size={18} className="mr-2" />
-              Savatga qo&apos;shish
+              {t('addToCart')}
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="h-12 w-12 rounded-full p-0"
               onClick={() => toggleWishlist(product.id)}
-              aria-label="Sevimlilar"
+              aria-label={t('addToWishlist')}
             >
-              <Heart
-                size={18}
-                className={wishlistHas ? 'fill-rose-500 text-rose-500' : ''}
-              />
+              <Heart size={18} className={wishlistHas ? 'fill-rose-500 text-rose-500' : ''} />
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="h-12 w-12 rounded-full p-0"
               onClick={handleShare}
-              aria-label="Ulashish"
+              aria-label={t('share')}
             >
               <Share2 size={18} />
             </Button>
@@ -357,18 +409,18 @@ export function ProductDetail({ detail, locale }: Props) {
             onClick={() => handleAdd(true)}
             disabled={!product.inStock}
           >
-            ⚡ Hozir sotib olish
+            {t('buyNow')}
           </Button>
 
           {/* Delivery info */}
-          <div className="space-y-2 rounded-xl border bg-card p-4 text-sm">
+          <div className="bg-card space-y-2 rounded-xl border p-4 text-sm">
             {[
-              { icon: Truck, text: 'Tezkor yetkazib berish — Toshkent bo`yicha 24 soat ichida' },
-              { icon: Undo2, text: '14 kun ichida hech qanday savol-javobsiz qaytarish' },
-              { icon: ShieldCheck, text: '100% asl mahsulot kafolati' },
+              { icon: Truck, text: t('deliveryFast') },
+              { icon: Undo2, text: t('deliveryReturn') },
+              { icon: ShieldCheck, text: t('deliveryAuthentic') },
             ].map((d) => (
               <div key={d.text} className="flex items-center gap-3">
-                <d.icon size={18} className="shrink-0 text-primary" />
+                <d.icon size={18} className="text-primary shrink-0" />
                 <span>{d.text}</span>
               </div>
             ))}
@@ -380,12 +432,14 @@ export function ProductDetail({ detail, locale }: Props) {
       <section className="border-t pt-8">
         <Tabs defaultValue="description">
           <TabsList>
-            <TabsTrigger value="description">Tavsifi</TabsTrigger>
-            <TabsTrigger value="specs">Xususiyatlari</TabsTrigger>
+            <TabsTrigger value="description">{t('tabDescription')}</TabsTrigger>
+            <TabsTrigger value="specs">{t('tabSpecs')}</TabsTrigger>
             <TabsTrigger value="reviews" id="reviews">
-              Sharhlar ({product.reviewCount})
+              {t('tabReviews')} ({product.reviewCount})
             </TabsTrigger>
-            <TabsTrigger value="qa">Savol-javoblar ({questions.length})</TabsTrigger>
+            <TabsTrigger value="qa">
+              {t('tabQa')} ({questions.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="description">
@@ -398,8 +452,8 @@ export function ProductDetail({ detail, locale }: Props) {
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl border bg-card p-4 text-sm">
-                <div className="mb-3 font-semibold">Tezkor xususiyatlari</div>
+              <div className="bg-card rounded-xl border p-4 text-sm">
+                <div className="mb-3 font-semibold">{t('quickSpecs')}</div>
                 <dl className="space-y-2">
                   {specs.slice(0, 4).map((s) => (
                     <div key={s.value} className="flex justify-between gap-3">
@@ -413,7 +467,7 @@ export function ProductDetail({ detail, locale }: Props) {
           </TabsContent>
 
           <TabsContent value="specs">
-            <div className="rounded-xl border bg-card">
+            <div className="bg-card rounded-xl border">
               <dl className="divide-y">
                 {specs.map((s) => (
                   <div key={s.value} className="flex justify-between gap-3 px-4 py-3 text-sm">
@@ -428,13 +482,13 @@ export function ProductDetail({ detail, locale }: Props) {
           <TabsContent value="reviews">
             <div className="grid gap-8 md:grid-cols-3">
               <aside className="space-y-4">
-                <div className="rounded-xl border bg-card p-5 text-center">
+                <div className="bg-card rounded-xl border p-5 text-center">
                   <div className="text-5xl font-bold">{product.rating.toFixed(1)}</div>
                   <div className="mt-2 flex justify-center">
                     <Rating value={product.rating} size={18} />
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {product.reviewCount} sharh asosida
+                  <div className="text-muted-foreground mt-1 text-xs">
+                    {t('reviewsBasedOn', { count: product.reviewCount })}
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -443,23 +497,23 @@ export function ProductDetail({ detail, locale }: Props) {
                       <span className="inline-flex w-6 items-center gap-0.5">
                         {b.star} <Star size={10} className="fill-amber-400 text-amber-400" />
                       </span>
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
                         <div
                           className="h-full rounded-full bg-amber-400"
                           style={{ width: `${b.pct}%` }}
                         />
                       </div>
-                      <span className="w-8 text-right text-muted-foreground">{b.pct}%</span>
+                      <span className="text-muted-foreground w-8 text-right">{b.pct}%</span>
                     </div>
                   ))}
                 </div>
                 <Button variant="outline" className="w-full">
-                  Sharh yozish
+                  {t('writeReview')}
                 </Button>
               </aside>
               <div className="space-y-4 md:col-span-2">
                 {reviews.map((r) => (
-                  <article key={r.id} className="rounded-xl border bg-card p-4">
+                  <article key={r.id} className="bg-card rounded-xl border p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
@@ -468,11 +522,11 @@ export function ProductDetail({ detail, locale }: Props) {
                         </Avatar>
                         <div>
                           <div className="text-sm font-medium">{r.author}</div>
-                          <div className="text-[11px] text-muted-foreground">
+                          <div className="text-muted-foreground text-[11px]">
                             {formatRelative(r.createdAt)}
                             {r.verifiedPurchase && (
                               <span className="ml-2 inline-flex items-center gap-0.5 text-emerald-700">
-                                <Check size={10} /> Tasdiqlangan xarid
+                                <Check size={10} /> {t('verifiedPurchase')}
                               </span>
                             )}
                           </div>
@@ -481,13 +535,13 @@ export function ProductDetail({ detail, locale }: Props) {
                       <Rating value={r.rating} size={14} />
                     </div>
                     {r.title && <div className="mt-3 text-sm font-medium">{r.title}</div>}
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{r.body}</p>
+                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{r.body}</p>
                     <div className="mt-3 flex items-center gap-3 text-xs">
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
                       >
-                        <ThumbsUp size={12} /> Foydali ({r.helpfulCount ?? 0})
+                        <ThumbsUp size={12} /> {t('helpful', { count: r.helpfulCount ?? 0 })}
                       </button>
                     </div>
                   </article>
@@ -499,20 +553,20 @@ export function ProductDetail({ detail, locale }: Props) {
           <TabsContent value="qa">
             <div className="space-y-4">
               {questions.map((q) => (
-                <article key={q.id} className="rounded-xl border bg-card p-4">
+                <article key={q.id} className="bg-card rounded-xl border p-4">
                   <div className="flex items-start gap-3">
-                    <HelpCircle size={18} className="mt-0.5 shrink-0 text-primary" />
+                    <HelpCircle size={18} className="text-primary mt-0.5 shrink-0" />
                     <div className="space-y-2">
                       <div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {q.author} · {formatRelative(q.createdAt)}
                         </div>
                         <div className="mt-0.5 text-sm font-medium">{q.question}</div>
                       </div>
                       {q.answer && (
-                        <div className="rounded-md bg-muted p-3">
-                          <div className="text-xs font-semibold text-primary">
-                            {q.answeredBy ?? "Javob"}
+                        <div className="bg-muted rounded-md p-3">
+                          <div className="text-primary text-xs font-semibold">
+                            {q.answeredBy ?? t('answer')}
                           </div>
                           <div className="mt-1 text-sm">{q.answer}</div>
                         </div>
@@ -522,12 +576,51 @@ export function ProductDetail({ detail, locale }: Props) {
                 </article>
               ))}
               <Button variant="outline" className="w-full">
-                Savol berish
+                {t('askQuestion')}
               </Button>
             </div>
           </TabsContent>
         </Tabs>
       </section>
+
+      {/* Sticky add-to-cart bar — asosiy CTA ekrandan chiqsa paydo bo'ladi */}
+      <div
+        className={`bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur transition-transform duration-300 ${
+          showSticky ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div className="container flex items-center gap-3 py-2.5">
+          <div className="relative hidden h-12 w-12 shrink-0 overflow-hidden rounded-lg border sm:block">
+            <Image
+              src={productImage(product.imageSeed, 100)}
+              alt={name}
+              fill
+              sizes="48px"
+              className="object-cover"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="line-clamp-1 text-sm font-medium">{name}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold">{formatMoney(product.price)}</span>
+              {product.oldPrice && (
+                <span className="text-muted-foreground text-xs line-through">
+                  {formatMoney(product.oldPrice)}
+                </span>
+              )}
+            </div>
+          </div>
+          <Button
+            size="lg"
+            className="h-11 shrink-0 rounded-full px-6 text-sm font-semibold"
+            onClick={() => handleAdd(false)}
+            disabled={!product.inStock}
+          >
+            <ShoppingCart size={16} className="mr-1.5" />
+            {t('addToCart')}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

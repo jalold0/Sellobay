@@ -6,9 +6,12 @@ interface SellobayMarkProps {
   priority?: boolean;
 }
 
+// Cache-bust: logo yangilanganda versiyani oshiring
+const ICON_VERSION = 'v8-official-s';
+
 // Sellobay rasmiy SB logo — Admin paneli uchun
 export function SellobayMark({ size = 40, className = '', priority = false }: SellobayMarkProps) {
-  const src =
+  const base =
     size <= 32
       ? '/sellobay-icon-32.png'
       : size <= 64
@@ -16,6 +19,7 @@ export function SellobayMark({ size = 40, className = '', priority = false }: Se
         : size <= 192
           ? '/sellobay-icon-192.png'
           : '/sellobay-icon-512.png';
+  const src = `${base}?${ICON_VERSION}`;
 
   return (
     <Image

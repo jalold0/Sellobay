@@ -1,13 +1,15 @@
 import { Link } from 'expo-router';
 import { Heart, ShoppingBag, Star } from 'lucide-react-native';
 import * as React from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { discountPercent, formatMoney, pickLocalized } from '../lib/format';
+import { haptics } from '../lib/haptics';
 import { type MockProduct, productImage } from '../lib/mock-data';
 import { useCart } from '../store/cart';
 import { useWishlist } from '../store/wishlist';
 import { toast } from '../store/toast';
+import { AppImage } from './app-image';
 import { Badge } from './badge';
 import { cn } from './cn';
 
@@ -25,6 +27,7 @@ export function ProductCard({ product, locale = 'uz' }: Props) {
 
   const onAddToCart = () => {
     if (!product.inStock) return;
+    haptics.success();
     addItem({
       productId: product.id,
       name,
@@ -48,10 +51,10 @@ export function ProductCard({ product, locale = 'uz' }: Props) {
         )}
       >
         <View className="bg-muted relative aspect-square">
-          <Image
-            source={{ uri: productImage(product.imageSeed, 400) }}
+          <AppImage
+            source={productImage(product.imageSeed, 400)}
             className="h-full w-full"
-            resizeMode="cover"
+            contentFit="cover"
           />
           {/* Badges */}
           <View className="absolute left-2 top-2 gap-1">
@@ -66,6 +69,7 @@ export function ProductCard({ product, locale = 'uz' }: Props) {
           <Pressable
             onPress={(e) => {
               e.stopPropagation?.();
+              haptics.select();
               toggleWishlist(product.id);
             }}
             className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-full bg-white/90"

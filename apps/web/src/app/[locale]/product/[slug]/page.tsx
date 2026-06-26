@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { ProductDetail } from '../../../../components/product/product-detail';
@@ -54,6 +54,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   if (!detail) notFound();
 
   const locale = useLocale() as Locale;
+  const t = useTranslations('product');
   const related = getRelatedProducts(detail.product.id, 4);
   const name = pickLocale(detail.product.name, locale);
 
@@ -77,29 +78,29 @@ export default function ProductDetailPage({ params }: PageProps) {
       />
       <BreadcrumbJsonLd
         items={[
-          { name: 'Bosh sahifa', url: `${SITE_URL}/${params.locale}` },
-          { name: 'Katalog', url: `${SITE_URL}/${params.locale}/catalog` },
+          { name: t('breadcrumbHome'), url: `${SITE_URL}/${params.locale}` },
+          { name: t('breadcrumbCatalog'), url: `${SITE_URL}/${params.locale}/catalog` },
           { name, url },
         ]}
       />
 
-      <nav className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <nav className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
         <Link href="/" className="hover:text-foreground">
-          Bosh sahifa
+          {t('breadcrumbHome')}
         </Link>
         <ChevronRight size={14} />
         <Link href="/catalog" className="hover:text-foreground">
-          Katalog
+          {t('breadcrumbCatalog')}
         </Link>
         <ChevronRight size={14} />
-        <span className="line-clamp-1 text-foreground">{name}</span>
+        <span className="text-foreground line-clamp-1">{name}</span>
       </nav>
 
       <ProductDetail detail={detail} locale={locale} />
 
       {related.length > 0 && (
         <section className="border-t pt-8">
-          <h2 className="mb-5 text-2xl font-bold tracking-tight">Shu kategoriyada</h2>
+          <h2 className="mb-5 text-2xl font-bold tracking-tight">{t('sameCategory')}</h2>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {related.map((p) => (
               <ProductCardClient key={p.id} product={p} locale={locale} />

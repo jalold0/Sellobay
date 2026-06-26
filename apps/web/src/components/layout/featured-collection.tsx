@@ -1,5 +1,6 @@
 import { Button } from '@ecom/ui';
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -7,20 +8,23 @@ import { pickLocale, productImage, type Locale, type MockProduct } from '../../l
 
 interface Props {
   locale: Locale;
-  products: MockProduct[]; // 3 ta — UMBRA-style featured
+  products: MockProduct[];
   title?: string;
   subtitle?: string;
   ctaHref?: string;
 }
 
-// Sellobay Featured Collection — UMBRA editorial: 3 staggered images bilan kolleksiya prezentatsiyasi
 export function FeaturedCollection({
   locale,
   products,
-  title = 'Tanlangan kolleksiya',
-  subtitle = 'Tahririyat tomonidan tanlangan eng yaxshi mahsulotlar — premium sotuvchilardan',
+  title,
+  subtitle,
   ctaHref = '/catalog?featured=true',
 }: Props) {
+  const t = useTranslations('featured');
+  const common = useTranslations('common');
+  const resolvedTitle = title ?? t('title');
+  const resolvedSubtitle = subtitle ?? t('subtitle');
   const items = products.slice(0, 3);
   if (items.length < 3) return null;
 
@@ -33,13 +37,13 @@ export function FeaturedCollection({
       {/* Section header — markaziy editorial */}
       <div className="relative mx-auto mb-12 max-w-3xl text-center md:mb-16">
         <span className="text-gold-gradient mb-3 inline-block text-[11px] font-bold uppercase tracking-[0.25em]">
-          Edit · Premium
+          {t('eyebrow')}
         </span>
         <h2 className="text-foreground font-display text-3xl font-black leading-tight tracking-tight md:text-5xl">
-          {title}
+          {resolvedTitle}
         </h2>
         <p className="text-muted-foreground mx-auto mt-4 max-w-xl text-sm md:text-base">
-          {subtitle}
+          {resolvedSubtitle}
         </p>
       </div>
 
@@ -70,7 +74,7 @@ export function FeaturedCollection({
                 {pickLocale(items[0]!.name, locale)}
               </div>
               <div className="text-brand-bordeaux mt-1.5 text-base font-black">
-                {items[0]!.price.toLocaleString('en-US').replace(/,/g, ' ')} so&apos;m
+                {items[0]!.price.toLocaleString('en-US').replace(/,/g, ' ')} {common('currency')}
               </div>
             </div>
           </article>
@@ -93,7 +97,7 @@ export function FeaturedCollection({
               {/* Premium label — top */}
               <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
                 <span className="bg-brand-gold text-brand-bordeaux-deep rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-md">
-                  ★ Tahririyat tanlovi
+                  {t('editorChoice')}
                 </span>
                 <div className="bg-brand-gold h-1.5 w-12 rounded-full" />
               </div>
@@ -108,7 +112,8 @@ export function FeaturedCollection({
                 </div>
                 <div className="mt-2 inline-flex items-center gap-2">
                   <span className="text-xl font-black">
-                    {items[1]!.price.toLocaleString('en-US').replace(/,/g, ' ')} so&apos;m
+                    {items[1]!.price.toLocaleString('en-US').replace(/,/g, ' ')}{' '}
+                    {common('currency')}
                   </span>
                 </div>
               </div>
@@ -137,7 +142,7 @@ export function FeaturedCollection({
                 {pickLocale(items[2]!.name, locale)}
               </div>
               <div className="text-brand-bordeaux mt-1.5 text-base font-black">
-                {items[2]!.price.toLocaleString('en-US').replace(/,/g, ' ')} so&apos;m
+                {items[2]!.price.toLocaleString('en-US').replace(/,/g, ' ')} {common('currency')}
               </div>
             </div>
           </article>
@@ -152,7 +157,7 @@ export function FeaturedCollection({
           className="bg-bordeaux-gradient shadow-bordeaux rounded-full px-8 font-semibold text-white hover:opacity-95"
         >
           <Link href={ctaHref}>
-            Butun kolleksiyani ko&apos;rish
+            {t('cta')}
             <ArrowRight size={16} className="ml-1.5" />
           </Link>
         </Button>

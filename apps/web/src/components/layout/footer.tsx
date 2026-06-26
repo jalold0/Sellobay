@@ -1,49 +1,70 @@
 import { Facebook, Instagram, Mail, MapPin, Phone, Send, Youtube } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
 import { SellobayMark } from '../brand/sellobay-mark';
 import { NewsletterForm } from './newsletter';
 
-const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
+type FooterLinkKey =
+  | 'about'
+  | 'careers'
+  | 'press'
+  | 'contacts'
+  | 'help'
+  | 'delivery'
+  | 'returns'
+  | 'faq'
+  | 'becomeSeller'
+  | 'sellerGuide'
+  | 'commissions'
+  | 'sellerRules'
+  | 'terms'
+  | 'privacy'
+  | 'cookies'
+  | 'offer';
+
+const COLUMNS: {
+  titleKey: 'company' | 'customers' | 'sellers' | 'legal';
+  links: { href: string; key: FooterLinkKey }[];
+}[] = [
   {
-    title: 'Kompaniya',
+    titleKey: 'company',
     links: [
-      { href: '/about', label: 'Biz haqimizda' },
-      { href: '/careers', label: "Bo'sh ish o'rinlari" },
-      { href: '/press', label: 'Matbuot' },
-      { href: '/contacts', label: "Aloqa ma'lumotlari" },
+      { href: '/about', key: 'about' },
+      { href: '/careers', key: 'careers' },
+      { href: '/press', key: 'press' },
+      { href: '/contacts', key: 'contacts' },
     ],
   },
   {
-    title: 'Mijozlar uchun',
+    titleKey: 'customers',
     links: [
-      { href: '/help', label: "Qo'llab-quvvatlash markazi" },
-      { href: '/delivery', label: 'Yetkazib berish' },
-      { href: '/returns', label: "Qaytarish va to'lash" },
-      { href: '/faq', label: 'FAQ' },
+      { href: '/help', key: 'help' },
+      { href: '/delivery', key: 'delivery' },
+      { href: '/returns', key: 'returns' },
+      { href: '/faq', key: 'faq' },
     ],
   },
   {
-    title: 'Sotuvchilar',
+    titleKey: 'sellers',
     links: [
-      { href: '/sell', label: "Sotuvchi bo'lish" },
-      { href: '/seller-guide', label: "Sotuvchi qo'llanmasi" },
-      { href: '/commissions', label: 'Komissiyalar' },
-      { href: '/seller-rules', label: 'Sotuvchi qoidalari' },
+      { href: '/sell', key: 'becomeSeller' },
+      { href: '/seller-guide', key: 'sellerGuide' },
+      { href: '/commissions', key: 'commissions' },
+      { href: '/seller-rules', key: 'sellerRules' },
     ],
   },
   {
-    title: 'Yuridik',
+    titleKey: 'legal',
     links: [
-      { href: '/terms', label: 'Foydalanish shartlari' },
-      { href: '/privacy', label: 'Maxfiylik siyosati' },
-      { href: '/cookies', label: 'Cookie siyosati' },
-      { href: '/offer', label: 'Ommaviy oferta' },
+      { href: '/terms', key: 'terms' },
+      { href: '/privacy', key: 'privacy' },
+      { href: '/cookies', key: 'cookies' },
+      { href: '/offer', key: 'offer' },
     ],
   },
 ];
 
-// TZ §6: To'lov logo'lari — grayscale → hover'da rang
 const PAY_METHODS: { name: string; color: string }[] = [
   { name: 'Click', color: 'text-sky-500' },
   { name: 'Payme', color: 'text-cyan-400' },
@@ -54,7 +75,6 @@ const PAY_METHODS: { name: string; color: string }[] = [
   { name: 'Master', color: 'text-orange-500' },
 ];
 
-// TZ §6: Ijtimoiy tarmoq ikonkalari — hover'da brand rang
 const SOCIALS: { Icon: typeof Instagram; href: string; hoverColor: string; label: string }[] = [
   {
     Icon: Instagram,
@@ -78,20 +98,20 @@ const SOCIALS: { Icon: typeof Instagram; href: string; hoverColor: string; label
 ];
 
 export function Footer() {
+  const t = useTranslations('footer');
+  const common = useTranslations('common');
+  const nav = useTranslations('nav');
+
   return (
     <footer className="mt-16">
-      {/* TZ §6: Newsletter strip — qizil-to'q gradient */}
       <section className="from-primary via-brand-red-bright to-brand-red-dark bg-gradient-to-br">
         <div className="container py-10 md:py-12">
           <div className="grid items-center gap-6 md:grid-cols-2">
             <div className="text-white">
               <h3 className="text-2xl font-black leading-tight md:text-3xl">
-                Yangi tushgandan birinchi xabardor bo&apos;ling
+                {t('newsletterTitle')}
               </h3>
-              <p className="mt-2 max-w-md text-sm text-white/85">
-                Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling. Spam
-                yo&apos;q — faqat yangiliklar.
-              </p>
+              <p className="mt-2 max-w-md text-sm text-white/85">{t('newsletterSubtitle')}</p>
             </div>
             <div className="rounded-2xl bg-white/95 p-2 shadow-2xl backdrop-blur md:p-3">
               <NewsletterForm />
@@ -100,24 +120,21 @@ export function Footer() {
         </div>
       </section>
 
-      {/* TZ §6: Main footer — dark #0F1117 */}
       <div className="bg-footer text-white/85">
         <div className="container grid gap-10 py-14 md:grid-cols-12">
-          {/* Brand column */}
           <div className="space-y-4 md:col-span-4">
             <div className="flex items-center gap-2.5">
               <SellobayMark size={40} className="shadow" />
               <div className="leading-tight">
-                <div className="text-lg font-bold tracking-tight text-white">Sellobay</div>
+                <div className="text-lg font-bold tracking-tight text-white">
+                  {common('appName')}
+                </div>
                 <div className="text-[10px] uppercase tracking-widest text-white/60">
-                  Marketplace
+                  {common('marketplace')}
                 </div>
               </div>
             </div>
-            <p className="max-w-xs text-sm text-white/70">
-              O&apos;zbekistondagi eng yirik marketplace. Minglab sotuvchilar, premium brendlar va
-              tezkor yetkazib berish.
-            </p>
+            <p className="max-w-xs text-sm text-white/70">{t('tagline')}</p>
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2 text-white/70">
                 <Phone size={14} />{' '}
@@ -133,7 +150,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2 text-white/70">
                 <MapPin size={14} />
-                <span>Toshkent sh., Mirzo Ulug&apos;bek tumani</span>
+                <span>{t('address')}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 pt-3">
@@ -157,9 +174,9 @@ export function Footer() {
 
           <div className="grid gap-8 md:col-span-8 md:grid-cols-4">
             {COLUMNS.map((col) => (
-              <div key={col.title}>
+              <div key={col.titleKey}>
                 <div className="mb-3 text-xs font-bold uppercase tracking-widest text-white/50">
-                  {col.title}
+                  {t(`columns.${col.titleKey}`)}
                 </div>
                 <ul className="space-y-2">
                   {col.links.map((l) => (
@@ -168,7 +185,7 @@ export function Footer() {
                         href={l.href}
                         className="group inline-flex items-center text-sm text-white/70 transition hover:translate-x-0.5 hover:text-white"
                       >
-                        {l.label}
+                        {t(`links.${l.key}`)}
                       </Link>
                     </li>
                   ))}
@@ -178,12 +195,11 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Payments + apps strip */}
         <div className="border-t border-white/[0.08]">
           <div className="container flex flex-col items-center justify-between gap-4 py-6 md:flex-row">
             <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
               <span className="mr-2 text-xs font-semibold uppercase tracking-widest text-white/50">
-                To&apos;lov usullari:
+                {t('paymentMethods')}
               </span>
               {PAY_METHODS.map((m) => (
                 <span
@@ -202,17 +218,16 @@ export function Footer() {
               href="/download"
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
             >
-              📱 Ilovani yuklab olish
+              📱 {nav('downloadApp')}
             </Link>
           </div>
         </div>
 
-        {/* Bottom */}
         <div className="border-t border-white/[0.08]">
           <div className="container flex flex-col items-center justify-between gap-2 py-5 text-xs text-white/50 md:flex-row">
-            <div>© {new Date().getFullYear()} Sellobay LLC. Barcha huquqlar himoyalangan.</div>
+            <div>{t('copyright', { year: new Date().getFullYear() })}</div>
             <div className="flex items-center gap-1">
-              Made in Uzbekistan <span className="text-base">🇺🇿</span>
+              {t('madeIn')} <span className="text-base">🇺🇿</span>
             </div>
           </div>
         </div>

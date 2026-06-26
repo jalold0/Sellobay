@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sellobay-seller-v7'; // ⚠️ V2 clean logo
+const CACHE_NAME = 'sellobay-seller-v9'; // ⚠️ V4 bold S logo (2026-06-17)
 const STATIC = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {

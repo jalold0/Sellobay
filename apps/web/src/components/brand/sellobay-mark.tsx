@@ -14,9 +14,12 @@ interface SellobayMarkProps {
  * Bu komponent loyihada SB logoni ko'rsatish uchun yagona yo'l —
  * SVG chizish yo'q, har joyda AYNAN bir xil rasmiy logo ishlatiladi.
  */
+// Cache-bust: logo yangilanganda versiyani oshiring
+const ICON_VERSION = 'v8-official-s';
+
 export function SellobayMark({ size = 40, className = '', priority = false }: SellobayMarkProps) {
   // O'lchamga qarab eng yaqin assetni tanlaymiz (bandwidth tejash)
-  const src =
+  const base =
     size <= 32
       ? '/sellobay-icon-32.png'
       : size <= 64
@@ -24,6 +27,7 @@ export function SellobayMark({ size = 40, className = '', priority = false }: Se
         : size <= 192
           ? '/sellobay-icon-192.png'
           : '/sellobay-icon-512.png';
+  const src = `${base}?${ICON_VERSION}`;
 
   return (
     <Image

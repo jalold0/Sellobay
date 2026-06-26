@@ -4,6 +4,7 @@
 import {
   BarChart3,
   Boxes,
+  Clock,
   FolderTree,
   LayoutDashboard,
   Megaphone,
@@ -32,7 +33,13 @@ export interface NavItem {
 
 export const adminNav: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, group: 'Asosiy' },
-  { href: '/orders', label: 'Buyurtmalar', icon: ShoppingCart, group: 'Savdo', badgeKey: 'pendingOrders' },
+  {
+    href: '/orders',
+    label: 'Buyurtmalar',
+    icon: ShoppingCart,
+    group: 'Savdo',
+    badgeKey: 'pendingOrders',
+  },
   { href: '/products', label: 'Mahsulotlar', icon: Package, group: 'Katalog' },
   { href: '/categories', label: 'Kategoriyalar', icon: FolderTree, group: 'Katalog' },
   { href: '/brands', label: 'Brendlar', icon: Tags, group: 'Katalog' },
@@ -41,6 +48,12 @@ export const adminNav: NavItem[] = [
     href: '/sellers',
     label: 'Sotuvchilar',
     icon: Store,
+    group: 'CRM',
+  },
+  {
+    href: '/sellers/pending',
+    label: 'Tasdiq kutilmoqda',
+    icon: Clock,
     group: 'CRM',
     badgeKey: 'pendingSellers',
   },

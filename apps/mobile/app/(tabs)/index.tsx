@@ -1,13 +1,15 @@
 import { Link } from 'expo-router';
 import { Bell, Search, ShieldCheck, Sparkles, Truck, Undo2 } from 'lucide-react-native';
 import * as React from 'react';
-import { FlatList, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useProducts } from '../../src/lib/hooks';
 import { brands, categories, type MockProduct } from '../../src/lib/mock-data';
+import { AppImage } from '../../src/ui/app-image';
 import { CategoryChip } from '../../src/ui/category-chip';
 import { ProductCard } from '../../src/ui/product-card';
+import { ProductGridSkeleton } from '../../src/ui/skeleton';
 import { SectionHeader } from '../../src/ui/section-header';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -23,7 +25,7 @@ const PERKS = [
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   // Jonli API'dan (Neon DB) — xato bo'lsa mock fallback
-  const { data: allProducts = [] } = useProducts({ sort: 'popularity', limit: 12 });
+  const { data: allProducts = [], isLoading } = useProducts({ sort: 'popularity', limit: 12 });
   const featured = allProducts.slice(0, 4);
   const sale = allProducts
     .filter((p: MockProduct) => p.badge === 'SALE' || p.badge === 'TOP')
@@ -39,7 +41,7 @@ export default function HomeScreen() {
       <View style={{ paddingTop: insets.top + 8 }} className="bg-background px-4 pb-3">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-2.5">
-            <Image source={LOGO} style={{ width: 38, height: 38, borderRadius: 10 }} />
+            <AppImage source={LOGO} style={{ width: 38, height: 38, borderRadius: 10 }} />
             <View>
               <Text className="text-foreground text-lg font-black tracking-tight">Sellobay</Text>
               <Text className="text-muted-foreground text-[10px] uppercase tracking-widest">
@@ -131,13 +133,17 @@ export default function HomeScreen() {
           actionLabel="Barchasi"
           actionHref="/catalog?sort=popularity"
         />
-        <View className="flex-row flex-wrap gap-3 px-4">
-          {featured.map((p: MockProduct) => (
-            <View key={p.id} style={{ width: '47%' }}>
-              <ProductCard product={p} />
-            </View>
-          ))}
-        </View>
+        {isLoading ? (
+          <ProductGridSkeleton count={4} />
+        ) : (
+          <View className="flex-row flex-wrap gap-3 px-4">
+            {featured.map((p: MockProduct) => (
+              <View key={p.id} style={{ width: '47%' }}>
+                <ProductCard product={p} />
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Sale strip */}
