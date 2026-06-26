@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { discountPercent, formatMoney, pickLocalized } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
+import { useT } from '../../src/lib/useT';
 import { useProduct, useProducts } from '../../src/lib/hooks';
 import { productImage, type MockProduct } from '../../src/lib/mock-data';
 import { useCart } from '../../src/store/cart';
@@ -43,6 +44,7 @@ const SIZES_FOOTWEAR = ['38', '39', '40', '41', '42', '43', '44'];
 export default function ProductDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t, locale } = useT();
   const { slug } = useLocalSearchParams<{ slug: string }>();
 
   // Jonli API'dan — slug bo'yicha (xato bo'lsa mock fallback)
@@ -93,20 +95,20 @@ export default function ProductDetailScreen() {
         className="bg-background flex-1 items-center justify-center"
         style={{ paddingTop: insets.top }}
       >
-        <Text className="text-muted-foreground text-base">Mahsulot topilmadi</Text>
+        <Text className="text-muted-foreground text-base">{t('common.empty')}</Text>
         <Button
           variant="outline"
           onPress={() => router.back()}
           className="mt-3"
           style={{ marginTop: 12 }}
         >
-          Orqaga
+          {t('common.back')}
         </Button>
       </View>
     );
   }
 
-  const name = pickLocalized(product.name, 'uz');
+  const name = pickLocalized(product.name, locale);
   const discount = discountPercent(product.price, product.oldPrice);
   const gallery = [product.imageSeed, ...GALLERY_EXTRAS.map((s) => `${product.imageSeed}${s}`)];
   // categoryId endi slug ('shoes' / 'clothing') — API'dan keladi
@@ -137,7 +139,7 @@ export default function ProductDetailScreen() {
       size,
     });
     toast({
-      title: 'Savatga qo`shildi',
+      title: t('product.addedToCart'),
       description: `${qty} × ${name}`,
       variant: 'success',
     });
@@ -263,7 +265,9 @@ export default function ProductDetailScreen() {
           <View className="flex-row items-center gap-1">
             <Star size={13} color="#f59e0b" fill="#f59e0b" />
             <Text className="text-sm font-medium">{product.rating.toFixed(1)}</Text>
-            <Text className="text-muted-foreground text-xs">({product.reviewCount} sharh)</Text>
+            <Text className="text-muted-foreground text-xs">
+              ({t('product.reviewsCount').replace('{count}', String(product.reviewCount))})
+            </Text>
           </View>
 
           {/* Price */}
@@ -289,10 +293,10 @@ export default function ProductDetailScreen() {
               {product.inStock ? (
                 <>
                   <Check size={12} color="#10b981" />
-                  <Text className="text-success text-xs font-medium">Mavjud</Text>
+                  <Text className="text-success text-xs font-medium">{t('product.inStock')}</Text>
                 </>
               ) : (
-                <Text className="text-muted-foreground text-xs">Mavjud emas</Text>
+                <Text className="text-muted-foreground text-xs">{t('product.outOfStock')}</Text>
               )}
             </View>
           </View>
@@ -300,7 +304,7 @@ export default function ProductDetailScreen() {
           {/* Color */}
           <View>
             <Text className="text-sm font-semibold">
-              Rang:{' '}
+              {t('product.color')}:{' '}
               <Text className="text-muted-foreground font-normal">{selectedColor?.label}</Text>
             </Text>
             <View className="mt-2 flex-row gap-2">
@@ -322,8 +326,10 @@ export default function ProductDetailScreen() {
           {sizes.length > 0 ? (
             <View>
               <Text className="text-sm font-semibold">
-                O&apos;lcham:{' '}
-                <Text className="text-muted-foreground font-normal">{size ?? 'Tanlanmadi'}</Text>
+                {t('product.size')}:{' '}
+                <Text className="text-muted-foreground font-normal">
+                  {size ?? t('product.selectSize')}
+                </Text>
               </Text>
               <View className="mt-2 flex-row flex-wrap gap-2">
                 {sizes.map((s) => (
@@ -353,7 +359,7 @@ export default function ProductDetailScreen() {
 
           {/* Quantity */}
           <View className="flex-row items-center gap-3">
-            <Text className="text-sm font-semibold">Miqdor:</Text>
+            <Text className="text-sm font-semibold">{t('product.quantity')}:</Text>
             <View className="border-border flex-row items-center gap-2 rounded-full border">
               <Pressable
                 onPress={() => {
@@ -382,9 +388,9 @@ export default function ProductDetailScreen() {
           {/* Delivery info */}
           <View className="border-border bg-card mt-2 gap-2 rounded-2xl border p-3">
             {[
-              { icon: Truck, text: 'Toshkent bo`yicha 24 soat ichida yetkazib berish' },
-              { icon: Undo2, text: '14 kun ichida hech qanday savol-javobsiz qaytarish' },
-              { icon: ShieldCheck, text: '100% asl mahsulot kafolati' },
+              { icon: Truck, text: t('product.deliveryFast') },
+              { icon: Undo2, text: t('product.deliveryReturn') },
+              { icon: ShieldCheck, text: t('product.deliveryAuthentic') },
             ].map((d) => {
               const Icon = d.icon;
               return (
@@ -398,7 +404,7 @@ export default function ProductDetailScreen() {
 
           {/* Description */}
           <View className="mt-2">
-            <Text className="text-sm font-semibold">Tavsifi</Text>
+            <Text className="text-sm font-semibold">{t('product.description')}</Text>
             <Text className="text-muted-foreground mt-1 text-xs leading-relaxed">
               {name} — premium material va zamonaviy dizayn uyg&apos;unligi. Har bir detal
               o&apos;ylab tayyorlangan: ergonomik shakl, chidamli komponentlar va estetik
@@ -409,10 +415,10 @@ export default function ProductDetailScreen() {
           {/* Specs */}
           <View className="border-border bg-card mt-2 rounded-2xl border">
             {[
-              ['Brend', product.brand],
+              [t('catalog.brand'), product.brand],
               ['SKU', `ECM-${product.id.toUpperCase()}`],
-              ['Kafolat', '12 oy'],
-              ['Reyting', `${product.rating.toFixed(1)} / 5.0`],
+              [t('product.warranty'), '12 oy'],
+              [t('catalog.sortBy.rating'), `${product.rating.toFixed(1)} / 5.0`],
             ].map(([k, v], i, arr) => (
               <View
                 key={k}
@@ -430,7 +436,7 @@ export default function ProductDetailScreen() {
           {/* Related */}
           {related.length > 0 ? (
             <View className="mt-4">
-              <Text className="mb-3 text-base font-bold">Shu kategoriyada</Text>
+              <Text className="mb-3 text-base font-bold">{t('product.sameCategory')}</Text>
               <FlatList
                 data={related}
                 keyExtractor={(p) => p.id}
@@ -462,7 +468,7 @@ export default function ProductDetailScreen() {
             leftIcon={<ShoppingBag size={16} color="#0A0A0C" />}
             style={{ flex: 1 }}
           >
-            Savatga
+            {t('product.addToCart')}
           </Button>
           <Button
             size="lg"
@@ -470,7 +476,7 @@ export default function ProductDetailScreen() {
             disabled={!product.inStock}
             style={{ flex: 1.5 }}
           >
-            ⚡ Hozir sotib olish
+            {t('product.buyNow')}
           </Button>
         </View>
       </View>

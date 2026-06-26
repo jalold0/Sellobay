@@ -4,6 +4,7 @@ import * as React from 'react';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useT } from '../../src/lib/useT';
 import { useProducts } from '../../src/lib/hooks';
 import { brands, categories, type MockProduct } from '../../src/lib/mock-data';
 import { AppImage } from '../../src/ui/app-image';
@@ -15,17 +16,18 @@ import { SectionHeader } from '../../src/ui/section-header';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const LOGO = require('../../assets/icon.png');
 
-const PERKS = [
-  { icon: Truck, title: 'Tezkor', sub: '24 soat' },
-  { icon: Undo2, title: '14 kun', sub: 'Qaytarish' },
-  { icon: ShieldCheck, title: 'Asl', sub: '100%' },
-  { icon: Sparkles, title: 'Bonus', sub: 'Sodiqlik' },
-];
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useT();
   // Jonli API'dan (Neon DB) — xato bo'lsa mock fallback
   const { data: allProducts = [], isLoading } = useProducts({ sort: 'popularity', limit: 12 });
+
+  const PERKS = [
+    { icon: Truck, title: t('hero.trustFast'), sub: t('home.stats.fast24h') },
+    { icon: Undo2, title: t('hero.trustReturn'), sub: '' },
+    { icon: ShieldCheck, title: t('hero.trustAuthentic'), sub: '' },
+    { icon: Sparkles, title: 'Bonus', sub: t('loyalty.coin') },
+  ];
   const featured = allProducts.slice(0, 4);
   const sale = allProducts
     .filter((p: MockProduct) => p.badge === 'SALE' || p.badge === 'TOP')
@@ -45,7 +47,7 @@ export default function HomeScreen() {
             <View>
               <Text className="text-foreground text-lg font-black tracking-tight">Sellobay</Text>
               <Text className="text-muted-foreground text-[10px] uppercase tracking-widest">
-                Marketplace
+                {t('common.marketplace')}
               </Text>
             </View>
           </View>
@@ -61,7 +63,7 @@ export default function HomeScreen() {
         <Link href="/catalog" asChild>
           <Pressable className="bg-muted mt-3 flex-row items-center gap-2 rounded-full px-4 py-3 active:opacity-75">
             <Search size={16} color="#6B6B73" />
-            <Text className="text-muted-foreground text-sm">Mahsulot, brend qidiring...</Text>
+            <Text className="text-muted-foreground text-sm">{t('search.submit')}...</Text>
           </Pressable>
         </Link>
       </View>
@@ -70,18 +72,19 @@ export default function HomeScreen() {
       <View className="bg-primary mx-4 mt-2 overflow-hidden rounded-3xl p-5">
         <View className="flex-row items-center gap-1 self-start rounded-full bg-white/15 px-2 py-1">
           <Sparkles size={10} color="#fff" />
-          <Text className="text-[10px] font-medium text-white">Yangi 2026</Text>
+          <Text className="text-[10px] font-medium text-white">{t('hero.eyebrow')}</Text>
         </View>
         <Text className="mt-3 text-2xl font-black leading-tight text-white">
-          Minglab sotuvchilar
-          <Text className="text-white/80">{'\n'}yagona platformada</Text>
+          {t('hero.headlineLine1')}
+          <Text className="text-white/80">
+            {'\n'}
+            {t('hero.headlineLine2')}
+          </Text>
         </Text>
-        <Text className="mt-2 max-w-[80%] text-xs text-white/80">
-          Premium brendlar, tezkor yetkazib berish va 14 kun qaytarish.
-        </Text>
+        <Text className="mt-2 max-w-[80%] text-xs text-white/80">{t('hero.subheadline')}</Text>
         <Link href="/catalog" asChild>
           <Pressable className="mt-4 self-start rounded-full bg-white px-5 py-2.5 active:opacity-85">
-            <Text className="text-primary text-sm font-semibold">Katalogni ochish →</Text>
+            <Text className="text-primary text-sm font-semibold">{t('hero.ctaShop')} →</Text>
           </Pressable>
         </Link>
       </View>
@@ -107,7 +110,11 @@ export default function HomeScreen() {
 
       {/* Categories */}
       <View className="mt-6 gap-3">
-        <SectionHeader title="Kategoriyalar" actionLabel="Barchasi" actionHref="/catalog" />
+        <SectionHeader
+          title={t('categories.title')}
+          actionLabel={t('common.viewAll')}
+          actionHref="/catalog"
+        />
         <FlatList
           data={categories}
           keyExtractor={(c) => c.id}
@@ -128,9 +135,9 @@ export default function HomeScreen() {
       {/* Featured */}
       <View className="mt-6 gap-3">
         <SectionHeader
-          title="Bestseller"
-          description="Eng ko'p sotilganlar"
-          actionLabel="Barchasi"
+          title={t('home.bestSellersTitle')}
+          description={t('home.bestSellersSubtitle')}
+          actionLabel={t('common.viewAll')}
           actionHref="/catalog?sort=popularity"
         />
         {isLoading ? (
@@ -149,9 +156,9 @@ export default function HomeScreen() {
       {/* Sale strip */}
       <View className="mt-6 gap-3">
         <SectionHeader
-          title="🔥 Aksiya"
-          description="Cheklangan vaqt"
-          actionLabel="Barchasi"
+          title={t('sale.homeTitle')}
+          description={t('sale.limitedTimeShort')}
+          actionLabel={t('common.viewAll')}
           actionHref="/catalog?sort=sale"
         />
         <FlatList
@@ -170,7 +177,7 @@ export default function HomeScreen() {
 
       {/* Brands */}
       <View className="mt-6 gap-3">
-        <SectionHeader title="Brendlar" />
+        <SectionHeader title={t('catalog.brand')} />
         <FlatList
           data={brands}
           keyExtractor={(b) => b.id}
@@ -192,15 +199,13 @@ export default function HomeScreen() {
       {/* Banner */}
       <View className="bg-accent mx-4 mt-6 overflow-hidden rounded-2xl p-5">
         <Text className="text-xs font-bold uppercase tracking-widest text-white/80">
-          Yangi mijoz
+          {t('auth.noAccount')}
         </Text>
-        <Text className="mt-1 text-xl font-black text-white">10% chegirma kupon</Text>
-        <Text className="mt-1 text-xs text-white/80">
-          Ro&apos;yxatdan o&apos;tib promo-kod oling
-        </Text>
+        <Text className="mt-1 text-xl font-black text-white">{t('cart.promoApplied10')}</Text>
+        <Text className="mt-1 text-xs text-white/80">{t('auth.registerSubtitle')}</Text>
         <Link href="/auth/login" asChild>
           <Pressable className="mt-3 self-start rounded-full bg-white px-4 py-2 active:opacity-85">
-            <Text className="text-accent text-xs font-semibold">Olish</Text>
+            <Text className="text-accent text-xs font-semibold">{t('common.apply')}</Text>
           </Pressable>
         </Link>
       </View>

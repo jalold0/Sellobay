@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { loginWithPassword, sendOtp, verifyOtp, type AuthUser } from '../../src/lib/api';
+import { useT } from '../../src/lib/useT';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { Button } from '../../src/ui/button';
@@ -18,6 +19,7 @@ type AuthHandler = (user: AuthUser, access: string, refresh: string) => Promise<
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useT();
   const signIn = useSession((s) => s.signIn);
   const [tab, setTab] = React.useState<Tab>('phone');
 
@@ -46,7 +48,7 @@ export default function LoginScreen() {
         >
           <X size={20} color="#0A0A0C" />
         </Pressable>
-        <Text className="text-base font-semibold">Kirish</Text>
+        <Text className="text-base font-semibold">{t('auth.loginTitle')}</Text>
         <View className="w-10" />
       </View>
 
@@ -59,10 +61,8 @@ export default function LoginScreen() {
           <View className="bg-primary h-16 w-16 items-center justify-center rounded-2xl">
             <Text className="text-2xl font-black text-white">E</Text>
           </View>
-          <Text className="mt-4 text-2xl font-bold">Xush kelibsiz!</Text>
-          <Text className="text-muted-foreground mt-1 text-sm">
-            Hisobingizga kiring yoki yangi yarating
-          </Text>
+          <Text className="mt-4 text-2xl font-bold">{t('auth.loginWelcome')}</Text>
+          <Text className="text-muted-foreground mt-1 text-sm">{t('auth.haveAccount')}</Text>
         </View>
 
         {/* Tabs */}
@@ -72,14 +72,14 @@ export default function LoginScreen() {
             onPress={() => setTab('phone')}
             icon={<Phone size={14} color={tab === 'phone' ? '#0A0A0C' : '#6B6B73'} />}
           >
-            Telefon
+            {t('auth.tabPhone')}
           </TabButton>
           <TabButton
             active={tab === 'email'}
             onPress={() => setTab('email')}
             icon={<Mail size={14} color={tab === 'email' ? '#0A0A0C' : '#6B6B73'} />}
           >
-            Email
+            {t('auth.tabEmail')}
           </TabButton>
         </View>
 
@@ -90,20 +90,22 @@ export default function LoginScreen() {
         {/* Divider */}
         <View className="my-6 flex-row items-center gap-3">
           <View className="bg-border h-px flex-1" />
-          <Text className="text-muted-foreground text-xs">yoki</Text>
+          <Text className="text-muted-foreground text-xs">{t('auth.or')}</Text>
           <View className="bg-border h-px flex-1" />
         </View>
 
         {/* OAuth */}
         <View className="gap-2">
           {[
-            { label: 'Google bilan kirish', emoji: '🔵' },
-            { label: 'Telegram bilan kirish', emoji: '💬' },
-            { label: 'Apple bilan kirish', emoji: '' },
+            { label: t('auth.loginWithGoogle'), emoji: '🔵' },
+            { label: t('auth.loginWithTelegram'), emoji: '💬' },
+            { label: t('auth.loginWithApple'), emoji: '' },
           ].map((p) => (
             <Pressable
               key={p.label}
-              onPress={() => toast({ title: `${p.label} — tez orada`, duration: 2000 })}
+              onPress={() =>
+                toast({ title: t('auth.oauthSoon').replace('{provider}', p.label), duration: 2000 })
+              }
               className="border-border bg-card active:bg-muted flex-row items-center gap-3 rounded-2xl border px-4 py-3"
             >
               <Text className="text-lg">{p.emoji}</Text>
@@ -113,8 +115,9 @@ export default function LoginScreen() {
         </View>
 
         <Text className="text-muted-foreground mt-6 text-center text-[11px]">
-          Davom etib, siz <Text className="text-primary">foydalanish shartlari</Text> va{' '}
-          <Text className="text-primary">maxfiylik siyosati</Text>ga rozilik bildirasiz.
+          {t('auth.termsAgree')} <Text className="text-primary">{t('auth.termsLink')}</Text>{' '}
+          {t('auth.and')} <Text className="text-primary">{t('auth.privacyLink')}</Text>
+          {t('auth.termsSuffix')}
         </Text>
       </ScrollView>
     </View>
@@ -154,6 +157,7 @@ function TabButton({
 }
 
 function PhoneForm({ onAuth }: { onAuth: AuthHandler }) {
+  const { t } = useT();
   const [stage, setStage] = React.useState<PhoneStage>('phone');
   const [phone, setPhone] = React.useState('+998 ');
   const [code, setCode] = React.useState('');
@@ -176,12 +180,12 @@ function PhoneForm({ onAuth }: { onAuth: AuthHandler }) {
     const res = await sendOtp(phone.trim());
     setLoading(false);
     if (!res.success) {
-      toast({ title: res.error?.message ?? 'Kod yuborilmadi', variant: 'destructive' });
+      toast({ title: res.error?.message ?? t('auth.sendCode'), variant: 'destructive' });
       return;
     }
     setStage('code');
     setResendIn(60);
-    toast({ title: 'Kod yuborildi', description: phone, variant: 'success' });
+    toast({ title: t('auth.codeSent'), description: phone, variant: 'success' });
   };
 
   const verify = async () => {
@@ -203,17 +207,17 @@ function PhoneForm({ onAuth }: { onAuth: AuthHandler }) {
     return (
       <View className="gap-3">
         <Input
-          label="Telefon raqami"
+          label={t('auth.phone')}
           value={phone}
           onChangeText={setPhone}
-          placeholder="+998 90 123 45 67"
+          placeholder={t('auth.phonePlaceholder')}
           keyboardType="phone-pad"
           autoComplete="tel"
           leftIcon={<Phone size={16} color="#6B6B73" />}
-          hint="SMS orqali tasdiqlash kodi yuboramiz"
+          hint={t('auth.phoneHint')}
         />
         <Button fullWidth size="lg" loading={loading} onPress={sendCode}>
-          Kod yuborish
+          {t('auth.sendCode')}
         </Button>
       </View>
     );
@@ -227,33 +231,35 @@ function PhoneForm({ onAuth }: { onAuth: AuthHandler }) {
         hitSlop={4}
       >
         <ArrowLeft size={12} color="#6B6B73" />
-        <Text className="text-muted-foreground text-xs">Raqamni o&apos;zgartirish</Text>
+        <Text className="text-muted-foreground text-xs">{t('auth.changePhone')}</Text>
       </Pressable>
       <Input
-        label="Tasdiqlash kodi"
+        label={t('auth.codeLabel')}
         value={code}
-        onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
+        onChangeText={(v) => setCode(v.replace(/\D/g, '').slice(0, 6))}
         placeholder="------"
         keyboardType="number-pad"
         maxLength={6}
         autoFocus
-        hint={`${phone} raqamiga yuborildi`}
+        hint={t('auth.codeSentTo').replace('{phone}', phone)}
       />
       <Button fullWidth size="lg" loading={loading} onPress={verify}>
-        Tasdiqlash
+        {t('auth.verify')}
       </Button>
       <Pressable
         onPress={() => {
           if (resendIn === 0) {
             setResendIn(60);
-            toast({ title: 'Yangi kod yuborildi', variant: 'success' });
+            toast({ title: t('auth.codeResent'), variant: 'success' });
           }
         }}
         disabled={resendIn > 0}
         hitSlop={6}
       >
         <Text className="text-muted-foreground text-center text-xs">
-          {resendIn > 0 ? `Qayta yuborish (${resendIn}s)` : 'Kodni qayta yuborish'}
+          {resendIn > 0
+            ? t('auth.resendIn').replace('{seconds}', String(resendIn))
+            : t('auth.resend')}
         </Text>
       </Pressable>
     </View>
@@ -261,6 +267,7 @@ function PhoneForm({ onAuth }: { onAuth: AuthHandler }) {
 }
 
 function EmailForm({ onAuth }: { onAuth: AuthHandler }) {
+  const { t } = useT();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
@@ -283,32 +290,30 @@ function EmailForm({ onAuth }: { onAuth: AuthHandler }) {
   return (
     <View className="gap-3">
       <Input
-        label="Email"
+        label={t('auth.email')}
         value={email}
         onChangeText={setEmail}
-        placeholder="example@mail.uz"
+        placeholder={t('auth.emailPlaceholder')}
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
         leftIcon={<Mail size={16} color="#6B6B73" />}
       />
       <Input
-        label="Parol"
+        label={t('auth.password')}
         value={password}
         onChangeText={setPassword}
-        placeholder="••••••••"
+        placeholder={t('auth.passwordPlaceholder')}
         secureTextEntry
         autoComplete="current-password"
         leftIcon={<Lock size={16} color="#6B6B73" />}
       />
       <Button fullWidth size="lg" loading={loading} onPress={submit}>
-        Kirish
+        {t('auth.loginSubmit')}
       </Button>
       <View className="bg-muted flex-row items-center gap-2 rounded-md p-2.5">
         <ShieldCheck size={14} color="#10b981" />
-        <Text className="text-muted-foreground flex-1 text-[11px]">
-          Parolingiz argon2 bilan shifrlanadi — biz hech qachon ko&apos;rmaymiz
-        </Text>
+        <Text className="text-muted-foreground flex-1 text-[11px]">{t('auth.passwordSecure')}</Text>
       </View>
     </View>
   );

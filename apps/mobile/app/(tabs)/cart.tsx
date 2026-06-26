@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMoney } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
+import { useT } from '../../src/lib/useT';
 import { productImage } from '../../src/lib/mock-data';
 import { useCart, type CartItem } from '../../src/store/cart';
 import { toast } from '../../src/store/toast';
@@ -19,6 +20,7 @@ const SHIPPING_FEE = 20_000;
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useT();
   const items = useCart((s) => s.items);
   const removeItem = useCart((s) => s.removeItem);
   const updateQuantity = useCart((s) => s.updateQuantity);
@@ -32,15 +34,15 @@ export default function CartScreen() {
     return (
       <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
         <View className="px-4 pt-4">
-          <Text className="text-foreground text-2xl font-bold">Savatcha</Text>
+          <Text className="text-foreground text-2xl font-bold">{t('cart.title')}</Text>
         </View>
         <EmptyState
           icon={<ShoppingBag size={32} color="#94a3b8" />}
-          title="Savatcha bo`sh"
-          description="Mahsulotlarni katalogdan tanlab savatga qo`shing"
+          title={t('cart.empty')}
+          description={t('cart.emptyHint')}
           action={
             <Button fullWidth onPress={() => router.push('/catalog')}>
-              Katalogga o&apos;tish
+              {t('cart.openCatalog')}
             </Button>
           }
         />
@@ -52,7 +54,7 @@ export default function CartScreen() {
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center justify-between px-4 pb-2 pt-3">
         <View>
-          <Text className="text-foreground text-2xl font-bold">Savatcha</Text>
+          <Text className="text-foreground text-2xl font-bold">{t('cart.title')}</Text>
           <Text className="text-muted-foreground text-xs">
             {items.length} ta · {items.reduce((s, i) => s + i.quantity, 0)} dona
           </Text>
@@ -60,11 +62,11 @@ export default function CartScreen() {
         <Pressable
           onPress={() => {
             clear();
-            toast({ title: 'Savatcha tozalandi' });
+            toast({ title: t('cart.cleared') });
           }}
           hitSlop={6}
         >
-          <Text className="text-muted-foreground text-xs">Tozalash</Text>
+          <Text className="text-muted-foreground text-xs">{t('common.clear')}</Text>
         </Pressable>
       </View>
 
@@ -78,7 +80,7 @@ export default function CartScreen() {
             item={item}
             onRemove={() => {
               removeItem(item.id);
-              toast({ title: 'O`chirildi', description: item.name });
+              toast({ title: t('cart.itemRemoved'), description: item.name });
             }}
             onQty={(q) => updateQuantity(item.id, q)}
           />
@@ -93,24 +95,26 @@ export default function CartScreen() {
         {subtotal < FREE_SHIPPING_THRESHOLD ? (
           <View className="rounded-md bg-amber-50 p-2.5">
             <Text className="text-xs text-amber-800">
-              Yana {formatMoney(FREE_SHIPPING_THRESHOLD - subtotal)} qo&apos;shing — tekin yetkazib
-              berish!
+              {t('cart.freeShipHint').replace(
+                '{amount}',
+                formatMoney(FREE_SHIPPING_THRESHOLD - subtotal),
+              )}
             </Text>
           </View>
         ) : null}
         <View className="gap-1">
           <View className="flex-row justify-between">
-            <Text className="text-muted-foreground text-sm">Mahsulotlar</Text>
+            <Text className="text-muted-foreground text-sm">{t('cart.subtotal')}</Text>
             <Text className="text-sm">{formatMoney(subtotal)}</Text>
           </View>
           <View className="flex-row justify-between">
-            <Text className="text-muted-foreground text-sm">Yetkazib berish</Text>
+            <Text className="text-muted-foreground text-sm">{t('cart.shipping')}</Text>
             <Text className={shipping === 0 ? 'text-success text-sm font-semibold' : 'text-sm'}>
-              {shipping === 0 ? 'Tekin' : formatMoney(shipping)}
+              {shipping === 0 ? t('cart.shippingFree') : formatMoney(shipping)}
             </Text>
           </View>
           <View className="border-border mt-1 flex-row justify-between border-t pt-2">
-            <Text className="text-base font-bold">Jami</Text>
+            <Text className="text-base font-bold">{t('cart.total')}</Text>
             <Text className="text-base font-bold">{formatMoney(total)}</Text>
           </View>
         </View>
@@ -120,7 +124,7 @@ export default function CartScreen() {
           onPress={() => router.push('/checkout')}
           rightIcon={<ArrowRight size={16} color="#fff" />}
         >
-          Rasmiylashtirish
+          {t('cart.checkout')}
         </Button>
       </View>
     </View>
@@ -136,6 +140,7 @@ function CartItemRow({
   onRemove: () => void;
   onQty: (q: number) => void;
 }) {
+  const { t } = useT();
   return (
     <View className="border-border bg-card flex-row gap-3 rounded-2xl border p-3">
       <AppImage
@@ -154,7 +159,10 @@ function CartItemRow({
             </Text>
             {item.color || item.size ? (
               <Text className="text-muted-foreground text-[11px]">
-                {[item.color && `Rang: ${item.color}`, item.size && `O'lcham: ${item.size}`]
+                {[
+                  item.color && `${t('cart.color')}: ${item.color}`,
+                  item.size && `${t('cart.size')}: ${item.size}`,
+                ]
                   .filter(Boolean)
                   .join(' · ')}
               </Text>

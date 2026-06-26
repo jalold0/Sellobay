@@ -4,6 +4,7 @@ import {
   ChevronRight,
   CreditCard,
   Gift,
+  Globe,
   Heart,
   HelpCircle,
   LogIn,
@@ -19,44 +20,50 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { initials } from '../../src/lib/format';
+import { useT } from '../../src/lib/useT';
+import { useLocale, locales, type Locale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
 import { Button } from '../../src/ui/button';
 
-const SECTIONS: Array<{
-  title: string;
-  items: Array<{ icon: typeof User; label: string; href?: string; badge?: string }>;
-}> = [
-  {
-    title: 'Mening hisobim',
-    items: [
-      { icon: Package, label: 'Buyurtmalarim', href: '/orders' },
-      { icon: Heart, label: 'Sevimlilar', href: '/(tabs)/wishlist' },
-      { icon: MapPin, label: 'Manzillar', href: '/profile/addresses' },
-      { icon: CreditCard, label: "To'lov usullari", href: '/profile/payment' },
-    ],
-  },
-  {
-    title: 'Aktivlik',
-    items: [
-      { icon: Gift, label: 'Sodiqlik dasturi', href: '/profile/loyalty', badge: 'Gold' },
-      { icon: Star, label: 'Mening sharhlarim', href: '/profile/reviews' },
-      { icon: Bell, label: 'Bildirishnomalar', href: '/profile/notifications' },
-    ],
-  },
-  {
-    title: 'Yordam',
-    items: [
-      { icon: HelpCircle, label: "Qo'llab-quvvatlash", href: '/help' },
-      { icon: Settings, label: 'Sozlamalar', href: '/profile/settings' },
-    ],
-  },
-];
+const LOCALE_LABELS: Record<Locale, string> = { uz: "O'zbek", ru: 'Русский', en: 'English' };
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useT();
+  const { locale, setLocale } = useLocale();
   const { user, isAuthenticated, signOut } = useSession();
   const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '';
+
+  const SECTIONS: Array<{
+    title: string;
+    items: Array<{ icon: typeof User; label: string; href?: string; badge?: string }>;
+  }> = [
+    {
+      title: t('profile.nav.personal'),
+      items: [
+        { icon: Package, label: t('profile.nav.orders'), href: '/orders' },
+        { icon: Heart, label: t('profile.nav.wishlist'), href: '/(tabs)/wishlist' },
+        { icon: MapPin, label: t('profile.nav.addresses'), href: '/profile/addresses' },
+        { icon: CreditCard, label: t('profile.nav.payment'), href: '/profile/payment' },
+      ],
+    },
+    {
+      title: t('profile.nav.loyalty'),
+      items: [
+        { icon: Gift, label: t('profile.nav.loyalty'), href: '/profile/loyalty', badge: 'Gold' },
+        { icon: Star, label: t('profile.nav.reviews'), href: '/profile/reviews' },
+        { icon: Bell, label: t('nav.settings'), href: '/profile/notifications' },
+      ],
+    },
+    {
+      title: t('common.help'),
+      items: [
+        { icon: HelpCircle, label: t('nav.support247'), href: '/help' },
+        { icon: Settings, label: t('profile.nav.settings'), href: '/profile/settings' },
+      ],
+    },
+  ];
 
   return (
     <ScrollView
@@ -72,7 +79,9 @@ export default function ProfileScreen() {
               <Text className="text-primary text-lg font-bold">{initials(name)}</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-lg font-bold text-white">{name || 'Foydalanuvchi'}</Text>
+              <Text className="text-lg font-bold text-white">
+                {name || t('profile.userFallback')}
+              </Text>
               <Text className="text-xs text-white/70">{user.phone ?? user.email}</Text>
             </View>
           </View>
@@ -83,10 +92,8 @@ export default function ProfileScreen() {
                 <User size={22} color="#fff" />
               </View>
               <View className="flex-1">
-                <Text className="text-base font-bold text-white">Mehmon</Text>
-                <Text className="text-xs text-white/70">
-                  Hisobga kiring — buyurtma berish uchun
-                </Text>
+                <Text className="text-base font-bold text-white">{t('nav.user')}</Text>
+                <Text className="text-xs text-white/70">{t('auth.noAccount')}</Text>
               </View>
             </View>
             <Button
@@ -95,7 +102,7 @@ export default function ProfileScreen() {
               leftIcon={<LogIn size={16} color="#0A0A0C" />}
               fullWidth
             >
-              Kirish yoki ro&apos;yxatdan o&apos;tish
+              {t('nav.login')} / {t('nav.register')}
             </Button>
           </View>
         )}
@@ -104,11 +111,11 @@ export default function ProfileScreen() {
       {/* Quick stats */}
       {isAuthenticated ? (
         <View className="border-border bg-card mx-4 -mt-4 flex-row gap-2 rounded-2xl border p-3 shadow-sm">
-          <Stat label="Buyurtma" value="12" />
+          <Stat label={t('nav.orders')} value="12" />
           <View className="bg-border w-px" />
-          <Stat label="Sello Coin" value="1 240" />
+          <Stat label={t('loyalty.coin')} value="1 240" />
           <View className="bg-border w-px" />
-          <Stat label="Daraja" value="Gold" />
+          <Stat label={t('loyalty.currentTier')} value="Gold" />
         </View>
       ) : null}
 
@@ -147,6 +154,31 @@ export default function ProfileScreen() {
           </View>
         ))}
 
+        {/* Language switcher */}
+        <View className="border-border bg-card overflow-hidden rounded-2xl border">
+          <View className="flex-row items-center gap-3 px-4 py-3">
+            <View className="bg-muted h-9 w-9 items-center justify-center rounded-full">
+              <Globe size={16} color="#0A0A0C" />
+            </View>
+            <Text className="text-foreground flex-1 text-sm font-medium">{t('nav.settings')}</Text>
+            <View className="flex-row gap-1">
+              {locales.map((l) => (
+                <Pressable
+                  key={l}
+                  onPress={() => setLocale(l)}
+                  className={`rounded-full px-2.5 py-1 ${locale === l ? 'bg-primary' : 'bg-muted'}`}
+                >
+                  <Text
+                    className={`text-[11px] font-bold ${locale === l ? 'text-white' : 'text-muted-foreground'}`}
+                  >
+                    {l.toUpperCase()}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
+
         {isAuthenticated ? (
           <Pressable
             onPress={async () => {
@@ -155,11 +187,13 @@ export default function ProfileScreen() {
             className="border-border bg-card active:bg-muted flex-row items-center justify-center gap-2 rounded-2xl border py-3"
           >
             <LogOut size={16} color="#ef4444" />
-            <Text className="text-danger text-sm font-semibold">Chiqish</Text>
+            <Text className="text-danger text-sm font-semibold">{t('profile.signOut')}</Text>
           </Pressable>
         ) : null}
 
-        <Text className="text-muted-foreground text-center text-[10px]">v1.0 · 2026 Sellobay</Text>
+        <Text className="text-muted-foreground text-center text-[10px]">
+          v1.0 · 2026 {t('common.appName')}
+        </Text>
       </View>
     </ScrollView>
   );

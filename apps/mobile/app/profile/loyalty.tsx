@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { checkinDaily, fetchLoyalty } from '../../src/lib/api';
 import { formatNumber } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
+import { useT } from '../../src/lib/useT';
 import {
   COIN_VALUE_SOM,
   EARN_WAYS,
@@ -31,17 +32,17 @@ import { toast } from '../../src/store/toast';
 
 const CHECKIN_REWARD = 5;
 
-// API reasonKey → o'zbekcha label
-const REASON_LABEL: Record<string, string> = {
-  orderEarn: 'Buyurtmadan',
-  discount: 'Chegirmaga ishlatildi',
-  review: 'Sharh uchun bonus',
-  referral: "Do'st taklifi bonusi",
-};
-
 export default function LoyaltyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useT();
+
+  const REASON_LABEL: Record<string, string> = {
+    orderEarn: t('loyalty.history.orderEarn'),
+    discount: t('loyalty.history.discount'),
+    review: t('loyalty.history.review'),
+    referral: t('loyalty.history.referral'),
+  };
 
   const [coins, setCoins] = React.useState(MOCK_LOYALTY.coins);
   const [spent, setSpent] = React.useState(MOCK_LOYALTY.spentSom);
@@ -88,14 +89,14 @@ export default function LoyaltyScreen() {
       setCoins(res.balance);
       if (!res.alreadyClaimed) {
         haptics.success();
-        toast({ title: '+5 Sello Coin qo`shildi!', variant: 'success' });
+        toast({ title: t('loyalty.checkinToast'), variant: 'success' });
       }
     } else {
       // Login emas / xato — optimistik fallback
       haptics.success();
       setCheckedIn(true);
       setCoins((c) => c + CHECKIN_REWARD);
-      toast({ title: '+5 Sello Coin qo`shildi!', variant: 'success' });
+      toast({ title: t('loyalty.checkinToast'), variant: 'success' });
     }
   };
 
@@ -110,7 +111,7 @@ export default function LoyaltyScreen() {
         >
           <ChevronLeft size={22} color="#0A0A0C" />
         </Pressable>
-        <Text className="flex-1 text-center text-base font-semibold">Sello Coins</Text>
+        <Text className="flex-1 text-center text-base font-semibold">{t('loyalty.title')}</Text>
         <View className="w-10" />
       </View>
 
@@ -130,15 +131,17 @@ export default function LoyaltyScreen() {
                 <Text className="text-3xl">{cur.icon}</Text>
                 <View>
                   <Text className="text-[10px] uppercase tracking-wide text-white/70">
-                    Joriy daraja
+                    {t('loyalty.currentTier')}
                   </Text>
                   <Text className="text-xl font-bold text-white">{cur.label}</Text>
-                  <Text className="text-[11px] text-white/80">{cur.cashbackPct}% cashback</Text>
+                  <Text className="text-[11px] text-white/80">
+                    {t('loyalty.cashback').replace('{pct}', String(cur.cashbackPct))}
+                  </Text>
                 </View>
               </View>
               <View className="items-end">
                 <Text className="text-[10px] uppercase tracking-wide text-white/70">
-                  Balansingiz
+                  {t('loyalty.balance')}
                 </Text>
                 <View className="flex-row items-center gap-1">
                   <Coins size={18} color="#fff" />
@@ -154,10 +157,10 @@ export default function LoyaltyScreen() {
               <View className="mt-4">
                 <View className="mb-1 flex-row justify-between">
                   <Text className="text-[11px] text-white/85">
-                    Keyingi: {next.icon} {next.label}
+                    {t('loyalty.nextTier').replace('{tier}', `${next.icon} ${next.label}`)}
                   </Text>
                   <Text className="text-[11px] text-white/85">
-                    Yana {formatNumber(next.min - spent)} so&apos;m
+                    {t('loyalty.spendMore').replace('{amount}', formatNumber(next.min - spent))}
                   </Text>
                 </View>
                 <View className="h-2 overflow-hidden rounded-full bg-white/25">
@@ -178,9 +181,9 @@ export default function LoyaltyScreen() {
           </View>
           <View className="min-w-0 flex-1">
             <Text className="text-foreground text-sm font-semibold">
-              {checkedIn ? 'Bugun olindi · ertaga qaytib keling' : 'Bugun kirib +5 coin oling'}
+              {checkedIn ? t('loyalty.checkinDone') : t('loyalty.checkinCta')}
             </Text>
-            <Text className="text-muted-foreground text-xs">Har kuni — 5 coin</Text>
+            <Text className="text-muted-foreground text-xs">{t('loyalty.earn.checkin')}</Text>
           </View>
           <Pressable
             onPress={onCheckIn}
@@ -217,7 +220,7 @@ export default function LoyaltyScreen() {
         <View className="border-border bg-card rounded-2xl border p-4">
           <View className="mb-2.5 flex-row items-center gap-2">
             <Gift size={16} color="#d97706" />
-            <Text className="text-foreground font-semibold">Coin qanday yig&apos;iladi</Text>
+            <Text className="text-foreground font-semibold">{t('loyalty.earnTitle')}</Text>
           </View>
           <View className="gap-2">
             {EARN_WAYS.map((w) => (
@@ -233,7 +236,7 @@ export default function LoyaltyScreen() {
         <View className="border-border bg-card rounded-2xl border p-4">
           <View className="mb-2.5 flex-row items-center gap-2">
             <Tag size={16} color="#10b981" />
-            <Text className="text-foreground font-semibold">Coinlarni qanday ishlatish</Text>
+            <Text className="text-foreground font-semibold">{t('loyalty.redeemTitle')}</Text>
           </View>
           <View className="gap-2">
             {REDEEM_WAYS.map((w) => (
@@ -247,10 +250,10 @@ export default function LoyaltyScreen() {
 
         {/* History */}
         <View className="border-border bg-card rounded-2xl border p-4">
-          <Text className="text-foreground mb-2 font-semibold">Coin tarixi</Text>
+          <Text className="text-foreground mb-2 font-semibold">{t('loyalty.historyTitle')}</Text>
           {history.length === 0 ? (
             <Text className="text-muted-foreground py-3 text-center text-sm">
-              Hali coin tarixi yo&apos;q — birinchi xaridingizni qiling!
+              {t('loyalty.history.empty')}
             </Text>
           ) : (
             <View>
@@ -262,7 +265,7 @@ export default function LoyaltyScreen() {
         </View>
 
         <Text className="text-muted-foreground text-center text-[10px]">
-          1 Sello Coin = {COIN_VALUE_SOM} so&apos;m
+          {t('loyalty.worth').replace('{som}', `1 Sello Coin = ${COIN_VALUE_SOM}`)}
         </Text>
       </ScrollView>
     </View>
@@ -270,6 +273,7 @@ export default function LoyaltyScreen() {
 }
 
 function HistoryRow({ tx, isLast }: { tx: CoinTxn; isLast: boolean }) {
+  const { t } = useT();
   const positive = tx.amount > 0;
   return (
     <View
@@ -288,7 +292,9 @@ function HistoryRow({ tx, isLast }: { tx: CoinTxn; isLast: boolean }) {
       </View>
       <View className="min-w-0 flex-1">
         <Text className="text-foreground text-sm font-medium">{tx.reason}</Text>
-        <Text className="text-muted-foreground text-xs">{tx.daysAgo} kun oldin</Text>
+        <Text className="text-muted-foreground text-xs">
+          {t('loyalty.history.daysAgo').replace('{days}', String(tx.daysAgo))}
+        </Text>
       </View>
       <Text className={`text-sm font-bold ${positive ? 'text-emerald-600' : 'text-rose-600'}`}>
         {positive ? '+' : ''}

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { pickLocalized } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
+import { useT } from '../../src/lib/useT';
 import { useProducts } from '../../src/lib/hooks';
 import { brands, categories, findBySlug } from '../../src/lib/mock-data';
 import { ProductCard } from '../../src/ui/product-card';
@@ -13,17 +14,18 @@ import { ProductGridSkeleton } from '../../src/ui/skeleton';
 
 type SortKey = 'popularity' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
 
-const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
-  { key: 'popularity', label: 'Mashhurligi' },
-  { key: 'price-asc', label: 'Avval arzon' },
-  { key: 'price-desc', label: 'Avval qimmat' },
-  { key: 'rating', label: 'Reyting' },
-  { key: 'newest', label: 'Yangilari' },
-];
-
 export default function CatalogScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t, locale } = useT();
+
+  const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
+    { key: 'popularity', label: t('catalog.sortBy.popularity') },
+    { key: 'price-asc', label: t('catalog.sortBy.priceAsc') },
+    { key: 'price-desc', label: t('catalog.sortBy.priceDesc') },
+    { key: 'rating', label: t('catalog.sortBy.rating') },
+    { key: 'newest', label: t('catalog.sortBy.newest') },
+  ];
   const params = useLocalSearchParams<{
     category?: string;
     brand?: string;
@@ -65,7 +67,7 @@ export default function CatalogScreen() {
             <TextInput
               value={search}
               onChangeText={setSearch}
-              placeholder="Qidirish..."
+              placeholder={t('common.search') + '...'}
               placeholderTextColor="#94a3b8"
               className="text-foreground flex-1 text-sm"
               returnKeyType="search"
@@ -91,7 +93,7 @@ export default function CatalogScreen() {
             {selectedCategory ? (
               <View className="bg-primary flex-row items-center gap-1 rounded-full px-3 py-1">
                 <Text className="text-xs font-medium text-white">
-                  {pickLocalized(selectedCategory.name, 'uz')}
+                  {pickLocalized(selectedCategory.name, locale)}
                 </Text>
                 <Pressable hitSlop={6} onPress={() => router.setParams({ category: undefined })}>
                   <X size={12} color="#fff" />
@@ -107,7 +109,7 @@ export default function CatalogScreen() {
               </View>
             ) : null}
             <Pressable onPress={clearFilters} hitSlop={4}>
-              <Text className="text-muted-foreground text-xs">Tozalash</Text>
+              <Text className="text-muted-foreground text-xs">{t('common.clear')}</Text>
             </Pressable>
           </View>
         )}
@@ -141,7 +143,9 @@ export default function CatalogScreen() {
 
         {/* Stats line */}
         <View className="flex-row items-center justify-between">
-          <Text className="text-muted-foreground text-xs">{filtered.length} ta mahsulot</Text>
+          <Text className="text-muted-foreground text-xs">
+            {t('catalog.results').replace('{count}', String(filtered.length))}
+          </Text>
           <Pressable
             onPress={() => setSortOpen((v) => !v)}
             className="flex-row items-center gap-1"
@@ -174,7 +178,7 @@ export default function CatalogScreen() {
           )}
           ListEmptyComponent={
             <View className="items-center px-6 py-16">
-              <Text className="text-muted-foreground text-sm">Hech narsa topilmadi</Text>
+              <Text className="text-muted-foreground text-sm">{t('catalog.noResults')}</Text>
             </View>
           }
         />
