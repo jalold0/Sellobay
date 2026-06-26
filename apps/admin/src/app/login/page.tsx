@@ -7,10 +7,10 @@ import * as React from 'react';
 
 import { loginAdmin } from '@/lib/auth/client';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const nextPath = params.get('next') || '/';
+  const nextPath = params?.get('next') || '/';
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
@@ -102,5 +102,13 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense>
+      <LoginForm />
+    </React.Suspense>
   );
 }

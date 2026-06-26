@@ -17,7 +17,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const { has } = useSession();
 
   const visible = adminNav.filter((item) => !item.roles || has(...item.roles));

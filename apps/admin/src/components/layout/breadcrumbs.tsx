@@ -15,7 +15,7 @@ function humanize(segment: string): string {
 }
 
 export function Breadcrumbs({ overrides }: { overrides?: Record<string, string> }) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '';
   const parts = pathname.split('/').filter(Boolean);
 
   const crumbs: Array<{ href: string; label: string; last: boolean }> = parts.map((seg, idx) => {
@@ -25,15 +25,15 @@ export function Breadcrumbs({ overrides }: { overrides?: Record<string, string> 
   });
 
   return (
-    <nav aria-label="breadcrumb" className="flex items-center gap-1 text-xs text-muted-foreground">
-      <Link href="/" className="flex items-center hover:text-foreground">
+    <nav aria-label="breadcrumb" className="text-muted-foreground flex items-center gap-1 text-xs">
+      <Link href="/" className="hover:text-foreground flex items-center">
         <Home className="h-3.5 w-3.5" />
       </Link>
       {crumbs.map((c) => (
         <span key={c.href} className="flex items-center gap-1">
           <ChevronRight className="h-3 w-3" />
           {c.last ? (
-            <span className={cn('font-medium text-foreground')}>{c.label}</span>
+            <span className={cn('text-foreground font-medium')}>{c.label}</span>
           ) : (
             <Link href={c.href} className="hover:text-foreground">
               {c.label}

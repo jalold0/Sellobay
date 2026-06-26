@@ -24,12 +24,19 @@ import { notFound, useParams } from 'next/navigation';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
 import { OrderStatusBadge } from '../../../components/status/order-status-badge';
-import { formatDate, formatMoney, formatNumber, formatRelative, initials } from '../../../lib/format';
+import {
+  formatDate,
+  formatMoney,
+  formatNumber,
+  formatRelative,
+  initials,
+} from '../../../lib/format';
 import { mockCustomers, mockOrders } from '../../../lib/mock';
 
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
-  const customer = mockCustomers.find((c) => c.id === params.id);
+  const id = params?.id ?? '';
+  const customer = mockCustomers.find((c) => c.id === id);
   if (!customer) return notFound();
 
   const fullName = `${customer.firstName} ${customer.lastName}`;
@@ -38,9 +45,7 @@ export default function CustomerDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumbs={
-          <Breadcrumbs overrides={{ [`/customers/${customer.id}`]: fullName }} />
-        }
+        breadcrumbs={<Breadcrumbs overrides={{ [`/customers/${customer.id}`]: fullName }} />}
         title={fullName}
         actions={
           <Button asChild variant="outline" size="sm">
@@ -59,7 +64,7 @@ export default function CustomerDetailPage() {
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="text-xl font-semibold">{fullName}</div>
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-sm">
               {customer.email ? (
                 <span className="inline-flex items-center gap-1">
                   <Mail className="h-3.5 w-3.5" /> {customer.email}
@@ -80,10 +85,24 @@ export default function CustomerDetailPage() {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Buyurtmalar" value={formatNumber(customer.ordersCount)} icon={ShoppingBag} accent="info" />
+        <KpiCard
+          label="Buyurtmalar"
+          value={formatNumber(customer.ordersCount)}
+          icon={ShoppingBag}
+          accent="info"
+        />
         <KpiCard label="Jami sarflagan" value={formatMoney(customer.totalSpent)} accent="success" />
-        <KpiCard label="O`rtacha chek" value={formatMoney(customer.totalSpent / Math.max(customer.ordersCount, 1))} accent="primary" />
-        <KpiCard label="Sodiqlik ballari" value={formatNumber(customer.loyaltyPoints)} icon={Crown} accent="warning" />
+        <KpiCard
+          label="O`rtacha chek"
+          value={formatMoney(customer.totalSpent / Math.max(customer.ordersCount, 1))}
+          accent="primary"
+        />
+        <KpiCard
+          label="Sodiqlik ballari"
+          value={formatNumber(customer.loyaltyPoints)}
+          icon={Crown}
+          accent="warning"
+        />
       </div>
 
       <Tabs defaultValue="orders">
@@ -102,14 +121,17 @@ export default function CustomerDetailPage() {
               <ul className="divide-y">
                 {customerOrders.map((o) => (
                   <li key={o.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                    <Link href={`/orders/${o.id}`} className="font-mono font-medium hover:underline">
+                    <Link
+                      href={`/orders/${o.id}`}
+                      className="font-mono font-medium hover:underline"
+                    >
                       {o.number}
                     </Link>
                     <Separator orientation="vertical" className="h-4" />
                     <OrderStatusBadge status={o.status} />
                     <div className="ml-auto text-right">
                       <div className="font-semibold">{formatMoney(o.grandTotal)}</div>
-                      <div className="text-xs text-muted-foreground">{formatDate(o.placedAt)}</div>
+                      <div className="text-muted-foreground text-xs">{formatDate(o.placedAt)}</div>
                     </div>
                   </li>
                 ))}
@@ -140,7 +162,7 @@ export default function CustomerDetailPage() {
               <CardTitle>Admin eslatmalari</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Hech qanday eslatma yo`q.</p>
+              <p className="text-muted-foreground text-sm">Hech qanday eslatma yo`q.</p>
             </CardContent>
           </Card>
         </TabsContent>

@@ -37,19 +37,18 @@ import { notFound, useParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
-import { ORDER_STATUS_LABELS, OrderStatusBadge } from '../../../components/status/order-status-badge';
-import { PaymentStatusBadge } from '../../../components/status/payment-status-badge';
 import {
-  formatDateTime,
-  formatMoney,
-  formatRelative,
-  pickLocalized,
-} from '../../../lib/format';
+  ORDER_STATUS_LABELS,
+  OrderStatusBadge,
+} from '../../../components/status/order-status-badge';
+import { PaymentStatusBadge } from '../../../components/status/payment-status-badge';
+import { formatDateTime, formatMoney, formatRelative, pickLocalized } from '../../../lib/format';
 import { getOrderDetail } from '../../../lib/mock';
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
-  const order = getOrderDetail(params.id);
+  const id = params?.id ?? '';
+  const order = getOrderDetail(id);
   if (!order) return notFound();
 
   const onStatusChange = (status: string) => {
@@ -66,7 +65,7 @@ export default function OrderDetailPage() {
         breadcrumbs={
           <Breadcrumbs
             overrides={{
-              [`/orders/${params.id}`]: order.number,
+              [`/orders/${id}`]: order.number,
             }}
           />
         }
@@ -103,7 +102,7 @@ export default function OrderDetailPage() {
       <div className="flex flex-wrap items-center gap-2">
         <OrderStatusBadge status={order.status} />
         <PaymentStatusBadge status={order.paymentStatus} />
-        <span className="text-xs text-muted-foreground">{order.paymentProvider}</span>
+        <span className="text-muted-foreground text-xs">{order.paymentProvider}</span>
       </div>
 
       {order.status === 'PENDING' ? (
@@ -127,13 +126,13 @@ export default function OrderDetailPage() {
               <ul className="divide-y">
                 {order.items.map((it) => (
                   <li key={it.id} className="flex items-center gap-3 p-4">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                    <div className="bg-muted h-14 w-14 shrink-0 overflow-hidden rounded-md">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={it.imageUrl} alt="" className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{pickLocalized(it.productName)}</div>
-                      <div className="text-xs text-muted-foreground">{it.sku}</div>
+                      <div className="text-muted-foreground text-xs">{it.sku}</div>
                     </div>
                     <div className="text-right text-sm">
                       <div>
@@ -178,24 +177,20 @@ export default function OrderDetailPage() {
               <ol className="relative space-y-4 border-l pl-6">
                 {order.statusHistory.map((h, i) => {
                   const Icon =
-                    h.status === 'DELIVERED'
-                      ? Check
-                      : h.status === 'CANCELLED'
-                      ? X
-                      : CircleDot;
+                    h.status === 'DELIVERED' ? Check : h.status === 'CANCELLED' ? X : CircleDot;
                   return (
                     <li key={i} className="relative">
-                      <span className="absolute -left-[31px] grid h-6 w-6 place-items-center rounded-full border bg-background">
+                      <span className="bg-background absolute -left-[31px] grid h-6 w-6 place-items-center rounded-full border">
                         <Icon className="h-3 w-3" />
                       </span>
                       <div className="flex items-center gap-2">
                         <OrderStatusBadge status={h.status} />
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           {formatDateTime(h.changedAt)}
                         </span>
                       </div>
                       {h.comment ? (
-                        <p className="mt-1 text-sm text-muted-foreground">{h.comment}</p>
+                        <p className="text-muted-foreground mt-1 text-sm">{h.comment}</p>
                       ) : null}
                     </li>
                   );
@@ -210,7 +205,7 @@ export default function OrderDetailPage() {
                 <CardTitle>Mijoz izohi</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{order.notes}</p>
+                <p className="text-muted-foreground text-sm">{order.notes}</p>
               </CardContent>
             </Card>
           ) : null}
@@ -219,12 +214,12 @@ export default function OrderDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-              <UserRound className="h-4 w-4 text-muted-foreground" />
+              <UserRound className="text-muted-foreground h-4 w-4" />
               <CardTitle className="text-sm">Mijoz</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
               <div className="font-medium">{order.customerName}</div>
-              <div className="mt-2 flex items-center gap-2 text-muted-foreground">
+              <div className="text-muted-foreground mt-2 flex items-center gap-2">
                 <Phone className="h-3.5 w-3.5" /> {order.customerPhone}
               </div>
             </CardContent>
@@ -232,7 +227,7 @@ export default function OrderDetailPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <MapPin className="text-muted-foreground h-4 w-4" />
               <CardTitle className="text-sm">Yetkazib berish manzili</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
@@ -244,7 +239,7 @@ export default function OrderDetailPage() {
                 {order.shippingAddress.city}, {order.shippingAddress.street}
               </div>
               {order.shippingAddress.landmark ? (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   Mo`ljal: {order.shippingAddress.landmark}
                 </div>
               ) : null}
@@ -253,7 +248,7 @@ export default function OrderDetailPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-              <Truck className="h-4 w-4 text-muted-foreground" />
+              <Truck className="text-muted-foreground h-4 w-4" />
               <CardTitle className="text-sm">Yetkazib berish usuli</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
@@ -261,16 +256,16 @@ export default function OrderDetailPage() {
                 {order.deliveryMethod === 'HOME_DELIVERY'
                   ? 'Uyga yetkazib berish'
                   : order.deliveryMethod === 'PICKUP_POINT'
-                  ? 'Olib ketish punkti'
-                  : 'Express yetkazib berish'}
+                    ? 'Olib ketish punkti'
+                    : 'Express yetkazib berish'}
               </div>
-              <div className="text-xs text-muted-foreground">{order.city}</div>
+              <div className="text-muted-foreground text-xs">{order.city}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <CreditCard className="text-muted-foreground h-4 w-4" />
               <CardTitle className="text-sm">To`lov</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-sm">
