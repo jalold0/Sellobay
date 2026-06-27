@@ -1,10 +1,9 @@
 name: CodeQL
 
-# CodeQL private repo'da GitHub Advanced Security talab qiladi. Har push'ni
-# bloklamasligi uchun faqat haftalik jadval va qo'lda ishga tushirishda yuriladi.
+# CodeQL private repo'da GitHub Advanced Security (pullik) talab qiladi.
+# Avtomatik ishlatmaymiz (qizil bermasligi uchun) — faqat qo'lda ishga tushiriladi.
+# Repo public bo'lsa yoki GHAS yoqilsa, push/schedule trigger'larini qайта qo'shsa bo'ladi.
 on:
-  schedule:
-    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 jobs:
