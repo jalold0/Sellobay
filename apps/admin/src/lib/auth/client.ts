@@ -65,6 +65,27 @@ export function rejectSeller(sellerId: string, reason?: string) {
   });
 }
 
+// Barcha sotuvchilar ro'yxati (status filtri bilan)
+export function listSellers(status?: 'all' | 'pending' | 'active' | 'inactive') {
+  const qs = status && status !== 'all' ? `?status=${status}` : '';
+  return api<{ items: AdminSeller[] }>(`/api/sellers${qs}`);
+}
+
+export type SellerStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BLOCKED';
+
+export interface AdminSeller {
+  id: string;
+  brandName: string;
+  legalName: string;
+  ownerName: string;
+  phone: string;
+  status: SellerStatus;
+  commissionRate: number;
+  productsCount: number;
+  totalRevenue: number;
+  appliedAt: string;
+}
+
 export interface PendingSeller {
   id: string;
   legalName: string;
