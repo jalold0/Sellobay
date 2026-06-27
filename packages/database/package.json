@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@ecom/database",
   "version": "0.0.0",
   "private": true,
@@ -19,7 +19,7 @@
     "studio": "prisma studio",
     "format": "prisma format",
     "validate": "prisma validate",
-    "lint": "eslint .",
+    "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

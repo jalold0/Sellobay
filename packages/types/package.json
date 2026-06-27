@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@ecom/types",
   "version": "0.0.0",
   "private": true,
@@ -10,7 +10,7 @@
     "./domain": "./src/domain.ts"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

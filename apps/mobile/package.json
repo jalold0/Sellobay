@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@ecom/mobile",
   "version": "0.0.1",
   "private": true,
@@ -9,7 +9,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "eslint .",
+    "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

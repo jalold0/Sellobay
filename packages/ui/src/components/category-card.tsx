@@ -36,7 +36,6 @@ export function CategoryCard({
       )}
     >
       {imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl}
           alt={name}

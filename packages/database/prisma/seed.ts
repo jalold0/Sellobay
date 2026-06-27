@@ -53,7 +53,7 @@ async function main() {
   console.info(`[seed] ${brands.length} brend tayyor`);
 
   // ─── Super admin (test) ───────────────────────────────────────
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@sellobay.uz' },
     update: {},
     create: {

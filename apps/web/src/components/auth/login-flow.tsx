@@ -187,6 +187,8 @@ function PhoneOtpForm() {
           inputMode="numeric"
           maxLength={6}
           className="text-center text-lg tracking-[0.5em]"
+          // OTP kodi maydoniga avtomatik fokus — ataylab qilingan UX
+          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
         <p className="text-muted-foreground mt-1 text-[11px]">{t('codeSentTo', { phone })}</p>

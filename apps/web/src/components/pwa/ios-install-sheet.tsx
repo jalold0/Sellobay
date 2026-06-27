@@ -47,7 +47,8 @@ export function IosInstallSheet() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — bosilganda yopiladi; dialog Escape bilan ham yopiladi */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className="animate-in fade-in fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
         onClick={dismiss}

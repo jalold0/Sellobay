@@ -1,8 +1,10 @@
 name: Docker Images
 
+# Eslatma: sayt Vercel'da deploy bo'ladi. Docker image'lar faqat kerak bo'lganda
+# qo'lda (Actions > Docker Images > Run workflow) yoki versiya tegi bilan quriladi.
+# Har push'da ishlamaydi — CI daqiqalarini tejash uchun.
 on:
   push:
-    branches: [main]
     tags: ['v*.*.*']
   workflow_dispatch:
 

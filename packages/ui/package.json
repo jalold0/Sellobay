@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@ecom/ui",
   "version": "0.0.0",
   "private": true,
@@ -10,7 +10,7 @@
     "./globals.css": "./src/globals.css"
   },
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

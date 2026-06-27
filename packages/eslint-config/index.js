@@ -28,11 +28,20 @@ module.exports = {
       },
     ],
     'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
+    // Pul/raqam formatlashda NBSP ( ) ajratuvchi sifatida ataylab ishlatiladi
+    'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true }],
+    // Quyidagi import rule'lar to'liq tsconfig resolver'ini talab qiladi va pnpm
+    // symlink monorepo'da "tsconfig.base.json not found" bilan crash bo'ladi.
+    // TypeScript bularni allaqachon tekshiradi, shuning uchun o'chiramiz.
+    'import/namespace': 'off',
+    'import/no-unresolved': 'off',
+    'import/default': 'off',
+    'import/no-named-as-default': 'off',
+    'import/no-named-as-default-member': 'off',
   },
   settings: {
     'import/resolver': {
-      typescript: true,
-      node: true,
+      node: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
     },
   },
   ignorePatterns: ['node_modules', 'dist', 'build', '.next', '.turbo', 'coverage'],

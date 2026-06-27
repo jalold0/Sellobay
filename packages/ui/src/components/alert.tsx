@@ -32,6 +32,8 @@ Alert.displayName = 'Alert';
 
 export const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
+    // children {...props} orqali uzatiladi; jsx-a11y buni statik aniqlay olmaydi
+    // eslint-disable-next-line jsx-a11y/heading-has-content
     <h5
       ref={ref}
       className={cn('mb-1 font-semibold leading-none tracking-tight', className)}

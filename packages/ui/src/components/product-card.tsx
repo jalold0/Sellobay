@@ -67,7 +67,6 @@ const NativeImage = (props: {
   width?: number;
   height?: number;
 }) => (
-  // eslint-disable-next-line @next/next/no-img-element
   <img
     src={props.src}
     alt={props.alt}

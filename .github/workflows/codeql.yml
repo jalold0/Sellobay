@@ -1,12 +1,11 @@
 name: CodeQL
 
+# CodeQL private repo'da GitHub Advanced Security talab qiladi. Har push'ni
+# bloklamasligi uchun faqat haftalik jadval va qo'lda ishga tushirishda yuriladi.
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
   schedule:
     - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 jobs:
   analyze:

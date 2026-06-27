@@ -41,7 +41,7 @@ export function detectDevice(): DetectedDevice {
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     // iOS Safari
-    // @ts-ignore - iOS-specific
+    // @ts-expect-error - iOS-specific navigator.standalone
     window.navigator.standalone === true;
 
   // Chrome/Edge/Samsung Android beforeinstallprompt'ni qo'llab-quvvatlaydi
