@@ -1,3 +1,9 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Vercel pnpm 10 overrides'ni shu yerdan o'qiydi (lokal pnpm 9 package.json'dan).
+# Root React 19 / react-dom 18 mosligini bartaraf etish uchun ikkalasini 18.3.1'ga majburlaymiz.
+overrides:
+  react: "18.3.1"
+  react-dom: "18.3.1"

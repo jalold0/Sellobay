@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "description": "Mijoz sayti (Next.js)",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
