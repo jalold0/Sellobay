@@ -7,10 +7,10 @@ import * as React from 'react';
 
 import { loginSeller } from '@/lib/auth/client';
 
-export default function SellerLoginPage() {
+function SellerLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const nextPath = params.get('next') || '/';
+  const nextPath = params?.get('next') || '/';
   const [submitting, setSubmitting] = React.useState(false);
   const [form, setForm] = React.useState({ identifier: '', password: '' });
 
@@ -108,5 +108,13 @@ export default function SellerLoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function SellerLoginPage() {
+  return (
+    <React.Suspense>
+      <SellerLoginForm />
+    </React.Suspense>
   );
 }
