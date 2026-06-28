@@ -359,4 +359,132 @@ export async function checkinDaily(): Promise<CheckinResult | null> {
   }
 }
 
+// ─── Authdan o'tgan so'rovlar uchun yordamchi ──────────────────────
+
+async function authedJson<T>(
+  path: string,
+  init?: { method?: string; body?: unknown },
+): Promise<T | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: init?.method ?? 'GET',
+      signal: ctrl.signal,
+      headers: {
+        Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(await authHeader()),
+      },
+      body: init?.body ? JSON.stringify(init.body) : undefined,
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { success: boolean; data?: T };
+    return json.success && json.data !== undefined ? json.data : null;
+  } catch (err) {
+    console.warn('[api] authedJson xato:', path, String(err));
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ─── Buyurtmalar ─────────────────────────────────────────────────
+
+export interface ApiOrder {
+  id: string;
+  number: string;
+  status: string;
+  grandTotal: string;
+  placedAt: string;
+  deliveryMethod: string;
+  itemCount: number;
+  items: Array<{ id: string; quantity: number; nameSnapshot: string; totalPrice: string }>;
+}
+
+/** Joriy user buyurtmalari. Login kerak; null = login emas yoki xato. */
+export async function fetchOrders(): Promise<ApiOrder[] | null> {
+  const data = await authedJson<{ items: ApiOrder[] }>('/api/orders');
+  return data?.items ?? null;
+}
+
+// ─── Manzillar (CRUD) ────────────────────────────────────────────
+
+export interface ApiAddress {
+  id: string;
+  label: string | null;
+  type: 'HOME' | 'WORK' | 'PICKUP' | 'OTHER';
+  recipientName: string;
+  phone: string;
+  region: string;
+  city: string;
+  district: string | null;
+  street: string;
+  building: string | null;
+  apartment: string | null;
+  landmark: string | null;
+  isDefault: boolean;
+}
+
+export interface AddressInput {
+  label?: string | null;
+  type: ApiAddress['type'];
+  recipientName: string;
+  phone: string;
+  region?: string;
+  city: string;
+  street: string;
+  apartment?: string | null;
+  landmark?: string | null;
+  isDefault?: boolean;
+}
+
+export async function fetchAddresses(): Promise<ApiAddress[] | null> {
+  const data = await authedJson<{ items: ApiAddress[] }>('/api/addresses');
+  return data?.items ?? null;
+}
+
+export async function createAddress(input: AddressInput): Promise<ApiAddress | null> {
+  const data = await authedJson<{ address: ApiAddress }>('/api/addresses', {
+    method: 'POST',
+    body: input,
+  });
+  return data?.address ?? null;
+}
+
+export async function setDefaultAddress(id: string): Promise<boolean> {
+  const data = await authedJson<{ address: ApiAddress }>(`/api/addresses/${id}`, {
+    method: 'PATCH',
+    body: { isDefault: true },
+  });
+  return data !== null;
+}
+
+export async function deleteAddress(id: string): Promise<boolean> {
+  const data = await authedJson<unknown>(`/api/addresses/${id}`, { method: 'DELETE' });
+  return data !== null;
+}
+
+// ─── Saqlangan to'lov usullari ───────────────────────────────────
+
+export interface ApiPaymentMethod {
+  id: string;
+  provider: string;
+  brand: string | null;
+  last4: string | null;
+  expiryMonth: number | null;
+  expiryYear: number | null;
+  isDefault: boolean;
+}
+
+export async function fetchPaymentMethods(): Promise<ApiPaymentMethod[] | null> {
+  const data = await authedJson<{ items: ApiPaymentMethod[] }>('/api/payment-methods');
+  return data?.items ?? null;
+}
+
+export async function deletePaymentMethod(id: string): Promise<boolean> {
+  const data = await authedJson<unknown>(`/api/payment-methods/${id}`, { method: 'DELETE' });
+  return data !== null;
+}
+
 export { API_BASE };

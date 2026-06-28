@@ -19,13 +19,15 @@ import * as React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { initials } from '../../src/lib/format';
+import { fetchLoyalty, fetchOrders } from '../../src/lib/api';
+import { formatNumber, initials } from '../../src/lib/format';
+import { currentTier } from '../../src/lib/loyalty';
 import { useT } from '../../src/lib/useT';
 import { useLocale, locales, type Locale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
 import { Button } from '../../src/ui/button';
 
-const LOCALE_LABELS: Record<Locale, string> = { uz: "O'zbek", ru: 'Русский', en: 'English' };
+const LANG_LABEL: Record<Locale, string> = { uz: 'Til', ru: 'Язык', en: 'Language' };
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -34,6 +36,32 @@ export default function ProfileScreen() {
   const { locale, setLocale } = useLocale();
   const { user, isAuthenticated, signOut } = useSession();
   const name = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : '';
+
+  // Real statistika — login bo'lsa DB'dan (buyurtmalar soni, coin balansi, daraja)
+  const [stats, setStats] = React.useState<{
+    orders: number | null;
+    coins: number | null;
+    tier: string | null;
+  }>({ orders: null, coins: null, tier: null });
+
+  React.useEffect(() => {
+    let active = true;
+    if (!isAuthenticated) {
+      setStats({ orders: null, coins: null, tier: null });
+      return;
+    }
+    void Promise.all([fetchOrders(), fetchLoyalty()]).then(([orders, loyalty]) => {
+      if (!active) return;
+      setStats({
+        orders: orders?.length ?? null,
+        coins: loyalty?.coins ?? null,
+        tier: loyalty ? currentTier(loyalty.spentSom).label : null,
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
 
   const SECTIONS: Array<{
     title: string;
@@ -51,9 +79,18 @@ export default function ProfileScreen() {
     {
       title: t('profile.nav.loyalty'),
       items: [
-        { icon: Gift, label: t('profile.nav.loyalty'), href: '/profile/loyalty', badge: 'Gold' },
+        {
+          icon: Gift,
+          label: t('profile.nav.loyalty'),
+          href: '/profile/loyalty',
+          badge: stats.tier ?? undefined,
+        },
         { icon: Star, label: t('profile.nav.reviews'), href: '/profile/reviews' },
-        { icon: Bell, label: t('nav.settings'), href: '/profile/notifications' },
+        {
+          icon: Bell,
+          label: t('profile.settingsPage.notificationsTitle'),
+          href: '/profile/notifications',
+        },
       ],
     },
     {
@@ -111,11 +148,17 @@ export default function ProfileScreen() {
       {/* Quick stats */}
       {isAuthenticated ? (
         <View className="border-border bg-card mx-4 -mt-4 flex-row gap-2 rounded-2xl border p-3 shadow-sm">
-          <Stat label={t('nav.orders')} value="12" />
+          <Stat
+            label={t('nav.orders')}
+            value={stats.orders === null ? '—' : String(stats.orders)}
+          />
           <View className="bg-border w-px" />
-          <Stat label={t('loyalty.coin')} value="1 240" />
+          <Stat
+            label={t('loyalty.coin')}
+            value={stats.coins === null ? '—' : formatNumber(stats.coins)}
+          />
           <View className="bg-border w-px" />
-          <Stat label={t('loyalty.currentTier')} value="Gold" />
+          <Stat label={t('loyalty.currentTier')} value={stats.tier ?? '—'} />
         </View>
       ) : null}
 
@@ -160,7 +203,7 @@ export default function ProfileScreen() {
             <View className="bg-muted h-9 w-9 items-center justify-center rounded-full">
               <Globe size={16} color="#0A0A0C" />
             </View>
-            <Text className="text-foreground flex-1 text-sm font-medium">{t('nav.settings')}</Text>
+            <Text className="text-foreground flex-1 text-sm font-medium">{LANG_LABEL[locale]}</Text>
             <View className="flex-row gap-1">
               {locales.map((l) => (
                 <Pressable
