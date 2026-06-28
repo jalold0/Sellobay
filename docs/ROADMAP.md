@@ -110,7 +110,7 @@
 ## 7. Phase 1 — Differensiatsiya (launch atrofida)
 
 - [x] Sello Coins (yuqorida) ✅
-- [ ] Group buy (5 kishi qo'shilsa chegirma — Pinduoduo mexanizmi)
+- [~] Group buy (Pinduoduo mexanizmi): web UI to'liq — /group-buy sahifa, progress, countdown, join, share, 3 til, footer havola, mock-first (2026-06-28). Qoldiq: real backend (Prisma GroupBuy/GroupBuyMember + API + Neon migratsiya) va checkout ulanishi
 - [ ] Wishlist sharing (link orqali "sovg'a ro'yxati", viral)
 - [ ] Multi-language smart description (sotuvchi UZ yozadi → AI RU/EN)
 - [~] Verified Seller: backend to'liq (admin approve/reject + sotuvchilar ro'yxati real DB, 2026-06-28); mahsulotdagi "Tasdiqlangan" chip hali har doim ko'rinadi (kosmetik qoldiq)
