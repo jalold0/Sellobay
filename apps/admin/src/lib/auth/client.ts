@@ -86,6 +86,39 @@ export interface AdminSeller {
   appliedAt: string;
 }
 
+// Mahsulotlar ro'yxati (admin)
+export function listProducts() {
+  return api<{ items: AdminProduct[] }>('/api/products');
+}
+
+type Localized = { uz: string; ru: string; en: string };
+
+export type AdminProductStatus =
+  | 'DRAFT'
+  | 'PENDING_REVIEW'
+  | 'ACTIVE'
+  | 'ARCHIVED'
+  | 'OUT_OF_STOCK';
+
+export interface AdminProduct {
+  id: string;
+  sku: string;
+  slug: string;
+  name: Localized;
+  brandName: string;
+  categoryName: Localized;
+  status: AdminProductStatus;
+  basePrice: number;
+  compareAtPrice?: number;
+  imageUrl: string;
+  stock: number;
+  soldCount: number;
+  rating: number;
+  reviewCount: number;
+  sellerName?: string;
+  createdAt: string;
+}
+
 // Mijozlar ro'yxati (admin)
 export function listCustomers() {
   return api<{ items: AdminCustomer[] }>('/api/customers');

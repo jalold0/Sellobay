@@ -18,12 +18,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   toast,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
   Archive,
-  ArrowDownToLine,
   Copy,
   Filter,
   MoreHorizontal,
@@ -37,25 +37,49 @@ import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { ProductStatusBadge } from '../../components/status/product-status-badge';
+import { listProducts, type AdminProduct } from '@/lib/auth/client';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
-import { mockBrands, mockCategories, mockProducts, type Product } from '../../lib/mock';
 
 export default function AdminProductsPage() {
+  const [products, setProducts] = React.useState<AdminProduct[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [categoryFilter, setCategoryFilter] = React.useState<string>('all');
   const [brandFilter, setBrandFilter] = React.useState<string>('all');
   const [selection, setSelection] = React.useState<Record<string, boolean>>({});
 
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    const res = await listProducts();
+    if (res.success) setProducts(res.data.items);
+    else toast({ title: res.error.message, variant: 'destructive' });
+    setLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Filtr variantlari — yuklangan mahsulotlardan
+  const brandOptions = React.useMemo(
+    () => Array.from(new Set(products.map((p) => p.brandName).filter((b) => b && b !== '—'))),
+    [products],
+  );
+  const categoryOptions = React.useMemo(
+    () => Array.from(new Set(products.map((p) => p.categoryName.uz).filter((c) => c && c !== '—'))),
+    [products],
+  );
+
   const data = React.useMemo(() => {
-    return mockProducts.filter((p) => {
+    return products.filter((p) => {
       if (statusFilter !== 'all' && p.status !== statusFilter) return false;
       if (categoryFilter !== 'all' && p.categoryName.uz !== categoryFilter) return false;
       if (brandFilter !== 'all' && p.brandName !== brandFilter) return false;
       return true;
     });
-  }, [statusFilter, categoryFilter, brandFilter]);
+  }, [products, statusFilter, categoryFilter, brandFilter]);
 
-  const columns: ColumnDef<Product>[] = React.useMemo(
+  const columns: ColumnDef<AdminProduct>[] = React.useMemo(
     () => [
       {
         id: 'select',
@@ -112,9 +136,7 @@ export default function AdminProductsPage() {
       {
         accessorKey: 'categoryName',
         header: 'Kategoriya',
-        cell: ({ row }) => (
-          <span className="text-sm">{pickLocalized(row.original.categoryName)}</span>
-        ),
+        cell: ({ row }) => <span className="text-sm">{pickLocalized(row.original.categoryName)}</span>,
       },
       {
         accessorKey: 'basePrice',
@@ -140,8 +162,8 @@ export default function AdminProductsPage() {
                 row.original.stock === 0
                   ? 'text-red-600'
                   : row.original.stock <= 10
-                  ? 'text-amber-600'
-                  : ''
+                    ? 'text-amber-600'
+                    : ''
               }
             >
               {formatNumber(row.original.stock)}
@@ -163,7 +185,12 @@ export default function AdminProductsPage() {
           <div className="flex justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -206,11 +233,11 @@ export default function AdminProductsPage() {
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Mahsulotlar"
-        description={`Jami ${formatNumber(mockProducts.length)} ta mahsulot katalogda`}
+        description={`Jami ${formatNumber(products.length)} ta mahsulot katalogda`}
         actions={
           <>
-            <Button variant="outline" size="sm">
-              <ArrowDownToLine className="mr-2 h-4 w-4" /> Eksport
+            <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+              Yangilash
             </Button>
             <Button asChild size="sm">
               <Link href="/products/new">
@@ -243,9 +270,9 @@ export default function AdminProductsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Barcha kategoriyalar</SelectItem>
-              {mockCategories.map((c) => (
-                <SelectItem key={c.id} value={c.name.uz}>
-                  {pickLocalized(c.name)}
+              {categoryOptions.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -256,9 +283,9 @@ export default function AdminProductsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Barcha brendlar</SelectItem>
-              {mockBrands.map((b) => (
-                <SelectItem key={b.id} value={b.name}>
-                  {b.name}
+              {brandOptions.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -277,7 +304,7 @@ export default function AdminProductsPage() {
             </Button>
           )}
           <div className="ml-auto text-xs text-muted-foreground">
-            {data.length} / {mockProducts.length}
+            {data.length} / {products.length}
           </div>
         </div>
       </Card>
@@ -301,27 +328,35 @@ export default function AdminProductsPage() {
         </Card>
       ) : null}
 
-      <DataTable
-        columns={columns}
-        data={data}
-        searchPlaceholder="Nomi yoki SKU bo`yicha qidirish..."
-        rowSelection={selection}
-        onRowSelectionChange={setSelection}
-        emptyState={
-          <EmptyState
-            icon={Package}
-            title="Mahsulot topilmadi"
-            description="Filtrlarni o`zgartiring yoki yangi mahsulot qo`shing"
-            action={
-              <Button asChild size="sm">
-                <Link href="/products/new">
-                  <Plus className="mr-2 h-4 w-4" /> Yangi mahsulot
-                </Link>
-              </Button>
-            }
-          />
-        }
-      />
+      {loading ? (
+        <div className="grid gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-14" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data}
+          searchPlaceholder="Nomi yoki SKU bo`yicha qidirish..."
+          rowSelection={selection}
+          onRowSelectionChange={setSelection}
+          emptyState={
+            <EmptyState
+              icon={Package}
+              title="Mahsulot topilmadi"
+              description="Filtrlarni o`zgartiring yoki yangi mahsulot qo`shing"
+              action={
+                <Button asChild size="sm">
+                  <Link href="/products/new">
+                    <Plus className="mr-2 h-4 w-4" /> Yangi mahsulot
+                  </Link>
+                </Button>
+              }
+            />
+          }
+        />
+      )}
     </div>
   );
 }
