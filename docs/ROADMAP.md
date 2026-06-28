@@ -6,7 +6,9 @@
 >
 > **Oxirgi yangilanish:** 2026-06-28 · **MVP launch:** 2026-07-13
 >
-> **2026-06-28:** Vercel deploy + CI yashil · huquqiy sahifalar (oferta/maxfiylik/shartlar) · Verified Seller backend · profil i18n to'liq
+> **2026-06-28:** Vercel deploy + CI yashil · huquqiy sahifalar · Verified Seller backend · profil i18n · Group Buy (web UI) · to'lov skeleti (Click/Payme) · React 19 birlashtirildi (web+mobil) · mobil checkout auth-gate · **Admin real DB:** buyurtmalar/mijozlar/mahsulotlar · **Seller real DB:** dashboard/buyurtmalar/mahsulotlar
+>
+> **Qolgan sync:** admin dashboard+detail([id]), seller inventory/finance/analytics/returns, mahsulot qo'shish (Cloudinary kerak)
 >
 > **Belgilar:** `[x]` bajarilgan · `[ ]` qilinmagan · `[~]` qisman · 🔒 bloklangan (tashqi narsa kerak)
 
