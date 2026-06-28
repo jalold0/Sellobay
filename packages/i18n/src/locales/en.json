@@ -564,6 +564,32 @@
       "detail": "Details"
     }
   },
+  "groupBuy": {
+    "metaTitle": "Group buy — buy together, pay less | Sellobay",
+    "metaDescription": "Buy together with friends and unlock big discounts.",
+    "badge": "Group buy",
+    "title": "Buy together — pay less",
+    "subtitle": "Invite your friends. When the group fills up, everyone gets the discounted price.",
+    "howTitle": "How it works",
+    "step1Title": "Start a group",
+    "step1Desc": "Pick a product and open a group buy",
+    "step2Title": "Invite friends",
+    "step2Desc": "Share the link so they can join the group",
+    "step3Title": "Get the discount",
+    "step3Desc": "When the group is complete, everyone buys at the low price",
+    "activeTitle": "Active groups",
+    "soloPrice": "Solo price",
+    "groupPrice": "Group price",
+    "joinedCount": "{current}/{target} joined",
+    "needMore": "{n} more needed",
+    "join": "Join the group",
+    "youJoined": "You joined",
+    "complete": "Group complete!",
+    "share": "Share",
+    "linkCopied": "Link copied",
+    "expiresIn": "Ends in",
+    "save": "Save {percent}%"
+  },
   "loyalty": {
     "title": "Sello Coins",
     "subtitle": "Earn coins on every purchase — spend them on your next order",

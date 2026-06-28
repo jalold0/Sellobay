@@ -564,6 +564,32 @@
       "detail": "Batafsil"
     }
   },
+  "groupBuy": {
+    "metaTitle": "Guruh xaridi — birga oling, arzon oling | Sellobay",
+    "metaDescription": "Do'stlaringiz bilan birga xarid qiling va katta chegirmaga ega bo'ling.",
+    "badge": "Guruh xaridi",
+    "title": "Birga oling — arzon oling",
+    "subtitle": "Do'stlaringizni taklif qiling. Guruh to'lsa — hamma chegirmali narxda oladi.",
+    "howTitle": "Qanday ishlaydi",
+    "step1Title": "Guruh boshlang",
+    "step1Desc": "Mahsulotni tanlab guruh xaridini oching",
+    "step2Title": "Do'stlarni taklif qiling",
+    "step2Desc": "Havolani ulashing — ular guruhga qo'shilsin",
+    "step3Title": "Chegirmani oling",
+    "step3Desc": "Guruh to'lganda hamma arzon narxda xarid qiladi",
+    "activeTitle": "Faol guruhlar",
+    "soloPrice": "Yakka narx",
+    "groupPrice": "Guruh narxi",
+    "joinedCount": "{current}/{target} kishi qo'shildi",
+    "needMore": "Yana {n} kishi kerak",
+    "join": "Guruhga qo'shilish",
+    "youJoined": "Siz qo'shildingiz",
+    "complete": "Guruh to'ldi!",
+    "share": "Ulashish",
+    "linkCopied": "Havola nusxalandi",
+    "expiresIn": "Tugashiga",
+    "save": "{percent}% tejang"
+  },
   "loyalty": {
     "title": "Sello Coins",
     "subtitle": "Har xariddan coin yig'ing — keyingi buyurtmada ishlating",
