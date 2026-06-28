@@ -11,28 +11,43 @@ import {
   EmptyState,
   KpiCard,
   PageHeader,
+  Skeleton,
   Tabs,
   TabsList,
   TabsTrigger,
+  toast,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
-import {
-  ArrowDownToLine,
-  Archive,
-  Copy,
-  MoreHorizontal,
-  Package,
-  Pencil,
-  Plus,
-} from 'lucide-react';
+import { Archive, Copy, MoreHorizontal, Package, Pencil, Plus } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { SellerProductStatusBadge } from '../../components/product-status-badge';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
-import { sellerProducts, type SellerProduct } from '../../lib/mock';
 
-const columns: ColumnDef<SellerProduct>[] = [
+type LocalizedText = { uz: string; ru?: string; en?: string };
+
+interface ProductRow {
+  id: string;
+  slug: string;
+  sku: string;
+  name: LocalizedText;
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'ARCHIVED' | 'OUT_OF_STOCK';
+  basePrice: number;
+  rating: number;
+  reviewCount: number;
+  soldCount: number;
+  stock: number;
+  imageUrl: string;
+}
+
+interface ApiResult<T> {
+  success: boolean;
+  data?: T;
+  error?: { message: string };
+}
+
+const columns: ColumnDef<ProductRow>[] = [
   {
     accessorKey: 'name',
     header: 'Mahsulot',
@@ -43,7 +58,10 @@ const columns: ColumnDef<SellerProduct>[] = [
           <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
         </div>
         <div className="min-w-0">
-          <Link href={`/products/${row.original.id}`} className="block truncate font-medium hover:underline">
+          <Link
+            href={`/products/${row.original.id}`}
+            className="block truncate font-medium hover:underline"
+          >
             {pickLocalized(row.original.name)}
           </Link>
           <div className="truncate text-xs text-muted-foreground">{row.original.sku}</div>
@@ -59,7 +77,9 @@ const columns: ColumnDef<SellerProduct>[] = [
   {
     accessorKey: 'basePrice',
     header: () => <div className="text-right">Narx</div>,
-    cell: ({ row }) => <div className="text-right font-medium">{formatMoney(row.original.basePrice)}</div>,
+    cell: ({ row }) => (
+      <div className="text-right font-medium">{formatMoney(row.original.basePrice)}</div>
+    ),
   },
   {
     accessorKey: 'stock',
@@ -70,8 +90,8 @@ const columns: ColumnDef<SellerProduct>[] = [
           row.original.stock === 0
             ? 'text-right text-red-600'
             : row.original.stock <= 10
-            ? 'text-right text-amber-600'
-            : 'text-right'
+              ? 'text-right text-amber-600'
+              : 'text-right'
         }
       >
         {formatNumber(row.original.stock)}
@@ -124,22 +144,42 @@ const columns: ColumnDef<SellerProduct>[] = [
 ];
 
 export default function SellerProductsPage() {
+  const [products, setProducts] = React.useState<ProductRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [tab, setTab] = React.useState('all');
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/products', { credentials: 'same-origin' });
+      const json = (await res.json()) as ApiResult<{ items: ProductRow[] }>;
+      if (json.success && json.data) setProducts(json.data.items);
+      else toast({ title: json.error?.message ?? 'Xato', variant: 'destructive' });
+    } catch {
+      toast({ title: 'Tarmoq xatosi', variant: 'destructive' });
+    }
+    setLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
   const filtered = React.useMemo(() => {
-    if (tab === 'all') return sellerProducts;
-    if (tab === 'active') return sellerProducts.filter((p) => p.status === 'ACTIVE');
-    if (tab === 'draft') return sellerProducts.filter((p) => p.status === 'DRAFT');
-    if (tab === 'review') return sellerProducts.filter((p) => p.status === 'PENDING_REVIEW');
-    if (tab === 'archived') return sellerProducts.filter((p) => p.status === 'ARCHIVED' || p.status === 'OUT_OF_STOCK');
-    return sellerProducts;
-  }, [tab]);
+    if (tab === 'active') return products.filter((p) => p.status === 'ACTIVE');
+    if (tab === 'draft') return products.filter((p) => p.status === 'DRAFT');
+    if (tab === 'review') return products.filter((p) => p.status === 'PENDING_REVIEW');
+    if (tab === 'archived')
+      return products.filter((p) => p.status === 'ARCHIVED' || p.status === 'OUT_OF_STOCK');
+    return products;
+  }, [tab, products]);
 
   const counts = {
-    all: sellerProducts.length,
-    active: sellerProducts.filter((p) => p.status === 'ACTIVE').length,
-    draft: sellerProducts.filter((p) => p.status === 'DRAFT').length,
-    review: sellerProducts.filter((p) => p.status === 'PENDING_REVIEW').length,
-    archived: sellerProducts.filter((p) => p.status === 'ARCHIVED' || p.status === 'OUT_OF_STOCK').length,
+    all: products.length,
+    active: products.filter((p) => p.status === 'ACTIVE').length,
+    draft: products.filter((p) => p.status === 'DRAFT').length,
+    review: products.filter((p) => p.status === 'PENDING_REVIEW').length,
+    archived: products.filter((p) => p.status === 'ARCHIVED' || p.status === 'OUT_OF_STOCK').length,
   };
 
   return (
@@ -149,8 +189,8 @@ export default function SellerProductsPage() {
         description="Faqat sizning do`koningizdagi mahsulotlar"
         actions={
           <>
-            <Button variant="outline" size="sm">
-              <ArrowDownToLine className="mr-2 h-4 w-4" /> Import
+            <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+              Yangilash
             </Button>
             <Button size="sm" asChild>
               <Link href="/products/new">
@@ -178,14 +218,28 @@ export default function SellerProductsPage() {
         </TabsList>
       </Tabs>
 
-      <Card className="p-1">
-        <DataTable
-          columns={columns}
-          data={filtered}
-          searchPlaceholder="Mahsulot nomi yoki SKU..."
-          emptyState={<EmptyState icon={Package} title="Mahsulot yo`q" />}
-        />
-      </Card>
+      {loading ? (
+        <div className="grid gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-14" />
+          ))}
+        </div>
+      ) : (
+        <Card className="p-1">
+          <DataTable
+            columns={columns}
+            data={filtered}
+            searchPlaceholder="Mahsulot nomi yoki SKU..."
+            emptyState={
+              <EmptyState
+                icon={Package}
+                title="Mahsulot yo`q"
+                description="Birinchi mahsulotingizni qo`shing"
+              />
+            }
+          />
+        </Card>
+      )}
     </div>
   );
 }

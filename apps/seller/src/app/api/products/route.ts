@@ -284,6 +284,7 @@ export async function GET() {
         take: 1,
         orderBy: { position: 'asc' },
       },
+      variants: { select: { inventory: { select: { quantityOnHand: true } } } },
     },
   });
 
@@ -294,12 +295,16 @@ export async function GET() {
       sku: p.sku,
       name: p.name,
       status: p.status,
-      basePrice: p.basePrice.toString(),
+      basePrice: Number(p.basePrice),
       rating: Number(p.rating),
       reviewCount: p.reviewCount,
       soldCount: p.soldCount,
+      stock: p.variants.reduce(
+        (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
+        0,
+      ),
       createdAt: p.createdAt,
-      imageUrl: p.images[0]?.url ?? null,
+      imageUrl: p.images[0]?.url ?? '',
     })),
   });
 }
