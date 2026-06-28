@@ -11,8 +11,14 @@
 ### To'lov
 - [ ] 🔒👤 **Click merchant hisob** ochish (eng sekin — bugun boshlang!)
 - [ ] 🔒👤 **Payme merchant hisob** ochish
-- [ ] To'lov provider'larni jonli web checkout'ga ulash (kod tayyor — `apps/api` provider'lar bor)
-- [ ] To'lov e2e test: buyurtma → to'lov → tasdiq → status
+- [x] To'lov skeleti kodi tayyor (2026-06-28): web `/api/payments/create` + `/click` + `/payme`
+      webhook'lari, checkout redirect. Imzo/auth tekshiruvi ishlaydi.
+- [ ] 🔒👤 Vercel env'larga kalitlarni qo'yish (hisob kelgach):
+      `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID`, `CLICK_SECRET_KEY`, `CLICK_MERCHANT_USER_ID`,
+      `PAYME_MERCHANT_ID`, `PAYME_KEY`, `NEXT_PUBLIC_APP_URL`
+- [ ] 🔒👤 Provider kabinetida webhook URL'larini ko'rsatish:
+      Click → `https://<domen>/api/payments/click`, Payme → `https://<domen>/api/payments/payme`
+- [ ] To'lov e2e test: sandbox → buyurtma → to'lov → webhook → status PAID
 
 ### SMS (telefon OTP)
 - [ ] 🔒👤 **Eskiz.uz hisob** + API kalit
