@@ -484,7 +484,28 @@
     },
     "birthday": "Дата рождения",
     "saveChanges": "Сохранить изменения",
-    "saved": "Сохранено"
+    "saved": "Сохранено",
+    "settingsPage": {
+      "title": "Настройки",
+      "passwordTitle": "Смена пароля",
+      "currentPassword": "Текущий пароль",
+      "newPassword": "Новый пароль",
+      "confirmPassword": "Повторите новый пароль",
+      "update": "Обновить",
+      "passwordUpdated": "Пароль обновлён",
+      "notificationsTitle": "Уведомления",
+      "notifEmailLabel": "Email-уведомления",
+      "notifEmailDesc": "Заказы, акции",
+      "notifSmsLabel": "SMS-уведомления",
+      "notifSmsDesc": "Только важные",
+      "notifPushLabel": "Push-уведомления",
+      "notifPushDesc": "В мобильное приложение",
+      "notifMarketingLabel": "Маркетинговые письма",
+      "notifMarketingDesc": "О новых товарах",
+      "dangerTitle": "Опасная зона",
+      "dangerDesc": "Удаление аккаунта необратимо. Все ваши данные будут полностью удалены в течение 30 дней.",
+      "deleteAccount": "Удалить аккаунт"
+    }
   },
   "loyalty": {
     "title": "Sello Coins",

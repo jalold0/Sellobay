@@ -484,7 +484,28 @@
     },
     "birthday": "Date of birth",
     "saveChanges": "Save changes",
-    "saved": "Saved"
+    "saved": "Saved",
+    "settingsPage": {
+      "title": "Settings",
+      "passwordTitle": "Change password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Repeat new password",
+      "update": "Update",
+      "passwordUpdated": "Password updated",
+      "notificationsTitle": "Notifications",
+      "notifEmailLabel": "Email notifications",
+      "notifEmailDesc": "Orders, promotions",
+      "notifSmsLabel": "SMS notifications",
+      "notifSmsDesc": "Important only",
+      "notifPushLabel": "Push notifications",
+      "notifPushDesc": "To the mobile app",
+      "notifMarketingLabel": "Marketing emails",
+      "notifMarketingDesc": "About new products",
+      "dangerTitle": "Danger zone",
+      "dangerDesc": "Deleting your account is irreversible. All your data will be permanently deleted within 30 days.",
+      "deleteAccount": "Delete account"
+    }
   },
   "loyalty": {
     "title": "Sello Coins",

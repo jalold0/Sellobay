@@ -484,7 +484,28 @@
     },
     "birthday": "Tug'ilgan kun",
     "saveChanges": "O'zgarishlarni saqlash",
-    "saved": "Saqlandi"
+    "saved": "Saqlandi",
+    "settingsPage": {
+      "title": "Sozlamalar",
+      "passwordTitle": "Parolni almashtirish",
+      "currentPassword": "Joriy parol",
+      "newPassword": "Yangi parol",
+      "confirmPassword": "Yangi parolni takrorlang",
+      "update": "Yangilash",
+      "passwordUpdated": "Parol yangilandi",
+      "notificationsTitle": "Bildirishnomalar",
+      "notifEmailLabel": "Email bildirishnomalar",
+      "notifEmailDesc": "Buyurtmalar, aksiyalar",
+      "notifSmsLabel": "SMS bildirishnomalar",
+      "notifSmsDesc": "Faqat muhimlar",
+      "notifPushLabel": "Push bildirishnomalar",
+      "notifPushDesc": "Mobil ilovaga",
+      "notifMarketingLabel": "Marketing emaillar",
+      "notifMarketingDesc": "Yangi mahsulotlar haqida",
+      "dangerTitle": "Xavfli zona",
+      "dangerDesc": "Hisobni o'chirish — bu amal ortga qaytarilmaydi. Barcha ma'lumotlaringiz 30 kun ichida butunlay o'chiriladi.",
+      "deleteAccount": "Hisobni o'chirish"
+    }
   },
   "loyalty": {
     "title": "Sello Coins",
