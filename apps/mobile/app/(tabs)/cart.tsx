@@ -9,6 +9,7 @@ import { haptics } from '../../src/lib/haptics';
 import { useT } from '../../src/lib/useT';
 import { productImage } from '../../src/lib/mock-data';
 import { useCart, type CartItem } from '../../src/store/cart';
+import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
@@ -21,7 +22,19 @@ export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useT();
+  const isAuthenticated = useSession((s) => s.isAuthenticated);
   const items = useCart((s) => s.items);
+
+  // Buyurtma rasmiylashtirish — faqat ro'yxatdan o'tgan mijozlar uchun.
+  // Mehmon ko'rishi/savatga qo'shishi mumkin, lekin checkout'da login talab qilinadi.
+  const onCheckout = () => {
+    if (!isAuthenticated) {
+      toast({ title: t('auth.loginRequired'), duration: 2500 });
+      router.push('/auth/login?redirect=/checkout');
+      return;
+    }
+    router.push('/checkout');
+  };
   const removeItem = useCart((s) => s.removeItem);
   const updateQuantity = useCart((s) => s.updateQuantity);
   const clear = useCart((s) => s.clear);
@@ -121,7 +134,7 @@ export default function CartScreen() {
         <Button
           fullWidth
           size="lg"
-          onPress={() => router.push('/checkout')}
+          onPress={onCheckout}
           rightIcon={<ArrowRight size={16} color="#fff" />}
         >
           {t('cart.checkout')}

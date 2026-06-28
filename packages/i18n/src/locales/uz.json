@@ -391,6 +391,7 @@
     }
   },
   "auth": {
+    "loginRequired": "Buyurtma berish uchun ro'yxatdan o'ting",
     "phone": "Telefon raqami",
     "email": "Email",
     "password": "Parol",

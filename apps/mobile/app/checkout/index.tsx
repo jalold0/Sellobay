@@ -18,6 +18,7 @@ import { haptics } from '../../src/lib/haptics';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../src/lib/loyalty';
 import { productImage } from '../../src/lib/mock-data';
 import { useCart } from '../../src/store/cart';
+import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
@@ -50,8 +51,16 @@ const PAYMENT_OPTIONS = [
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const isAuthenticated = useSession((s) => s.isAuthenticated);
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
+
+  // To'g'ridan-to'g'ri kirishdan himoya — ro'yxatdan o'tmagan bo'lsa login'ga
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/auth/login?redirect=/checkout');
+    }
+  }, [isAuthenticated, router]);
 
   const [step, setStep] = React.useState<Step>('address');
   const [address, setAddress] = React.useState({

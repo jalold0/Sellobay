@@ -391,6 +391,7 @@
     }
   },
   "auth": {
+    "loginRequired": "Please sign in to place an order",
     "phone": "Phone number",
     "email": "Email",
     "password": "Password",

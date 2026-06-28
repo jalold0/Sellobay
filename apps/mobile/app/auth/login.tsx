@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Lock, Mail, Phone, ShieldCheck, X } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -19,6 +19,7 @@ type AuthHandler = (user: AuthUser, access: string, refresh: string) => Promise<
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const { t } = useT();
   const signIn = useSession((s) => s.signIn);
   const [tab, setTab] = React.useState<Tab>('phone');
@@ -35,7 +36,8 @@ export default function LoginScreen() {
       access,
       refresh,
     );
-    router.replace('/(tabs)');
+    // Login talab qilgan sahifaga qaytaramiz (masalan checkout), aks holda asosiyga
+    router.replace(redirect && redirect.startsWith('/') ? (redirect as never) : '/(tabs)');
   };
 
   return (
