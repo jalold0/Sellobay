@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@ecom/eslint-config": "workspace:*",
+    "@node-rs/argon2": "^2.0.2",
     "@ecom/tsconfig": "workspace:*",
     "@types/node": "^20.11.0",
     "prisma": "^5.14.0",

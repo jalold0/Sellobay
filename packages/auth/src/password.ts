@@ -1,31 +1,25 @@
-import type argon2Types from 'argon2';
+// Parol hashlash — @node-rs/argon2 (Rust/napi prebuilt).
+// Eski `argon2` (C++ native) Vercel runtime'da Node ABI mosligi tufayli
+// yuklanmasdi (login 401, register 500). @node-rs/argon2 barcha Node
+// versiyalari uchun prebuilt binary keltiradi — versiyaga bog'liq emas.
+// Standart argon2id PHC hash chiqaradi/o'qiydi → bazadagi eski hash'lar ishlayveradi.
+import { hash, verify } from '@node-rs/argon2';
 
-// argon2 — native (.node) modul. Top-level import qilinsa, build vaqtida
-// (Next.js "collect page data") native binary yuklanadi va platforma/abi mos
-// kelmasa build yiqiladi. Shuning uchun faqat funksiya chaqirilganda lazy yuklaymiz.
-async function loadArgon2(): Promise<typeof argon2Types> {
-  const mod = await import('argon2');
-  return (mod.default ?? mod) as typeof argon2Types;
-}
-
-function argonOptions(argon2: typeof argon2Types): argon2Types.Options {
-  return {
-    type: argon2.argon2id,
-    memoryCost: 2 ** 16,
-    timeCost: 3,
-    parallelism: 1,
-  };
-}
+// algorithm tushirib qoldirilgan — @node-rs/argon2 standarti Argon2id.
+// (Algorithm enum'i `isolatedModules` ostida import qilib bo'lmaydi.)
+const ARGON_OPTIONS = {
+  memoryCost: 2 ** 16,
+  timeCost: 3,
+  parallelism: 1,
+} as const;
 
 export async function hashPassword(plain: string): Promise<string> {
-  const argon2 = await loadArgon2();
-  return argon2.hash(plain, argonOptions(argon2));
+  return hash(plain, ARGON_OPTIONS);
 }
 
-export async function verifyPassword(hash: string, plain: string): Promise<boolean> {
+export async function verifyPassword(hashStr: string, plain: string): Promise<boolean> {
   try {
-    const argon2 = await loadArgon2();
-    return await argon2.verify(hash, plain);
+    return await verify(hashStr, plain);
   } catch {
     return false;
   }

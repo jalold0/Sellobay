@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "argon2": "^0.40.1",
+    "@node-rs/argon2": "^2.0.2",
     "jose": "^5.2.4"
   },
   "devDependencies": {

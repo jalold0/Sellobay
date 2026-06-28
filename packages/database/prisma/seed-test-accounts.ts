@@ -3,17 +3,17 @@
 // Idempotent: upsert + role assignment dedup
 // Run: pnpm --filter @ecom/database exec tsx prisma/seed-test-accounts.ts
 
-import argon2 from 'argon2';
+import { hash } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const ARGON_OPTIONS: argon2.Options = {
-  type: argon2.argon2id,
+// algorithm tushirib qoldirilgan — @node-rs/argon2 standarti Argon2id.
+const ARGON_OPTIONS = {
   memoryCost: 2 ** 16,
   timeCost: 3,
   parallelism: 1,
-};
+} as const;
 
 interface SeedAccount {
   email: string;
@@ -56,7 +56,7 @@ const ACCOUNTS: SeedAccount[] = [
 ];
 
 async function upsertAccount(acc: SeedAccount) {
-  const passwordHash = await argon2.hash(acc.password, ARGON_OPTIONS);
+  const passwordHash = await hash(acc.password, ARGON_OPTIONS);
 
   const user = await prisma.user.upsert({
     where: { email: acc.email },

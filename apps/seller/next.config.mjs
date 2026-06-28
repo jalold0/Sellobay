@@ -4,7 +4,7 @@ const nextConfig = {
   output: 'standalone',
   transpilePackages: ['@ecom/ui', '@ecom/utils', '@ecom/types'],
   experimental: {
-    serverComponentsExternalPackages: ['argon2', '@prisma/client', 'prisma'],
+    serverComponentsExternalPackages: ['@node-rs/argon2', '@prisma/client', 'prisma'],
   },
 };
 export default nextConfig;

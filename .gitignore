@@ -71,3 +71,6 @@ android/app/build/
 *.pem
 .vercel
 .netlify
+
+.vercel
+.env*

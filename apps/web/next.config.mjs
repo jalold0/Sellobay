@@ -13,7 +13,7 @@ const nextConfig = {
   // Prisma query engine binary'sini serverless bundle'dan tashqarida qoldiradi
   // (NFT tracing to'g'ri ishlashi uchun)
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'argon2', 'prisma'],
+    serverComponentsExternalPackages: ['@prisma/client', '@node-rs/argon2', 'prisma'],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
