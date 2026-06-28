@@ -86,6 +86,26 @@ export interface AdminSeller {
   appliedAt: string;
 }
 
+// Mijozlar ro'yxati (admin)
+export function listCustomers() {
+  return api<{ items: AdminCustomer[] }>('/api/customers');
+}
+
+export interface AdminCustomer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string;
+  avatarUrl: string | null;
+  city: string | null;
+  status: 'ACTIVE' | 'PENDING' | 'BLOCKED' | 'DELETED';
+  ordersCount: number;
+  totalSpent: number;
+  loyaltyPoints: number;
+  registeredAt: string;
+}
+
 // Buyurtmalar ro'yxati (admin)
 export function listOrders(status?: string) {
   const qs = status && status !== 'all' ? `?status=${status}` : '';
