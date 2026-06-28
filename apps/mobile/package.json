@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ecom/i18n": "workspace:*",
     "@ecom/types": "workspace:*",
     "@ecom/utils": "workspace:*",
     "@tanstack/react-query": "^5.32.0",

@@ -3,7 +3,10 @@ packages:
   - "packages/*"
 
 # Vercel pnpm 10 overrides'ni shu yerdan o'qiydi (lokal pnpm 9 package.json'dan).
-# Root React 19 / react-dom 18 mosligini bartaraf etish uchun ikkalasini 18.3.1'ga majburlaymiz.
+# React 19'ga birlashtirildi: Expo 54 (mobil) React 19 talab qiladi; react+react-dom+@types
+# bir xil versiyada bo'lishi web (Next 14) "useRef null" duplicate React muammosini ham bartaraf etadi.
 overrides:
-  react: "18.3.1"
-  react-dom: "18.3.1"
+  react: "19.1.0"
+  react-dom: "19.1.0"
+  "@types/react": "19.1.17"
+  "@types/react-dom": "19.1.9"
