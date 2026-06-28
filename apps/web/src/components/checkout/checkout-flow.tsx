@@ -20,6 +20,7 @@ import * as React from 'react';
 import { formatMoney } from '../../lib/format';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../lib/loyalty';
 import { productImage } from '../../lib/mock-data';
+import { isOnlineProvider } from '../../lib/payments';
 import { useCart } from '../../store/cart';
 
 const SHIPPING_FEE = 20_000;
@@ -186,7 +187,7 @@ export function CheckoutFlow() {
 
     let result: {
       success: boolean;
-      data?: { order: { number: string } };
+      data?: { order: { number: string; id: string } };
       error?: { message: string };
     } = { success: false };
     try {
@@ -211,7 +212,31 @@ export function CheckoutFlow() {
     }
 
     const orderNumber = result.data.order.number;
+    const orderId = result.data.order.id;
     clear();
+
+    // Online to'lov (Click/Payme) — checkout sahifasiga yo'naltiramiz
+    if (isOnlineProvider(payment.provider)) {
+      try {
+        const payRes = await fetch('/api/payments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ orderId, provider: payment.provider }),
+        });
+        const payJson = (await payRes.json()) as {
+          success: boolean;
+          data?: { online: boolean; checkoutUrl: string | null };
+        };
+        if (payJson.success && payJson.data?.checkoutUrl) {
+          window.location.href = payJson.data.checkoutUrl;
+          return;
+        }
+      } catch {
+        // to'lov yaratishda xato — buyurtma baribir yaratildi, success'ga o'tamiz
+      }
+    }
+
     toast({
       title: t('success'),
       description: `№ ${orderNumber}`,
