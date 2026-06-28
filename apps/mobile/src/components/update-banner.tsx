@@ -16,8 +16,9 @@ export function UpdateBanner() {
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    // Expo Go / dev mode'da update API real ishlamaydi
-    if (!Updates.isEnabled) return;
+    // Dev/Expo Go'da update API ishlamaydi (checkForUpdateAsync dev build'da
+    // "not supported" xatosini beradi) — faqat production/preview build'da tekshiramiz.
+    if (__DEV__ || !Updates.isEnabled) return;
     let cancelled = false;
     setState('checking');
     Updates.checkForUpdateAsync()

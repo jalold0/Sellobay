@@ -1,9 +1,9 @@
-import { useRouter } from 'expo-router';
-import { Check, LogIn, MapPin, Plus, Trash2, X } from 'lucide-react-native';
+import { Check, MapPin, Plus, Trash2, X } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoginRequired } from '../../src/components/login-required';
 import {
   createAddress,
   deleteAddress,
@@ -44,7 +44,6 @@ const EMPTY_FORM: AddressInput = {
 
 export default function AddressesScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { t } = useT();
   const { isAuthenticated } = useSession();
 
@@ -149,16 +148,7 @@ export default function AddressesScreen() {
       />
 
       {!isAuthenticated ? (
-        <EmptyState
-          icon={<LogIn size={26} color="#94a3b8" />}
-          title={t('nav.login')}
-          description={t('auth.noAccount')}
-          action={
-            <Button onPress={() => router.push('/auth/login')} fullWidth>
-              {t('nav.login')}
-            </Button>
-          }
-        />
+        <LoginRequired />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}

@@ -1,22 +1,20 @@
-import { useRouter } from 'expo-router';
-import { CreditCard, Info, LogIn, Trash2 } from 'lucide-react-native';
+import { CreditCard, Info, Trash2 } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoginRequired } from '../../src/components/login-required';
 import { deletePaymentMethod, fetchPaymentMethods, type ApiPaymentMethod } from '../../src/lib/api';
 import { haptics } from '../../src/lib/haptics';
 import { useT } from '../../src/lib/useT';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
-import { Button } from '../../src/ui/button';
 import { EmptyState } from '../../src/ui/empty-state';
 import { Header } from '../../src/ui/header';
 import { Skeleton } from '../../src/ui/skeleton';
 
 export default function PaymentScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { t } = useT();
   const { isAuthenticated } = useSession();
 
@@ -66,16 +64,7 @@ export default function PaymentScreen() {
       <Header title={t('profile.paymentPage.title')} showBack fallbackHref="/(tabs)/profile" />
 
       {!isAuthenticated ? (
-        <EmptyState
-          icon={<LogIn size={26} color="#94a3b8" />}
-          title={t('nav.login')}
-          description={t('auth.noAccount')}
-          action={
-            <Button onPress={() => router.push('/auth/login')} fullWidth>
-              {t('nav.login')}
-            </Button>
-          }
-        />
+        <LoginRequired />
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}

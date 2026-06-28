@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
-import { LogIn, Package } from 'lucide-react-native';
+import { Package } from 'lucide-react-native';
 import * as React from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoginRequired } from '../../src/components/login-required';
 import { fetchOrders, type ApiOrder } from '../../src/lib/api';
-import { formatMoney, formatDate } from '../../src/lib/format';
+import { formatMoney, formatDate, pickLocalized } from '../../src/lib/format';
 import { useT } from '../../src/lib/useT';
 import { useSession } from '../../src/store/session';
 import { Button } from '../../src/ui/button';
@@ -31,7 +32,7 @@ const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
 export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useT();
+  const { t, locale } = useT();
   const { isAuthenticated } = useSession();
 
   const [orders, setOrders] = React.useState<ApiOrder[] | null>(null);
@@ -60,16 +61,7 @@ export default function OrdersScreen() {
       <Header title={t('profile.ordersPage.title')} showBack fallbackHref="/(tabs)/profile" />
 
       {!isAuthenticated ? (
-        <EmptyState
-          icon={<LogIn size={26} color="#94a3b8" />}
-          title={t('nav.login')}
-          description={t('auth.noAccount')}
-          action={
-            <Button onPress={() => router.push('/auth/login')} fullWidth>
-              {t('nav.login')}
-            </Button>
-          }
-        />
+        <LoginRequired />
       ) : loading ? (
         <View className="gap-3 p-4">
           {[0, 1, 2].map((i) => (
@@ -115,7 +107,7 @@ export default function OrdersScreen() {
                   {o.items.slice(0, 3).map((it) => (
                     <View key={it.id} className="flex-row items-center justify-between">
                       <Text numberOfLines={1} className="text-foreground flex-1 pr-2 text-sm">
-                        {it.nameSnapshot} × {it.quantity}
+                        {pickLocalized(it.nameSnapshot, locale)} × {it.quantity}
                       </Text>
                       <Text className="text-muted-foreground text-xs">
                         {formatMoney(it.totalPrice)}

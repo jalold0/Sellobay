@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
 import {
   Bell,
   ChevronRight,
@@ -111,7 +111,10 @@ export default function ProfileScreen() {
       {/* Profile hero */}
       <View className="bg-primary px-4 pb-6 pt-4">
         {isAuthenticated && user ? (
-          <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={() => router.push('/profile/edit' as Href)}
+            className="flex-row items-center gap-3 active:opacity-80"
+          >
             <View className="h-14 w-14 items-center justify-center rounded-full bg-white">
               <Text className="text-primary text-lg font-bold">{initials(name)}</Text>
             </View>
@@ -121,7 +124,8 @@ export default function ProfileScreen() {
               </Text>
               <Text className="text-xs text-white/70">{user.phone ?? user.email}</Text>
             </View>
-          </View>
+            <ChevronRight size={18} color="rgba(255,255,255,0.7)" />
+          </Pressable>
         ) : (
           <View className="gap-3">
             <View className="flex-row items-center gap-3">

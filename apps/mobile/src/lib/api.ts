@@ -399,7 +399,12 @@ export interface ApiOrder {
   placedAt: string;
   deliveryMethod: string;
   itemCount: number;
-  items: Array<{ id: string; quantity: number; nameSnapshot: string; totalPrice: string }>;
+  items: Array<{
+    id: string;
+    quantity: number;
+    nameSnapshot: LocalizedText | string;
+    totalPrice: string;
+  }>;
 }
 
 /** Joriy user buyurtmalari. Login kerak; null = login emas yoki xato. */
@@ -485,6 +490,66 @@ export async function fetchPaymentMethods(): Promise<ApiPaymentMethod[] | null> 
 export async function deletePaymentMethod(id: string): Promise<boolean> {
   const data = await authedJson<unknown>(`/api/payment-methods/${id}`, { method: 'DELETE' });
   return data !== null;
+}
+
+// ─── Profil (shaxsiy ma'lumotlar) ────────────────────────────────
+
+export interface MeUser {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  gender?: 'MALE' | 'FEMALE' | 'UNSPECIFIED' | null;
+  birthDate?: string | null;
+  locale?: 'uz' | 'ru' | 'en' | null;
+}
+
+export interface UpdateMeInput {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  gender?: 'MALE' | 'FEMALE' | 'UNSPECIFIED';
+  birthDate?: string | null;
+}
+
+/** Joriy foydalanuvchi to'liq profili. Login kerak; null = login emas/xato. */
+export async function fetchMe(): Promise<MeUser | null> {
+  const data = await authedJson<{ user: MeUser }>('/api/auth/me');
+  return data?.user ?? null;
+}
+
+export interface UpdateMeResult {
+  success: boolean;
+  user?: MeUser;
+  error?: { code: string; message: string };
+}
+
+/** Profilni yangilash (PATCH /api/auth/me). Band email/telefon xatosini ham qaytaradi. */
+export async function updateMe(input: UpdateMeInput): Promise<UpdateMeResult> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(await authHeader()),
+      },
+      body: JSON.stringify(input),
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { user: MeUser };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return { success: false, error: json.error ?? { code: 'UNKNOWN', message: 'Saqlanmadi' } };
+    }
+    return { success: true, user: json.data.user };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
 }
 
 export { API_BASE };

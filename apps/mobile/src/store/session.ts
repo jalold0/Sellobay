@@ -20,6 +20,7 @@ interface SessionState {
   loading: boolean;
   hydrate: () => Promise<void>;
   signIn: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
+  updateUser: (patch: Partial<User>) => void;
   signOut: () => Promise<void>;
 }
 
@@ -46,6 +47,13 @@ export const useSession = create<SessionState>((set) => ({
     storage.setString(USER_KEY, JSON.stringify(user));
     set({ user, isAuthenticated: true });
   },
+  updateUser: (patch) =>
+    set((s) => {
+      if (!s.user) return s;
+      const user = { ...s.user, ...patch };
+      storage.setString(USER_KEY, JSON.stringify(user));
+      return { user };
+    }),
   signOut: async () => {
     await secureStorage.remove(STORAGE_KEYS.accessToken);
     await secureStorage.remove(STORAGE_KEYS.refreshToken);
