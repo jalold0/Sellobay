@@ -4,7 +4,9 @@
 > belgilangan. Maqsad: **bitta ishni ikki marta qilmaslik.** Boshqa kompyuter/dasturda
 > `git pull` qilib shu fayldan davom eting.
 >
-> **Oxirgi yangilanish:** 2026-06-19 · **MVP launch:** 2026-07-13
+> **Oxirgi yangilanish:** 2026-06-28 · **MVP launch:** 2026-07-13
+>
+> **2026-06-28:** Vercel deploy + CI yashil · huquqiy sahifalar (oferta/maxfiylik/shartlar) · Verified Seller backend · profil i18n to'liq
 >
 > **Belgilar:** `[x]` bajarilgan · `[ ]` qilinmagan · `[~]` qisman · 🔒 bloklangan (tashqi narsa kerak)
 
@@ -41,7 +43,7 @@
 - [x] Catalog (filtr/sort), product detail, cart, checkout
 - [x] Login, register, sale, search sahifalari
 - [x] Profile-shell (nav, sign-out) + product-card toast'lari
-- [~] Profil sub-sahifa BODY'lari (orders/addresses/settings/payment formlari) — hali UZ (past prioritet)
+- [x] Profil sub-sahifa BODY'lari (orders/addresses/settings/payment formlari) i18n — uz/ru/en (2026-06-28)
 - [ ] Mobile i18n (hozircha hardcoded uz; expo-localization + pickLocalized kerak)
 
 ---
@@ -111,7 +113,7 @@
 - [ ] Group buy (5 kishi qo'shilsa chegirma — Pinduoduo mexanizmi)
 - [ ] Wishlist sharing (link orqali "sovg'a ro'yxati", viral)
 - [ ] Multi-language smart description (sotuvchi UZ yozadi → AI RU/EN)
-- [ ] Verified Seller rasmiy tizimi (hozir chip mock — backend seller status)
+- [~] Verified Seller: backend to'liq (admin approve/reject + sotuvchilar ro'yxati real DB, 2026-06-28); mahsulotdagi "Tasdiqlangan" chip hali har doim ko'rinadi (kosmetik qoldiq)
 
 ---
 
