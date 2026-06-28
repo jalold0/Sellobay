@@ -14,6 +14,7 @@ type FooterLinkKey =
   | 'delivery'
   | 'returns'
   | 'faq'
+  | 'groupBuy'
   | 'becomeSeller'
   | 'sellerGuide'
   | 'commissions'
@@ -40,6 +41,7 @@ const COLUMNS: {
     titleKey: 'customers',
     links: [
       { href: '/help', key: 'help' },
+      { href: '/group-buy', key: 'groupBuy' },
       { href: '/delivery', key: 'delivery' },
       { href: '/returns', key: 'returns' },
       { href: '/faq', key: 'faq' },
