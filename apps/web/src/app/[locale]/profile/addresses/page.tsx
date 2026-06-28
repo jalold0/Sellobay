@@ -2,6 +2,7 @@
 
 import { Button, Card, EmptyState, Input, Label, Skeleton, toast } from '@ecom/ui';
 import { Briefcase, Home, MapPin, Plus, Trash2, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 interface Address {
@@ -33,13 +34,6 @@ const TYPE_ICON = {
   OTHER: MapPin,
 } as const;
 
-const TYPE_LABEL = {
-  HOME: 'Uy',
-  WORK: 'Ish',
-  PICKUP: 'Olib ketish',
-  OTHER: 'Boshqa',
-} as const;
-
 const EMPTY_FORM = {
   label: '',
   type: 'HOME' as Address['type'],
@@ -56,11 +50,23 @@ const EMPTY_FORM = {
 };
 
 export default function AddressesPage() {
+  const t = useTranslations('profile.addressesPage');
   const [items, setItems] = React.useState<Address[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [showForm, setShowForm] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [form, setForm] = React.useState(EMPTY_FORM);
+
+  const typeLabel = React.useCallback(
+    (type: Address['type']) =>
+      ({
+        HOME: t('typeHome'),
+        WORK: t('typeWork'),
+        PICKUP: t('typePickup'),
+        OTHER: t('typeOther'),
+      })[type],
+    [t],
+  );
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -86,7 +92,7 @@ export default function AddressesPage() {
       !form.city.trim() ||
       !form.street.trim()
     ) {
-      toast({ title: "Asosiy maydonlarni to'ldiring", variant: 'warning' });
+      toast({ title: t('fillMain'), variant: 'warning' });
       return;
     }
     setSubmitting(true);
@@ -99,27 +105,27 @@ export default function AddressesPage() {
     const json = (await res.json()) as ApiResult<{ address: Address }>;
     setSubmitting(false);
     if (!json.success) {
-      toast({ title: json.error?.message ?? 'Saqlanmadi', variant: 'destructive' });
+      toast({ title: json.error?.message ?? t('notSaved'), variant: 'destructive' });
       return;
     }
-    toast({ title: "Manzil qo'shildi", variant: 'success' });
+    toast({ title: t('added'), variant: 'success' });
     setForm(EMPTY_FORM);
     setShowForm(false);
     void load();
   };
 
   const onDelete = async (id: string, label: string) => {
-    if (!confirm(`"${label}" manzilini o'chirasizmi?`)) return;
+    if (!confirm(t('deleteConfirm', { label }))) return;
     const res = await fetch(`/api/addresses/${id}`, {
       method: 'DELETE',
       credentials: 'same-origin',
     });
     const json = (await res.json()) as ApiResult<{ deleted: true }>;
     if (json.success) {
-      toast({ title: "Manzil o'chirildi", variant: 'success' });
+      toast({ title: t('deleted'), variant: 'success' });
       setItems((p) => p.filter((a) => a.id !== id));
     } else {
-      toast({ title: json.error?.message ?? 'Xato', variant: 'destructive' });
+      toast({ title: json.error?.message ?? t('error'), variant: 'destructive' });
     }
   };
 
@@ -132,7 +138,7 @@ export default function AddressesPage() {
     });
     const json = (await res.json()) as ApiResult<{ address: Address }>;
     if (json.success) {
-      toast({ title: 'Asosiy manzil yangilandi', variant: 'success' });
+      toast({ title: t('defaultUpdated'), variant: 'success' });
       void load();
     }
   };
@@ -140,10 +146,10 @@ export default function AddressesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Manzillar</h1>
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('title')}</h1>
         <Button onClick={() => setShowForm((v) => !v)}>
           {showForm ? <X size={16} className="mr-1" /> : <Plus size={16} className="mr-1" />}
-          {showForm ? 'Bekor qilish' : 'Yangi manzil'}
+          {showForm ? t('cancel') : t('newAddress')}
         </Button>
       </div>
 
@@ -151,28 +157,28 @@ export default function AddressesPage() {
         <Card className="p-5">
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
             <div>
-              <Label className="text-xs">Yorliq</Label>
+              <Label className="text-xs">{t('fieldLabel')}</Label>
               <Input
                 value={form.label ?? ''}
                 onChange={(e) => setForm({ ...form, label: e.target.value })}
-                placeholder="Uy, Ish..."
+                placeholder={t('labelPlaceholder')}
               />
             </div>
             <div>
-              <Label className="text-xs">Turi</Label>
+              <Label className="text-xs">{t('fieldType')}</Label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as Address['type'] })}
                 className="border-input bg-background focus:border-primary h-10 w-full rounded-md border px-3 text-sm outline-none"
               >
-                <option value="HOME">Uy</option>
-                <option value="WORK">Ish</option>
-                <option value="PICKUP">Olib ketish</option>
-                <option value="OTHER">Boshqa</option>
+                <option value="HOME">{t('typeHome')}</option>
+                <option value="WORK">{t('typeWork')}</option>
+                <option value="PICKUP">{t('typePickup')}</option>
+                <option value="OTHER">{t('typeOther')}</option>
               </select>
             </div>
             <div>
-              <Label className="text-xs">Qabul qiluvchi*</Label>
+              <Label className="text-xs">{t('recipient')}</Label>
               <Input
                 value={form.recipientName}
                 onChange={(e) => setForm({ ...form, recipientName: e.target.value })}
@@ -180,7 +186,7 @@ export default function AddressesPage() {
               />
             </div>
             <div>
-              <Label className="text-xs">Telefon*</Label>
+              <Label className="text-xs">{t('phone')}</Label>
               <Input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -189,7 +195,7 @@ export default function AddressesPage() {
               />
             </div>
             <div>
-              <Label className="text-xs">Viloyat</Label>
+              <Label className="text-xs">{t('region')}</Label>
               <Input
                 value={form.region}
                 onChange={(e) => setForm({ ...form, region: e.target.value })}
@@ -197,7 +203,7 @@ export default function AddressesPage() {
               />
             </div>
             <div>
-              <Label className="text-xs">Shahar*</Label>
+              <Label className="text-xs">{t('city')}</Label>
               <Input
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
@@ -205,27 +211,27 @@ export default function AddressesPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <Label className="text-xs">Ko&apos;cha, uy*</Label>
+              <Label className="text-xs">{t('street')}</Label>
               <Input
                 value={form.street}
                 onChange={(e) => setForm({ ...form, street: e.target.value })}
-                placeholder="Mustaqillik ko'chasi 12"
+                placeholder={t('streetPlaceholder')}
                 required
               />
             </div>
             <div>
-              <Label className="text-xs">Kvartira/podyezd</Label>
+              <Label className="text-xs">{t('apartment')}</Label>
               <Input
                 value={form.apartment ?? ''}
                 onChange={(e) => setForm({ ...form, apartment: e.target.value })}
               />
             </div>
             <div>
-              <Label className="text-xs">Mo&apos;ljal</Label>
+              <Label className="text-xs">{t('landmark')}</Label>
               <Input
                 value={form.landmark ?? ''}
                 onChange={(e) => setForm({ ...form, landmark: e.target.value })}
-                placeholder="Park yonida"
+                placeholder={t('landmarkPlaceholder')}
               />
             </div>
             <div className="sm:col-span-2">
@@ -236,15 +242,15 @@ export default function AddressesPage() {
                   onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
                   className="h-4 w-4"
                 />
-                Asosiy manzil qilib belgilash
+                {t('makeDefaultCheck')}
               </label>
             </div>
             <div className="flex justify-end gap-2 sm:col-span-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                Bekor qilish
+                {t('cancel')}
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? 'Saqlanmoqda...' : 'Saqlash'}
+                {submitting ? t('saving') : t('save')}
               </Button>
             </div>
           </form>
@@ -261,11 +267,11 @@ export default function AddressesPage() {
         <Card className="p-5">
           <EmptyState
             icon={MapPin}
-            title="Hali manzillar yo'q"
-            description="Tezroq yetkazib berish uchun bir nechta manzil qo'shing"
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
             action={
               <Button onClick={() => setShowForm(true)}>
-                <Plus size={16} className="mr-1" /> Manzil qo&apos;shish
+                <Plus size={16} className="mr-1" /> {t('addAddress')}
               </Button>
             }
           />
@@ -285,10 +291,10 @@ export default function AddressesPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{a.label || TYPE_LABEL[a.type]}</span>
+                      <span className="font-semibold">{a.label || typeLabel(a.type)}</span>
                       {a.isDefault ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
-                          Asosiy
+                          {t('defaultBadge')}
                         </span>
                       ) : null}
                     </div>
@@ -298,7 +304,7 @@ export default function AddressesPage() {
                     <div className="text-muted-foreground mt-0.5 text-xs">{full}</div>
                     {a.landmark ? (
                       <div className="text-muted-foreground mt-1 text-[11px] italic">
-                        Mo&apos;ljal: {a.landmark}
+                        {t('landmarkPrefix')} {a.landmark}
                       </div>
                     ) : null}
                   </div>
@@ -310,13 +316,13 @@ export default function AddressesPage() {
                         onClick={() => onMakeDefault(a.id)}
                         className="text-xs"
                       >
-                        Asosiy
+                        {t('makeDefault')}
                       </Button>
                     ) : null}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onDelete(a.id, a.label || TYPE_LABEL[a.type])}
+                      onClick={() => onDelete(a.id, a.label || typeLabel(a.type))}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 size={14} />
