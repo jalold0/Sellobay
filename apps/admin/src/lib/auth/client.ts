@@ -86,6 +86,49 @@ export interface AdminSeller {
   appliedAt: string;
 }
 
+// Buyurtmalar ro'yxati (admin)
+export function listOrders(status?: string) {
+  const qs = status && status !== 'all' ? `?status=${status}` : '';
+  return api<{ items: AdminOrder[] }>(`/api/orders${qs}`);
+}
+
+export type AdminOrderStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'PAID'
+  | 'PROCESSING'
+  | 'PACKED'
+  | 'SHIPPED'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'RETURNED'
+  | 'REFUNDED';
+
+export type AdminPaymentStatus =
+  | 'PENDING'
+  | 'AUTHORIZED'
+  | 'PAID'
+  | 'PARTIALLY_REFUNDED'
+  | 'REFUNDED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export interface AdminOrder {
+  id: string;
+  number: string;
+  customerName: string;
+  customerPhone: string;
+  status: AdminOrderStatus;
+  paymentStatus: AdminPaymentStatus;
+  paymentProvider: string;
+  grandTotal: number;
+  itemCount: number;
+  deliveryMethod: string;
+  city: string;
+  placedAt: string;
+}
+
 export interface PendingSeller {
   id: string;
   legalName: string;

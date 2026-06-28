@@ -11,6 +11,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
+  toast,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
 import { ArrowDownToLine, Filter, ShoppingCart } from 'lucide-react';
@@ -20,33 +22,45 @@ import * as React from 'react';
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { OrderStatusBadge, ORDER_STATUS_LABELS } from '../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../components/status/payment-status-badge';
+import { listOrders, type AdminOrder } from '@/lib/auth/client';
 import { formatDateTime, formatMoney, formatNumber } from '../../lib/format';
-import { mockOrders, type Order } from '../../lib/mock';
 
-const STATUS_OPTIONS: Array<{ value: 'all' | Order['status']; label: string }> = [
+const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'all', label: 'Barchasi' },
-  ...(Object.entries(ORDER_STATUS_LABELS).map(
-    ([value, label]) => ({ value: value as Order['status'], label }),
-  )),
+  ...Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
 export default function AdminOrdersPage() {
+  const [orders, setOrders] = React.useState<AdminOrder[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [paymentFilter, setPaymentFilter] = React.useState<string>('all');
   const [deliveryFilter, setDeliveryFilter] = React.useState<string>('all');
 
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    const res = await listOrders('all');
+    if (res.success) setOrders(res.data.items);
+    else toast({ title: res.error.message, variant: 'destructive' });
+    setLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
   const data = React.useMemo(() => {
-    return mockOrders.filter((o) => {
+    return orders.filter((o) => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false;
       if (paymentFilter !== 'all' && o.paymentStatus !== paymentFilter) return false;
       if (deliveryFilter !== 'all' && o.deliveryMethod !== deliveryFilter) return false;
       return true;
     });
-  }, [statusFilter, paymentFilter, deliveryFilter]);
+  }, [orders, statusFilter, paymentFilter, deliveryFilter]);
 
   const totalRevenue = data.reduce((s, o) => s + o.grandTotal, 0);
 
-  const columns: ColumnDef<Order>[] = React.useMemo(
+  const columns: ColumnDef<AdminOrder>[] = React.useMemo(
     () => [
       {
         accessorKey: 'number',
@@ -66,7 +80,9 @@ export default function AdminOrdersPage() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <div className="truncate font-medium">{row.original.customerName}</div>
-            <div className="truncate text-xs text-muted-foreground">{row.original.customerPhone}</div>
+            <div className="truncate text-xs text-muted-foreground">
+              {row.original.customerPhone}
+            </div>
           </div>
         ),
       },
@@ -94,17 +110,17 @@ export default function AdminOrdersPage() {
               {row.original.deliveryMethod === 'HOME_DELIVERY'
                 ? 'Uyga'
                 : row.original.deliveryMethod === 'PICKUP_POINT'
-                ? 'Pickup'
-                : 'Express'}
+                  ? 'Pickup'
+                  : 'Express'}
             </div>
             <div className="text-xs text-muted-foreground">{row.original.city}</div>
           </div>
         ),
       },
       {
-        accessorKey: 'itemsCount',
+        accessorKey: 'itemCount',
         header: () => <div className="text-right">Tovarlar</div>,
-        cell: ({ row }) => <div className="text-right">{row.original.itemsCount}</div>,
+        cell: ({ row }) => <div className="text-right">{row.original.itemCount}</div>,
       },
       {
         accessorKey: 'grandTotal',
@@ -118,7 +134,7 @@ export default function AdminOrdersPage() {
         header: 'Sana',
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
-            {formatDateTime(row.original.placedAt)}
+            {formatDateTime(new Date(row.original.placedAt))}
           </span>
         ),
       },
@@ -133,9 +149,14 @@ export default function AdminOrdersPage() {
         title="Buyurtmalar"
         description={`${formatNumber(data.length)} ta buyurtma · jami ${formatMoney(totalRevenue)}`}
         actions={
-          <Button variant="outline" size="sm">
-            <ArrowDownToLine className="mr-2 h-4 w-4" /> Eksport
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+              Yangilash
+            </Button>
+            <Button variant="outline" size="sm">
+              <ArrowDownToLine className="mr-2 h-4 w-4" /> Eksport
+            </Button>
+          </div>
         }
       />
 
@@ -180,18 +201,26 @@ export default function AdminOrdersPage() {
         </div>
       </Card>
 
-      <DataTable
-        columns={columns}
-        data={data}
-        searchPlaceholder="Buyurtma raqami, mijoz nomi yoki telefon..."
-        emptyState={
-          <EmptyState
-            icon={ShoppingCart}
-            title="Buyurtma topilmadi"
-            description="Filtrlarni o`zgartiring yoki keyinroq tekshiring"
-          />
-        }
-      />
+      {loading ? (
+        <div className="grid gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-12" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data}
+          searchPlaceholder="Buyurtma raqami, mijoz nomi yoki telefon..."
+          emptyState={
+            <EmptyState
+              icon={ShoppingCart}
+              title="Buyurtma topilmadi"
+              description="Hali buyurtmalar yo`q yoki filtrlarni o`zgartiring"
+            />
+          }
+        />
+      )}
     </div>
   );
 }
