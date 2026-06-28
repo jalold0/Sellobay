@@ -542,6 +542,26 @@
       "defaultBadge": "Default",
       "makeDefault": "Default",
       "landmarkPrefix": "Landmark:"
+    },
+    "paymentPage": {
+      "title": "Payment methods",
+      "noticeStrong": "Adding a new card",
+      "noticeBody": "— will be available in the next stage via Click or Payme integration. For now you can view and remove saved cards.",
+      "deleteConfirm": "Remove card details?",
+      "deleted": "Card removed",
+      "error": "Error",
+      "defaultBadge": "Default",
+      "emptyTitle": "No saved cards yet",
+      "emptyDesc": "Save your card details for faster checkout. Adding a card is coming in the next stage.",
+      "expires": "Expires:",
+      "cash": "Cash"
+    },
+    "ordersPage": {
+      "title": "My orders",
+      "emptyTitle": "No orders yet",
+      "emptyDesc": "Place your first order",
+      "itemsCount": "{count} items",
+      "detail": "Details"
     }
   },
   "loyalty": {

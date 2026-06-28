@@ -2,6 +2,7 @@
 
 import { Card, EmptyState, Skeleton, StatusBadge } from '@ecom/ui';
 import { Package } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -24,6 +25,7 @@ interface ApiResult<T> {
 }
 
 export default function MyOrdersPage() {
+  const t = useTranslations('profile.ordersPage');
   const [orders, setOrders] = React.useState<OrderItem[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -51,19 +53,15 @@ export default function MyOrdersPage() {
   if (orders.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Buyurtmalarim</h1>
-        <EmptyState
-          icon={Package}
-          title="Hali buyurtmalar yo`q"
-          description="Birinchi buyurtmangizni amalga oshiring"
-        />
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('title')}</h1>
+        <EmptyState icon={Package} title={t('emptyTitle')} description={t('emptyDesc')} />
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Buyurtmalarim</h1>
+      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('title')}</h1>
       <ul className="space-y-3">
         {orders.map((o) => (
           <Card key={o.id} className="p-4">
@@ -76,7 +74,7 @@ export default function MyOrdersPage() {
                   {o.number}
                 </Link>
                 <div className="text-muted-foreground mt-0.5 text-xs">
-                  {fmtDate(o.placedAt)} · {o.itemCount} ta mahsulot
+                  {fmtDate(o.placedAt)} · {t('itemsCount', { count: o.itemCount })}
                 </div>
               </div>
               <StatusBadge tone={ORDER_STATUS_TONE[o.status] ?? 'neutral'}>
@@ -88,7 +86,7 @@ export default function MyOrdersPage() {
                   href={`/profile/orders/${o.id}`}
                   className="text-primary text-xs hover:underline"
                 >
-                  Batafsil
+                  {t('detail')}
                 </Link>
               </div>
             </div>

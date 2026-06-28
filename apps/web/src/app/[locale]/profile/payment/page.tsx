@@ -2,6 +2,7 @@
 
 import { Button, Card, EmptyState, Skeleton, toast } from '@ecom/ui';
 import { CreditCard, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 interface PaymentMethod {
@@ -29,12 +30,18 @@ const PROVIDER_LABEL: Record<string, string> = {
   HUMO: 'Humo',
   VISA: 'Visa',
   MASTERCARD: 'Mastercard',
-  CASH_ON_DELIVERY: 'Naqd',
 };
 
 export default function PaymentMethodsPage() {
+  const t = useTranslations('profile.paymentPage');
   const [items, setItems] = React.useState<PaymentMethod[]>([]);
   const [loading, setLoading] = React.useState(true);
+
+  const providerLabel = React.useCallback(
+    (provider: string) =>
+      provider === 'CASH_ON_DELIVERY' ? t('cash') : (PROVIDER_LABEL[provider] ?? provider),
+    [t],
+  );
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -53,29 +60,27 @@ export default function PaymentMethodsPage() {
   }, [load]);
 
   const onDelete = async (id: string) => {
-    if (!confirm("Karta ma'lumotlarini o'chirasizmi?")) return;
+    if (!confirm(t('deleteConfirm'))) return;
     const res = await fetch(`/api/payment-methods/${id}`, {
       method: 'DELETE',
       credentials: 'same-origin',
     });
     const json = (await res.json()) as ApiResult<{ deleted: true }>;
     if (json.success) {
-      toast({ title: "Karta o'chirildi", variant: 'success' });
+      toast({ title: t('deleted'), variant: 'success' });
       setItems((p) => p.filter((x) => x.id !== id));
     } else {
-      toast({ title: json.error?.message ?? 'Xato', variant: 'destructive' });
+      toast({ title: json.error?.message ?? t('error'), variant: 'destructive' });
     }
   };
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">To&apos;lov usullari</h1>
+      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('title')}</h1>
 
       <Card className="border-amber-200 bg-amber-50 p-4 dark:bg-amber-950/30">
         <div className="text-sm">
-          <strong>Yangi karta qo&apos;shish</strong> — Click yoki Payme integratsiyasi orqali
-          keyingi bosqichda mavjud bo&apos;ladi. Hozirda saqlangan kartalarni ko&apos;rish va
-          o&apos;chirish mumkin.
+          <strong>{t('noticeStrong')}</strong> {t('noticeBody')}
         </div>
       </Card>
 
@@ -87,11 +92,7 @@ export default function PaymentMethodsPage() {
         </div>
       ) : items.length === 0 ? (
         <Card className="p-5">
-          <EmptyState
-            icon={CreditCard}
-            title="Hali kartalar saqlanmagan"
-            description="Tezroq xarid qilish uchun karta ma'lumotlaringizni xavfsiz saqlang. Karta qo'shish funksiyasi keyingi bosqichda."
-          />
+          <EmptyState icon={CreditCard} title={t('emptyTitle')} description={t('emptyDesc')} />
         </Card>
       ) : (
         <div className="space-y-3">
@@ -103,12 +104,10 @@ export default function PaymentMethodsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">
-                      {m.brand ?? PROVIDER_LABEL[m.provider] ?? m.provider}
-                    </span>
+                    <span className="font-semibold">{m.brand ?? providerLabel(m.provider)}</span>
                     {m.isDefault ? (
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
-                        Asosiy
+                        {t('defaultBadge')}
                       </span>
                     ) : null}
                   </div>
@@ -117,7 +116,7 @@ export default function PaymentMethodsPage() {
                   </div>
                   {m.expiryMonth && m.expiryYear ? (
                     <div className="text-muted-foreground text-[11px]">
-                      Amal qiladi: {String(m.expiryMonth).padStart(2, '0')}/{m.expiryYear}
+                      {t('expires')} {String(m.expiryMonth).padStart(2, '0')}/{m.expiryYear}
                     </div>
                   ) : null}
                 </div>

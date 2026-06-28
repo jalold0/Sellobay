@@ -542,6 +542,26 @@
       "defaultBadge": "Asosiy",
       "makeDefault": "Asosiy",
       "landmarkPrefix": "Mo'ljal:"
+    },
+    "paymentPage": {
+      "title": "To'lov usullari",
+      "noticeStrong": "Yangi karta qo'shish",
+      "noticeBody": "— Click yoki Payme integratsiyasi orqali keyingi bosqichda mavjud bo'ladi. Hozirda saqlangan kartalarni ko'rish va o'chirish mumkin.",
+      "deleteConfirm": "Karta ma'lumotlarini o'chirasizmi?",
+      "deleted": "Karta o'chirildi",
+      "error": "Xato",
+      "defaultBadge": "Asosiy",
+      "emptyTitle": "Hali kartalar saqlanmagan",
+      "emptyDesc": "Tezroq xarid qilish uchun karta ma'lumotlaringizni xavfsiz saqlang. Karta qo'shish funksiyasi keyingi bosqichda.",
+      "expires": "Amal qiladi:",
+      "cash": "Naqd"
+    },
+    "ordersPage": {
+      "title": "Buyurtmalarim",
+      "emptyTitle": "Hali buyurtmalar yo'q",
+      "emptyDesc": "Birinchi buyurtmangizni amalga oshiring",
+      "itemsCount": "{count} ta mahsulot",
+      "detail": "Batafsil"
     }
   },
   "loyalty": {
