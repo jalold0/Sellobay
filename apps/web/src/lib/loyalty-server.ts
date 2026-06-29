@@ -99,6 +99,44 @@ export async function settleOrderLoyalty(
   return { earned, redeemed };
 }
 
+/** Buyurtma bekor qilinganda Sello Coins'ni qaytaradi (create'dagi net'ni teskari qiladi):
+ *   • ishlatilgan (redeemed) coinlar qaytariladi
+ *   • berilgan (earned) coinlar olib qo'yiladi
+ *   • ADJUSTMENT yozuvi audit uchun
+ *  Bir $transaction ichida chaqirilishi shart (bekor qilish bilan atomik). */
+export async function reverseOrderLoyalty(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  orderNumber: string,
+): Promise<{ refunded: number; revoked: number }> {
+  const txns = await tx.loyaltyTransaction.findMany({
+    where: { userId, reference: orderNumber, reason: { in: ['ORDER_SPEND', 'ORDER_EARN'] } },
+    select: { points: true, reason: true },
+  });
+  let redeemed = 0;
+  let earned = 0;
+  for (const t of txns) {
+    if (t.reason === 'ORDER_SPEND') redeemed += Math.abs(t.points);
+    else if (t.reason === 'ORDER_EARN') earned += t.points;
+  }
+  // create'da net = earned − redeemed qo'llanган edi; bekor qilish uni teskari qiladi
+  const undo = redeemed - earned; // loyaltyPoints ga shuni qo'shamiz
+  if (undo !== 0) {
+    await tx.loyaltyTransaction.create({
+      data: {
+        userId,
+        points: undo,
+        reason: 'ADJUSTMENT',
+        reference: `${orderNumber}:cancel`,
+      },
+    });
+    const u = await tx.user.findUnique({ where: { id: userId }, select: { loyaltyPoints: true } });
+    const next = Math.max(0, (u?.loyaltyPoints ?? 0) + undo);
+    await tx.user.update({ where: { id: userId }, data: { loyaltyPoints: next } });
+  }
+  return { refunded: redeemed, revoked: earned };
+}
+
 // LoyaltyTransaction.reason → i18n kalit (loyalty.history.<key>)
 const REASON_TO_KEY: Record<string, string> = {
   ORDER_EARN: 'orderEarn',

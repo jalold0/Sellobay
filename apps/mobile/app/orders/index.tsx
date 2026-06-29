@@ -236,7 +236,13 @@ export default function OrdersScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32, gap: 14 }}
         >
           {filtered.map((o) => (
-            <OrderCard key={o.id} order={o} locale={locale} tr={tr} t={t} />
+            <Pressable
+              key={o.id}
+              onPress={() => router.push(`/orders/${o.id}` as never)}
+              className="active:opacity-90"
+            >
+              <OrderCard order={o} locale={locale} tr={tr} t={t} />
+            </Pressable>
           ))}
         </ScrollView>
       )}

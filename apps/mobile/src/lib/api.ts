@@ -476,6 +476,102 @@ export async function fetchOrders(): Promise<ApiOrder[] | null> {
   return data?.items ?? null;
 }
 
+// ─── Bitta buyurtma (detal) + tahrirlash/bekor qilish ────────────
+
+export interface OrderDetail extends Omit<ApiOrder, 'items'> {
+  subtotal: string;
+  shippingTotal: string;
+  discountTotal: string;
+  promoCode: string | null;
+  notes: string | null;
+  editable: boolean;
+  items: Array<{
+    id: string;
+    quantity: number;
+    nameSnapshot: LocalizedText | string;
+    unitPrice: string;
+    totalPrice: string;
+    slug: string | null;
+    imageUrl: string | null;
+  }>;
+}
+
+/** Bitta buyurtma detali. */
+export async function fetchOrder(id: string): Promise<OrderDetail | null> {
+  const data = await authedJson<{ order: OrderDetail }>(`/api/orders/${id}`);
+  return data?.order ?? null;
+}
+
+export interface UpdateOrderInput {
+  recipientName?: string;
+  phone?: string;
+  region?: string;
+  city?: string;
+  street?: string;
+  apartment?: string | null;
+  deliveryMethod?: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
+  notes?: string | null;
+}
+
+export interface UpdateOrderResult {
+  success: boolean;
+  order?: OrderDetail;
+  error?: { code: string; message: string };
+}
+
+/** PENDING buyurtmani tahrirlash. */
+export async function updateOrder(id: string, patch: UpdateOrderInput): Promise<UpdateOrderResult> {
+  try {
+    const res = await authedFetch(`/api/orders/${id}`, { method: 'PATCH', body: patch });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { order: OrderDetail };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return { success: false, error: json.error ?? { code: 'UNKNOWN', message: 'Saqlanmadi' } };
+    }
+    return { success: true, order: json.data.order };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
+export interface CancelOrderResult {
+  success: boolean;
+  coinsRefunded?: number;
+  coinsRevoked?: number;
+  error?: { code: string; message: string };
+}
+
+/** PENDING buyurtmani bekor qilish (coin/promo qaytariladi). */
+export async function cancelOrder(id: string, reason?: string): Promise<CancelOrderResult> {
+  try {
+    const res = await authedFetch(`/api/orders/${id}/cancel`, {
+      method: 'POST',
+      body: { reason },
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { coinsRefunded: number; coinsRevoked: number };
+      error?: { code: string; message: string };
+    };
+    if (!json.success) {
+      return {
+        success: false,
+        error: json.error ?? { code: 'UNKNOWN', message: 'Bekor qilinmadi' },
+      };
+    }
+    return {
+      success: true,
+      coinsRefunded: json.data?.coinsRefunded,
+      coinsRevoked: json.data?.coinsRevoked,
+    };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
 // Faol (yo'ldagi) statuslar — terminal bo'lmaganlar
 const TERMINAL_STATUSES = new Set(['DELIVERED', 'CANCELLED', 'RETURNED', 'REFUNDED']);
 
