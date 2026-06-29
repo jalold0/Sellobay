@@ -248,6 +248,8 @@ export interface CreateOrderInput {
   city: string;
   street: string;
   apartment?: string;
+  latitude?: number;
+  longitude?: number;
   deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
   paymentProvider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
   notes?: string;

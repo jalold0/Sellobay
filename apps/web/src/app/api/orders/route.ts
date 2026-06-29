@@ -30,6 +30,8 @@ const createSchema = z.object({
   city: z.string().trim().min(2).max(80),
   street: z.string().trim().min(2).max(200),
   apartment: z.string().trim().max(50).optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   // Yetkazib berish va to'lov
   deliveryMethod: z.enum(['HOME_DELIVERY', 'PICKUP_POINT', 'EXPRESS']).default('HOME_DELIVERY'),
   paymentProvider: z
@@ -124,6 +126,8 @@ export async function POST(req: NextRequest) {
         city: input.city,
         street: input.street,
         apartment: input.apartment ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
       },
       select: { id: true },
     });

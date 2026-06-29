@@ -14,6 +14,7 @@ import * as React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LocationPicker } from '../../src/components/location-picker';
 import { createOrder, fetchLoyalty, validatePromo, type PromoType } from '../../src/lib/api';
 import { formatMoney } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
@@ -69,10 +70,14 @@ export default function CheckoutScreen() {
     firstName: '',
     lastName: '',
     phone: '+998 ',
+    region: '',
     city: '',
     street: '',
     apartment: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
+  const [showMap, setShowMap] = React.useState(false);
   const [shipping, setShipping] = React.useState<'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS'>(
     'HOME_DELIVERY',
   );
@@ -197,10 +202,12 @@ export default function CheckoutScreen() {
       })),
       recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
       phone: address.phone.trim(),
-      region: 'Toshkent',
+      region: address.region.trim() || 'Toshkent',
       city: address.city.trim(),
       street: address.street.trim(),
       apartment: address.apartment.trim() || undefined,
+      latitude: address.latitude ?? undefined,
+      longitude: address.longitude ?? undefined,
       deliveryMethod: shipping,
       paymentProvider: payment,
       promoCode: appliedPromo?.code,
@@ -304,6 +311,31 @@ export default function CheckoutScreen() {
       >
         {step === 'address' && (
           <View className="gap-3">
+            {/* Xaritadan tanlash */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                setShowMap(true);
+              }}
+              className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
+            >
+              <MapPin size={18} color="#8B0020" />
+              <View className="flex-1">
+                <Text className="text-primary text-sm font-semibold">Xaritadan tanlash</Text>
+                {address.latitude != null ? (
+                  <Text className="text-muted-foreground text-xs" numberOfLines={1}>
+                    {[address.city, address.street].filter(Boolean).join(', ') ||
+                      'Joylashuv tanlandi'}
+                  </Text>
+                ) : (
+                  <Text className="text-muted-foreground text-xs">
+                    Lokatsiya orqali manzilni belgilang
+                  </Text>
+                )}
+              </View>
+              <Text className="text-primary text-lg">›</Text>
+            </Pressable>
+
             <View className="flex-row gap-2">
               <View className="flex-1">
                 <Input
@@ -388,6 +420,22 @@ export default function CheckoutScreen() {
                 </Text>
               </Pressable>
             ))}
+
+            {shipping === 'PICKUP_POINT' ? (
+              <Pressable
+                onPress={() => {
+                  haptics.light();
+                  router.push('/pickup-points' as never);
+                }}
+                className="border-border active:bg-muted mt-1 flex-row items-center gap-2 rounded-xl border p-3"
+              >
+                <MapPin size={16} color="#8B0020" />
+                <Text className="text-foreground flex-1 text-sm font-medium">
+                  Punktlarni xaritada ko&apos;rish
+                </Text>
+                <Text className="text-muted-foreground text-lg">›</Text>
+              </Pressable>
+            ) : null}
           </View>
         )}
 
@@ -587,6 +635,28 @@ export default function CheckoutScreen() {
           </Button>
         )}
       </View>
+
+      {showMap ? (
+        <LocationPicker
+          initial={
+            address.latitude != null && address.longitude != null
+              ? { lat: address.latitude, lng: address.longitude }
+              : undefined
+          }
+          onClose={() => setShowMap(false)}
+          onConfirm={(loc) => {
+            setAddress((a) => ({
+              ...a,
+              latitude: loc.lat,
+              longitude: loc.lng,
+              region: loc.region ?? a.region,
+              city: loc.city ?? a.city,
+              street: loc.street ?? a.street,
+            }));
+            setShowMap(false);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
