@@ -114,10 +114,9 @@ export function clearCookies(res: NextResponse) {
 }
 
 // Refresh token rotation: eskini revoke qiladi, yangisini chiqaradi
-export async function rotateRefresh(
-  res: NextResponse,
-  refreshRaw: string,
-): Promise<NextResponse | null> {
+// Refresh tokenni rotatsiya qiladi va YANGI raw tokenlarni qaytaradi (cookie qo'ymaydi).
+// Web (cookie) ham, mobile (body) ham shu yadrodan foydalanadi.
+export async function rotateRefreshTokens(refreshRaw: string): Promise<SessionTokens | null> {
   const refreshHash = hashToken(refreshRaw);
   const current = await prisma.refreshToken.findUnique({ where: { tokenHash: refreshHash } });
 
@@ -145,7 +144,16 @@ export async function rotateRefresh(
     { secret: ACCESS_SECRET, expiresIn: ACCESS_TTL, issuer: 'sellobay' },
   );
 
-  setCookies(res, access, newRaw);
+  return { access, refresh: newRaw };
+}
+
+export async function rotateRefresh(
+  res: NextResponse,
+  refreshRaw: string,
+): Promise<NextResponse | null> {
+  const tokens = await rotateRefreshTokens(refreshRaw);
+  if (!tokens) return null;
+  setCookies(res, tokens.access, tokens.refresh);
   return res;
 }
 

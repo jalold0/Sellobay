@@ -1,7 +1,16 @@
 import { useRouter } from 'expo-router';
 import { CheckCircle2, ChevronLeft, Clock, Tag, Ticket, X } from 'lucide-react-native';
 import * as React from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { claimPromo, fetchPromos, type CouponStatus, type UserPromo } from '../../src/lib/api';
@@ -132,34 +141,41 @@ export default function PromoScreen() {
       <Modal
         visible={adding}
         transparent
-        animationType="fade"
+        statusBarTranslucent
+        animationType="slide"
         onRequestClose={() => setAdding(false)}
       >
-        <Pressable className="flex-1 justify-end bg-black/40" onPress={() => setAdding(false)}>
-          <Pressable
-            className="bg-background gap-3 rounded-t-3xl p-5"
-            style={{ paddingBottom: insets.bottom + 20 }}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View className="flex-row items-center justify-between">
-              <Text className="text-foreground text-lg font-bold">{t('promo.addTitle')}</Text>
-              <Pressable onPress={() => setAdding(false)} hitSlop={8}>
-                <X size={22} color="#6B6B73" />
-              </Pressable>
-            </View>
-            <Input
-              value={code}
-              onChangeText={(v) => setCode(v.toUpperCase())}
-              placeholder={t('promo.placeholder')}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              leftIcon={<Tag size={16} color="#94a3b8" />}
-            />
-            <Button fullWidth size="lg" loading={submitting} onPress={onAdd}>
-              {t('promo.apply')}
-            </Button>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <Pressable className="flex-1 justify-end bg-black/40" onPress={() => setAdding(false)}>
+            <Pressable
+              className="bg-background gap-3 rounded-t-3xl p-5"
+              style={{ paddingBottom: insets.bottom + 20 }}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <View className="flex-row items-center justify-between">
+                <Text className="text-foreground text-lg font-bold">{t('promo.addTitle')}</Text>
+                <Pressable onPress={() => setAdding(false)} hitSlop={8}>
+                  <X size={22} color="#6B6B73" />
+                </Pressable>
+              </View>
+              <Input
+                value={code}
+                onChangeText={(v) => setCode(v.toUpperCase())}
+                placeholder={t('promo.placeholder')}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                autoFocus
+                leftIcon={<Tag size={16} color="#94a3b8" />}
+              />
+              <Button fullWidth size="lg" loading={submitting} onPress={onAdd}>
+                {t('promo.apply')}
+              </Button>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
