@@ -7,12 +7,14 @@ import {
   MapPin,
   Package,
   ShieldCheck,
+  Tag,
+  X,
 } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { createOrder, fetchLoyalty } from '../../src/lib/api';
+import { createOrder, fetchLoyalty, validatePromo, type PromoType } from '../../src/lib/api';
 import { formatMoney } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../src/lib/loyalty';
@@ -92,6 +94,16 @@ export default function CheckoutScreen() {
     };
   }, []);
 
+  // Promokod
+  const [promoInput, setPromoInput] = React.useState('');
+  const [appliedPromo, setAppliedPromo] = React.useState<{
+    code: string;
+    type: PromoType;
+    discount: number;
+  } | null>(null);
+  const [promoLoading, setPromoLoading] = React.useState(false);
+  const [promoError, setPromoError] = React.useState('');
+
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
     shipping === 'PICKUP_POINT'
@@ -102,11 +114,42 @@ export default function CheckoutScreen() {
           ? 0
           : SHIPPING_FEE;
   const baseTotal = subtotal + shippingFee;
-  const redeemableCoins = Math.min(coinBalance, Math.floor(baseTotal / COIN_VALUE_SOM));
+  // FREE_SHIPPING jonli (yetkazib berish o'zgarsa) — boshqalari subtotal'ga bog'liq, barqaror
+  const promoDiscount = appliedPromo
+    ? appliedPromo.type === 'FREE_SHIPPING'
+      ? shippingFee
+      : Math.min(appliedPromo.discount, subtotal)
+    : 0;
+  const afterPromo = baseTotal - promoDiscount;
+  const redeemableCoins = Math.min(coinBalance, Math.floor(afterPromo / COIN_VALUE_SOM));
   const coinsToRedeem = useCoins ? redeemableCoins : 0;
   const coinDiscount = coinsToRedeem * COIN_VALUE_SOM;
-  const total = baseTotal - coinDiscount;
+  const total = afterPromo - coinDiscount;
   const stepIdx = STEPS.findIndex((s) => s.id === step);
+
+  const applyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoLoading(true);
+    setPromoError('');
+    const res = await validatePromo(code, subtotal, shippingFee);
+    setPromoLoading(false);
+    if (!res || !res.valid) {
+      haptics.warning();
+      setPromoError(res?.message ?? "Promokod qo'llanmadi");
+      return;
+    }
+    haptics.success();
+    setAppliedPromo({ code: res.code ?? code, type: res.type!, discount: res.discount ?? 0 });
+    setPromoInput('');
+    toast({ title: 'Promokod qo`llandi', variant: 'success' });
+  };
+
+  const clearPromo = () => {
+    haptics.light();
+    setAppliedPromo(null);
+    setPromoError('');
+  };
 
   if (items.length === 0) {
     return (
@@ -160,6 +203,7 @@ export default function CheckoutScreen() {
       apartment: address.apartment.trim() || undefined,
       deliveryMethod: shipping,
       paymentProvider: payment,
+      promoCode: appliedPromo?.code,
       redeemCoins: coinsToRedeem,
     });
     setSubmitting(false);
@@ -404,6 +448,52 @@ export default function CheckoutScreen() {
                 {PAYMENT_OPTIONS.find((p) => p.id === payment)?.label}
               </Text>
             </ReviewBlock>
+
+            {/* Promokod */}
+            <View className="border-border bg-card rounded-2xl border p-3">
+              <View className="mb-2 flex-row items-center gap-1.5">
+                <Tag size={13} color="#6B6B73" />
+                <Text className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
+                  Promokod
+                </Text>
+              </View>
+              {appliedPromo ? (
+                <View className="flex-row items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5">
+                  <View className="min-w-0 flex-1">
+                    <Text className="text-sm font-bold text-emerald-800">{appliedPromo.code}</Text>
+                    <Text className="text-xs text-emerald-700">−{formatMoney(promoDiscount)}</Text>
+                  </View>
+                  <Pressable onPress={clearPromo} hitSlop={8} className="active:opacity-70">
+                    <X size={18} color="#047857" />
+                  </Pressable>
+                </View>
+              ) : (
+                <View className="flex-row items-end gap-2">
+                  <View className="flex-1">
+                    <Input
+                      value={promoInput}
+                      onChangeText={(v) => {
+                        setPromoInput(v.toUpperCase());
+                        if (promoError) setPromoError('');
+                      }}
+                      placeholder="Promokod kiriting"
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      error={promoError || undefined}
+                    />
+                  </View>
+                  <Button
+                    variant="outline"
+                    loading={promoLoading}
+                    disabled={!promoInput.trim()}
+                    onPress={applyPromo}
+                    style={{ marginBottom: promoError ? 22 : 0 }}
+                  >
+                    Qo&apos;llash
+                  </Button>
+                </View>
+              )}
+            </View>
             <ReviewBlock title={`Mahsulotlar (${items.length})`}>
               {items.map((it) => (
                 <View key={it.id} className="flex-row items-center gap-2 py-1">
@@ -463,6 +553,12 @@ export default function CheckoutScreen() {
               −{formatMoney(redeemableCoins * COIN_VALUE_SOM)}
             </Text>
           </Pressable>
+        ) : null}
+        {promoDiscount > 0 ? (
+          <View className="flex-row justify-between">
+            <Text className="text-success text-sm">Promokod ({appliedPromo?.code})</Text>
+            <Text className="text-success text-sm font-medium">−{formatMoney(promoDiscount)}</Text>
+          </View>
         ) : null}
         {coinDiscount > 0 ? (
           <View className="flex-row justify-between">

@@ -465,7 +465,9 @@
       "payment": "To'lov usullari",
       "loyalty": "Sodiqlik dasturi",
       "reviews": "Mening sharhlarim",
-      "settings": "Sozlamalar"
+      "settings": "Sozlamalar",
+      "becomeSeller": "Sotuvchi bo'lish",
+      "promo": "Promokodlarim"
     },
     "signOut": "Chiqish",
     "signingOut": "Chiqilmoqda...",
@@ -674,5 +676,70 @@
       "RETURNED": "Qaytarildi",
       "REFUNDED": "Pul qaytarildi"
     }
+  },
+  "sell": {
+    "title": "Sotuvchi bo'lish",
+    "heroEyebrow": "Sellobay biznes",
+    "heroTitle": "Sellobay'da soting",
+    "heroSubtitle": "O'zbekistondagi eng yirik onlayn bozorga qo'shiling. 850+ brend allaqachon biz bilan.",
+    "benefitsTitle": "Nega Sellobay?",
+    "benefit": {
+      "customers": "120 000+ faol mijoz",
+      "customersDesc": "Har kuni yangi xaridorlar",
+      "growth": "Tezkor o'sish",
+      "growthDesc": "Marketing va analitika bizdan",
+      "logistics": "Logistika hal qilingan",
+      "logisticsDesc": "Yetkazib berishni biz bajaramiz",
+      "commission": "Past komissiya 8–12%",
+      "commissionDesc": "Bozordagi eng past stavka"
+    },
+    "requirementsTitle": "Talablar",
+    "req": {
+      "legal": "Yuridik shaxs yoki yakka tartibdagi tadbirkor (YTT)",
+      "stir": "STIR / INN raqami",
+      "bank": "To'lovlar uchun bank hisob raqami",
+      "product": "Sotuvga tayyor mahsulot va sifatli rasmlar"
+    },
+    "stepsTitle": "4 ta oddiy qadam",
+    "step": {
+      "apply": "Ariza qoldiring",
+      "applyDesc": "STIR va hujjatlarni yuboring",
+      "verify": "Tasdiqlanasiz",
+      "verifyDesc": "24 soat ichida tekshiramiz",
+      "add": "Mahsulot qo'shing",
+      "addDesc": "Panel orqali yuklang",
+      "start": "Sotishni boshlang",
+      "startDesc": "Birinchi buyurtma — birinchi haftada"
+    },
+    "ctaApply": "Ariza qoldirish",
+    "ctaGuide": "Sotuvchi qo'llanmasi",
+    "webNote": "Ariza brauzerda ochiladi — bir necha daqiqada to'ldiriladi.",
+    "openError": "Havolani ochib bo'lmadi"
+  },
+  "promo": {
+    "title": "Promokodlarim",
+    "empty": "Sizda hali promokod yo'q",
+    "emptyDesc": "Promokod qo'shing va keyingi buyurtmada chegirma oling",
+    "add": "Promokod qo'shish",
+    "addTitle": "Promokod kiritish",
+    "placeholder": "Masalan, WELCOME10",
+    "apply": "Qo'shish",
+    "cancel": "Bekor qilish",
+    "added": "Promokod qo'shildi",
+    "alreadyHad": "Bu promokod allaqachon hamyoningizda",
+    "loginRequired": "Promokod qo'shish uchun tizimga kiring",
+    "status": {
+      "ACTIVE": "FAOL",
+      "USED": "ISHLATILGAN",
+      "EXPIRED": "MUDDATI TUGAGAN",
+      "INACTIVE": "NOFAOL"
+    },
+    "validUntil": "{date} gacha amal qiladi",
+    "noExpiry": "Muddatsiz amal qiladi",
+    "descPercent": "{value}% chegirma",
+    "descFixed": "{value} so'm chegirma",
+    "descFreeShip": "Bepul yetkazib berish",
+    "minOrder": "{amount} so'mdan buyurtmaga",
+    "minOrderShort": "{amount} so'mdan"
   }
 }

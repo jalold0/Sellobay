@@ -13,6 +13,8 @@ import {
   Package,
   Settings,
   Star,
+  Store,
+  Ticket,
   User,
 } from 'lucide-react-native';
 import * as React from 'react';
@@ -85,6 +87,7 @@ export default function ProfileScreen() {
           href: '/profile/loyalty',
           badge: stats.tier ?? undefined,
         },
+        { icon: Ticket, label: t('profile.nav.promo'), href: '/profile/promo' },
         { icon: Star, label: t('profile.nav.reviews'), href: '/profile/reviews' },
         {
           icon: Bell,
@@ -200,6 +203,21 @@ export default function ProfileScreen() {
             </View>
           </View>
         ))}
+
+        {/* Become a seller */}
+        <Pressable
+          onPress={() => router.push('/profile/sell' as Href)}
+          className="bg-primary flex-row items-center gap-3 overflow-hidden rounded-2xl p-4 active:opacity-90"
+        >
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-white/15">
+            <Store size={18} color="#fff" />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text className="text-sm font-bold text-white">{t('profile.nav.becomeSeller')}</Text>
+            <Text className="text-xs text-white/75">{t('sell.heroSubtitle')}</Text>
+          </View>
+          <ChevronRight size={16} color="rgba(255,255,255,0.7)" />
+        </Pressable>
 
         {/* Language switcher */}
         <View className="border-border bg-card overflow-hidden rounded-2xl border">

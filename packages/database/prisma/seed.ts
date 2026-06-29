@@ -273,6 +273,61 @@ async function main() {
   }
 
   console.info(`[seed] ${products.length} mahsulot tayyor`);
+
+  // ── Promokodlar ─────────────────────────────────────────────────
+  const promoEndsAt = new Date('2026-12-31T23:59:59Z');
+  const promos = [
+    {
+      code: 'WELCOME10',
+      type: 'PERCENT' as const,
+      value: 10,
+      minOrderTotal: 100_000,
+      maxDiscount: 50_000,
+      usagePerUser: 1,
+    },
+    {
+      code: 'FREESHIP',
+      type: 'FREE_SHIPPING' as const,
+      value: 0,
+      minOrderTotal: null,
+      maxDiscount: null,
+      usagePerUser: 3,
+    },
+    {
+      code: 'NASIYA25S5',
+      type: 'FIXED' as const,
+      value: 100_000,
+      minOrderTotal: 500_000,
+      maxDiscount: null,
+      usagePerUser: 1,
+    },
+  ];
+  for (const p of promos) {
+    await prisma.promoCode.upsert({
+      where: { code: p.code },
+      update: {
+        type: p.type,
+        value: p.value,
+        minOrderTotal: p.minOrderTotal,
+        maxDiscount: p.maxDiscount,
+        usagePerUser: p.usagePerUser,
+        endsAt: promoEndsAt,
+        isActive: true,
+      },
+      create: {
+        code: p.code,
+        type: p.type,
+        value: p.value,
+        minOrderTotal: p.minOrderTotal,
+        maxDiscount: p.maxDiscount,
+        usagePerUser: p.usagePerUser,
+        endsAt: promoEndsAt,
+        isActive: true,
+      },
+    });
+    console.info(`[seed] promo: ${p.code}`);
+  }
+
   console.info('[seed] DONE! Sellobay DB ishga tayyor.');
 }
 

@@ -176,6 +176,7 @@ export interface CreateOrderInput {
   deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
   paymentProvider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
   notes?: string;
+  promoCode?: string;
   redeemCoins?: number;
 }
 
@@ -578,6 +579,98 @@ export async function updateMe(input: UpdateMeInput): Promise<UpdateMeResult> {
     return { success: true, user: json.data.user };
   } catch (err) {
     return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
+// ─── Promokodlar ─────────────────────────────────────────────────
+
+export type PromoType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
+export type CouponStatus = 'ACTIVE' | 'USED' | 'EXPIRED' | 'INACTIVE';
+
+export interface UserPromo {
+  id: string;
+  code: string;
+  type: PromoType;
+  value: number;
+  minOrderTotal: number | null;
+  maxDiscount: number | null;
+  endsAt: string | null;
+  redeemedAt: string | null;
+  status: CouponStatus;
+}
+
+/** Foydalanuvchining promokodlari ("Promokodlarim"). Login kerak; null = login emas/xato. */
+export async function fetchPromos(): Promise<UserPromo[] | null> {
+  const data = await authedJson<{ items: UserPromo[] }>('/api/promo');
+  return data?.items ?? null;
+}
+
+export interface ClaimPromoResult {
+  success: boolean;
+  code?: string;
+  alreadyHad?: boolean;
+  error?: { code: string; message: string };
+}
+
+/** Kod bo'yicha promokodni hamyonga qo'shish. */
+export async function claimPromo(code: string): Promise<ClaimPromoResult> {
+  try {
+    const res = await fetch(`${API_BASE}/api/promo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(await authHeader()),
+      },
+      body: JSON.stringify({ code }),
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { code: string; alreadyHad: boolean };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return {
+        success: false,
+        error: json.error ?? { code: 'UNKNOWN', message: "Qo'shilmadi" },
+      };
+    }
+    return { success: true, code: json.data.code, alreadyHad: json.data.alreadyHad };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
+export interface ValidatePromoResult {
+  valid: boolean;
+  code?: string;
+  type?: PromoType;
+  discount?: number;
+  reason?: string;
+  message?: string;
+  minOrderTotal?: number;
+}
+
+/** Checkout uchun promokodni tekshirish + chegirma preview. Saqlanmaydi. */
+export async function validatePromo(
+  code: string,
+  subtotal: number,
+  shippingFee: number,
+): Promise<ValidatePromoResult | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/promo/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(await authHeader()),
+      },
+      body: JSON.stringify({ code, subtotal, shippingFee }),
+    });
+    const json = (await res.json()) as { success: boolean; data?: ValidatePromoResult };
+    return json.success && json.data ? json.data : null;
+  } catch {
+    return null;
   }
 }
 

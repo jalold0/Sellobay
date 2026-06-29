@@ -465,7 +465,9 @@
       "payment": "Payment methods",
       "loyalty": "Loyalty program",
       "reviews": "My reviews",
-      "settings": "Settings"
+      "settings": "Settings",
+      "becomeSeller": "Become a seller",
+      "promo": "My promo codes"
     },
     "signOut": "Sign out",
     "signingOut": "Signing out...",
@@ -674,5 +676,70 @@
       "RETURNED": "Returned",
       "REFUNDED": "Refunded"
     }
+  },
+  "sell": {
+    "title": "Become a seller",
+    "heroEyebrow": "Sellobay business",
+    "heroTitle": "Sell on Sellobay",
+    "heroSubtitle": "Join Uzbekistan's largest online marketplace. 850+ brands are already with us.",
+    "benefitsTitle": "Why Sellobay?",
+    "benefit": {
+      "customers": "120,000+ active customers",
+      "customersDesc": "New buyers every day",
+      "growth": "Fast growth",
+      "growthDesc": "Marketing and analytics on us",
+      "logistics": "Logistics handled",
+      "logisticsDesc": "We take care of delivery",
+      "commission": "Low commission 8–12%",
+      "commissionDesc": "The lowest rate on the market"
+    },
+    "requirementsTitle": "Requirements",
+    "req": {
+      "legal": "Legal entity or sole proprietor",
+      "stir": "Tax ID (STIR / INN)",
+      "bank": "Bank account for payouts",
+      "product": "Ready-to-sell products and quality photos"
+    },
+    "stepsTitle": "4 simple steps",
+    "step": {
+      "apply": "Submit an application",
+      "applyDesc": "Send your tax ID and documents",
+      "verify": "Get verified",
+      "verifyDesc": "We review within 24 hours",
+      "add": "Add products",
+      "addDesc": "Upload via the panel",
+      "start": "Start selling",
+      "startDesc": "First order — in the first week"
+    },
+    "ctaApply": "Submit application",
+    "ctaGuide": "Seller guide",
+    "webNote": "The application opens in your browser — takes a couple of minutes.",
+    "openError": "Couldn't open the link"
+  },
+  "promo": {
+    "title": "My promo codes",
+    "empty": "You don't have any promo codes yet",
+    "emptyDesc": "Add a promo code and get a discount on your next order",
+    "add": "Add promo code",
+    "addTitle": "Enter promo code",
+    "placeholder": "e.g. WELCOME10",
+    "apply": "Add",
+    "cancel": "Cancel",
+    "added": "Promo code added",
+    "alreadyHad": "This promo code is already in your wallet",
+    "loginRequired": "Sign in to add a promo code",
+    "status": {
+      "ACTIVE": "ACTIVE",
+      "USED": "USED",
+      "EXPIRED": "EXPIRED",
+      "INACTIVE": "INACTIVE"
+    },
+    "validUntil": "Valid until {date}",
+    "noExpiry": "No expiry",
+    "descPercent": "{value}% off",
+    "descFixed": "{value} so'm off",
+    "descFreeShip": "Free shipping",
+    "minOrder": "On orders from {amount} so'm",
+    "minOrderShort": "from {amount} so'm"
   }
 }

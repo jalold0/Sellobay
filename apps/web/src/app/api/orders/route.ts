@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
+import { evaluatePromo } from '@/lib/promo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -133,11 +134,37 @@ export async function POST(req: NextRequest) {
   //    Order, redeem (spend) va earn yozuvlari birga commit/rollback —
   //    balans hech qachon haqiqiy buyurtmalar bilan nomuvofiq bo'lmaydi.
   const orderNumber = generateOrderNumber();
-  const { order, coinsEarned, coinsRedeemed, discountSom } = await prisma.$transaction(
-    async (tx) => {
-      // 5a. Redeem hisob-kitobi (faqat login user) — balansni TX ichida o'qib cheklaymiz
+  const { order, coinsEarned, coinsRedeemed, discountSom, promoDiscountSom, appliedPromoCode } =
+    await prisma.$transaction(async (tx) => {
+      // 5a. Promokod — TX ichida tekshirib qo'llaymiz (usedCount race'siz)
+      let promoDiscount = new Prisma.Decimal(0);
+      let promoApplied: string | null = null;
+      let promoId: string | null = null;
+      if (input.promoCode) {
+        const code = input.promoCode.trim().toUpperCase();
+        const promo = await tx.promoCode.findUnique({ where: { code } });
+        if (promo) {
+          const userUsedCount = currentUser
+            ? await tx.order.count({ where: { userId: currentUser.id, promoCode: code } })
+            : undefined;
+          const res = evaluatePromo(promo, {
+            subtotal: subtotal.toNumber(),
+            shippingFee: shippingTotal.toNumber(),
+            userUsedCount,
+          });
+          if (res.ok && res.discount > 0) {
+            promoDiscount = new Prisma.Decimal(res.discount);
+            promoApplied = code;
+            promoId = promo.id;
+          }
+        }
+      }
+      // promokoddan keyingi qoldiq — coin redeem shu summadan oshmasin
+      const afterPromo = baseTotal.sub(promoDiscount);
+
+      // 5b. Redeem hisob-kitobi (faqat login user) — balansni TX ichida o'qib cheklaymiz
       let redeemed = 0;
-      let discount = new Prisma.Decimal(0);
+      let coinDiscount = new Prisma.Decimal(0);
       if (currentUser && input.redeemCoins && input.redeemCoins > 0) {
         const u = await tx.user.findUnique({
           where: { id: currentUser.id },
@@ -145,10 +172,11 @@ export async function POST(req: NextRequest) {
         });
         const balance = u?.loyaltyPoints ?? 0;
         // chegirma summadan oshmasin (total < 0 bo'lmasin) va balansdan oshmasin
-        const maxByTotal = Math.floor(baseTotal.toNumber() / COIN_VALUE_SOM);
+        const maxByTotal = Math.floor(afterPromo.toNumber() / COIN_VALUE_SOM);
         redeemed = Math.max(0, Math.min(input.redeemCoins, balance, maxByTotal));
-        discount = new Prisma.Decimal(redeemed * COIN_VALUE_SOM);
+        coinDiscount = new Prisma.Decimal(redeemed * COIN_VALUE_SOM);
       }
+      const discount = promoDiscount.add(coinDiscount);
       const grandTotal = baseTotal.sub(discount);
 
       const created = await tx.order.create({
@@ -164,7 +192,7 @@ export async function POST(req: NextRequest) {
           grandTotal,
           shippingAddressId,
           deliveryMethod: input.deliveryMethod,
-          promoCode: input.promoCode ?? null,
+          promoCode: promoApplied,
           notes: input.notes
             ? `${input.notes} | To'lov: ${input.paymentProvider}`
             : `To'lov: ${input.paymentProvider}`,
@@ -182,7 +210,22 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // 5b. Sello Coins settle (earn to'langan summa bo'yicha, spend redeemed)
+      // 5c. Promokod hisoblagichlari — usedCount va UserCoupon redeemedAt
+      if (promoApplied && promoId) {
+        await tx.promoCode.update({
+          where: { id: promoId },
+          data: { usedCount: { increment: 1 } },
+        });
+        if (currentUser) {
+          await tx.userCoupon.upsert({
+            where: { userId_promoCodeId: { userId: currentUser.id, promoCodeId: promoId } },
+            create: { userId: currentUser.id, promoCodeId: promoId, redeemedAt: created.placedAt },
+            update: { redeemedAt: created.placedAt },
+          });
+        }
+      }
+
+      // 5d. Sello Coins settle (earn to'langan summa bo'yicha, spend redeemed)
       let earned = 0;
       if (currentUser) {
         const settled = await settleOrderLoyalty(
@@ -199,9 +242,10 @@ export async function POST(req: NextRequest) {
         coinsEarned: earned,
         coinsRedeemed: redeemed,
         discountSom: discount.toNumber(),
+        promoDiscountSom: promoDiscount.toNumber(),
+        appliedPromoCode: promoApplied,
       };
-    },
-  );
+    });
 
   return apiOk({
     order: {
@@ -213,6 +257,8 @@ export async function POST(req: NextRequest) {
       coinsEarned,
       coinsRedeemed,
       discountSom,
+      promoDiscountSom,
+      appliedPromoCode,
     },
   });
 }
