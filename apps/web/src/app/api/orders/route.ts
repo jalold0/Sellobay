@@ -231,13 +231,39 @@ export async function GET() {
       status: true,
       grandTotal: true,
       placedAt: true,
+      paidAt: true,
+      shippedAt: true,
+      deliveredAt: true,
+      cancelledAt: true,
       deliveryMethod: true,
+      shippingAddress: {
+        select: {
+          recipientName: true,
+          phone: true,
+          region: true,
+          city: true,
+          district: true,
+          street: true,
+          building: true,
+          apartment: true,
+        },
+      },
       items: {
         select: {
           id: true,
           quantity: true,
           nameSnapshot: true,
           totalPrice: true,
+          product: {
+            select: {
+              slug: true,
+              images: {
+                orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }],
+                take: 1,
+                select: { url: true },
+              },
+            },
+          },
         },
       },
     },
@@ -250,13 +276,33 @@ export async function GET() {
       status: o.status,
       grandTotal: o.grandTotal.toString(),
       placedAt: o.placedAt.toISOString(),
+      paidAt: o.paidAt?.toISOString() ?? null,
+      shippedAt: o.shippedAt?.toISOString() ?? null,
+      deliveredAt: o.deliveredAt?.toISOString() ?? null,
+      cancelledAt: o.cancelledAt?.toISOString() ?? null,
       deliveryMethod: o.deliveryMethod,
+      // Hozircha barcha buyurtmalar lokal (UZ). Global (chegaralararo) keyingi bosqichda.
+      scope: 'LOCAL' as const,
+      shippingAddress: o.shippingAddress
+        ? {
+            recipientName: o.shippingAddress.recipientName,
+            phone: o.shippingAddress.phone,
+            region: o.shippingAddress.region,
+            city: o.shippingAddress.city,
+            district: o.shippingAddress.district,
+            street: o.shippingAddress.street,
+            building: o.shippingAddress.building,
+            apartment: o.shippingAddress.apartment,
+          }
+        : null,
       itemCount: o.items.length,
       items: o.items.map((i) => ({
         id: i.id,
         quantity: i.quantity,
         nameSnapshot: i.nameSnapshot,
         totalPrice: i.totalPrice.toString(),
+        slug: i.product?.slug ?? null,
+        imageUrl: i.product?.images[0]?.url ?? null,
       })),
     })),
   });

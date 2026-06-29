@@ -391,19 +391,40 @@ async function authedJson<T>(
 
 // ─── Buyurtmalar ─────────────────────────────────────────────────
 
+export type OrderScope = 'LOCAL' | 'GLOBAL';
+
+export interface OrderAddress {
+  recipientName: string;
+  phone: string;
+  region: string;
+  city: string;
+  district: string | null;
+  street: string;
+  building: string | null;
+  apartment: string | null;
+}
+
 export interface ApiOrder {
   id: string;
   number: string;
   status: string;
   grandTotal: string;
   placedAt: string;
+  paidAt: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
   deliveryMethod: string;
+  scope: OrderScope;
+  shippingAddress: OrderAddress | null;
   itemCount: number;
   items: Array<{
     id: string;
     quantity: number;
     nameSnapshot: LocalizedText | string;
     totalPrice: string;
+    slug: string | null;
+    imageUrl: string | null;
   }>;
 }
 
@@ -411,6 +432,14 @@ export interface ApiOrder {
 export async function fetchOrders(): Promise<ApiOrder[] | null> {
   const data = await authedJson<{ items: ApiOrder[] }>('/api/orders');
   return data?.items ?? null;
+}
+
+// Faol (yo'ldagi) statuslar — terminal bo'lmaganlar
+const TERMINAL_STATUSES = new Set(['DELIVERED', 'CANCELLED', 'RETURNED', 'REFUNDED']);
+
+/** Buyurtma faolmi (hali yetkazilmagan/yakunlanmagan)? */
+export function isActiveOrder(status: string): boolean {
+  return !TERMINAL_STATUSES.has(status);
 }
 
 // ─── Manzillar (CRUD) ────────────────────────────────────────────
