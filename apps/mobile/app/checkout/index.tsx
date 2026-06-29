@@ -6,6 +6,7 @@ import {
   CreditCard,
   MapPin,
   Package,
+  Plus,
   ShieldCheck,
   Tag,
   X,
@@ -15,7 +16,14 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LocationPicker } from '../../src/components/location-picker';
-import { createOrder, fetchLoyalty, validatePromo, type PromoType } from '../../src/lib/api';
+import {
+  createOrder,
+  fetchAddresses,
+  fetchLoyalty,
+  validatePromo,
+  type ApiAddress,
+  type PromoType,
+} from '../../src/lib/api';
 import { formatMoney } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../src/lib/loyalty';
@@ -78,6 +86,46 @@ export default function CheckoutScreen() {
     longitude: null as number | null,
   });
   const [showMap, setShowMap] = React.useState(false);
+
+  // Saqlangan manzillar — login user uchun
+  const [savedAddresses, setSavedAddresses] = React.useState<ApiAddress[] | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = React.useState<string | null>(null);
+  const [manualEntry, setManualEntry] = React.useState(false);
+
+  const fillFromSaved = React.useCallback((a: ApiAddress) => {
+    setAddress({
+      firstName: a.recipientName,
+      lastName: '',
+      phone: a.phone,
+      region: a.region,
+      city: a.city,
+      street: [a.street, a.building].filter(Boolean).join(', '),
+      apartment: a.apartment ?? '',
+      latitude: a.latitude != null ? Number(a.latitude) : null,
+      longitude: a.longitude != null ? Number(a.longitude) : null,
+    });
+    setSelectedAddressId(a.id);
+    setManualEntry(false);
+  }, []);
+
+  // Manzillarni yuklaymiz; default bo'lsa avtomatik tanlanadi
+  React.useEffect(() => {
+    let active = true;
+    void fetchAddresses().then((list) => {
+      if (!active) return;
+      setSavedAddresses(list ?? []);
+      if (list && list.length > 0) {
+        const def = list.find((a) => a.isDefault) ?? list[0]!;
+        fillFromSaved(def);
+      } else {
+        setManualEntry(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [fillFromSaved]);
+
   const [shipping, setShipping] = React.useState<'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS'>(
     'HOME_DELIVERY',
   );
@@ -175,11 +223,12 @@ export default function CheckoutScreen() {
   }
 
   const canNextFromAddress =
-    address.firstName.trim() &&
-    address.lastName.trim() &&
-    address.phone.length >= 12 &&
-    address.city.trim() &&
-    address.street.trim();
+    (selectedAddressId != null && !manualEntry) ||
+    (address.firstName.trim() &&
+      address.lastName.trim() &&
+      address.phone.length >= 12 &&
+      address.city.trim() &&
+      address.street.trim());
 
   const nextStep = () => {
     if (step === 'address' && !canNextFromAddress) {
@@ -309,8 +358,90 @@ export default function CheckoutScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 200 }}
         keyboardShouldPersistTaps="handled"
       >
-        {step === 'address' && (
+        {step === 'address' && savedAddresses && savedAddresses.length > 0 && !manualEntry && (
           <View className="gap-3">
+            <Text className="text-muted-foreground text-xs font-medium">Saqlangan manzillar</Text>
+            {savedAddresses.map((a) => {
+              const selected = selectedAddressId === a.id;
+              return (
+                <Pressable
+                  key={a.id}
+                  onPress={() => {
+                    haptics.select();
+                    fillFromSaved(a);
+                  }}
+                  className={cn(
+                    'rounded-2xl border-2 p-3.5',
+                    selected ? 'border-primary bg-primary/5' : 'border-border',
+                  )}
+                >
+                  <View className="flex-row items-start gap-2">
+                    <MapPin
+                      size={16}
+                      color={selected ? '#8B0020' : '#94a3b8'}
+                      style={{ marginTop: 2 }}
+                    />
+                    <View className="min-w-0 flex-1">
+                      <View className="flex-row items-center gap-2">
+                        <Text className="text-foreground text-sm font-semibold">
+                          {a.recipientName}
+                        </Text>
+                        {a.isDefault ? (
+                          <View className="rounded-full bg-emerald-100 px-2 py-0.5">
+                            <Text className="text-[10px] font-bold text-emerald-700">Asosiy</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text className="text-muted-foreground text-xs">{a.phone}</Text>
+                      <Text className="text-muted-foreground text-xs" numberOfLines={2}>
+                        {[a.region, a.city, a.street, a.apartment].filter(Boolean).join(', ')}
+                      </Text>
+                    </View>
+                    {selected ? <Check size={18} color="#8B0020" /> : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                setSelectedAddressId(null);
+                setAddress({
+                  firstName: '',
+                  lastName: '',
+                  phone: '+998 ',
+                  region: '',
+                  city: '',
+                  street: '',
+                  apartment: '',
+                  latitude: null,
+                  longitude: null,
+                });
+                setManualEntry(true);
+              }}
+              className="border-border active:bg-muted flex-row items-center justify-center gap-2 rounded-2xl border border-dashed py-3"
+            >
+              <Plus size={16} color="#8B0020" />
+              <Text className="text-primary text-sm font-semibold">Yangi manzil qo&apos;shish</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {step === 'address' && (!savedAddresses || savedAddresses.length === 0 || manualEntry) && (
+          <View className="gap-3">
+            {savedAddresses && savedAddresses.length > 0 ? (
+              <Pressable
+                onPress={() => {
+                  haptics.light();
+                  const def = savedAddresses.find((x) => x.isDefault) ?? savedAddresses[0]!;
+                  fillFromSaved(def);
+                }}
+                className="self-start"
+              >
+                <Text className="text-primary text-sm">‹ Saqlangan manzillar</Text>
+              </Pressable>
+            ) : null}
+
             {/* Xaritadan tanlash */}
             <Pressable
               onPress={() => {

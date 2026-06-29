@@ -25,6 +25,8 @@ const createSchema = z.object({
   building: z.string().trim().max(40).optional().nullable(),
   apartment: z.string().trim().max(40).optional().nullable(),
   landmark: z.string().trim().max(200).optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   isDefault: z.boolean().default(false),
 });
 
@@ -74,6 +76,8 @@ export async function POST(req: NextRequest) {
       building: input.building,
       apartment: input.apartment,
       landmark: input.landmark,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
       isDefault: input.isDefault,
     },
   });

@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LocationPicker } from '../../src/components/location-picker';
 import { LoginRequired } from '../../src/components/login-required';
 import {
   createAddress,
@@ -39,6 +40,8 @@ const EMPTY_FORM: AddressInput = {
   street: '',
   apartment: '',
   landmark: '',
+  latitude: null,
+  longitude: null,
   isDefault: false,
 };
 
@@ -52,6 +55,7 @@ export default function AddressesScreen() {
   const [showForm, setShowForm] = React.useState(false);
   const [form, setForm] = React.useState<AddressInput>(EMPTY_FORM);
   const [saving, setSaving] = React.useState(false);
+  const [showMap, setShowMap] = React.useState(false);
 
   const load = React.useCallback(() => {
     if (!isAuthenticated) {
@@ -183,6 +187,29 @@ export default function AddressesScreen() {
                 ))}
               </View>
 
+              {/* Xaritadan tanlash */}
+              <Pressable
+                onPress={() => {
+                  haptics.light();
+                  setShowMap(true);
+                }}
+                className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
+              >
+                <MapPin size={18} color="#8B0020" />
+                <View className="flex-1">
+                  <Text className="text-primary text-sm font-semibold">
+                    {t('profile.addressesPage.pickOnMap')}
+                  </Text>
+                  {form.latitude != null ? (
+                    <Text className="text-muted-foreground text-xs" numberOfLines={1}>
+                      {[form.city, form.street].filter(Boolean).join(', ') ||
+                        t('profile.addressesPage.locationPicked')}
+                    </Text>
+                  ) : null}
+                </View>
+                <Text className="text-primary text-lg">›</Text>
+              </Pressable>
+
               <Input
                 label={t('profile.addressesPage.recipient')}
                 value={form.recipientName}
@@ -311,6 +338,27 @@ export default function AddressesScreen() {
           )}
         </ScrollView>
       )}
+
+      {showMap ? (
+        <LocationPicker
+          initial={
+            form.latitude != null && form.longitude != null
+              ? { lat: form.latitude, lng: form.longitude }
+              : undefined
+          }
+          onClose={() => setShowMap(false)}
+          onConfirm={(loc) => {
+            set({
+              latitude: loc.lat,
+              longitude: loc.lng,
+              region: loc.region ?? form.region,
+              city: loc.city ?? form.city,
+              street: loc.street ?? form.street,
+            });
+            setShowMap(false);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

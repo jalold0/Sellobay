@@ -513,6 +513,8 @@
     "addressesPage": {
       "title": "Manzillar",
       "newAddress": "Yangi manzil",
+      "pickOnMap": "Xaritadan tanlash",
+      "locationPicked": "Joylashuv tanlandi",
       "cancel": "Bekor qilish",
       "save": "Saqlash",
       "saving": "Saqlanmoqda...",

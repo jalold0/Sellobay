@@ -513,6 +513,8 @@
     "addressesPage": {
       "title": "Addresses",
       "newAddress": "New address",
+      "pickOnMap": "Pick on map",
+      "locationPicked": "Location selected",
       "cancel": "Cancel",
       "save": "Save",
       "saving": "Saving...",

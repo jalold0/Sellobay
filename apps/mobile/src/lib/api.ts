@@ -597,6 +597,8 @@ export interface ApiAddress {
   building: string | null;
   apartment: string | null;
   landmark: string | null;
+  latitude: string | null;
+  longitude: string | null;
   isDefault: boolean;
 }
 
@@ -610,6 +612,8 @@ export interface AddressInput {
   street: string;
   apartment?: string | null;
   landmark?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   isDefault?: boolean;
 }
 

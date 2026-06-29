@@ -513,6 +513,8 @@
     "addressesPage": {
       "title": "Адреса",
       "newAddress": "Новый адрес",
+      "pickOnMap": "Выбрать на карте",
+      "locationPicked": "Местоположение выбрано",
       "cancel": "Отмена",
       "save": "Сохранить",
       "saving": "Сохранение...",
