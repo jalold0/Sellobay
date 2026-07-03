@@ -1,5 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, ChevronLeft, MapPin, Package, Pencil, Phone, X } from 'lucide-react-native';
+import { Check, ChevronLeft, MapPin, Package, Pencil, Phone, Undo2, X } from 'lucide-react-native';
 import * as React from 'react';
 import {
   ActivityIndicator,
@@ -13,15 +14,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  cancelOrder,
-  fetchOrder,
-  updateOrder,
-  type OrderDetail,
-  type UpdateOrderInput,
-} from '../../src/lib/api';
+import { updateOrder, type OrderDetail, type UpdateOrderInput } from '../../src/lib/api';
 import { formatDate, formatMoney, pickLocalized } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
+import { useCancelOrder, useOrder, useReturnOrder } from '../../src/lib/hooks';
 import { useT } from '../../src/lib/useT';
 import { useLocale, type Locale } from '../../src/store/locale';
 import { toast } from '../../src/store/toast';
@@ -61,6 +57,11 @@ const L: Record<Locale, Record<string, string>> = {
     apt: 'Kvartira/podyezd',
     save: 'Saqlash',
     notEditable: 'Bu buyurtmani endi tahrirlab bo‘lmaydi',
+    return: 'Qaytarish',
+    returnConfirm: 'Mahsulotni qaytarasizmi?',
+    returnDesc: 'Sello Coins qaytariladi. Pul mablag‘i operator tomonidan qaytariladi.',
+    returnYes: 'Ha, qaytarish',
+    returned: 'Qaytarish qabul qilindi',
   },
   ru: {
     title: 'Заказ',
@@ -92,6 +93,11 @@ const L: Record<Locale, Record<string, string>> = {
     apt: 'Квартира/подъезд',
     save: 'Сохранить',
     notEditable: 'Этот заказ больше нельзя изменить',
+    return: 'Вернуть',
+    returnConfirm: 'Вернуть товар?',
+    returnDesc: 'Sello Coins вернутся. Деньги возвращает оператор.',
+    returnYes: 'Да, вернуть',
+    returned: 'Возврат принят',
   },
   en: {
     title: 'Order',
@@ -123,6 +129,11 @@ const L: Record<Locale, Record<string, string>> = {
     apt: 'Apartment/entrance',
     save: 'Save',
     notEditable: 'This order can no longer be edited',
+    return: 'Return',
+    returnConfirm: 'Return this item?',
+    returnDesc: 'Sello Coins will be refunded. Money is refunded by an operator.',
+    returnYes: 'Yes, return',
+    returned: 'Return accepted',
   },
 };
 
@@ -154,21 +165,13 @@ export default function OrderDetailScreen() {
   const tr = L[locale] ?? L.uz;
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [order, setOrder] = React.useState<OrderDetail | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  // React Query — unmount'ni o'zi boshqaradi (mounted-guard kerak emas),
+  // bekor/tahrir mutatsiyalari keshni yangilaydi (ro'yxat stale qolmaydi).
+  const { data: order, isLoading: loading } = useOrder(id);
+  const cancelMutation = useCancelOrder();
+  const returnMutation = useReturnOrder();
+  const qc = useQueryClient();
   const [editing, setEditing] = React.useState(false);
-  const [cancelling, setCancelling] = React.useState(false);
-
-  const load = React.useCallback(async () => {
-    if (!id) return;
-    const data = await fetchOrder(id);
-    setOrder(data);
-    setLoading(false);
-  }, [id]);
-
-  React.useEffect(() => {
-    void load();
-  }, [load]);
 
   const onCancel = () => {
     Alert.alert(tr.cancelConfirm, tr.cancelDesc, [
@@ -178,9 +181,7 @@ export default function OrderDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           if (!id) return;
-          setCancelling(true);
-          const res = await cancelOrder(id);
-          setCancelling(false);
+          const res = await cancelMutation.mutateAsync(id);
           if (!res.success) {
             haptics.error();
             toast({ title: res.error?.message ?? tr.cancelled, variant: 'destructive' });
@@ -188,7 +189,29 @@ export default function OrderDetailScreen() {
           }
           haptics.success();
           toast({ title: tr.cancelled, variant: 'success' });
-          await load();
+          // kesh invalidatsiyasi useCancelOrder ichida bajariladi
+        },
+      },
+    ]);
+  };
+
+  const onReturn = () => {
+    Alert.alert(tr.returnConfirm, tr.returnDesc, [
+      { text: tr.no, style: 'cancel' },
+      {
+        text: tr.returnYes,
+        style: 'destructive',
+        onPress: async () => {
+          if (!id) return;
+          const res = await returnMutation.mutateAsync({ id });
+          if (!res.success) {
+            haptics.error();
+            toast({ title: res.error?.message ?? tr.returned, variant: 'destructive' });
+            return;
+          }
+          haptics.success();
+          toast({ title: tr.returned, variant: 'success' });
+          // kesh invalidatsiyasi useReturnOrder ichida bajariladi
         },
       },
     ]);
@@ -237,7 +260,7 @@ export default function OrderDetailScreen() {
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 8,
-          paddingBottom: insets.bottom + (order.editable ? 100 : 32),
+          paddingBottom: insets.bottom + (order.editable || order.returnable ? 100 : 32),
           gap: 14,
         }}
       >
@@ -288,8 +311,49 @@ export default function OrderDetailScreen() {
           ))}
         </View>
 
-        {/* Address */}
-        {addr ? (
+        {/* Topshirish punkti (PICKUP_POINT) */}
+        {order.pickupPoint ? (
+          <View className="border-border bg-card gap-1.5 rounded-2xl border p-4">
+            <Text className="text-muted-foreground mb-1 text-[10px] font-bold uppercase tracking-widest">
+              {tr.pickup}
+            </Text>
+            <View className="flex-row items-start gap-2">
+              <MapPin size={14} color="#94a3b8" style={{ marginTop: 2 }} />
+              <View className="flex-1">
+                <Text className="text-foreground text-xs font-semibold">
+                  {pickLocalized(order.pickupPoint.name, locale)} · {order.pickupPoint.provider}
+                </Text>
+                <Text className="text-muted-foreground text-xs">
+                  {[
+                    order.pickupPoint.region,
+                    order.pickupPoint.city,
+                    order.pickupPoint.district,
+                    order.pickupPoint.street,
+                    order.pickupPoint.building,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </Text>
+                {order.pickupPoint.workingHours ? (
+                  <Text className="text-muted-foreground text-xs">
+                    {order.pickupPoint.workingHours}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+            {addr ? (
+              <View className="flex-row items-center gap-2">
+                <Phone size={14} color="#94a3b8" />
+                <Text className="text-muted-foreground text-xs">
+                  {addr.recipientName} · {addr.phone}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* Address (uygacha/express) */}
+        {addr && !order.pickupPoint ? (
           <View className="border-border bg-card gap-1.5 rounded-2xl border p-4">
             <Text className="text-muted-foreground mb-1 text-[10px] font-bold uppercase tracking-widest">
               {tr.delivery}
@@ -364,7 +428,7 @@ export default function OrderDetailScreen() {
             <Button
               variant="destructive"
               fullWidth
-              loading={cancelling}
+              loading={cancelMutation.isPending}
               leftIcon={<X size={16} color="#fff" />}
               onPress={onCancel}
             >
@@ -374,13 +438,33 @@ export default function OrderDetailScreen() {
         </View>
       ) : null}
 
+      {/* Qaytarish — faqat DELIVERED (14 kun oynasi ichida) */}
+      {!order.editable && order.returnable ? (
+        <View
+          style={{ paddingBottom: insets.bottom + 12 }}
+          className="border-border bg-background absolute inset-x-0 bottom-0 border-t px-4 pt-3"
+        >
+          <Button
+            variant="outline"
+            fullWidth
+            loading={returnMutation.isPending}
+            leftIcon={<Undo2 size={16} color="#0A0A0C" />}
+            onPress={onReturn}
+          >
+            {tr.return}
+          </Button>
+        </View>
+      ) : null}
+
       {editing ? (
         <EditModal
           order={order}
           tr={tr}
           onClose={() => setEditing(false)}
           onSaved={(updated) => {
-            setOrder(updated);
+            // React Query keshini yangilaymiz → ekran + ro'yxat darhol mos keladi
+            qc.setQueryData(['order', id], updated);
+            void qc.invalidateQueries({ queryKey: ['orders'] });
             setEditing(false);
             haptics.success();
             toast({ title: tr.saved, variant: 'success' });

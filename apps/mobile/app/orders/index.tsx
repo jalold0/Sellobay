@@ -1,12 +1,14 @@
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { Check, CreditCard, MapPin, Package, Phone, Receipt, Truck, X } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoginRequired } from '../../src/components/login-required';
-import { fetchOrders, isActiveOrder, type ApiOrder, type OrderScope } from '../../src/lib/api';
+import { isActiveOrder, type ApiOrder, type OrderScope } from '../../src/lib/api';
 import { formatMoney, formatDate, pickLocalized } from '../../src/lib/format';
+import { useOrders } from '../../src/lib/hooks';
 import { useT } from '../../src/lib/useT';
 import { useLocale, type Locale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
@@ -26,6 +28,9 @@ const L: Record<Locale, Record<string, string>> = {
     globalEmpty: 'Global buyurtmalar yo‘q',
     globalDesc: 'Chegaralararo xaridlar tez orada qo‘shiladi',
     activeEmpty: 'Faol buyurtma yo‘q',
+    loadError: 'Buyurtmalarni yuklab bo‘lmadi',
+    loadErrorDesc: 'Internet aloqasini tekshirib, qayta urinib ko‘ring.',
+    retry: 'Qayta urinish',
     items: 'ta tovar',
     recipient: 'Qabul qiluvchi',
     pickup: 'Topshirish punktiga',
@@ -44,6 +49,9 @@ const L: Record<Locale, Record<string, string>> = {
     globalEmpty: 'Нет глобальных заказов',
     globalDesc: 'Трансграничные покупки появятся скоро',
     activeEmpty: 'Нет активных заказов',
+    loadError: 'Не удалось загрузить заказы',
+    loadErrorDesc: 'Проверьте подключение к интернету и повторите.',
+    retry: 'Повторить',
     items: 'тов.',
     recipient: 'Получатель',
     pickup: 'В пункт выдачи',
@@ -62,6 +70,9 @@ const L: Record<Locale, Record<string, string>> = {
     globalEmpty: 'No global orders',
     globalDesc: 'Cross-border orders coming soon',
     activeEmpty: 'No active orders',
+    loadError: 'Couldn’t load orders',
+    loadErrorDesc: 'Check your internet connection and try again.',
+    retry: 'Try again',
     items: 'items',
     recipient: 'Recipient',
     pickup: 'To pickup point',
@@ -126,6 +137,9 @@ const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
   REFUNDED: { bg: 'bg-muted', text: 'text-muted-foreground' },
 };
 
+// FlashList item'lar orasidagi bo'shliq (contentContainerStyle 'gap'ni qo'llamaydi)
+const OrderSeparator = () => <View style={{ height: 14 }} />;
+
 export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -134,28 +148,11 @@ export default function OrdersScreen() {
   const tr = L[locale] ?? L.uz;
   const { isAuthenticated } = useSession();
 
-  const [orders, setOrders] = React.useState<ApiOrder[] | null>(null);
-  const [loading, setLoading] = React.useState(true);
   const [scope, setScope] = React.useState<OrderScope>('LOCAL');
   const [onlyActive, setOnlyActive] = React.useState(false);
 
-  React.useEffect(() => {
-    let active = true;
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-    fetchOrders()
-      .then((data) => {
-        if (active) setOrders(data ?? []);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [isAuthenticated]);
+  // React Query — kesh, focus'da refetch, retry hammasi markazlashgan
+  const { data: orders, isLoading, isError, refetch, isRefetching } = useOrders(isAuthenticated);
 
   const filtered = React.useMemo(() => {
     if (!orders) return [];
@@ -163,6 +160,18 @@ export default function OrdersScreen() {
       .filter((o) => (o.scope ?? 'LOCAL') === scope)
       .filter((o) => (onlyActive ? isActiveOrder(o.status) : true));
   }, [orders, scope, onlyActive]);
+
+  const renderItem = React.useCallback(
+    ({ item }: { item: ApiOrder }) => (
+      <Pressable
+        onPress={() => router.push(`/orders/${item.id}` as never)}
+        className="active:opacity-90"
+      >
+        <OrderCard order={item} locale={locale} tr={tr} t={t} />
+      </Pressable>
+    ),
+    [router, locale, tr, t],
+  );
 
   return (
     <View className="bg-background flex-1">
@@ -207,51 +216,60 @@ export default function OrdersScreen() {
 
       {!isAuthenticated ? (
         <LoginRequired />
-      ) : loading ? (
+      ) : isLoading ? (
         <View className="gap-3 p-4">
           {[0, 1].map((i) => (
             <Skeleton key={i} className="h-52 w-full rounded-2xl" />
           ))}
         </View>
+      ) : isError ? (
+        <EmptyState
+          icon={<Package size={26} color="#94a3b8" />}
+          title={tr.loadError}
+          description={tr.loadErrorDesc}
+          action={
+            <Button onPress={() => refetch()} fullWidth>
+              {tr.retry}
+            </Button>
+          }
+        />
       ) : scope === 'GLOBAL' ? (
         <EmptyState
           icon={<Package size={26} color="#94a3b8" />}
           title={tr.globalEmpty}
           description={tr.globalDesc}
         />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={<Package size={26} color="#94a3b8" />}
-          title={onlyActive ? tr.activeEmpty : t('profile.ordersPage.emptyTitle')}
-          description={t('profile.ordersPage.emptyDesc')}
-          action={
-            <Button onPress={() => router.push('/(tabs)/catalog')} fullWidth>
-              {t('cart.continueShopping')}
-            </Button>
+      ) : (
+        <FlashList
+          data={filtered}
+          keyExtractor={(o) => o.id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
+          ItemSeparatorComponent={OrderSeparator}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#8B0020" />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon={<Package size={26} color="#94a3b8" />}
+              title={onlyActive ? tr.activeEmpty : t('profile.ordersPage.emptyTitle')}
+              description={t('profile.ordersPage.emptyDesc')}
+              action={
+                <Button onPress={() => router.push('/(tabs)/catalog')} fullWidth>
+                  {t('cart.continueShopping')}
+                </Button>
+              }
+            />
           }
         />
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32, gap: 14 }}
-        >
-          {filtered.map((o) => (
-            <Pressable
-              key={o.id}
-              onPress={() => router.push(`/orders/${o.id}` as never)}
-              className="active:opacity-90"
-            >
-              <OrderCard order={o} locale={locale} tr={tr} t={t} />
-            </Pressable>
-          ))}
-        </ScrollView>
       )}
     </View>
   );
 }
 
 // ─── Status kuzatuv tasmasi (faol buyurtmalar uchun) ─────────────
-function StatusTracker({ status, locale }: { status: string; locale: Locale }) {
+function StatusTrackerBase({ status, locale }: { status: string; locale: Locale }) {
   const cur = stepIndexOf(status);
   return (
     <View className="flex-row items-start">
@@ -289,9 +307,10 @@ function StatusTracker({ status, locale }: { status: string; locale: Locale }) {
     </View>
   );
 }
+const StatusTracker = React.memo(StatusTrackerBase);
 
 // ─── Buyurtma kartasi ────────────────────────────────────────────
-function OrderCard({
+function OrderCardBase({
   order,
   locale,
   tr,
@@ -383,7 +402,11 @@ function OrderCard({
           <View className="flex-row items-start gap-2">
             <MapPin size={14} color="#94a3b8" />
             <View className="flex-1">
-              <Text className="text-foreground text-xs font-semibold">{deliveryLabel}</Text>
+              <Text className="text-foreground text-xs font-semibold">
+                {order.pickupPoint
+                  ? `${tr.pickup} · ${pickLocalized(order.pickupPoint.name, locale)}`
+                  : deliveryLabel}
+              </Text>
               <Text className="text-muted-foreground text-xs">
                 {[addr.region, addr.city, addr.district, addr.street, addr.building, addr.apartment]
                   .filter(Boolean)
@@ -408,3 +431,4 @@ function OrderCard({
     </View>
   );
 }
+const OrderCard = React.memo(OrderCardBase);

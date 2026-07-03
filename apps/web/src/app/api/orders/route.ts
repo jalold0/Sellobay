@@ -1,8 +1,8 @@
 // POST /api/orders — buyurtma yaratish (web + mobile uchun umumiy)
 // GET /api/orders — joriy foydalanuvchining buyurtmalari ro'yxati
 
-import { NextRequest } from 'next/server';
 import { Prisma } from '@ecom/database';
+import { isInTashkentCity } from '@ecom/utils';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -11,6 +11,8 @@ import { prisma } from '@/lib/db';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
 import { evaluatePromo } from '@/lib/promo';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,6 +36,7 @@ const createSchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   // Yetkazib berish va to'lov
   deliveryMethod: z.enum(['HOME_DELIVERY', 'PICKUP_POINT', 'EXPRESS']).default('HOME_DELIVERY'),
+  pickupPointId: z.string().uuid().optional().nullable(),
   paymentProvider: z
     .enum(['CLICK', 'PAYME', 'UZUM_BANK', 'UZCARD', 'HUMO', 'CASH_ON_DELIVERY'])
     .default('CLICK'),
@@ -62,6 +65,36 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri ma'lumot");
   }
   const input = parsed.data;
+
+  // Uygacha/Express yetkazish FAQAT Toshkent shahar uchun. Koordinata berilgan
+  // bo'lsa (mobil) — shahar tashqarisini rad etamiz (punktdan foydalanilsin).
+  if (
+    (input.deliveryMethod === 'HOME_DELIVERY' || input.deliveryMethod === 'EXPRESS') &&
+    input.latitude != null &&
+    input.longitude != null &&
+    !isInTashkentCity(input.latitude, input.longitude)
+  ) {
+    return apiError(
+      400,
+      'DELIVERY_OUT_OF_ZONE',
+      'Uygacha yetkazish faqat Toshkent shahar uchun. Olib ketish punktini tanlang.',
+    );
+  }
+
+  // PICKUP_POINT tanlangan bo'lsa — punkt majburiy va faol bo'lishi kerak
+  let pickupPointId: string | null = null;
+  if (input.deliveryMethod === 'PICKUP_POINT') {
+    if (!input.pickupPointId) {
+      return apiError(400, 'PICKUP_REQUIRED', 'Topshirish punktini tanlang');
+    }
+    const pp = await prisma.pickupPoint.findFirst({
+      where: { id: input.pickupPointId, isActive: true },
+      select: { id: true },
+    });
+    if (!pp) return apiError(400, 'PICKUP_NOT_FOUND', 'Topshirish punkti topilmadi');
+    pickupPointId = pp.id;
+  }
+
   const currentUser = await getCurrentUser();
 
   // 1. Mahsulotlarni DB'dan olamiz (snapshot uchun) va mavjudligini tekshiramiz
@@ -195,6 +228,7 @@ export async function POST(req: NextRequest) {
           discountTotal: discount,
           grandTotal,
           shippingAddressId,
+          pickupPointId,
           deliveryMethod: input.deliveryMethod,
           promoCode: promoApplied,
           notes: input.notes
@@ -298,6 +332,23 @@ export async function GET() {
           apartment: true,
         },
       },
+      pickupPoint: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          provider: true,
+          region: true,
+          city: true,
+          district: true,
+          street: true,
+          building: true,
+          latitude: true,
+          longitude: true,
+          phone: true,
+          workingHours: true,
+        },
+      },
       items: {
         select: {
           id: true,
@@ -343,6 +394,23 @@ export async function GET() {
             street: o.shippingAddress.street,
             building: o.shippingAddress.building,
             apartment: o.shippingAddress.apartment,
+          }
+        : null,
+      pickupPoint: o.pickupPoint
+        ? {
+            id: o.pickupPoint.id,
+            code: o.pickupPoint.code,
+            name: o.pickupPoint.name,
+            provider: o.pickupPoint.provider,
+            region: o.pickupPoint.region,
+            city: o.pickupPoint.city,
+            district: o.pickupPoint.district,
+            street: o.pickupPoint.street,
+            building: o.pickupPoint.building,
+            latitude: Number(o.pickupPoint.latitude),
+            longitude: Number(o.pickupPoint.longitude),
+            phone: o.pickupPoint.phone,
+            workingHours: o.pickupPoint.workingHours,
           }
         : null,
       itemCount: o.items.length,

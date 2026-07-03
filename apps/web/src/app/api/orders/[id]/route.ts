@@ -33,6 +33,7 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
   deliveredAt: true,
   cancelledAt: true,
   shippingAddressId: true,
+  pickupPointId: true,
   shippingAddress: {
     select: {
       recipientName: true,
@@ -43,6 +44,23 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
       street: true,
       building: true,
       apartment: true,
+    },
+  },
+  pickupPoint: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      provider: true,
+      region: true,
+      city: true,
+      district: true,
+      street: true,
+      building: true,
+      latitude: true,
+      longitude: true,
+      phone: true,
+      workingHours: true,
     },
   },
   items: {
@@ -68,6 +86,14 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
 
 type OrderRow = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
 
+// Qaytarish oynasi (gibrid siyosat) — yetkazilgan buyurtma 14 kun ichida qaytariladi
+const RETURN_WINDOW_DAYS = 14;
+function isReturnable(status: OrderRow['status'], deliveredAt: Date | null): boolean {
+  if (status !== 'DELIVERED') return false;
+  if (!deliveredAt) return true;
+  return Date.now() - deliveredAt.getTime() <= RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
 function serialize(o: OrderRow) {
   return {
     id: o.id,
@@ -86,8 +112,17 @@ function serialize(o: OrderRow) {
     deliveredAt: o.deliveredAt?.toISOString() ?? null,
     cancelledAt: o.cancelledAt?.toISOString() ?? null,
     editable: o.status === 'PENDING',
+    returnable: isReturnable(o.status, o.deliveredAt),
+    returnWindowDays: RETURN_WINDOW_DAYS,
     scope: 'LOCAL' as const,
     shippingAddress: o.shippingAddress,
+    pickupPoint: o.pickupPoint
+      ? {
+          ...o.pickupPoint,
+          latitude: Number(o.pickupPoint.latitude),
+          longitude: Number(o.pickupPoint.longitude),
+        }
+      : null,
     itemCount: o.items.length,
     items: o.items.map((i) => ({
       id: i.id,
@@ -124,6 +159,7 @@ const patchSchema = z.object({
   street: z.string().trim().min(2).max(200).optional(),
   apartment: z.string().trim().max(50).optional().nullable(),
   deliveryMethod: z.enum(['HOME_DELIVERY', 'PICKUP_POINT', 'EXPRESS']).optional(),
+  pickupPointId: z.string().uuid().optional().nullable(),
   notes: z.string().trim().max(500).optional().nullable(),
 });
 
@@ -147,6 +183,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       'NOT_EDITABLE',
       'Buyurtma allaqachon qabul qilingan — tahrirlab bo‘lmaydi',
     );
+  }
+
+  // Pickup point o'zgarishi (deliveryMethod bilan) — TX'dan oldin tekshiramiz
+  const effectiveMethod = input.deliveryMethod ?? existing.deliveryMethod;
+  let pickupUpdate: Prisma.OrderUpdateInput['pickupPoint'];
+  if (input.deliveryMethod || input.pickupPointId !== undefined) {
+    if (effectiveMethod === 'PICKUP_POINT') {
+      const ppId = input.pickupPointId ?? existing.pickupPointId;
+      if (!ppId) return apiError(400, 'PICKUP_REQUIRED', 'Topshirish punktini tanlang');
+      const pp = await prisma.pickupPoint.findFirst({
+        where: { id: ppId, isActive: true },
+        select: { id: true },
+      });
+      if (!pp) return apiError(400, 'PICKUP_NOT_FOUND', 'Topshirish punkti topilmadi');
+      pickupUpdate = { connect: { id: pp.id } };
+    } else if (existing.pickupPointId) {
+      pickupUpdate = { disconnect: true };
+    }
   }
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -177,6 +231,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const data: Prisma.OrderUpdateInput = {};
     if (input.notes !== undefined) {
       data.notes = input.notes;
+    }
+    if (pickupUpdate) {
+      data.pickupPoint = pickupUpdate;
     }
 
     // 3. Yetkazish usuli o'zgarsa — narxni qayta hisoblaymiz
