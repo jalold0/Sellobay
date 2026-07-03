@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { localizedTextSchema, paginationSchema, sortOrderSchema } from './common';
+import { localizedTextSchema, paginationSchema, sortOrderSchema } from './common.ts';
 
 // ---------- Users ----------
 export const userRoleSchema = z.enum([

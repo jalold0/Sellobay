@@ -2,6 +2,10 @@
   "extends": "@ecom/tsconfig/react-native.json",
   "compilerOptions": {
     "baseUrl": ".",
+    // @ecom/* workspace paketlari source'da relative '.ts' import ishlatadi
+    // (masalan @ecom/utils → './geo.ts'). Bu mobil TS 5.9'da kerak; courier
+    // (TS 5.4, @ecom/* import qilmaydi) uchun umumiy config'da yo'q.
+    "rewriteRelativeImportExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
     }
