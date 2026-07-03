@@ -4,7 +4,9 @@
 > belgilangan. Maqsad: **bitta ishni ikki marta qilmaslik.** Boshqa kompyuter/dasturda
 > `git pull` qilib shu fayldan davom eting.
 >
-> **Oxirgi yangilanish:** 2026-06-28 · **MVP launch:** 2026-07-13
+> **Oxirgi yangilanish:** 2026-07-03 · **MVP launch:** 2026-07-13
+>
+> **2026-07-03:** **Yetkazish modeli** — PickupPoint (12 punkt Neon'da) + topshirish punktlari API/UI + saqlangan manzil + xarita (MapLibre/PMTiles offline UZ) · **Buyurtma qaytarish** (14 kunlik oyna, atomik coin/promo refund) · **Promokod tizimi** (backend+checkout+mobil) · **Mobil Uzum-uslub redesign** (grid+karusel+kategoriya+Global demo) · Node 24 ESM fix + dev launcher skriptlar (WiFi login) · butun monorepo typecheck/lint yashil
 >
 > **2026-06-28:** Vercel deploy + CI yashil · huquqiy sahifalar · Verified Seller backend · profil i18n · Group Buy (web UI) · to'lov skeleti (Click/Payme) · React 19 birlashtirildi (web+mobil) · mobil checkout auth-gate · **Admin real DB:** buyurtmalar/mijozlar/mahsulotlar · **Seller real DB:** dashboard/buyurtmalar/mahsulotlar
 >
@@ -69,7 +71,7 @@
 - [x] Checkout'da Sello Coins earn hint
 - [ ] Onboarding (3-4 ekran, mobile, birinchi ochilishda)
 - [ ] Bottom sheet filtrlar (mobile)
-- [ ] Recently viewed strip
+- [x] Recently viewed + qidiruv tarixi (mobile store, MMKV) — 2026-07-03
 - [ ] Bo'sh holatlar (empty states) polish
 
 ---
@@ -166,6 +168,47 @@
 - [x] Mobile loyalty ekran real balans fetch (mock fallback)
 - [x] Web cookie auth regression yo'q (tasdiqlandi)
 - [ ] 🔒 Telefon OTP SMS provayder (dev'da kod yuborilmaydi — email login to'liq ishlaydi)
+
+---
+
+## 12. Yetkazish, Qaytarish & Promokod — TAYYOR (2026-07-03)
+
+### Yetkazish modeli (PickupPoint)
+
+- [x] Prisma `PickupPoint` modeli (code/provider/localized name/lat-lng/type/workingHours),
+      `Order.pickupPointId` + `UserAddress.pickupPointId`, indekslar
+- [x] Neon'da 12 topshirish punkti seed
+- [x] Web: `GET /api/pickup-points` (region/city filtr, Decimal→number) + checkout'da
+      uyga yetkazish vs punktdan olib ketish tanlovi
+- [x] Saqlangan manzil CRUD (web `/api/addresses` + profil sahifa; mobil profil)
+- [x] Xarita: MapLibre + PMTiles (Uzbekiston offline), Leaflet/Yandex variantlar,
+      location-picker (xaritadan manzil tanlash); `scripts/maps` PMTiles generatsiya
+- [x] Mobil: pickup-points ekrani, checkout'da yetkazish usuli, geo masofa util
+- [ ] Toshkent bbox (uygacha) vs viloyat (punkt) siyosati polish
+
+### Buyurtma qaytarish (returns)
+
+- [x] Web: `POST /api/orders/[id]/return` — DELIVERED holatda, 14 kunlik oyna
+- [x] Atomik `$transaction`: status→RETURNED + statusHistory, Sello Coins cashback
+      revoke + ishlatilgan coin refund, promokod usedCount/UserCoupon tiklash
+- [x] Mobil: buyurtma detalida qaytarish + status kuzatuv (Uzum uslubi)
+- [ ] Pul refundi hozir ops/qo'lda (gateway avto-refund YO'Q) — to'lov integratsiyasi kerak
+
+### Promokod
+
+- [x] Backend + checkout + mobil ulangan (validatsiya, usedCount, UserCoupon)
+
+---
+
+## 13. Mobil Uzum-uslub redesign — FAZA A TAYYOR (2026-07-03)
+
+- [x] Bosh sahifa: promo-karusel (auto), quick-launch panellar, kategoriya grid,
+      chegirma countdown badge, flash-list grid
+- [x] Kategoriyalar ekrani + Global demo katalog tab (chegaralararo, demo mahsulot)
+- [x] Product-card qayta ishlangan (badge/narx/chegirma)
+- [x] error-boundary (qulashdan himoya) + offline-persist query provider (`_layout`)
+- [ ] Faza B: Global katalog real sourcing (hozir demo), til switcher
+- [ ] 🔒 APK'da ko'rinishi uchun yangi EAS build kerak (flash-list/netinfo yangi native dep)
 
 ---
 
