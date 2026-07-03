@@ -4,21 +4,24 @@ import * as React from 'react';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useT } from '../../src/lib/useT';
 import { useProducts } from '../../src/lib/hooks';
-import { brands, categories, type MockProduct } from '../../src/lib/mock-data';
+import { brands, type MockProduct } from '../../src/lib/mock-data';
+import { useT } from '../../src/lib/useT';
+import { useRecentlyViewed } from '../../src/store/recently-viewed';
 import { AppImage } from '../../src/ui/app-image';
-import { CategoryChip } from '../../src/ui/category-chip';
+import { Countdown } from '../../src/ui/countdown';
 import { ProductCard } from '../../src/ui/product-card';
-import { ProductGridSkeleton } from '../../src/ui/skeleton';
+import { PromoCarousel, type PromoSlide } from '../../src/ui/promo-carousel';
+import { QuickLaunch } from '../../src/ui/quick-launch';
 import { SectionHeader } from '../../src/ui/section-header';
+import { ProductGridSkeleton } from '../../src/ui/skeleton';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const LOGO = require('../../assets/icon.png');
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { t } = useT();
+  const { t, locale } = useT();
   // Jonli API'dan (Neon DB) — xato bo'lsa mock fallback
   const { data: allProducts = [], isLoading } = useProducts({ sort: 'popularity', limit: 12 });
 
@@ -28,10 +31,50 @@ export default function HomeScreen() {
     { icon: ShieldCheck, title: t('hero.trustAuthentic'), sub: '' },
     { icon: Sparkles, title: 'Bonus', sub: t('loyalty.coin') },
   ];
+
+  const SLIDES: PromoSlide[] = [
+    {
+      key: 'hero',
+      eyebrow: t('hero.eyebrow'),
+      title: t('hero.headlineLine1'),
+      subtitle: t('hero.subheadline'),
+      cta: t('hero.ctaShop'),
+      href: '/catalog',
+      bg: '#8B0020',
+    },
+    {
+      key: 'promo',
+      eyebrow: t('auth.noAccount'),
+      title: t('cart.promoApplied10'),
+      subtitle: t('auth.registerSubtitle'),
+      cta: t('common.apply'),
+      href: '/auth/login',
+      bg: '#B30029',
+    },
+    {
+      key: 'loyalty',
+      eyebrow: 'SELLO COINS',
+      title: '1% cashback',
+      subtitle: "Har bir xariddan tanga yig'ing",
+      cta: t('common.viewAll'),
+      href: '/profile/loyalty',
+      bg: '#0A0A0C',
+      ctaBg: '#C9A961',
+      ctaFg: '#0A0A0C',
+    },
+  ];
   const featured = allProducts.slice(0, 4);
   const sale = allProducts
     .filter((p: MockProduct) => p.badge === 'SALE' || p.badge === 'TOP')
     .slice(0, 6);
+
+  const recentItems = useRecentlyViewed((s) => s.items);
+  // Flash sale — bugun kun oxirigacha (Asia/Tashkent qurilma vaqti)
+  const saleEndsAt = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }, []);
 
   return (
     <ScrollView
@@ -68,25 +111,9 @@ export default function HomeScreen() {
         </Link>
       </View>
 
-      {/* Hero */}
-      <View className="bg-primary mx-4 mt-2 overflow-hidden rounded-3xl p-5">
-        <View className="flex-row items-center gap-1 self-start rounded-full bg-white/15 px-2 py-1">
-          <Sparkles size={10} color="#fff" />
-          <Text className="text-[10px] font-medium text-white">{t('hero.eyebrow')}</Text>
-        </View>
-        <Text className="mt-3 text-2xl font-black leading-tight text-white">
-          {t('hero.headlineLine1')}
-          <Text className="text-white/80">
-            {'\n'}
-            {t('hero.headlineLine2')}
-          </Text>
-        </Text>
-        <Text className="mt-2 max-w-[80%] text-xs text-white/80">{t('hero.subheadline')}</Text>
-        <Link href="/catalog" asChild>
-          <Pressable className="mt-4 self-start rounded-full bg-white px-5 py-2.5 active:opacity-85">
-            <Text className="text-primary text-sm font-semibold">{t('hero.ctaShop')} →</Text>
-          </Pressable>
-        </Link>
+      {/* Promo karusel */}
+      <View className="mt-2">
+        <PromoCarousel slides={SLIDES} />
       </View>
 
       {/* Perks */}
@@ -108,28 +135,9 @@ export default function HomeScreen() {
         })}
       </View>
 
-      {/* Categories */}
-      <View className="mt-6 gap-3">
-        <SectionHeader
-          title={t('categories.title')}
-          actionLabel={t('common.viewAll')}
-          actionHref="/catalog"
-        />
-        <FlatList
-          data={categories}
-          keyExtractor={(c) => c.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12, gap: 4 }}
-          renderItem={({ item }) => (
-            <CategoryChip
-              emoji={item.emoji}
-              name={item.name.uz}
-              href={`/catalog?category=${item.slug}`}
-              productCount={item.productCount}
-            />
-          )}
-        />
+      {/* Tez-kirish gridi */}
+      <View className="mt-5">
+        <QuickLaunch locale={locale} />
       </View>
 
       {/* Featured */}
@@ -153,14 +161,38 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {/* Yaqinda ko'rilgan */}
+      {recentItems.length > 0 ? (
+        <View className="mt-6 gap-3">
+          <SectionHeader title={t('home.recentlyViewed')} />
+          <FlatList
+            data={recentItems}
+            keyExtractor={(p) => `recent-${p.id}`}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, gap: 12 }}
+            renderItem={({ item }) => (
+              <View style={{ width: 160 }}>
+                <ProductCard product={item} />
+              </View>
+            )}
+          />
+        </View>
+      ) : null}
+
       {/* Sale strip */}
       <View className="mt-6 gap-3">
-        <SectionHeader
-          title={t('sale.homeTitle')}
-          description={t('sale.limitedTimeShort')}
-          actionLabel={t('common.viewAll')}
-          actionHref="/catalog?sort=sale"
-        />
+        <View className="flex-row items-center justify-between px-4">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-foreground text-lg font-bold">{t('sale.homeTitle')}</Text>
+            <Countdown until={saleEndsAt} />
+          </View>
+          <Link href="/catalog?sort=sale" asChild>
+            <Pressable hitSlop={4}>
+              <Text className="text-primary text-xs">{t('common.viewAll')}</Text>
+            </Pressable>
+          </Link>
+        </View>
         <FlatList
           data={sale}
           keyExtractor={(p) => p.id}
@@ -194,20 +226,6 @@ export default function HomeScreen() {
             </Link>
           )}
         />
-      </View>
-
-      {/* Banner */}
-      <View className="bg-accent mx-4 mt-6 overflow-hidden rounded-2xl p-5">
-        <Text className="text-xs font-bold uppercase tracking-widest text-white/80">
-          {t('auth.noAccount')}
-        </Text>
-        <Text className="mt-1 text-xl font-black text-white">{t('cart.promoApplied10')}</Text>
-        <Text className="mt-1 text-xs text-white/80">{t('auth.registerSubtitle')}</Text>
-        <Link href="/auth/login" asChild>
-          <Pressable className="mt-3 self-start rounded-full bg-white px-4 py-2 active:opacity-85">
-            <Text className="text-accent text-xs font-semibold">{t('common.apply')}</Text>
-          </Pressable>
-        </Link>
       </View>
     </ScrollView>
   );

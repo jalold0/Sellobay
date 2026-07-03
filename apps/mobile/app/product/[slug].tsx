@@ -18,10 +18,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { discountPercent, formatMoney, pickLocalized } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
-import { useT } from '../../src/lib/useT';
 import { useProduct, useProducts } from '../../src/lib/hooks';
 import { productImage, type MockProduct } from '../../src/lib/mock-data';
+import { useT } from '../../src/lib/useT';
 import { useCart } from '../../src/store/cart';
+import { useRecentlyViewed } from '../../src/store/recently-viewed';
 import { toast } from '../../src/store/toast';
 import { useWishlist } from '../../src/store/wishlist';
 import { AppImage } from '../../src/ui/app-image';
@@ -58,6 +59,12 @@ export default function ProductDetailScreen() {
   const productId = product?.id ?? '';
   const wishlistHas = useWishlist((s) => (productId ? s.ids.includes(productId) : false));
   const toggleWishlist = useWishlist((s) => s.toggle);
+
+  // Yaqinda ko'rilgan ro'yxatga yozamiz (bosh sahifada ko'rsatiladi)
+  const addRecent = useRecentlyViewed((s) => s.add);
+  React.useEffect(() => {
+    if (product) addRecent(product);
+  }, [product, addRecent]);
 
   // O'xshash mahsulotlar — bir kategoriyadan
   const { data: relatedAll = [] } = useProducts({
@@ -401,6 +408,9 @@ export default function ProductDetailScreen() {
               );
             })}
           </View>
+          <Text className="text-muted-foreground mt-1.5 px-1 text-[10px] leading-4">
+            {t('product.deliveryReturnLegal')}
+          </Text>
 
           {/* Description */}
           <View className="mt-2">

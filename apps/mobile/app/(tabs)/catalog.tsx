@@ -1,18 +1,40 @@
+import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronDown, Filter, Search, SlidersHorizontal, X } from 'lucide-react-native';
+import {
+  ChevronDown,
+  Clock,
+  Filter,
+  Search,
+  SlidersHorizontal,
+  TrendingUp,
+  X,
+} from 'lucide-react-native';
 import * as React from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { pickLocalized } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
-import { useT } from '../../src/lib/useT';
 import { useProducts } from '../../src/lib/hooks';
-import { brands, categories, findBySlug } from '../../src/lib/mock-data';
+import { brands, categories, findBySlug, type MockProduct } from '../../src/lib/mock-data';
+import { useT } from '../../src/lib/useT';
+import { useSearches } from '../../src/store/searches';
+import { Button } from '../../src/ui/button';
 import { ProductCard } from '../../src/ui/product-card';
 import { ProductGridSkeleton } from '../../src/ui/skeleton';
 
 type SortKey = 'popularity' | 'price-asc' | 'price-desc' | 'rating' | 'newest';
+
+// Ommabop qidiruvlar (mock — keyin analitikadan keladi)
+const TRENDING = ['Nike', 'Krossovka', 'Atir', 'Kosmetika', 'Sumka', 'Kurtka', 'Adidas', 'Soat'];
 
 export default function CatalogScreen() {
   const insets = useSafeAreaInsets();
@@ -36,6 +58,8 @@ export default function CatalogScreen() {
   const [search, setSearch] = React.useState(params.q ?? '');
   const [sort, setSort] = React.useState<SortKey>((params.sort as SortKey) ?? 'popularity');
   const [sortOpen, setSortOpen] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
+  const { recent, add: addSearch, remove: removeSearch, clear: clearSearches } = useSearches();
 
   // Qidiruvni debounce qilamiz — har harfda so'rov yubormaslik uchun
   const [debouncedSearch, setDebouncedSearch] = React.useState(search);
@@ -48,7 +72,13 @@ export default function CatalogScreen() {
   const selectedBrand = params.brand ? findBySlug(brands, params.brand) : undefined;
 
   // Jonli API — filtering/sorting backend'da (Postgres)
-  const { data: filtered = [], isLoading } = useProducts({
+  const {
+    data: filtered = [],
+    isLoading,
+    isError,
+    refetch,
+    isRefetching,
+  } = useProducts({
     category: params.category,
     brand: params.brand,
     q: debouncedSearch.trim() || undefined,
@@ -56,6 +86,24 @@ export default function CatalogScreen() {
   });
 
   const clearFilters = () => router.setParams({ category: undefined, brand: undefined });
+
+  // Qidiruv fokusda va bo'sh bo'lsa — takliflar (oxirgi + ommabop) ko'rsatiladi
+  const showSuggestions = focused && !search.trim();
+  const applySearch = (q: string) => {
+    haptics.select();
+    setSearch(q);
+    addSearch(q);
+  };
+
+  // renderItem barqaror — memo'langan ProductCard bilan birga scroll'ni yengillashtiradi
+  const renderItem = React.useCallback(
+    ({ item }: { item: MockProduct }) => (
+      <View style={styles.cell}>
+        <ProductCard product={item} locale={locale} />
+      </View>
+    ),
+    [locale],
+  );
 
   return (
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
@@ -67,6 +115,9 @@ export default function CatalogScreen() {
             <TextInput
               value={search}
               onChangeText={setSearch}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onSubmitEditing={() => addSearch(search)}
               placeholder={t('common.search') + '...'}
               placeholderTextColor="#94a3b8"
               className="text-foreground flex-1 text-sm"
@@ -160,22 +211,78 @@ export default function CatalogScreen() {
         </View>
       </View>
 
-      {/* Grid */}
-      {isLoading ? (
+      {/* Qidiruv takliflari (fokusda, bo'sh) yoki grid */}
+      {showSuggestions ? (
+        <ScrollView
+          className="flex-1"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        >
+          {recent.length > 0 ? (
+            <View className="mt-2">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-foreground text-sm font-semibold">{t('search.recent')}</Text>
+                <Pressable onPress={clearSearches} hitSlop={6}>
+                  <Text className="text-muted-foreground text-xs">{t('common.clear')}</Text>
+                </Pressable>
+              </View>
+              <View className="mt-2 flex-row flex-wrap gap-2">
+                {recent.map((q) => (
+                  <View
+                    key={q}
+                    className="bg-muted flex-row items-center gap-1.5 rounded-full py-1.5 pl-3 pr-2"
+                  >
+                    <Pressable
+                      onPress={() => applySearch(q)}
+                      className="flex-row items-center gap-1 active:opacity-70"
+                    >
+                      <Clock size={12} color="#6B6B73" />
+                      <Text className="text-foreground text-xs">{q}</Text>
+                    </Pressable>
+                    <Pressable onPress={() => removeSearch(q)} hitSlop={6}>
+                      <X size={11} color="#94a3b8" />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+          <View className="mt-5">
+            <Text className="text-foreground text-sm font-semibold">{t('search.popular')}</Text>
+            <View className="mt-2 flex-row flex-wrap gap-2">
+              {TRENDING.map((q) => (
+                <Pressable
+                  key={q}
+                  onPress={() => applySearch(q)}
+                  className="border-border flex-row items-center gap-1 rounded-full border px-3 py-1.5 active:opacity-70"
+                >
+                  <TrendingUp size={12} color="#8B0020" />
+                  <Text className="text-foreground text-xs">{q}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      ) : isLoading ? (
         <ProductGridSkeleton count={6} />
+      ) : isError ? (
+        <View className="items-center px-6 py-16">
+          <Text className="text-muted-foreground text-center text-sm">{t('common.error')}</Text>
+          <View className="mt-4">
+            <Button onPress={() => refetch()}>{t('common.retry')}</Button>
+          </View>
+        </View>
       ) : (
-        <FlatList
+        <FlashList
           data={filtered}
           keyExtractor={(p) => p.id}
           numColumns={2}
-          columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-          contentContainerStyle={{ gap: 12, paddingBottom: 24, paddingTop: 4 }}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingHorizontal: 10, paddingTop: 4, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <View style={{ flex: 1, maxWidth: '48.5%' }}>
-              <ProductCard product={item} />
-            </View>
-          )}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#8B0020" />
+          }
           ListEmptyComponent={
             <View className="items-center px-6 py-16">
               <Text className="text-muted-foreground text-sm">{t('catalog.noResults')}</Text>
@@ -186,3 +293,9 @@ export default function CatalogScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  // FlashList numColumns=2 — gap'ni item padding orqali beramiz (columnWrapperStyle yo'q).
+  // contentContainer paddingHorizontal 10 + cell padding 6 → tashqi ~16, ustunlar orasi ~12
+  cell: { flex: 1, padding: 6 },
+});

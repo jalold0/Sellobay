@@ -38,7 +38,7 @@ const CONTENT: Record<Locale, { title: string; subtitle: string; faqTitle: strin
         },
         {
           q: 'Mahsulotni qaytarish mumkinmi?',
-          a: 'Ha, mahsulotni olganingizdan keyin 14 kun ichida qaytarishingiz mumkin (ochilmagan holatda).',
+          a: 'Albatta. Punktdan olayotganda mahsulotni ochib tekshirasiz — yoqmasa oʻsha yerda qaytarasiz, pul qaytariladi. Uyga yetkazishda kuryer oldida tekshiring. Qonun boʻyicha ishlatilmagan tovarni 14 kun ichida qaytarish huquqingiz ham saqlanadi.',
         },
         {
           q: 'Sello Coins nima?',
@@ -62,7 +62,7 @@ const CONTENT: Record<Locale, { title: string; subtitle: string; faqTitle: strin
         { q: 'Как оплатить заказ?', a: 'Click, Payme, Uzcard/Humo или наличными при доставке.' },
         {
           q: 'Можно ли вернуть товар?',
-          a: 'Да, в течение 14 дней после получения (в неоткрытом виде).',
+          a: 'Конечно. При получении на пункте выдачи вы вскрываете и проверяете товар — не понравится, вернёте на месте с возвратом денег. При доставке на дом проверьте при курьере. По закону также сохраняется право вернуть неиспользованный товар в течение 14 дней.',
         },
         {
           q: 'Что такое Sello Coins?',
@@ -84,7 +84,10 @@ const CONTENT: Record<Locale, { title: string; subtitle: string; faqTitle: strin
           a: '1–2 days in Tashkent, 2–5 days to regions. Express delivers within a day.',
         },
         { q: 'How do I pay?', a: 'Click, Payme, Uzcard/Humo, or cash on delivery.' },
-        { q: 'Can I return a product?', a: 'Yes, within 14 days of receipt (unopened).' },
+        {
+          q: 'Can I return a product?',
+          a: 'Yes. At the pickup point you can open and inspect the item — if it is not right, return it on the spot with a refund. For home delivery, check while the courier is there. By law you also keep the right to return unused goods within 14 days.',
+        },
         {
           q: 'What are Sello Coins?',
           a: 'You earn coins on every purchase and redeem them as a discount. 1 coin = 1 som.',
