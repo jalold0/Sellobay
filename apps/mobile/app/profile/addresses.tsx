@@ -1,4 +1,4 @@
-import { Check, MapPin, Plus, Trash2, X } from 'lucide-react-native';
+import { AlertTriangle, Check, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,11 +10,16 @@ import {
   deleteAddress,
   fetchAddresses,
   setDefaultAddress,
+  updateAddress,
   type AddressInput,
   type ApiAddress,
 } from '../../src/lib/api';
+import { pickLocalized } from '../../src/lib/format';
+import { isInTashkentCity } from '../../src/lib/geo';
 import { haptics } from '../../src/lib/haptics';
+import { usePickupPoints } from '../../src/lib/hooks';
 import { useT } from '../../src/lib/useT';
+import { useLocale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { Button } from '../../src/ui/button';
@@ -42,6 +47,7 @@ const EMPTY_FORM: AddressInput = {
   landmark: '',
   latitude: null,
   longitude: null,
+  pickupPointId: null,
   isDefault: false,
 };
 
@@ -54,8 +60,42 @@ export default function AddressesScreen() {
   const [loading, setLoading] = React.useState(true);
   const [showForm, setShowForm] = React.useState(false);
   const [form, setForm] = React.useState<AddressInput>(EMPTY_FORM);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [showMap, setShowMap] = React.useState(false);
+
+  const openNew = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (a: ApiAddress) => {
+    haptics.light();
+    setEditingId(a.id);
+    setForm({
+      type: a.type,
+      label: a.label ?? '',
+      recipientName: a.recipientName,
+      phone: a.phone,
+      region: a.region,
+      city: a.city,
+      street: a.street,
+      apartment: a.apartment ?? '',
+      landmark: a.landmark ?? '',
+      latitude: a.latitude != null ? Number(a.latitude) : null,
+      longitude: a.longitude != null ? Number(a.longitude) : null,
+      pickupPointId: a.pickupPointId ?? null,
+      isDefault: a.isDefault,
+    });
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  };
 
   const load = React.useCallback(() => {
     if (!isAuthenticated) {
@@ -73,17 +113,60 @@ export default function AddressesScreen() {
 
   const set = (patch: Partial<AddressInput>) => setForm((f) => ({ ...f, ...patch }));
 
+  // Aqlli forma: PICKUP → punkt tanlash; uy manzili → Toshkent bbox tekshiruvi
+  const locale = useLocale((s) => s.locale);
+  const { data: pickupPoints = [] } = usePickupPoints();
+  const isPickup = form.type === 'PICKUP';
+  const homeOutsideTashkent =
+    !isPickup &&
+    form.latitude != null &&
+    form.longitude != null &&
+    !isInTashkentCity(form.latitude, form.longitude);
+
   const onSave = async () => {
-    if (
-      !form.recipientName.trim() ||
-      !form.phone.trim() ||
-      !form.city.trim() ||
-      !form.street.trim()
-    ) {
-      toast({ title: t('profile.addressesPage.fillMain'), variant: 'warning' });
-      return;
+    if (isPickup) {
+      if (!form.pickupPointId || !form.recipientName.trim() || !form.phone.trim()) {
+        toast({ title: t('profile.addressesPage.fillMain'), variant: 'warning' });
+        return;
+      }
+    } else {
+      if (
+        !form.recipientName.trim() ||
+        !form.phone.trim() ||
+        !form.city.trim() ||
+        !form.street.trim()
+      ) {
+        toast({ title: t('profile.addressesPage.fillMain'), variant: 'warning' });
+        return;
+      }
+      if (homeOutsideTashkent) {
+        toast({
+          title: 'Uygacha yetkazish faqat Toshkent shahar uchun. Olib ketish punktini tanlang.',
+          variant: 'warning',
+        });
+        return;
+      }
     }
     setSaving(true);
+    if (editingId) {
+      const updated = await updateAddress(editingId, form);
+      setSaving(false);
+      if (updated) {
+        haptics.success();
+        toast({ title: t('profile.addressesPage.saved'), variant: 'success' });
+        // isDefault yoqilgan bo'lsa, qolganlaridan olib tashlaymiz
+        setItems(
+          (prev) =>
+            prev?.map((x) =>
+              x.id === updated.id ? updated : updated.isDefault ? { ...x, isDefault: false } : x,
+            ) ?? null,
+        );
+        closeForm();
+      } else {
+        toast({ title: t('profile.addressesPage.notSaved'), variant: 'destructive' });
+      }
+      return;
+    }
     const created = await createAddress(form);
     setSaving(false);
     if (created) {
@@ -91,7 +174,12 @@ export default function AddressesScreen() {
       toast({ title: t('profile.addressesPage.added'), variant: 'success' });
       setShowForm(false);
       setForm(EMPTY_FORM);
-      setItems((prev) => (prev ? [created, ...prev] : [created]));
+      setItems((prev) => {
+        const list = prev ?? [];
+        // yangi default bo'lsa, eskilaridan olib tashlaymiz
+        const normalized = created.isDefault ? list.map((x) => ({ ...x, isDefault: false })) : list;
+        return [created, ...normalized];
+      });
     } else {
       toast({ title: t('profile.addressesPage.notSaved'), variant: 'destructive' });
     }
@@ -141,7 +229,7 @@ export default function AddressesScreen() {
         right={
           isAuthenticated ? (
             <Pressable
-              onPress={() => setShowForm((s) => !s)}
+              onPress={() => (showForm ? closeForm() : openNew())}
               hitSlop={8}
               className="active:bg-muted h-10 w-10 items-center justify-center rounded-full"
             >
@@ -163,7 +251,11 @@ export default function AddressesScreen() {
           {showForm ? (
             <View className="border-border bg-card gap-3 rounded-2xl border p-4">
               <Text className="text-foreground font-semibold">
-                {t('profile.addressesPage.newAddress')}
+                {t(
+                  editingId
+                    ? 'profile.addressesPage.editAddress'
+                    : 'profile.addressesPage.newAddress',
+                )}
               </Text>
 
               {/* Tur */}
@@ -171,7 +263,13 @@ export default function AddressesScreen() {
                 {TYPES.map((ty) => (
                   <Pressable
                     key={ty.key}
-                    onPress={() => set({ type: ty.key })}
+                    onPress={() =>
+                      set(
+                        ty.key === 'PICKUP'
+                          ? { type: ty.key }
+                          : { type: ty.key, pickupPointId: null },
+                      )
+                    }
                     className={`flex-1 items-center rounded-xl border py-2 ${
                       form.type === ty.key ? 'border-primary bg-primary/10' : 'border-border'
                     }`}
@@ -187,28 +285,119 @@ export default function AddressesScreen() {
                 ))}
               </View>
 
-              {/* Xaritadan tanlash */}
-              <Pressable
-                onPress={() => {
-                  haptics.light();
-                  setShowMap(true);
-                }}
-                className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
-              >
-                <MapPin size={18} color="#8B0020" />
-                <View className="flex-1">
-                  <Text className="text-primary text-sm font-semibold">
-                    {t('profile.addressesPage.pickOnMap')}
-                  </Text>
-                  {form.latitude != null ? (
-                    <Text className="text-muted-foreground text-xs" numberOfLines={1}>
-                      {[form.city, form.street].filter(Boolean).join(', ') ||
-                        t('profile.addressesPage.locationPicked')}
-                    </Text>
+              {/* Uy manzili: xaritadan tanlash + Toshkent ogohlantirishi */}
+              {!isPickup ? (
+                <>
+                  <Pressable
+                    onPress={() => {
+                      haptics.light();
+                      setShowMap(true);
+                    }}
+                    className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
+                  >
+                    <MapPin size={18} color="#8B0020" />
+                    <View className="flex-1">
+                      <Text className="text-primary text-sm font-semibold">
+                        {t('profile.addressesPage.pickOnMap')}
+                      </Text>
+                      {form.latitude != null ? (
+                        <Text className="text-muted-foreground text-xs" numberOfLines={1}>
+                          {[form.city, form.street].filter(Boolean).join(', ') ||
+                            t('profile.addressesPage.locationPicked')}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text className="text-primary text-lg">›</Text>
+                  </Pressable>
+
+                  {homeOutsideTashkent ? (
+                    <View className="gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3">
+                      <View className="flex-row items-start gap-2">
+                        <AlertTriangle size={16} color="#d97706" style={{ marginTop: 1 }} />
+                        <Text className="flex-1 text-xs leading-4 text-amber-800">
+                          Uygacha yetkazish faqat Toshkent shahar uchun. Viloyat uchun olib ketish
+                          punktini tanlang.
+                        </Text>
+                      </View>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onPress={() => {
+                          haptics.light();
+                          set({ type: 'PICKUP' });
+                        }}
+                      >
+                        Olib ketish punktiga o&apos;tish
+                      </Button>
+                    </View>
                   ) : null}
+                </>
+              ) : (
+                /* Viloyat: topshirish punktini tanlash */
+                <View className="gap-2">
+                  <Text className="text-muted-foreground text-xs font-medium">
+                    Topshirish punktini tanlang
+                  </Text>
+                  {pickupPoints.length === 0 ? (
+                    <View className="bg-muted rounded-lg p-3">
+                      <Text className="text-muted-foreground text-xs">Punktlar yuklanmoqda...</Text>
+                    </View>
+                  ) : (
+                    pickupPoints.map((p) => {
+                      const sel = form.pickupPointId === p.id;
+                      return (
+                        <Pressable
+                          key={p.id}
+                          onPress={() => {
+                            haptics.select();
+                            set({
+                              pickupPointId: p.id,
+                              label: pickLocalized(p.name, locale),
+                              region: p.region,
+                              city: p.city,
+                              street: p.street,
+                              latitude: p.latitude,
+                              longitude: p.longitude,
+                            });
+                          }}
+                          className={`rounded-2xl border-2 p-3 ${
+                            sel ? 'border-primary bg-primary/5' : 'border-border'
+                          }`}
+                        >
+                          <View className="flex-row items-start gap-2">
+                            <MapPin
+                              size={16}
+                              color={sel ? '#8B0020' : '#94a3b8'}
+                              style={{ marginTop: 2 }}
+                            />
+                            <View className="min-w-0 flex-1">
+                              <View className="flex-row items-center gap-2">
+                                <Text className="text-foreground flex-1 text-sm font-semibold">
+                                  {pickLocalized(p.name, locale)}
+                                </Text>
+                                <View className="bg-muted rounded-full px-2 py-0.5">
+                                  <Text className="text-muted-foreground text-[10px] font-bold">
+                                    {p.provider}
+                                  </Text>
+                                </View>
+                              </View>
+                              <Text className="text-muted-foreground text-xs">
+                                {[p.region, p.city, p.street].filter(Boolean).join(', ')}
+                              </Text>
+                              {p.workingHours ? (
+                                <Text className="text-muted-foreground text-[11px]">
+                                  {p.workingHours}
+                                </Text>
+                              ) : null}
+                            </View>
+                            {sel ? <Check size={18} color="#8B0020" /> : null}
+                          </View>
+                        </Pressable>
+                      );
+                    })
+                  )}
                 </View>
-                <Text className="text-primary text-lg">›</Text>
-              </Pressable>
+              )}
 
               <Input
                 label={t('profile.addressesPage.recipient')}
@@ -222,28 +411,32 @@ export default function AddressesScreen() {
                 keyboardType="phone-pad"
                 placeholder="+998 90 123 45 67"
               />
-              <Input
-                label={t('profile.addressesPage.city')}
-                value={form.city}
-                onChangeText={(v) => set({ city: v })}
-              />
-              <Input
-                label={t('profile.addressesPage.street')}
-                value={form.street}
-                onChangeText={(v) => set({ street: v })}
-                placeholder={t('profile.addressesPage.streetPlaceholder')}
-              />
-              <Input
-                label={t('profile.addressesPage.apartment')}
-                value={form.apartment ?? ''}
-                onChangeText={(v) => set({ apartment: v })}
-              />
-              <Input
-                label={t('profile.addressesPage.landmark')}
-                value={form.landmark ?? ''}
-                onChangeText={(v) => set({ landmark: v })}
-                placeholder={t('profile.addressesPage.landmarkPlaceholder')}
-              />
+              {!isPickup ? (
+                <>
+                  <Input
+                    label={t('profile.addressesPage.city')}
+                    value={form.city}
+                    onChangeText={(v) => set({ city: v })}
+                  />
+                  <Input
+                    label={t('profile.addressesPage.street')}
+                    value={form.street}
+                    onChangeText={(v) => set({ street: v })}
+                    placeholder={t('profile.addressesPage.streetPlaceholder')}
+                  />
+                  <Input
+                    label={t('profile.addressesPage.apartment')}
+                    value={form.apartment ?? ''}
+                    onChangeText={(v) => set({ apartment: v })}
+                  />
+                  <Input
+                    label={t('profile.addressesPage.landmark')}
+                    value={form.landmark ?? ''}
+                    onChangeText={(v) => set({ landmark: v })}
+                    placeholder={t('profile.addressesPage.landmarkPlaceholder')}
+                  />
+                </>
+              ) : null}
 
               <Pressable
                 onPress={() => set({ isDefault: !form.isDefault })}
@@ -315,13 +508,22 @@ export default function AddressesScreen() {
                       </Text>
                     ) : null}
                   </View>
-                  <Pressable
-                    onPress={() => onDelete(a)}
-                    hitSlop={8}
-                    className="active:bg-muted h-9 w-9 items-center justify-center rounded-full"
-                  >
-                    <Trash2 size={16} color="#ef4444" />
-                  </Pressable>
+                  <View className="flex-row items-center">
+                    <Pressable
+                      onPress={() => openEdit(a)}
+                      hitSlop={8}
+                      className="active:bg-muted h-9 w-9 items-center justify-center rounded-full"
+                    >
+                      <Pencil size={16} color="#0A0A0C" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onDelete(a)}
+                      hitSlop={8}
+                      className="active:bg-muted h-9 w-9 items-center justify-center rounded-full"
+                    >
+                      <Trash2 size={16} color="#ef4444" />
+                    </Pressable>
+                  </View>
                 </View>
                 {!a.isDefault ? (
                   <Pressable

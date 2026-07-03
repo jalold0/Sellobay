@@ -1,25 +1,29 @@
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Info } from 'lucide-react-native';
+import { ChevronLeft, Clock, MapPin, Phone } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LeafletMap, TASHKENT, type LatLng } from '../src/components/leaflet-map';
-import { getCurrentLocation } from '../src/lib/geo';
+import { AppMap, TASHKENT, type LatLng, type MapPoint } from '../src/components/map';
+import { pickLocalized } from '../src/lib/format';
+import { usePickupPoints } from '../src/lib/hooks';
 import { useLocale, type Locale } from '../src/store/locale';
 
-const L: Record<Locale, { title: string; note: string }> = {
+const L: Record<Locale, { title: string; empty: string; hint: string }> = {
   uz: {
     title: 'Topshirish punktlari',
-    note: 'Tez orada topshirish punktlari qo‘shiladi. Hozircha uyga yetkazib berishdan foydalaning.',
+    empty: 'Hozircha topshirish punktlari yo‘q',
+    hint: 'Punktni tanlash uchun bosing',
   },
   ru: {
     title: 'Пункты выдачи',
-    note: 'Пункты выдачи появятся скоро. Пока воспользуйтесь доставкой на дом.',
+    empty: 'Пунктов выдачи пока нет',
+    hint: 'Нажмите на пункт, чтобы показать на карте',
   },
   en: {
     title: 'Pickup points',
-    note: 'Pickup points are coming soon. For now, please use home delivery.',
+    empty: 'No pickup points yet',
+    hint: 'Tap a point to show it on the map',
   },
 };
 
@@ -29,17 +33,18 @@ export default function PickupPointsScreen() {
   const locale = useLocale((s) => s.locale);
   const tr = L[locale] ?? L.uz;
 
+  const { data: points = [], isLoading } = usePickupPoints();
   const [center, setCenter] = React.useState<LatLng>(TASHKENT);
 
-  React.useEffect(() => {
-    let active = true;
-    void getCurrentLocation().then((loc) => {
-      if (active && loc) setCenter(loc);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const mapPoints: MapPoint[] = React.useMemo(
+    () =>
+      points.map((p) => ({
+        lat: p.latitude,
+        lng: p.longitude,
+        label: pickLocalized(p.name, locale),
+      })),
+    [points, locale],
+  );
 
   return (
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
@@ -55,16 +60,71 @@ export default function PickupPointsScreen() {
         <View className="w-10" />
       </View>
 
+      {/* Xarita — barcha punktlar markerlari */}
       <View className="flex-1">
-        <LeafletMap center={center} zoom={12} />
+        <AppMap center={center} points={mapPoints} zoom={6} />
       </View>
 
+      {/* Punktlar ro'yxati (pastki panel) */}
       <View
-        className="border-border bg-background flex-row items-start gap-2 border-t px-4 pt-3"
-        style={{ paddingBottom: insets.bottom + 12 }}
+        className="border-border bg-background border-t"
+        style={{ maxHeight: '42%', paddingBottom: insets.bottom }}
       >
-        <Info size={16} color="#8B0020" style={{ marginTop: 1 }} />
-        <Text className="text-muted-foreground flex-1 text-xs leading-4">{tr.note}</Text>
+        {isLoading ? (
+          <View className="items-center py-8">
+            <ActivityIndicator color="#8B0020" />
+          </View>
+        ) : points.length === 0 ? (
+          <View className="items-center px-6 py-8">
+            <MapPin size={24} color="#94a3b8" />
+            <Text className="text-muted-foreground mt-2 text-center text-sm">{tr.empty}</Text>
+          </View>
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: 12, gap: 8 }}
+          >
+            <Text className="text-muted-foreground px-1 pb-1 text-xs">{tr.hint}</Text>
+            {points.map((p) => (
+              <Pressable
+                key={p.id}
+                onPress={() => setCenter({ lat: p.latitude, lng: p.longitude })}
+                className="border-border bg-card active:bg-muted rounded-xl border p-3"
+              >
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-foreground flex-1 text-sm font-semibold">
+                    {pickLocalized(p.name, locale)}
+                  </Text>
+                  <View className="bg-muted rounded-full px-2 py-0.5">
+                    <Text className="text-muted-foreground text-[10px] font-bold">
+                      {p.provider}
+                    </Text>
+                  </View>
+                </View>
+                <View className="mt-1 flex-row items-start gap-1.5">
+                  <MapPin size={13} color="#94a3b8" style={{ marginTop: 1 }} />
+                  <Text className="text-muted-foreground flex-1 text-xs">
+                    {[p.region, p.city, p.district, p.street, p.building]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </Text>
+                </View>
+                {p.workingHours ? (
+                  <View className="mt-1 flex-row items-center gap-1.5">
+                    <Clock size={13} color="#94a3b8" />
+                    <Text className="text-muted-foreground text-xs">{p.workingHours}</Text>
+                  </View>
+                ) : null}
+                {p.phone ? (
+                  <View className="mt-1 flex-row items-center gap-1.5">
+                    <Phone size={13} color="#94a3b8" />
+                    <Text className="text-muted-foreground text-xs">{p.phone}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </View>
   );

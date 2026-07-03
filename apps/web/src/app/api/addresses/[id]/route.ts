@@ -1,12 +1,13 @@
 // Single address: PATCH va DELETE
 
-import { NextRequest } from 'next/server';
 import { normalizeUzPhone } from '@ecom/utils';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,6 +24,9 @@ const updateSchema = z.object({
   building: z.string().trim().max(40).optional().nullable(),
   apartment: z.string().trim().max(40).optional().nullable(),
   landmark: z.string().trim().max(200).optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+  pickupPointId: z.string().uuid().optional().nullable(),
   isDefault: z.boolean().optional(),
 });
 

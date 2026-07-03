@@ -2,6 +2,14 @@ import * as React from 'react';
 import { View, type ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 
+import {
+  LEAFLET_CSS,
+  LEAFLET_JS,
+  MARKER_ICON,
+  MARKER_ICON_2X,
+  MARKER_SHADOW,
+} from './leaflet-assets';
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -27,27 +35,27 @@ interface Props {
 // Toshkent markazi — default
 export const TASHKENT: LatLng = { lat: 41.2995, lng: 69.2401 };
 
+// Bu komponent — OSM raster fallback (pmtilesUrl bo'lmasa AppMap shuni tanlaydi).
+// Protomaps vektor xarita endi MapLibre'da (maplibre-map.tsx).
+
 function buildHtml({
   center,
   pin,
-  points,
   zoom,
   interactive,
 }: {
   center: LatLng;
   pin?: LatLng;
-  points: MapPoint[];
   zoom: number;
   interactive: boolean;
 }): string {
   const pinJson = pin ? JSON.stringify(pin) : 'null';
-  const pointsJson = JSON.stringify(points);
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>${LEAFLET_CSS}</style>
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
     #map { width: 100%; }
@@ -55,8 +63,17 @@ function buildHtml({
 </head>
 <body>
   <div id="map"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>${LEAFLET_JS}</script>
   <script>
+    // Default marker ikonkalari — base64 data URI (nisbiy images/ yo'liga bog'liq EMAS,
+    // shuning uchun inline/offline holatda ham markerlar to'g'ri ko'rinadi).
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: '${MARKER_ICON_2X}',
+      iconUrl: '${MARKER_ICON}',
+      shadowUrl: '${MARKER_SHADOW}',
+    });
+
     var center = ${JSON.stringify(center)};
     var map = L.map('map', { zoomControl: true, attributionControl: false }).setView([center.lat, center.lng], ${zoom});
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
@@ -64,6 +81,7 @@ function buildHtml({
     var interactive = ${interactive};
     var pin = ${pinJson};
     var marker = null;
+    var pointMarkers = [];
 
     function post(lat, lng) {
       if (window.ReactNativeWebView) {
@@ -84,12 +102,22 @@ function buildHtml({
       });
     }
 
-    // Faqat ko'rsatiladigan nuqtalar
-    var points = ${pointsJson};
-    points.forEach(function (pt) {
-      var m = L.marker([pt.lat, pt.lng]).addTo(map);
-      if (pt.label) m.bindPopup(pt.label);
-    });
+    // RN'dan ko'rsatiladigan nuqtalarni yangilash (eski markerlarni tozalab qayta chizadi).
+    // Muhim: nuqtalar async kelsa ham (masalan topshirish punktlari) xaritada paydo bo'ladi.
+    window.__setPoints = function (pts) {
+      pointMarkers.forEach(function (m) { map.removeLayer(m); });
+      pointMarkers = [];
+      (pts || []).forEach(function (pt) {
+        var m = L.marker([pt.lat, pt.lng]).addTo(map);
+        if (pt.label) m.bindPopup(pt.label);
+        pointMarkers.push(m);
+      });
+    };
+
+    // RN'dan pinni siljitish (picker rejimi)
+    window.__setPin = function (lat, lng) {
+      if (marker) marker.setLatLng([lat, lng]);
+    };
 
     // RN'dan recenter (injectJavaScript)
     window.__recenter = function (lat, lng) {
@@ -105,12 +133,29 @@ export function LeafletMap({ center, pin, onPick, points = [], zoom = 13, style 
   const webRef = React.useRef<WebView>(null);
   const interactive = Boolean(onPick);
 
-  // HTML faqat bir marta quriladi (remount bo'lmasin) — recenter injectJavaScript orqali
+  // HTML faqat bir marta quriladi (remount bo'lmasin). points/pin/center — injectJavaScript orqali.
   const html = React.useMemo(
-    () => buildHtml({ center, pin, points, zoom, interactive }),
+    () => buildHtml({ center, pin, zoom, interactive }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+
+  // Barqaror kalit — points har renderda yangi massiv bo'lsa ham ortiqcha inject bo'lmasin
+  const pointsKey = React.useMemo(() => JSON.stringify(points), [points]);
+
+  // WebView yuklanib bo'lgach hozirgi overlay'larni sinxronlaymiz (mount race'dan himoya)
+  const syncOverlays = React.useCallback(() => {
+    const js =
+      `window.__setPoints && window.__setPoints(${pointsKey});` +
+      (pin ? `window.__setPin && window.__setPin(${pin.lat}, ${pin.lng});` : '') +
+      ' true;';
+    webRef.current?.injectJavaScript(js);
+  }, [pointsKey, pin?.lat, pin?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Nuqtalar/pin o'zgarsa qayta chizamiz
+  React.useEffect(() => {
+    syncOverlays();
+  }, [syncOverlays]);
 
   // Markaz tashqaridan o'zgarsa (masalan "mening joylashuvim") — xaritani siljitamiz
   React.useEffect(() => {
@@ -124,8 +169,9 @@ export function LeafletMap({ center, pin, onPick, points = [], zoom = 13, style 
       <WebView
         ref={webRef}
         originWhitelist={['*']}
-        source={{ html }}
+        source={{ html, baseUrl: 'https://localhost' }}
         style={{ flex: 1, backgroundColor: 'transparent' }}
+        onLoadEnd={syncOverlays}
         onMessage={(e) => {
           if (!onPick) return;
           try {

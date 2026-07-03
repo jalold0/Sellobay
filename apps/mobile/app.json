@@ -49,6 +49,9 @@
     },
     "extra": {
       "apiBaseUrl": "https://sellobay-web.vercel.app",
+      "yandexMapsApiKey": "",
+      "pmtilesUrl": "https://pub-a8adf525367442ce88806dc6dd797272.r2.dev/uzbekistan.pmtiles",
+      "mapAssetsBaseUrl": "https://pub-a8adf525367442ce88806dc6dd797272.r2.dev",
       "router": {},
       "eas": {
         "projectId": "c2816815-4df2-4c21-9559-2bfa640d6254"

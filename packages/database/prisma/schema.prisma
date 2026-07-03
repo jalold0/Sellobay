@@ -283,10 +283,12 @@ model UserAddress {
   landmark      String?
   latitude      Decimal?    @db.Decimal(10, 7)
   longitude     Decimal?    @db.Decimal(10, 7)
+  pickupPointId String?     @db.Uuid
   isDefault     Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pickupPoint   PickupPoint? @relation(fields: [pickupPointId], references: [id], onDelete: SetNull)
   orders        Order[]
 
   @@index([userId])
@@ -626,6 +628,32 @@ model WishlistItem {
 // ORDERS, PAYMENTS, SHIPMENTS
 // ===================================================================
 
+model PickupPoint {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique // e.g. PVZ-TAS-001
+  provider     String   // courier/company: BTS, FARGO, POCHTA, SELLOBAY, ...
+  name         Json     // localized { uz, ru, en }
+  region       String
+  city         String
+  district     String?
+  street       String
+  building     String?
+  landmark     String?
+  latitude     Decimal  @db.Decimal(10, 7)
+  longitude    Decimal  @db.Decimal(10, 7)
+  phone        String?
+  workingHours String?  // e.g. "Du-Sha 09:00-19:00"
+  type         String   @default("PVZ") // PVZ / POSTAMAT / OFFICE
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+  addresses    UserAddress[]
+
+  @@index([region, city])
+  @@index([isActive])
+}
+
 model Order {
   id              String         @id @default(uuid()) @db.Uuid
   number          String         @unique // human-readable, e.g. ORD-2026-00001234
@@ -645,6 +673,7 @@ model Order {
   notes           String?
   promoCode       String?
   shippingAddressId String?      @db.Uuid
+  pickupPointId   String?        @db.Uuid
   deliveryMethod  DeliveryMethod @default(HOME_DELIVERY)
   placedAt        DateTime       @default(now())
   paidAt          DateTime?
@@ -657,6 +686,7 @@ model Order {
 
   user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   shippingAddress UserAddress?   @relation(fields: [shippingAddressId], references: [id], onDelete: SetNull)
+  pickupPoint     PickupPoint?   @relation(fields: [pickupPointId], references: [id], onDelete: SetNull)
   items           OrderItem[]
   payments        Payment[]
   deliveries      Delivery[]

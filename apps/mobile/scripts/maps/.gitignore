@@ -1,0 +1,7 @@
+# go-pmtiles binary + downloaded/generated map data — commit qilinmaydi
+bin/
+assets/
+pmtiles.exe
+LICENSE
+*.pmtiles
+*.zip

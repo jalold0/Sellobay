@@ -4,7 +4,12 @@
 
 import Constants from 'expo-constants';
 
-import { products as mockProducts, type MockProduct, type LocalizedText } from './mock-data';
+import {
+  globalProducts,
+  products as mockProducts,
+  type MockProduct,
+  type LocalizedText,
+} from './mock-data';
 import { secureStorage, STORAGE_KEYS } from './storage';
 
 /** Saqlangan access token'dan Authorization header (login bo'lmasa bo'sh). */
@@ -88,9 +93,35 @@ async function authedFetch(
   return res;
 }
 
-const API_BASE =
-  (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
-  'https://sellobay-web.vercel.app';
+/**
+ * API manzilini aniqlaydi. Backend = web ilova (Next.js /api/* route'lari),
+ * NestJS (4000) EMAS — mobil web'ning auth/catalog route'laridan foydalanadi.
+ *  - Dev rejimda (__DEV__): Metro server IP'sini hostUri'dan olib, lokal web
+ *    dev serverga ulanadi (http://<wifi-ip>:3000). Shu sabab ishxona/uy
+ *    WiFi'sini qo'lda o'zgartirish KERAK EMAS — IP avtomatik to'g'ri keladi.
+ *  - Production'da: app.json → extra.apiBaseUrl (Vercel) ishlatiladi.
+ */
+const WEB_DEV_PORT = 3000;
+
+function resolveApiBase(): string {
+  const configured = Constants.expoConfig?.extra?.apiBaseUrl as string | undefined;
+  const fallback = configured ?? 'https://sellobay-web.vercel.app';
+
+  if (!__DEV__) return fallback;
+
+  // hostUri misol: "192.168.4.28:8081" yoki "192.168.4.28:8081/_expo/..."
+  const hostUri =
+    Constants.expoConfig?.hostUri ??
+    (Constants.expoGoConfig as { debuggerHost?: string } | undefined)?.debuggerHost;
+  const host = hostUri?.split(':')[0];
+
+  // localhost/tunnel bo'lsa lokal IP yo'q — fallback'ga qaytamiz.
+  if (!host || host === 'localhost' || host === '127.0.0.1') return fallback;
+
+  return `http://${host}:${WEB_DEV_PORT}`;
+}
+
+const API_BASE = resolveApiBase();
 
 // ─── API javob turlari ───────────────────────────────────────────
 
@@ -139,8 +170,8 @@ function toMockProduct(p: ApiProduct): MockProduct {
     brand: p.brand?.name ?? 'Sellobay',
     brandId: p.brand?.slug ?? '',
     categoryId: p.category?.slug ?? '',
-    price: Number(p.price),
-    oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
+    price: Number(p.price) || 0,
+    oldPrice: p.oldPrice ? Number(p.oldPrice) || 0 : undefined,
     currency: 'UZS',
     rating: p.rating,
     reviewCount: p.reviewCount,
@@ -178,7 +209,7 @@ async function getJson<T>(path: string): Promise<T> {
   }
 }
 
-/** Mahsulotlar ro'yxati — DB'dan, xato bo'lsa mock fallback. */
+/** Mahsulotlar ro'yxati — DB'dan, dev'da xato bo'lsa mock fallback. */
 export async function fetchProducts(params: FetchProductsParams = {}): Promise<MockProduct[]> {
   const qs = new URLSearchParams();
   if (params.category) qs.set('category', params.category);
@@ -190,22 +221,72 @@ export async function fetchProducts(params: FetchProductsParams = {}): Promise<M
 
   try {
     const data = await getJson<ProductsResponse>(`/api/products?${qs.toString()}`);
-    if (!data.items?.length) return filterMock(params);
+    if (!data.items?.length) {
+      if (__DEV__) return filterMock(params);
+      return [];
+    }
     return data.items.map(toMockProduct);
   } catch (err) {
-    console.warn('[api] fetchProducts fallback → mock:', String(err));
-    return filterMock(params);
+    if (__DEV__) {
+      console.warn('[api] fetchProducts fallback → mock:', String(err));
+      return filterMock(params);
+    }
+    throw err;
   }
 }
 
 /** Bitta mahsulot — slug bo'yicha. */
 export async function fetchProduct(slug: string): Promise<MockProduct | null> {
+  // Global demo katalogi (slug 'g-') — API'da yo'q, to'g'ridan-to'g'ri mock'dan
+  const global = globalProducts.find((p) => p.slug === slug);
+  if (global) return global;
   try {
     const p = await getJson<ApiProduct & { description?: LocalizedText }>(`/api/products/${slug}`);
     return toMockProduct(p);
   } catch (err) {
-    console.warn('[api] fetchProduct fallback → mock:', String(err));
-    return mockProducts.find((p) => p.slug === slug) ?? null;
+    if (__DEV__) {
+      console.warn('[api] fetchProduct fallback → mock:', String(err));
+      return mockProducts.find((p) => p.slug === slug) ?? null;
+    }
+    throw err;
+  }
+}
+
+// ─── Topshirish punktlari (pickup points) ────────────────────────
+
+export interface PickupPoint {
+  id: string;
+  code: string;
+  provider: string;
+  name: LocalizedText | string;
+  region: string;
+  city: string;
+  district: string | null;
+  street: string;
+  building: string | null;
+  latitude: number;
+  longitude: number;
+  phone: string | null;
+  workingHours: string | null;
+  type?: string;
+}
+
+/** Faol topshirish punktlari (ommaviy). Xato bo'lsa bo'sh ro'yxat. */
+export async function fetchPickupPoints(
+  params: { region?: string; city?: string } = {},
+): Promise<PickupPoint[]> {
+  const qs = new URLSearchParams();
+  if (params.region) qs.set('region', params.region);
+  if (params.city) qs.set('city', params.city);
+  const q = qs.toString();
+  try {
+    const json = await getJson<{ success: boolean; data?: { items: PickupPoint[] } }>(
+      `/api/pickup-points${q ? `?${q}` : ''}`,
+    );
+    return json.data?.items ?? [];
+  } catch (err) {
+    if (__DEV__) console.warn('[api] fetchPickupPoints:', String(err));
+    return [];
   }
 }
 
@@ -251,6 +332,7 @@ export interface CreateOrderInput {
   latitude?: number;
   longitude?: number;
   deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
+  pickupPointId?: string;
   paymentProvider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
   notes?: string;
   promoCode?: string;
@@ -263,9 +345,16 @@ export interface CreateOrderResult {
   error?: { code: string; message: string };
 }
 
-export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
+export async function createOrder(
+  input: CreateOrderInput,
+  idempotencyKey?: string,
+): Promise<CreateOrderResult> {
   try {
-    const res = await authedFetch('/api/orders', { method: 'POST', body: input });
+    const res = await authedFetch('/api/orders', {
+      method: 'POST',
+      body: input,
+      headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    });
     const json = (await res.json()) as {
       success: boolean;
       data?: { order: { id: string; number: string; status: string; grandTotal: string } };
@@ -461,6 +550,7 @@ export interface ApiOrder {
   deliveryMethod: string;
   scope: OrderScope;
   shippingAddress: OrderAddress | null;
+  pickupPoint: PickupPoint | null;
   itemCount: number;
   items: Array<{
     id: string;
@@ -472,10 +562,18 @@ export interface ApiOrder {
   }>;
 }
 
-/** Joriy user buyurtmalari. Login kerak; null = login emas yoki xato. */
-export async function fetchOrders(): Promise<ApiOrder[] | null> {
-  const data = await authedJson<{ items: ApiOrder[] }>('/api/orders');
-  return data?.items ?? null;
+/**
+ * Joriy user buyurtmalari.
+ * Muhim: bu funksiya tarmoq/server xatosida `throw` qiladi (authedJson'dan farqli,
+ * u null yutadi) — shunda React Query `isError` ni ko'radi va UI "offline"ni
+ * "buyurtma yo'q"dan ajrata oladi. 401 (login emas) → bo'sh ro'yxat.
+ */
+export async function fetchOrders(): Promise<ApiOrder[]> {
+  const res = await authedFetch('/api/orders');
+  if (res.status === 401) return [];
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = (await res.json()) as { success: boolean; data?: { items: ApiOrder[] } };
+  return json.data?.items ?? [];
 }
 
 // ─── Bitta buyurtma (detal) + tahrirlash/bekor qilish ────────────
@@ -487,6 +585,8 @@ export interface OrderDetail extends Omit<ApiOrder, 'items'> {
   promoCode: string | null;
   notes: string | null;
   editable: boolean;
+  returnable: boolean;
+  returnWindowDays: number;
   items: Array<{
     id: string;
     quantity: number;
@@ -574,6 +674,37 @@ export async function cancelOrder(id: string, reason?: string): Promise<CancelOr
   }
 }
 
+// ─── Buyurtmani qaytarish (punktda tekshirib / uy qaytarishi) ────
+
+export interface ReturnOrderResult {
+  success: boolean;
+  coinsRefunded?: number;
+  coinsRevoked?: number;
+  error?: { code: string; message: string };
+}
+
+/** Yetkazilgan buyurtmani qaytarish (14 kun ichida). Pul refundi ops/qo'lda. */
+export async function returnOrder(id: string, reason?: string): Promise<ReturnOrderResult> {
+  try {
+    const res = await authedFetch(`/api/orders/${id}/return`, { method: 'POST', body: { reason } });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { coinsRefunded: number; coinsRevoked: number };
+      error?: { code: string; message: string };
+    };
+    if (!json.success) {
+      return { success: false, error: json.error ?? { code: 'UNKNOWN', message: 'Qaytarilmadi' } };
+    }
+    return {
+      success: true,
+      coinsRefunded: json.data?.coinsRefunded,
+      coinsRevoked: json.data?.coinsRevoked,
+    };
+  } catch (err) {
+    return { success: false, error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` } };
+  }
+}
+
 // Faol (yo'ldagi) statuslar — terminal bo'lmaganlar
 const TERMINAL_STATUSES = new Set(['DELIVERED', 'CANCELLED', 'RETURNED', 'REFUNDED']);
 
@@ -599,6 +730,7 @@ export interface ApiAddress {
   landmark: string | null;
   latitude: string | null;
   longitude: string | null;
+  pickupPointId: string | null;
   isDefault: boolean;
 }
 
@@ -614,6 +746,7 @@ export interface AddressInput {
   landmark?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  pickupPointId?: string | null;
   isDefault?: boolean;
 }
 
@@ -625,6 +758,14 @@ export async function fetchAddresses(): Promise<ApiAddress[] | null> {
 export async function createAddress(input: AddressInput): Promise<ApiAddress | null> {
   const data = await authedJson<{ address: ApiAddress }>('/api/addresses', {
     method: 'POST',
+    body: input,
+  });
+  return data?.address ?? null;
+}
+
+export async function updateAddress(id: string, input: AddressInput): Promise<ApiAddress | null> {
+  const data = await authedJson<{ address: ApiAddress }>(`/api/addresses/${id}`, {
+    method: 'PATCH',
     body: input,
   });
   return data?.address ?? null;

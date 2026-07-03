@@ -7,6 +7,28 @@ export interface GeoAddress {
   street?: string;
 }
 
+/**
+ * Toshkent shahar chegarasi (taxminiy bounding box). Uygacha yetkazish FAQAT
+ * shu chegara ichida amal qiladi; tashqarisi uchun olib ketish punkti.
+ * (web bilan bir xil qiymat — @ecom/utils/geo.)
+ */
+export const TASHKENT_CITY_BBOX = {
+  latMin: 41.15,
+  latMax: 41.4,
+  lngMin: 69.1,
+  lngMax: 69.45,
+} as const;
+
+/** Berilgan koordinata Toshkent shahar chegarasi ichidami? */
+export function isInTashkentCity(lat: number, lng: number): boolean {
+  return (
+    lat >= TASHKENT_CITY_BBOX.latMin &&
+    lat <= TASHKENT_CITY_BBOX.latMax &&
+    lng >= TASHKENT_CITY_BBOX.lngMin &&
+    lng <= TASHKENT_CITY_BBOX.lngMax
+  );
+}
+
 /** Foydalanuvchidan ruxsat so'rab, joriy GPS koordinatasini qaytaradi. null = rad etildi/xato. */
 export async function getCurrentLocation(): Promise<{ lat: number; lng: number } | null> {
   try {

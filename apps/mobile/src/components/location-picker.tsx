@@ -7,7 +7,7 @@ import { getCurrentLocation, reverseGeocode, type GeoAddress } from '../lib/geo'
 import { haptics } from '../lib/haptics';
 import { Button } from '../ui/button';
 
-import { LeafletMap, TASHKENT, type LatLng } from './leaflet-map';
+import { AppMap, TASHKENT, type LatLng } from './map';
 
 export interface PickedLocation extends LatLng, GeoAddress {}
 
@@ -70,7 +70,7 @@ export function LocationPicker({ initial, onConfirm, onClose }: Props) {
 
       {/* Map */}
       <View className="flex-1">
-        <LeafletMap center={center} pin={selected} onPick={setSelected} zoom={15} />
+        <AppMap center={center} pin={selected} onPick={setSelected} zoom={15} />
 
         {/* Mening joylashuvim */}
         <Pressable

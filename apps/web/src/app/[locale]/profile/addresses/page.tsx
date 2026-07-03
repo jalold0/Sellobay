@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Card, EmptyState, Input, Label, Skeleton, toast } from '@ecom/ui';
-import { Briefcase, Home, MapPin, Plus, Trash2, X } from 'lucide-react';
+import { Briefcase, Home, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
@@ -54,8 +54,40 @@ export default function AddressesPage() {
   const [items, setItems] = React.useState<Address[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [showForm, setShowForm] = React.useState(false);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [form, setForm] = React.useState(EMPTY_FORM);
+
+  const openNew = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (a: Address) => {
+    setEditingId(a.id);
+    setForm({
+      label: a.label ?? '',
+      type: a.type,
+      recipientName: a.recipientName,
+      phone: a.phone,
+      region: a.region,
+      city: a.city,
+      district: a.district ?? '',
+      street: a.street,
+      building: a.building ?? '',
+      apartment: a.apartment ?? '',
+      landmark: a.landmark ?? '',
+      isDefault: a.isDefault,
+    });
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  };
 
   const typeLabel = React.useCallback(
     (type: Address['type']) =>
@@ -96,8 +128,8 @@ export default function AddressesPage() {
       return;
     }
     setSubmitting(true);
-    const res = await fetch('/api/addresses', {
-      method: 'POST',
+    const res = await fetch(editingId ? `/api/addresses/${editingId}` : '/api/addresses', {
+      method: editingId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify(form),
@@ -108,9 +140,8 @@ export default function AddressesPage() {
       toast({ title: json.error?.message ?? t('notSaved'), variant: 'destructive' });
       return;
     }
-    toast({ title: t('added'), variant: 'success' });
-    setForm(EMPTY_FORM);
-    setShowForm(false);
+    toast({ title: editingId ? t('saved') : t('added'), variant: 'success' });
+    closeForm();
     void load();
   };
 
@@ -147,7 +178,7 @@ export default function AddressesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('title')}</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>
+        <Button onClick={() => (showForm ? closeForm() : openNew())}>
           {showForm ? <X size={16} className="mr-1" /> : <Plus size={16} className="mr-1" />}
           {showForm ? t('cancel') : t('newAddress')}
         </Button>
@@ -155,6 +186,9 @@ export default function AddressesPage() {
 
       {showForm ? (
         <Card className="p-5">
+          <h2 className="mb-3 text-base font-semibold">
+            {editingId ? t('editAddress') : t('newAddress')}
+          </h2>
           <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label className="text-xs">{t('fieldLabel')}</Label>
@@ -246,7 +280,7 @@ export default function AddressesPage() {
               </label>
             </div>
             <div className="flex justify-end gap-2 sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              <Button type="button" variant="outline" onClick={closeForm}>
                 {t('cancel')}
               </Button>
               <Button type="submit" disabled={submitting}>
@@ -319,14 +353,19 @@ export default function AddressesPage() {
                         {t('makeDefault')}
                       </Button>
                     ) : null}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(a.id, a.label || typeLabel(a.type))}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                        <Pencil size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(a.id, a.label || typeLabel(a.type))}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </Card>

@@ -1,13 +1,16 @@
 import { useRouter } from 'expo-router';
 import {
+  AlertTriangle,
   Check,
   ChevronLeft,
   Coins,
   CreditCard,
+  Home,
   MapPin,
   Package,
   Plus,
   ShieldCheck,
+  Store,
   Tag,
   X,
 } from 'lucide-react-native';
@@ -24,11 +27,14 @@ import {
   type ApiAddress,
   type PromoType,
 } from '../../src/lib/api';
-import { formatMoney } from '../../src/lib/format';
+import { formatMoney, pickLocalized } from '../../src/lib/format';
+import { isInTashkentCity } from '../../src/lib/geo';
 import { haptics } from '../../src/lib/haptics';
+import { usePickupPoints } from '../../src/lib/hooks';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../src/lib/loyalty';
 import { productImage } from '../../src/lib/mock-data';
 import { useCart } from '../../src/store/cart';
+import { useLocale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { AppImage } from '../../src/ui/app-image';
@@ -41,11 +47,12 @@ const SHIPPING_FEE = 20_000;
 const EXPRESS_FEE = 50_000;
 const FREE_SHIPPING_THRESHOLD = 500_000;
 
-type Step = 'address' | 'shipping' | 'payment' | 'review';
+type Step = 'delivery' | 'payment' | 'review';
+type DeliveryType = 'TASHKENT_HOME' | 'REGION_PICKUP';
+type HomeSpeed = 'STANDARD' | 'EXPRESS';
 
 const STEPS: Array<{ id: Step; label: string; icon: typeof MapPin }> = [
-  { id: 'address', label: 'Manzil', icon: MapPin },
-  { id: 'shipping', label: 'Yetkazib berish', icon: Package },
+  { id: 'delivery', label: 'Yetkazish', icon: Package },
   { id: 'payment', label: "To'lov", icon: CreditCard },
   { id: 'review', label: 'Tasdiq', icon: Check },
 ];
@@ -59,12 +66,18 @@ const PAYMENT_OPTIONS = [
   { id: 'CASH_ON_DELIVERY', label: 'Naqd', sub: 'Kuryerga', emoji: '💵' },
 ] as const;
 
+function makeIdempotencyKey(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const isAuthenticated = useSession((s) => s.isAuthenticated);
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
+  // Bir checkout sessiyasi uchun barqaror key — qayta urinishlarda takroriy order bo'lmaydi
+  const idempotencyKeyRef = React.useRef(makeIdempotencyKey());
 
   // To'g'ridan-to'g'ri kirishdan himoya — ro'yxatdan o'tmagan bo'lsa login'ga
   React.useEffect(() => {
@@ -73,7 +86,11 @@ export default function CheckoutScreen() {
     }
   }, [isAuthenticated, router]);
 
-  const [step, setStep] = React.useState<Step>('address');
+  const [step, setStep] = React.useState<Step>('delivery');
+  // null = hali tur tanlanmagan (1-oyna: faqat 2 ta tanlov ko'rinadi)
+  const [deliveryType, setDeliveryType] = React.useState<DeliveryType | null>(null);
+  const [homeSpeed, setHomeSpeed] = React.useState<HomeSpeed>('STANDARD');
+  const [showRecipientModal, setShowRecipientModal] = React.useState(false);
   const [address, setAddress] = React.useState({
     firstName: '',
     lastName: '',
@@ -90,7 +107,12 @@ export default function CheckoutScreen() {
   // Saqlangan manzillar — login user uchun
   const [savedAddresses, setSavedAddresses] = React.useState<ApiAddress[] | null>(null);
   const [selectedAddressId, setSelectedAddressId] = React.useState<string | null>(null);
-  const [manualEntry, setManualEntry] = React.useState(false);
+
+  // Topshirish punktlari (REGION_PICKUP uchun)
+  const locale = useLocale((s) => s.locale);
+  const { data: pickupPoints = [] } = usePickupPoints();
+  const [selectedPickupId, setSelectedPickupId] = React.useState<string | null>(null);
+  const selectedPickup = pickupPoints.find((p) => p.id === selectedPickupId) ?? null;
 
   const fillFromSaved = React.useCallback((a: ApiAddress) => {
     setAddress({
@@ -105,7 +127,8 @@ export default function CheckoutScreen() {
       longitude: a.longitude != null ? Number(a.longitude) : null,
     });
     setSelectedAddressId(a.id);
-    setManualEntry(false);
+    // Saqlangan pickup-manzil bo'lsa — punktni avtomatik tanlaymiz
+    if (a.pickupPointId) setSelectedPickupId(a.pickupPointId);
   }, []);
 
   // Manzillarni yuklaymiz; default bo'lsa avtomatik tanlanadi
@@ -117,8 +140,6 @@ export default function CheckoutScreen() {
       if (list && list.length > 0) {
         const def = list.find((a) => a.isDefault) ?? list[0]!;
         fillFromSaved(def);
-      } else {
-        setManualEntry(true);
       }
     });
     return () => {
@@ -126,9 +147,6 @@ export default function CheckoutScreen() {
     };
   }, [fillFromSaved]);
 
-  const [shipping, setShipping] = React.useState<'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS'>(
-    'HOME_DELIVERY',
-  );
   const [payment, setPayment] = React.useState<(typeof PAYMENT_OPTIONS)[number]['id']>('CLICK');
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -157,11 +175,27 @@ export default function CheckoutScreen() {
   const [promoLoading, setPromoLoading] = React.useState(false);
   const [promoError, setPromoError] = React.useState('');
 
+  // Joylashuvga qarab yetkazish turi → backend deliveryMethod:
+  //  Toshkent + Standart → HOME_DELIVERY, Toshkent + Express → EXPRESS,
+  //  Viloyat → PICKUP_POINT.
+  const deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS' =
+    deliveryType === 'REGION_PICKUP'
+      ? 'PICKUP_POINT'
+      : homeSpeed === 'EXPRESS'
+        ? 'EXPRESS'
+        : 'HOME_DELIVERY';
+
+  const hasLocation = address.latitude != null && address.longitude != null;
+  const locationInTashkent = hasLocation && isInTashkentCity(address.latitude!, address.longitude!);
+  // Uygacha tanlangan, lekin nuqta Toshkent shahar tashqarisida → ruxsat yo'q
+  const homeOutsideTashkent =
+    deliveryType === 'TASHKENT_HOME' && hasLocation && !locationInTashkent;
+
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
-    shipping === 'PICKUP_POINT'
+    deliveryMethod === 'PICKUP_POINT'
       ? 0
-      : shipping === 'EXPRESS'
+      : deliveryMethod === 'EXPRESS'
         ? EXPRESS_FEE
         : subtotal >= FREE_SHIPPING_THRESHOLD
           ? 0
@@ -222,18 +256,23 @@ export default function CheckoutScreen() {
     );
   }
 
-  const canNextFromAddress =
-    (selectedAddressId != null && !manualEntry) ||
-    (address.firstName.trim() &&
-      address.lastName.trim() &&
-      address.phone.length >= 12 &&
-      address.city.trim() &&
-      address.street.trim());
+  const recipientOk = Boolean(address.firstName.trim() && address.phone.length >= 12);
+  const canNextFromDelivery =
+    deliveryType === 'TASHKENT_HOME'
+      ? Boolean(hasLocation && locationInTashkent && recipientOk)
+      : deliveryType === 'REGION_PICKUP'
+        ? Boolean(recipientOk && selectedPickupId)
+        : false; // tur tanlanmagan
 
   const nextStep = () => {
-    if (step === 'address' && !canNextFromAddress) {
+    if (step === 'delivery' && !canNextFromDelivery) {
       haptics.warning();
-      toast({ title: 'Majburiy maydonlarni to`ldiring', variant: 'warning' });
+      toast({
+        title: homeOutsideTashkent
+          ? 'Uygacha yetkazish faqat Toshkent shahar uchun'
+          : "Ma'lumotlarni to`ldiring",
+        variant: 'warning',
+      });
       return;
     }
     haptics.light();
@@ -241,27 +280,44 @@ export default function CheckoutScreen() {
     if (i < STEPS.length - 1) setStep(STEPS[i + 1]!.id);
   };
 
+  // Toshkent tashqarisidan punktga o'tish — qulaylik tugmasi
+  const switchToPickup = () => {
+    haptics.light();
+    setDeliveryType('REGION_PICKUP');
+  };
+
   const placeOrder = async () => {
     setSubmitting(true);
-    const result = await createOrder({
-      items: items.map((it) => ({
-        productId: it.productId,
-        quantity: it.quantity,
-        variantId: it.variantId,
-      })),
-      recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
-      phone: address.phone.trim(),
-      region: address.region.trim() || 'Toshkent',
-      city: address.city.trim(),
-      street: address.street.trim(),
-      apartment: address.apartment.trim() || undefined,
-      latitude: address.latitude ?? undefined,
-      longitude: address.longitude ?? undefined,
-      deliveryMethod: shipping,
-      paymentProvider: payment,
-      promoCode: appliedPromo?.code,
-      redeemCoins: coinsToRedeem,
-    });
+    const result = await createOrder(
+      {
+        items: items.map((it) => ({
+          productId: it.productId,
+          quantity: it.quantity,
+          variantId: it.variantId,
+        })),
+        recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
+        phone: address.phone.trim(),
+        region:
+          (deliveryMethod === 'PICKUP_POINT' ? selectedPickup?.region : address.region.trim()) ||
+          'Toshkent',
+        city:
+          (deliveryMethod === 'PICKUP_POINT' ? selectedPickup?.city : address.city.trim()) ||
+          'Toshkent',
+        street:
+          (deliveryMethod === 'PICKUP_POINT' ? selectedPickup?.street : address.street.trim()) ||
+          'Punkt',
+        apartment: address.apartment.trim() || undefined,
+        latitude: deliveryMethod === 'PICKUP_POINT' ? undefined : (address.latitude ?? undefined),
+        longitude: deliveryMethod === 'PICKUP_POINT' ? undefined : (address.longitude ?? undefined),
+        deliveryMethod,
+        pickupPointId:
+          deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
+        paymentProvider: payment,
+        promoCode: appliedPromo?.code,
+        redeemCoins: coinsToRedeem,
+      },
+      idempotencyKeyRef.current,
+    );
     setSubmitting(false);
 
     if (!result.success || !result.order) {
@@ -287,7 +343,22 @@ export default function CheckoutScreen() {
 
   return (
     <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
-      <Header onBack={() => router.back()} title="Rasmiylashtirish" />
+      <Header
+        onBack={() => {
+          // Bo'lim ichida bo'lsa — turlar ro'yxatiga qaytadi (checkout'dan chiqmaydi)
+          if (step === 'delivery' && deliveryType !== null) {
+            haptics.light();
+            setDeliveryType(null);
+          } else if (step !== 'delivery') {
+            haptics.light();
+            const i = STEPS.findIndex((s) => s.id === step);
+            setStep(STEPS[i - 1]!.id);
+          } else {
+            router.back();
+          }
+        }}
+        title="Rasmiylashtirish"
+      />
 
       {/* Compact stepper: 4 ta circle + ulanish chiziq + active step label */}
       <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
@@ -358,215 +429,318 @@ export default function CheckoutScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 200 }}
         keyboardShouldPersistTaps="handled"
       >
-        {step === 'address' && savedAddresses && savedAddresses.length > 0 && !manualEntry && (
+        {/* 1-OYNA: faqat 2 ta tanlov — boshqa hech narsa yo'q */}
+        {step === 'delivery' && deliveryType === null && (
           <View className="gap-3">
-            <Text className="text-muted-foreground text-xs font-medium">Saqlangan manzillar</Text>
-            {savedAddresses.map((a) => {
-              const selected = selectedAddressId === a.id;
-              return (
+            <Text className="text-muted-foreground text-xs font-medium">
+              Yetkazib berish turini tanlang
+            </Text>
+            <Pressable
+              onPress={() => {
+                haptics.select();
+                setDeliveryType('TASHKENT_HOME');
+              }}
+              className="border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border-2 p-4"
+            >
+              <Home size={24} color="#8B0020" />
+              <View className="flex-1">
+                <Text className="font-semibold">Toshkent shahar — uyga</Text>
+                <Text className="text-muted-foreground text-xs">Eshigingizgacha yetkazamiz</Text>
+              </View>
+              <Text className="text-muted-foreground text-xl">›</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                haptics.select();
+                setDeliveryType('REGION_PICKUP');
+              }}
+              className="border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border-2 p-4"
+            >
+              <Store size={24} color="#8B0020" />
+              <View className="flex-1">
+                <Text className="font-semibold">Viloyatlar — olib ketish punkti</Text>
+                <Text className="text-muted-foreground text-xs">
+                  Sizga yaqin punktdan olasiz · tekin
+                </Text>
+              </View>
+              <Text className="text-muted-foreground text-xl">›</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* 2-OYNA: tanlangan bo'lim — ikkinchi variant ko'rinmaydi */}
+        {step === 'delivery' && deliveryType !== null && (
+          <View className="gap-4">
+            {/* Tanlangan tur — o'zgartirish (turlar ro'yxatiga qaytadi) */}
+            <Pressable
+              onPress={() => {
+                haptics.light();
+                setDeliveryType(null);
+              }}
+              className="bg-muted flex-row items-center gap-2 rounded-xl p-3 active:opacity-80"
+            >
+              {deliveryType === 'TASHKENT_HOME' ? (
+                <Home size={18} color="#8B0020" />
+              ) : (
+                <Store size={18} color="#8B0020" />
+              )}
+              <Text className="flex-1 text-sm font-semibold">
+                {deliveryType === 'TASHKENT_HOME'
+                  ? 'Toshkent shahar — uyga'
+                  : 'Viloyatlar — olib ketish punkti'}
+              </Text>
+              <Text className="text-primary text-xs font-medium">O&apos;zgartirish</Text>
+            </Pressable>
+
+            {/* TASHKENT_HOME — joylashuv + tezlik */}
+            {deliveryType === 'TASHKENT_HOME' && (
+              <View className="gap-3">
                 <Pressable
-                  key={a.id}
                   onPress={() => {
-                    haptics.select();
-                    fillFromSaved(a);
+                    haptics.light();
+                    setShowMap(true);
                   }}
-                  className={cn(
-                    'rounded-2xl border-2 p-3.5',
-                    selected ? 'border-primary bg-primary/5' : 'border-border',
-                  )}
+                  className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
                 >
-                  <View className="flex-row items-start gap-2">
-                    <MapPin
-                      size={16}
-                      color={selected ? '#8B0020' : '#94a3b8'}
-                      style={{ marginTop: 2 }}
-                    />
-                    <View className="min-w-0 flex-1">
-                      <View className="flex-row items-center gap-2">
-                        <Text className="text-foreground text-sm font-semibold">
-                          {a.recipientName}
-                        </Text>
-                        {a.isDefault ? (
-                          <View className="rounded-full bg-emerald-100 px-2 py-0.5">
-                            <Text className="text-[10px] font-bold text-emerald-700">Asosiy</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text className="text-muted-foreground text-xs">{a.phone}</Text>
-                      <Text className="text-muted-foreground text-xs" numberOfLines={2}>
-                        {[a.region, a.city, a.street, a.apartment].filter(Boolean).join(', ')}
+                  <MapPin size={18} color="#8B0020" />
+                  <View className="flex-1">
+                    <Text className="text-primary text-sm font-semibold">
+                      Xaritadan joylashuvni tanlash
+                    </Text>
+                    {hasLocation ? (
+                      <Text className="text-muted-foreground text-xs" numberOfLines={1}>
+                        {[address.city, address.street].filter(Boolean).join(', ') ||
+                          'Joylashuv tanlandi'}
+                      </Text>
+                    ) : (
+                      <Text className="text-muted-foreground text-xs">
+                        Uyingiz joylashuvini belgilang
+                      </Text>
+                    )}
+                  </View>
+                  <Text className="text-primary text-lg">›</Text>
+                </Pressable>
+
+                {homeOutsideTashkent && (
+                  <View className="gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3">
+                    <View className="flex-row items-start gap-2">
+                      <AlertTriangle size={16} color="#d97706" style={{ marginTop: 1 }} />
+                      <Text className="flex-1 text-xs leading-4 text-amber-800">
+                        Uygacha yetkazish faqat Toshkent shahar uchun amal qiladi. O&apos;zingizga
+                        yaqin olib ketish punktini tanlang.
                       </Text>
                     </View>
-                    {selected ? <Check size={18} color="#8B0020" /> : null}
+                    <Button variant="outline" size="sm" onPress={switchToPickup}>
+                      Olib ketish punktiga o&apos;tish
+                    </Button>
+                  </View>
+                )}
+
+                {hasLocation && locationInTashkent && (
+                  <View className="gap-2">
+                    <Text className="text-muted-foreground text-xs font-medium">
+                      Yetkazish tezligi
+                    </Text>
+                    {[
+                      {
+                        id: 'STANDARD' as const,
+                        label: 'Standart',
+                        sub: '24-48 soat',
+                        price: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE,
+                      },
+                      {
+                        id: 'EXPRESS' as const,
+                        label: 'Express',
+                        sub: '3 soat ichida',
+                        price: EXPRESS_FEE,
+                      },
+                    ].map((opt) => (
+                      <Pressable
+                        key={opt.id}
+                        onPress={() => {
+                          haptics.select();
+                          setHomeSpeed(opt.id);
+                        }}
+                        className={cn(
+                          'flex-row items-center justify-between rounded-2xl border-2 p-4',
+                          homeSpeed === opt.id ? 'border-primary bg-primary/5' : 'border-border',
+                        )}
+                      >
+                        <View className="flex-1">
+                          <Text className="font-semibold">{opt.label}</Text>
+                          <Text className="text-muted-foreground text-xs">{opt.sub}</Text>
+                        </View>
+                        <Text className="font-semibold">
+                          {opt.price === 0 ? 'Tekin' : formatMoney(opt.price)}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* REGION_PICKUP — punktни tanlash (DB'dan real punktlar) */}
+            {deliveryType === 'REGION_PICKUP' && (
+              <View className="gap-3">
+                <Pressable
+                  onPress={() => {
+                    haptics.light();
+                    router.push('/pickup-points' as never);
+                  }}
+                  className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
+                >
+                  <MapPin size={18} color="#8B0020" />
+                  <View className="flex-1">
+                    <Text className="text-primary text-sm font-semibold">
+                      Punktlarni xaritada ko&apos;rish
+                    </Text>
+                    <Text className="text-muted-foreground text-xs">
+                      Xaritadan o&apos;zingizga yaqin punktni toping
+                    </Text>
+                  </View>
+                  <Text className="text-primary text-lg">›</Text>
+                </Pressable>
+
+                <Text className="text-muted-foreground text-xs font-medium">
+                  Topshirish punktini tanlang
+                </Text>
+                {pickupPoints.length === 0 ? (
+                  <View className="bg-muted rounded-lg p-3">
+                    <Text className="text-muted-foreground text-xs">Punktlar yuklanmoqda...</Text>
+                  </View>
+                ) : (
+                  pickupPoints.map((p) => {
+                    const sel = selectedPickupId === p.id;
+                    return (
+                      <Pressable
+                        key={p.id}
+                        onPress={() => {
+                          haptics.select();
+                          setSelectedPickupId(p.id);
+                        }}
+                        className={cn(
+                          'rounded-2xl border-2 p-3',
+                          sel ? 'border-primary bg-primary/5' : 'border-border',
+                        )}
+                      >
+                        <View className="flex-row items-start gap-2">
+                          <MapPin
+                            size={16}
+                            color={sel ? '#8B0020' : '#94a3b8'}
+                            style={{ marginTop: 2 }}
+                          />
+                          <View className="min-w-0 flex-1">
+                            <View className="flex-row items-center gap-2">
+                              <Text className="text-foreground flex-1 text-sm font-semibold">
+                                {pickLocalized(p.name, locale)}
+                              </Text>
+                              <View className="bg-muted rounded-full px-2 py-0.5">
+                                <Text className="text-muted-foreground text-[10px] font-bold">
+                                  {p.provider}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text className="text-muted-foreground text-xs">
+                              {[p.region, p.city, p.street].filter(Boolean).join(', ')}
+                            </Text>
+                            {p.workingHours ? (
+                              <Text className="text-muted-foreground text-[11px]">
+                                {p.workingHours}
+                              </Text>
+                            ) : null}
+                          </View>
+                          {sel ? <Check size={18} color="#8B0020" /> : null}
+                        </View>
+                      </Pressable>
+                    );
+                  })
+                )}
+              </View>
+            )}
+
+            {/* Qabul qiluvchi — ro'yxat + tahrir modal (matn kiritish faqat modalda) */}
+            <View className="gap-2">
+              <Text className="text-muted-foreground text-xs font-medium">Qabul qiluvchi</Text>
+              {savedAddresses && savedAddresses.length > 0
+                ? savedAddresses.map((a) => {
+                    const selected = selectedAddressId === a.id;
+                    return (
+                      <Pressable
+                        key={a.id}
+                        onPress={() => {
+                          haptics.select();
+                          fillFromSaved(a);
+                          setShowRecipientModal(true);
+                        }}
+                        className={cn(
+                          'rounded-2xl border-2 p-3',
+                          selected ? 'border-primary bg-primary/5' : 'border-border',
+                        )}
+                      >
+                        <View className="flex-row items-start gap-2">
+                          <MapPin
+                            size={16}
+                            color={selected ? '#8B0020' : '#94a3b8'}
+                            style={{ marginTop: 2 }}
+                          />
+                          <View className="min-w-0 flex-1">
+                            <View className="flex-row items-center gap-2">
+                              <Text className="text-foreground text-sm font-semibold">
+                                {a.recipientName}
+                              </Text>
+                              {a.isDefault ? (
+                                <View className="rounded-full bg-emerald-100 px-2 py-0.5">
+                                  <Text className="text-[10px] font-bold text-emerald-700">
+                                    Asosiy
+                                  </Text>
+                                </View>
+                              ) : null}
+                            </View>
+                            <Text className="text-muted-foreground text-xs">{a.phone}</Text>
+                          </View>
+                          {selected ? <Check size={18} color="#8B0020" /> : null}
+                        </View>
+                      </Pressable>
+                    );
+                  })
+                : null}
+
+              {/* Qo'lda kiritilgan joriy qabul qiluvchi (saqlanganlardan emas) */}
+              {address.firstName.trim() && !selectedAddressId ? (
+                <Pressable
+                  onPress={() => {
+                    haptics.light();
+                    setShowRecipientModal(true);
+                  }}
+                  className="border-primary bg-primary/5 rounded-2xl border-2 p-3"
+                >
+                  <View className="flex-row items-center gap-2">
+                    <MapPin size={16} color="#8B0020" style={{ marginTop: 2 }} />
+                    <View className="min-w-0 flex-1">
+                      <Text className="text-foreground text-sm font-semibold">
+                        {[address.firstName, address.lastName].filter(Boolean).join(' ')}
+                      </Text>
+                      <Text className="text-muted-foreground text-xs">{address.phone}</Text>
+                    </View>
+                    <Text className="text-primary text-xs font-medium">Tahrirlash</Text>
                   </View>
                 </Pressable>
-              );
-            })}
-            <Pressable
-              onPress={() => {
-                haptics.light();
-                setSelectedAddressId(null);
-                setAddress({
-                  firstName: '',
-                  lastName: '',
-                  phone: '+998 ',
-                  region: '',
-                  city: '',
-                  street: '',
-                  apartment: '',
-                  latitude: null,
-                  longitude: null,
-                });
-                setManualEntry(true);
-              }}
-              className="border-border active:bg-muted flex-row items-center justify-center gap-2 rounded-2xl border border-dashed py-3"
-            >
-              <Plus size={16} color="#8B0020" />
-              <Text className="text-primary text-sm font-semibold">Yangi manzil qo&apos;shish</Text>
-            </Pressable>
-          </View>
-        )}
+              ) : null}
 
-        {step === 'address' && (!savedAddresses || savedAddresses.length === 0 || manualEntry) && (
-          <View className="gap-3">
-            {savedAddresses && savedAddresses.length > 0 ? (
               <Pressable
                 onPress={() => {
                   haptics.light();
-                  const def = savedAddresses.find((x) => x.isDefault) ?? savedAddresses[0]!;
-                  fillFromSaved(def);
+                  setSelectedAddressId(null);
+                  setAddress((a) => ({ ...a, firstName: '', lastName: '', phone: '+998 ' }));
+                  setShowRecipientModal(true);
                 }}
-                className="self-start"
+                className="border-border active:bg-muted flex-row items-center justify-center gap-2 rounded-2xl border border-dashed py-3"
               >
-                <Text className="text-primary text-sm">‹ Saqlangan manzillar</Text>
+                <Plus size={16} color="#8B0020" />
+                <Text className="text-primary text-sm font-semibold">Yangi qabul qiluvchi</Text>
               </Pressable>
-            ) : null}
-
-            {/* Xaritadan tanlash */}
-            <Pressable
-              onPress={() => {
-                haptics.light();
-                setShowMap(true);
-              }}
-              className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
-            >
-              <MapPin size={18} color="#8B0020" />
-              <View className="flex-1">
-                <Text className="text-primary text-sm font-semibold">Xaritadan tanlash</Text>
-                {address.latitude != null ? (
-                  <Text className="text-muted-foreground text-xs" numberOfLines={1}>
-                    {[address.city, address.street].filter(Boolean).join(', ') ||
-                      'Joylashuv tanlandi'}
-                  </Text>
-                ) : (
-                  <Text className="text-muted-foreground text-xs">
-                    Lokatsiya orqali manzilni belgilang
-                  </Text>
-                )}
-              </View>
-              <Text className="text-primary text-lg">›</Text>
-            </Pressable>
-
-            <View className="flex-row gap-2">
-              <View className="flex-1">
-                <Input
-                  label="Ism*"
-                  value={address.firstName}
-                  onChangeText={(t) => setAddress({ ...address, firstName: t })}
-                />
-              </View>
-              <View className="flex-1">
-                <Input
-                  label="Familiya*"
-                  value={address.lastName}
-                  onChangeText={(t) => setAddress({ ...address, lastName: t })}
-                />
-              </View>
             </View>
-            <Input
-              label="Telefon*"
-              value={address.phone}
-              onChangeText={(t) => setAddress({ ...address, phone: t })}
-              keyboardType="phone-pad"
-            />
-            <Input
-              label="Shahar*"
-              value={address.city}
-              onChangeText={(t) => setAddress({ ...address, city: t })}
-              placeholder="Toshkent"
-            />
-            <Input
-              label="Ko'cha, uy*"
-              value={address.street}
-              onChangeText={(t) => setAddress({ ...address, street: t })}
-              placeholder="Mustaqillik ko'chasi 12"
-            />
-            <Input
-              label="Kvartira/podyezd"
-              value={address.apartment}
-              onChangeText={(t) => setAddress({ ...address, apartment: t })}
-            />
-          </View>
-        )}
-
-        {step === 'shipping' && (
-          <View className="gap-2">
-            {[
-              {
-                id: 'HOME_DELIVERY' as const,
-                label: 'Uyga yetkazib berish',
-                sub: '24-48 soat',
-                price: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE,
-              },
-              {
-                id: 'EXPRESS' as const,
-                label: 'Express',
-                sub: '3 soat ichida',
-                price: EXPRESS_FEE,
-              },
-              {
-                id: 'PICKUP_POINT' as const,
-                label: 'Olib ketish punkti',
-                sub: 'Tekin, sizga yaqin',
-                price: 0,
-              },
-            ].map((opt) => (
-              <Pressable
-                key={opt.id}
-                onPress={() => {
-                  haptics.select();
-                  setShipping(opt.id);
-                }}
-                className={cn(
-                  'flex-row items-center justify-between rounded-2xl border-2 p-4',
-                  shipping === opt.id ? 'border-primary bg-primary/5' : 'border-border',
-                )}
-              >
-                <View className="flex-1">
-                  <Text className="font-semibold">{opt.label}</Text>
-                  <Text className="text-muted-foreground text-xs">{opt.sub}</Text>
-                </View>
-                <Text className="font-semibold">
-                  {opt.price === 0 ? 'Tekin' : formatMoney(opt.price)}
-                </Text>
-              </Pressable>
-            ))}
-
-            {shipping === 'PICKUP_POINT' ? (
-              <Pressable
-                onPress={() => {
-                  haptics.light();
-                  router.push('/pickup-points' as never);
-                }}
-                className="border-border active:bg-muted mt-1 flex-row items-center gap-2 rounded-xl border p-3"
-              >
-                <MapPin size={16} color="#8B0020" />
-                <Text className="text-foreground flex-1 text-sm font-medium">
-                  Punktlarni xaritada ko&apos;rish
-                </Text>
-                <Text className="text-muted-foreground text-lg">›</Text>
-              </Pressable>
-            ) : null}
           </View>
         )}
 
@@ -605,22 +779,31 @@ export default function CheckoutScreen() {
 
         {step === 'review' && (
           <View className="gap-3">
-            <ReviewBlock title="Manzil" onEdit={() => setStep('address')}>
+            <ReviewBlock title="Qabul qiluvchi" onEdit={() => setStep('delivery')}>
               <Text className="text-sm">
                 {address.firstName} {address.lastName} · {address.phone}
               </Text>
               <Text className="text-muted-foreground text-xs">
-                {[address.city, address.street, address.apartment].filter(Boolean).join(', ')}
+                {[address.region, address.city, address.street, address.apartment]
+                  .filter(Boolean)
+                  .join(', ')}
               </Text>
             </ReviewBlock>
-            <ReviewBlock title="Yetkazib berish" onEdit={() => setStep('shipping')}>
+            <ReviewBlock title="Yetkazib berish" onEdit={() => setStep('delivery')}>
               <Text className="text-sm">
-                {shipping === 'HOME_DELIVERY'
-                  ? 'Uyga'
-                  : shipping === 'EXPRESS'
-                    ? 'Express'
-                    : 'Pickup'}
+                {deliveryType === 'REGION_PICKUP'
+                  ? `Olib ketish${selectedPickup ? ` — ${pickLocalized(selectedPickup.name, locale)}` : ''}`
+                  : deliveryMethod === 'EXPRESS'
+                    ? 'Toshkent — Express'
+                    : 'Toshkent — uyga'}
               </Text>
+              {deliveryType === 'REGION_PICKUP' && selectedPickup ? (
+                <Text className="text-muted-foreground text-xs">
+                  {[selectedPickup.region, selectedPickup.city, selectedPickup.street]
+                    .filter(Boolean)
+                    .join(', ')}
+                </Text>
+              ) : null}
             </ReviewBlock>
             <ReviewBlock title="To`lov" onEdit={() => setStep('payment')}>
               <Text className="text-sm">
@@ -699,73 +882,77 @@ export default function CheckoutScreen() {
         )}
       </ScrollView>
 
-      {/* Sticky footer */}
-      <View
-        style={{ paddingBottom: insets.bottom + 12 }}
-        className="border-border bg-background absolute inset-x-0 bottom-0 gap-2 border-t px-4 pt-3"
-      >
-        {/* Sello Coins redeem toggle — login + balans bo'lsa */}
-        {redeemableCoins > 0 ? (
-          <Pressable
-            onPress={() => {
-              haptics.select();
-              setUseCoins((v) => !v);
-            }}
-            className={cn(
-              'flex-row items-center gap-2 rounded-lg border p-2.5',
-              useCoins ? 'border-amber-400 bg-amber-50' : 'border-border',
-            )}
-          >
-            <View
+      {/* Sticky footer — 1-oynada (tur tanlanmaganda) ko'rinmaydi */}
+      {!(step === 'delivery' && deliveryType === null) && (
+        <View
+          style={{ paddingBottom: insets.bottom + 12 }}
+          className="border-border bg-background absolute inset-x-0 bottom-0 gap-2 border-t px-4 pt-3"
+        >
+          {/* Sello Coins redeem toggle — login + balans bo'lsa */}
+          {redeemableCoins > 0 ? (
+            <Pressable
+              onPress={() => {
+                haptics.select();
+                setUseCoins((v) => !v);
+              }}
               className={cn(
-                'h-5 w-5 items-center justify-center rounded border-2',
-                useCoins ? 'border-amber-500 bg-amber-500' : 'border-border',
+                'flex-row items-center gap-2 rounded-lg border p-2.5',
+                useCoins ? 'border-amber-400 bg-amber-50' : 'border-border',
               )}
             >
-              {useCoins ? <Check size={13} color="#fff" strokeWidth={3} /> : null}
+              <View
+                className={cn(
+                  'h-5 w-5 items-center justify-center rounded border-2',
+                  useCoins ? 'border-amber-500 bg-amber-500' : 'border-border',
+                )}
+              >
+                {useCoins ? <Check size={13} color="#fff" strokeWidth={3} /> : null}
+              </View>
+              <Coins size={15} color="#d97706" />
+              <Text className="text-foreground flex-1 text-xs font-medium">
+                Sello Coins ishlatish · {redeemableCoins} coin
+              </Text>
+              <Text className="text-xs font-semibold text-amber-700">
+                −{formatMoney(redeemableCoins * COIN_VALUE_SOM)}
+              </Text>
+            </Pressable>
+          ) : null}
+          {promoDiscount > 0 ? (
+            <View className="flex-row justify-between">
+              <Text className="text-success text-sm">Promokod ({appliedPromo?.code})</Text>
+              <Text className="text-success text-sm font-medium">
+                −{formatMoney(promoDiscount)}
+              </Text>
             </View>
-            <Coins size={15} color="#d97706" />
-            <Text className="text-foreground flex-1 text-xs font-medium">
-              Sello Coins ishlatish · {redeemableCoins} coin
-            </Text>
-            <Text className="text-xs font-semibold text-amber-700">
-              −{formatMoney(redeemableCoins * COIN_VALUE_SOM)}
-            </Text>
-          </Pressable>
-        ) : null}
-        {promoDiscount > 0 ? (
+          ) : null}
+          {coinDiscount > 0 ? (
+            <View className="flex-row justify-between">
+              <Text className="text-success text-sm">Sello Coins chegirmasi</Text>
+              <Text className="text-success text-sm font-medium">−{formatMoney(coinDiscount)}</Text>
+            </View>
+          ) : null}
           <View className="flex-row justify-between">
-            <Text className="text-success text-sm">Promokod ({appliedPromo?.code})</Text>
-            <Text className="text-success text-sm font-medium">−{formatMoney(promoDiscount)}</Text>
+            <Text className="text-muted-foreground text-sm">Jami</Text>
+            <Text className="text-base font-bold">{formatMoney(total)}</Text>
           </View>
-        ) : null}
-        {coinDiscount > 0 ? (
-          <View className="flex-row justify-between">
-            <Text className="text-success text-sm">Sello Coins chegirmasi</Text>
-            <Text className="text-success text-sm font-medium">−{formatMoney(coinDiscount)}</Text>
+          {/* Sello Coins earn hint — chegirmadan keyingi summa bo'yicha */}
+          <View className="flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5">
+            <Coins size={13} color="#d97706" />
+            <Text className="text-[11px] font-medium text-amber-700">
+              Bu buyurtma uchun +{coinsForOrder(total)} Sello Coin olasiz
+            </Text>
           </View>
-        ) : null}
-        <View className="flex-row justify-between">
-          <Text className="text-muted-foreground text-sm">Jami</Text>
-          <Text className="text-base font-bold">{formatMoney(total)}</Text>
+          {step === 'review' ? (
+            <Button fullWidth size="lg" loading={submitting} onPress={placeOrder}>
+              Buyurtmani tasdiqlash
+            </Button>
+          ) : (
+            <Button fullWidth size="lg" onPress={nextStep}>
+              Davom etish
+            </Button>
+          )}
         </View>
-        {/* Sello Coins earn hint — chegirmadan keyingi summa bo'yicha */}
-        <View className="flex-row items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5">
-          <Coins size={13} color="#d97706" />
-          <Text className="text-[11px] font-medium text-amber-700">
-            Bu buyurtma uchun +{coinsForOrder(total)} Sello Coin olasiz
-          </Text>
-        </View>
-        {step === 'review' ? (
-          <Button fullWidth size="lg" loading={submitting} onPress={placeOrder}>
-            Buyurtmani tasdiqlash
-          </Button>
-        ) : (
-          <Button fullWidth size="lg" onPress={nextStep}>
-            Davom etish
-          </Button>
-        )}
-      </View>
+      )}
 
       {showMap ? (
         <LocationPicker
@@ -784,9 +971,86 @@ export default function CheckoutScreen() {
               city: loc.city ?? a.city,
               street: loc.street ?? a.street,
             }));
+            // Toshkent tashqarisi bo'lsa ogohlantiramiz (uygacha yetkazish ishlamaydi)
+            if (deliveryType === 'TASHKENT_HOME' && !isInTashkentCity(loc.lat, loc.lng)) {
+              haptics.warning();
+            }
             setShowMap(false);
           }}
         />
+      ) : null}
+
+      {/* Qabul qiluvchi modal — matn kiritish shu yerda (asosiy ekran toza qoladi) */}
+      {showRecipientModal ? (
+        <View className="bg-background absolute inset-0" style={{ elevation: 20, zIndex: 20 }}>
+          <View
+            className="border-border flex-row items-center border-b px-3 pb-2"
+            style={{ paddingTop: insets.top + 6 }}
+          >
+            <Pressable
+              onPress={() => setShowRecipientModal(false)}
+              hitSlop={8}
+              className="active:bg-muted h-10 w-10 items-center justify-center rounded-full"
+            >
+              <X size={22} color="#0A0A0C" />
+            </Pressable>
+            <Text className="flex-1 text-center text-base font-semibold">Qabul qiluvchi</Text>
+            <View className="w-10" />
+          </View>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, gap: 12 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <Input
+                  label="Ism*"
+                  value={address.firstName}
+                  onChangeText={(t) => {
+                    setSelectedAddressId(null);
+                    setAddress((a) => ({ ...a, firstName: t }));
+                  }}
+                />
+              </View>
+              <View className="flex-1">
+                <Input
+                  label="Familiya"
+                  value={address.lastName}
+                  onChangeText={(t) => setAddress((a) => ({ ...a, lastName: t }))}
+                />
+              </View>
+            </View>
+            <Input
+              label="Telefon*"
+              value={address.phone}
+              onChangeText={(t) => {
+                setSelectedAddressId(null);
+                setAddress((a) => ({ ...a, phone: t }));
+              }}
+              keyboardType="phone-pad"
+            />
+            {deliveryType === 'REGION_PICKUP' ? (
+              <Text className="text-muted-foreground text-xs">
+                Viloyat va shahar tanlangan topshirish punktidan olinadi.
+              </Text>
+            ) : null}
+          </ScrollView>
+          <View
+            className="border-border bg-background border-t px-4 pt-3"
+            style={{ paddingBottom: insets.bottom + 12 }}
+          >
+            <Button
+              fullWidth
+              size="lg"
+              onPress={() => {
+                haptics.light();
+                setShowRecipientModal(false);
+              }}
+            >
+              Saqlash
+            </Button>
+          </View>
+        </View>
       ) : null}
     </View>
   );

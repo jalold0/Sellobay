@@ -2,19 +2,22 @@
 
 import { Button, Input, Label, Separator, toast } from '@ecom/ui';
 import {
+  AlertTriangle,
   Check,
   ChevronLeft,
   ChevronRight,
   Coins,
   CreditCard,
+  Home,
   MapPin,
   Package,
   ShieldCheck,
+  Store,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { formatMoney } from '../../lib/format';
@@ -40,16 +43,37 @@ interface AddressForm {
   notes: string;
 }
 
-interface ShippingForm {
-  method: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
-  date: 'asap' | 'tomorrow' | 'scheduled';
+type DeliveryType = 'TASHKENT_HOME' | 'REGION_PICKUP';
+type HomeSpeed = 'STANDARD' | 'EXPRESS';
+
+interface PickupPointDTO {
+  id: string;
+  code: string;
+  provider: string;
+  name: Record<string, string> | string;
+  region: string;
+  city: string;
+  district: string | null;
+  street: string;
+  building: string | null;
+  latitude: number;
+  longitude: number;
+  phone: string | null;
+  workingHours: string | null;
+}
+
+/** Web'da GPS yo'q — kiritilgan viloyat/shahar matni Toshkent shaharmi? */
+function looksLikeTashkentCity(region: string, city: string): boolean {
+  const text = `${region} ${city}`.toLowerCase();
+  return text.includes('toshkent') || text.includes('tashkent') || text.includes('ташкент');
 }
 
 interface PaymentForm {
   provider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
 }
 
-const STEP_KEYS: Step[] = ['address', 'shipping', 'payment', 'review'];
+// Tanlov birinchi: avval yetkazib berish turi, keyin manzil/qabul qiluvchi
+const STEP_KEYS: Step[] = ['shipping', 'address', 'payment', 'review'];
 const STEP_ICONS: Record<Step, typeof MapPin> = {
   address: MapPin,
   shipping: Package,
@@ -78,7 +102,7 @@ export function CheckoutFlow() {
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
-  const [step, setStep] = React.useState<Step>('address');
+  const [step, setStep] = React.useState<Step>('shipping');
   const [address, setAddress] = React.useState<AddressForm>({
     firstName: '',
     lastName: '',
@@ -89,10 +113,8 @@ export function CheckoutFlow() {
     apartment: '',
     notes: '',
   });
-  const [shipping, setShipping] = React.useState<ShippingForm>({
-    method: 'HOME_DELIVERY',
-    date: 'asap',
-  });
+  const [deliveryType, setDeliveryType] = React.useState<DeliveryType>('TASHKENT_HOME');
+  const [homeSpeed, setHomeSpeed] = React.useState<HomeSpeed>('STANDARD');
   const [payment, setPayment] = React.useState<PaymentForm>({ provider: 'CLICK' });
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -112,11 +134,44 @@ export function CheckoutFlow() {
     };
   }, []);
 
+  // Topshirish punktlari (REGION_PICKUP)
+  const locale = useLocale();
+  const [pickupPoints, setPickupPoints] = React.useState<PickupPointDTO[]>([]);
+  const [selectedPickupId, setSelectedPickupId] = React.useState<string | null>(null);
+  const selectedPickup = pickupPoints.find((p) => p.id === selectedPickupId) ?? null;
+  React.useEffect(() => {
+    let active = true;
+    fetch('/api/pickup-points')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (active && res?.success && res.data) setPickupPoints(res.data.items ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  const pickName = (n: PickupPointDTO['name']) =>
+    typeof n === 'string' ? n : (n[locale] ?? n.uz ?? Object.values(n)[0] ?? '');
+
+  // Joylashuvga qarab yetkazish turi → backend deliveryMethod
+  const deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS' =
+    deliveryType === 'REGION_PICKUP'
+      ? 'PICKUP_POINT'
+      : homeSpeed === 'EXPRESS'
+        ? 'EXPRESS'
+        : 'HOME_DELIVERY';
+  // Uygacha tanlangan, lekin manzil Toshkentdan tashqarida ko'rinadi
+  const homeOutsideTashkent =
+    deliveryType === 'TASHKENT_HOME' &&
+    Boolean(address.region.trim() || address.city.trim()) &&
+    !looksLikeTashkentCity(address.region, address.city);
+
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
-    shipping.method === 'PICKUP_POINT'
+    deliveryMethod === 'PICKUP_POINT'
       ? 0
-      : shipping.method === 'EXPRESS'
+      : deliveryMethod === 'EXPRESS'
         ? EXPRESS_FEE
         : subtotal >= FREE_SHIPPING_THRESHOLD
           ? 0
@@ -149,10 +204,13 @@ export function CheckoutFlow() {
     address.firstName.trim() &&
     address.lastName.trim() &&
     address.phone.length >= 12 &&
-    address.city.trim() &&
-    address.street.trim();
+    (deliveryType === 'REGION_PICKUP' || (address.city.trim() && address.street.trim()));
 
   const nextStep = () => {
+    if (step === 'shipping' && deliveryType === 'REGION_PICKUP' && !selectedPickupId) {
+      toast({ title: 'Topshirish punktini tanlang', variant: 'warning' });
+      return;
+    }
     if (step === 'address' && !canNextFromAddress) {
       toast({ title: t('errors.required'), variant: 'warning' });
       return;
@@ -175,11 +233,22 @@ export function CheckoutFlow() {
       })),
       recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
       phone: address.phone.trim(),
-      region: address.region.trim() || 'Toshkent',
-      city: address.city.trim(),
-      street: address.street.trim(),
+      region:
+        (deliveryMethod === 'PICKUP_POINT' && selectedPickup
+          ? selectedPickup.region
+          : address.region.trim()) || 'Toshkent',
+      city:
+        (deliveryMethod === 'PICKUP_POINT' && selectedPickup
+          ? selectedPickup.city
+          : address.city.trim()) || 'Toshkent',
+      street:
+        (deliveryMethod === 'PICKUP_POINT' && selectedPickup
+          ? selectedPickup.street
+          : address.street.trim()) || 'Punkt',
       apartment: address.apartment.trim() || undefined,
-      deliveryMethod: shipping.method,
+      deliveryMethod,
+      pickupPointId:
+        deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
       paymentProvider: payment.provider,
       notes: address.notes.trim() || undefined,
       redeemCoins: coinsToRedeem,
@@ -287,6 +356,30 @@ export function CheckoutFlow() {
                 <MapPin className="text-primary h-4 w-4" />
                 <h2 className="text-base font-semibold">{t('address.title')}</h2>
               </div>
+
+              {/* Toshkent tashqarisi — uygacha tanlangan bo'lsa ogohlantirish */}
+              {deliveryType === 'TASHKENT_HOME' && homeOutsideTashkent && (
+                <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/30">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <p className="text-xs leading-5 text-amber-800 dark:text-amber-200">
+                      {t('shipping.tashkentOnly')}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDeliveryType('REGION_PICKUP');
+                      setStep('shipping');
+                    }}
+                  >
+                    {t('shipping.switchToPickup')}
+                  </Button>
+                </div>
+              )}
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label={t('address.firstName')}>
                   <Input
@@ -350,54 +443,172 @@ export function CheckoutFlow() {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Package className="text-primary h-4 w-4" />
-                <h2 className="text-base font-semibold">{t('shipping.title')}</h2>
+                <h2 className="text-base font-semibold">{t('shipping.chooseType')}</h2>
               </div>
+
+              {/* 1. Yetkazib berish turi — 2 ta tanlov */}
               <div className="space-y-2">
                 {[
                   {
-                    id: 'HOME_DELIVERY' as const,
-                    label: t('shipping.home'),
-                    sub: t('shipping.homeSub'),
-                    price: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE,
+                    id: 'TASHKENT_HOME' as const,
+                    Icon: Home,
+                    label: t('shipping.tashkentHome'),
+                    sub: t('shipping.tashkentHomeSub'),
                   },
                   {
-                    id: 'EXPRESS' as const,
-                    label: t('shipping.express'),
-                    sub: t('shipping.expressSub'),
-                    price: EXPRESS_FEE,
-                  },
-                  {
-                    id: 'PICKUP_POINT' as const,
-                    label: t('shipping.pickup'),
-                    sub: t('shipping.pickupSub'),
-                    price: 0,
+                    id: 'REGION_PICKUP' as const,
+                    Icon: Store,
+                    label: t('shipping.regionPickup'),
+                    sub: t('shipping.regionPickupSub'),
                   },
                 ].map((opt) => {
-                  const active = shipping.method === opt.id;
+                  const active = deliveryType === opt.id;
                   return (
                     <button
                       key={opt.id}
                       type="button"
-                      onClick={() => setShipping((s) => ({ ...s, method: opt.id }))}
-                      className={`flex w-full items-center justify-between rounded-lg border-2 p-4 text-left transition ${
+                      onClick={() => setDeliveryType(opt.id)}
+                      className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition ${
                         active
                           ? 'border-primary bg-primary/5'
                           : 'border-input hover:border-foreground/30'
                       }`}
                     >
-                      <div>
+                      <opt.Icon
+                        className={
+                          active ? 'text-primary h-5 w-5' : 'text-muted-foreground h-5 w-5'
+                        }
+                      />
+                      <div className="flex-1">
                         <div className="font-medium">{opt.label}</div>
                         <div className="text-muted-foreground text-xs">{opt.sub}</div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold">
-                          {opt.price === 0 ? t('shipping.free') : formatMoney(opt.price)}
-                        </div>
-                      </div>
+                      {active && <Check className="text-primary h-4 w-4" />}
                     </button>
                   );
                 })}
               </div>
+
+              {/* 2a. TASHKENT_HOME — tezlik + Toshkent eslatmasi */}
+              {deliveryType === 'TASHKENT_HOME' && (
+                <div className="space-y-3">
+                  {homeOutsideTashkent ? (
+                    <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/30">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                        <p className="text-xs leading-5 text-amber-800 dark:text-amber-200">
+                          {t('shipping.tashkentOnly')}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDeliveryType('REGION_PICKUP')}
+                      >
+                        {t('shipping.switchToPickup')}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-xs">{t('shipping.tashkentOnly')}</p>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="text-muted-foreground text-xs font-medium">
+                      {t('shipping.speedTitle')}
+                    </div>
+                    {[
+                      {
+                        id: 'STANDARD' as const,
+                        label: t('shipping.standard'),
+                        sub: t('shipping.standardSub'),
+                        price: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE,
+                      },
+                      {
+                        id: 'EXPRESS' as const,
+                        label: t('shipping.express'),
+                        sub: t('shipping.expressSub'),
+                        price: EXPRESS_FEE,
+                      },
+                    ].map((opt) => {
+                      const active = homeSpeed === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setHomeSpeed(opt.id)}
+                          className={`flex w-full items-center justify-between rounded-lg border-2 p-4 text-left transition ${
+                            active
+                              ? 'border-primary bg-primary/5'
+                              : 'border-input hover:border-foreground/30'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-medium">{opt.label}</div>
+                            <div className="text-muted-foreground text-xs">{opt.sub}</div>
+                          </div>
+                          <div className="font-semibold">
+                            {opt.price === 0 ? t('shipping.free') : formatMoney(opt.price)}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 2b. REGION_PICKUP — punkt tanlash */}
+              {deliveryType === 'REGION_PICKUP' && (
+                <div className="space-y-2">
+                  <div className="text-muted-foreground text-xs font-medium">
+                    {t('shipping.selectPickup')}
+                  </div>
+                  {pickupPoints.length === 0 ? (
+                    <div className="bg-muted text-muted-foreground rounded-lg p-3 text-xs">
+                      {t('shipping.pickupSoon')}
+                    </div>
+                  ) : (
+                    pickupPoints.map((p) => {
+                      const sel = selectedPickupId === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setSelectedPickupId(p.id)}
+                          className={`w-full rounded-lg border-2 p-3 text-left transition ${
+                            sel ? 'border-primary bg-primary/5' : 'border-border'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <MapPin
+                              className={`mt-0.5 h-4 w-4 shrink-0 ${sel ? 'text-primary' : 'text-muted-foreground'}`}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="flex-1 truncate text-sm font-semibold">
+                                  {pickName(p.name)}
+                                </span>
+                                <span className="bg-muted rounded-full px-2 py-0.5 text-[10px] font-bold">
+                                  {p.provider}
+                                </span>
+                              </div>
+                              <div className="text-muted-foreground text-xs">
+                                {[p.region, p.city, p.street].filter(Boolean).join(', ')}
+                              </div>
+                              {p.workingHours && (
+                                <div className="text-muted-foreground text-[11px]">
+                                  {p.workingHours}
+                                </div>
+                              )}
+                            </div>
+                            {sel && <Check className="text-primary h-4 w-4 shrink-0" />}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -471,12 +682,19 @@ export function CheckoutFlow() {
                 onEdit={() => setStep('shipping')}
               >
                 <div>
-                  {shipping.method === 'HOME_DELIVERY'
-                    ? t('shipping.home')
-                    : shipping.method === 'EXPRESS'
-                      ? t('shipping.express')
-                      : t('shipping.pickup')}
+                  {deliveryType === 'REGION_PICKUP'
+                    ? `${t('shipping.regionPickup')}${selectedPickup ? ` — ${pickName(selectedPickup.name)}` : ''}`
+                    : deliveryMethod === 'EXPRESS'
+                      ? `${t('shipping.tashkentHome')} · ${t('shipping.express')}`
+                      : t('shipping.tashkentHome')}
                 </div>
+                {deliveryType === 'REGION_PICKUP' && selectedPickup && (
+                  <div className="text-muted-foreground">
+                    {[selectedPickup.region, selectedPickup.city, selectedPickup.street]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </div>
+                )}
               </ReviewBlock>
 
               <ReviewBlock
