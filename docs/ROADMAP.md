@@ -6,7 +6,7 @@
 >
 > **Oxirgi yangilanish:** 2026-07-03 · **MVP launch:** 2026-07-13
 >
-> **2026-07-03:** **Yetkazish modeli** — PickupPoint (12 punkt Neon'da) + topshirish punktlari API/UI + saqlangan manzil + xarita (MapLibre/PMTiles offline UZ) · **Buyurtma qaytarish** (14 kunlik oyna, atomik coin/promo refund) · **Promokod tizimi** (backend+checkout+mobil) · **Mobil Uzum-uslub redesign** (grid+karusel+kategoriya+Global demo) · Node 24 ESM fix + dev launcher skriptlar (WiFi login) · butun monorepo typecheck/lint yashil
+> **2026-07-03:** **Yetkazish modeli** — PickupPoint (12 punkt Neon'da) + topshirish punktlari API/UI + saqlangan manzil + xarita (MapLibre/PMTiles offline UZ) · **Buyurtma qaytarish** (14 kunlik oyna, atomik coin/promo refund) · **Promokod tizimi** (backend+checkout+mobil) · **Mobil Uzum-uslub redesign** (grid+karusel+kategoriya+Global demo) · **To'lov** — COD launch-ready + Click/Payme webhook hardening (simulyatsiya bilan tekshirilган, sertifikatsiya-tayyor) · Node 24 ESM fix + dev launcher skriptlar (WiFi login) · butun monorepo typecheck/lint yashil
 >
 > **2026-06-28:** Vercel deploy + CI yashil · huquqiy sahifalar · Verified Seller backend · profil i18n · Group Buy (web UI) · to'lov skeleti (Click/Payme) · React 19 birlashtirildi (web+mobil) · mobil checkout auth-gate · **Admin real DB:** buyurtmalar/mijozlar/mahsulotlar · **Seller real DB:** dashboard/buyurtmalar/mahsulotlar
 >
@@ -209,6 +209,35 @@
 - [x] error-boundary (qulashdan himoya) + offline-persist query provider (`_layout`)
 - [ ] Faza B: Global katalog real sourcing (hozir demo), til switcher
 - [ ] 🔒 APK'da ko'rinishi uchun yangi EAS build kerak (flash-list/netinfo yangi native dep)
+
+---
+
+## 14. To'lov integratsiyasi — COD LAUNCH-READY, ONLINE SERTIFIKATSIYA-TAYYOR (2026-07-03)
+
+> Launch to'lov yo'li: **Naqd (COD)** — merchant kassa kelgunча. Click/Payme kodi
+> sertifikatsiyaga tayyor, kalitlar kelganda "yoqiladi". Webhook mantiqi lokal
+> **simulyatsiya skriptlari** bilan real gateway'siz to'liq tekshirildi.
+
+- [x] **COD end-to-end**: buyurtma → success sahifa; offline provider uchun strukturaviy
+      `Payment{status:PENDING}` yozuvi (`api/orders`) — finance/admin ko'rishi uchun
+- [x] **Config bug**: `.env.example` `PAYME_SECRET_KEY` → `PAYME_KEY` (kod bilan mos);
+      `buildPaymeUrl` `PAYME_ENDPOINT`'dan foydalanadi
+- [x] **Click webhook hardening**: amount tekshiruvi, `order.paidAt`, `rawPayload`,
+      Prepare/Complete holat tekshiruvlari, bekor qilingan order rad etish
+- [x] **Payme webhook hardening**: CheckPerform/Create amount+holat+bitta-aktiv-tx,
+      12s timeout auto-cancel, Cancel `-1`(create)/`-2`(perform)+`reverseOrderLoyalty`,
+      **GetStatement**, idempotentlik, `order.paidAt`
+- [x] **Simulyatsiya skriptlari** (`apps/web/scripts/payments/`): Click 6/6, Payme 15/15,
+      COD 2/2 — hammasi lokal dev + Neon'da o'tdi (merchant kalitsiz)
+- [ ] 🔒 **Merchant kassa kalitlari** (Click/Payme shartnoma) — kelganda Vercel env + Payme
+      sandbox sertifikatsiyasi (GetStatement/timeout edge-case'lari real tekshiriladi)
+- [ ] **DELIVERED → COD Payment PAID**: admin/seller order-status endpoint real bo'lgach
+      (hozir mock-first) — offline Payment yetkazilганda PAID qilinsin
+- [ ] UZUM_BANK/UZCARD/HUMO real integratsiya (hozir COD kabi offline ishlanadi)
+
+> **⚠️ Alohida kritik (to'lovdan tashqari):** ombor/inventar hisobi ULANMAGAN — buyurtma
+> yaratish/bekor/qaytarishda stock kamaymaydi/qaytmaydi (`InventoryItem`/`StockMovement`
+> ishlatilmaydi) → oversell xavfi. Alohida task sifatida belgilangan.
 
 ---
 
