@@ -52,11 +52,12 @@ export function buildClickUrl(params: { orderId: string; amountSom: number }): s
  */
 export function buildPaymeUrl(params: { orderId: string; amountSom: number }): string {
   const merchantId = process.env.PAYME_MERCHANT_ID ?? '';
+  const endpoint = (process.env.PAYME_ENDPOINT || 'https://checkout.paycom.uz').replace(/\/$/, '');
   const amountTiyin = Math.round(params.amountSom * 100);
   const returnUrl = `${appUrl()}/orders/success`;
   const raw = `m=${merchantId};ac.order_id=${params.orderId};a=${amountTiyin};c=${returnUrl}`;
   const encoded = Buffer.from(raw, 'utf8').toString('base64');
-  return `https://checkout.paycom.uz/${encoded}`;
+  return `${endpoint}/${encoded}`;
 }
 
 /** Provayder + order'dan checkout URL quradi (online bo'lmasa null) */

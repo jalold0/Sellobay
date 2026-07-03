@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
+import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
 import type { NextRequest } from 'next/server';
@@ -274,6 +275,21 @@ export async function POST(req: NextRequest) {
           orderNumber,
         );
         earned = settled.earned;
+      }
+
+      // 5e. Offline (naqd/karta yetkazishda) to'lov — strukturaviy Payment yozuvi
+      //     (PENDING). Yetkazilganda PAID bo'ladi. Onlayn (Click/Payme) uchun
+      //     Payment webhook'da yaratiladi, shu bois bu yerda yaratmaymiz.
+      if (!isOnlineProvider(input.paymentProvider as PaymentProvider)) {
+        await tx.payment.create({
+          data: {
+            orderId: created.id,
+            provider: input.paymentProvider as PaymentProvider,
+            status: 'PENDING',
+            amount: grandTotal,
+            currency: 'UZS',
+          },
+        });
       }
       return {
         order: created,
