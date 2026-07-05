@@ -7,9 +7,8 @@ import {
   useFonts,
 } from '@expo-google-fonts/playfair-display';
 import NetInfo from '@react-native-community/netinfo';
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { QueryClient, focusManager, onlineManager } from '@tanstack/react-query';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { PersistQueryClientProvider, type Persister } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as React from 'react';
@@ -39,12 +38,33 @@ const queryClient = new QueryClient({
   },
 });
 
-// MMKV asosidagi sinxron persister — ilova offline ochilsa ham oxirgi
-// yuklangan mahsulot/buyurtma keshi ko'rsatiladi (bo'sh ekran o'rniga).
-const persister = createSyncStoragePersister({
-  storage,
-  key: 'ecom_rq_cache_v1',
-});
+// MMKV asosidagi persister — ilova offline ochilsa ham oxirgi yuklangan
+// mahsulot keshi ko'rsatiladi (bo'sh ekran o'rniga). Qo'lda yozildi va har doim
+// haqiqiy Promise qaytaradi: createSyncStoragePersister restore paytida
+// "promise.then is not a function" ogohlantirishini berardi.
+const RQ_CACHE_KEY = 'ecom_rq_cache_v1';
+const persister: Persister = {
+  persistClient: (client) => {
+    try {
+      storage.setItem(RQ_CACHE_KEY, JSON.stringify(client));
+    } catch {
+      // yozib bo'lmasa — jimgina o'tkazamiz (kesh ixtiyoriy)
+    }
+    return Promise.resolve();
+  },
+  restoreClient: () => {
+    try {
+      const cached = storage.getItem(RQ_CACHE_KEY);
+      return Promise.resolve(cached ? JSON.parse(cached) : undefined);
+    } catch {
+      return Promise.resolve(undefined);
+    }
+  },
+  removeClient: () => {
+    storage.removeItem(RQ_CACHE_KEY);
+    return Promise.resolve();
+  },
+};
 
 export default function RootLayout() {
   const hydrate = useSession((s) => s.hydrate);
