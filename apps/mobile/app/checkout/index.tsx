@@ -375,11 +375,11 @@ export default function CheckoutScreen() {
                     borderRadius: 14,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: done ? '#059669' : active ? '#8B0020' : '#E5E7EB',
+                    backgroundColor: done ? '#0A0A0C' : active ? '#531625' : '#E5E7EB',
                   }}
                 >
                   {done ? (
-                    <Check size={14} color="#fff" strokeWidth={3} />
+                    <Check size={14} color="#C9A961" strokeWidth={3} />
                   ) : (
                     <Text
                       style={{
@@ -398,7 +398,7 @@ export default function CheckoutScreen() {
                       flex: 1,
                       height: 2,
                       marginHorizontal: 4,
-                      backgroundColor: done ? '#059669' : '#E5E7EB',
+                      backgroundColor: done ? '#0A0A0C' : '#E5E7EB',
                       borderRadius: 1,
                     }}
                   />
@@ -442,7 +442,7 @@ export default function CheckoutScreen() {
               }}
               className="border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border-2 p-4"
             >
-              <Home size={24} color="#8B0020" />
+              <Home size={24} color="#531625" />
               <View className="flex-1">
                 <Text className="font-semibold">Toshkent shahar — uyga</Text>
                 <Text className="text-muted-foreground text-xs">Eshigingizgacha yetkazamiz</Text>
@@ -456,7 +456,7 @@ export default function CheckoutScreen() {
               }}
               className="border-border active:bg-muted flex-row items-center gap-3 rounded-2xl border-2 p-4"
             >
-              <Store size={24} color="#8B0020" />
+              <Store size={24} color="#531625" />
               <View className="flex-1">
                 <Text className="font-semibold">Viloyatlar — olib ketish punkti</Text>
                 <Text className="text-muted-foreground text-xs">
@@ -480,9 +480,9 @@ export default function CheckoutScreen() {
               className="bg-muted flex-row items-center gap-2 rounded-xl p-3 active:opacity-80"
             >
               {deliveryType === 'TASHKENT_HOME' ? (
-                <Home size={18} color="#8B0020" />
+                <Home size={18} color="#531625" />
               ) : (
-                <Store size={18} color="#8B0020" />
+                <Store size={18} color="#531625" />
               )}
               <Text className="flex-1 text-sm font-semibold">
                 {deliveryType === 'TASHKENT_HOME'
@@ -502,7 +502,7 @@ export default function CheckoutScreen() {
                   }}
                   className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
                 >
-                  <MapPin size={18} color="#8B0020" />
+                  <MapPin size={18} color="#531625" />
                   <View className="flex-1">
                     <Text className="text-primary text-sm font-semibold">
                       Xaritadan joylashuvni tanlash
@@ -590,7 +590,7 @@ export default function CheckoutScreen() {
                   }}
                   className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
                 >
-                  <MapPin size={18} color="#8B0020" />
+                  <MapPin size={18} color="#531625" />
                   <View className="flex-1">
                     <Text className="text-primary text-sm font-semibold">
                       Punktlarni xaritada ko&apos;rish
@@ -627,7 +627,7 @@ export default function CheckoutScreen() {
                         <View className="flex-row items-start gap-2">
                           <MapPin
                             size={16}
-                            color={sel ? '#8B0020' : '#94a3b8'}
+                            color={sel ? '#531625' : '#94a3b8'}
                             style={{ marginTop: 2 }}
                           />
                           <View className="min-w-0 flex-1">
@@ -650,7 +650,7 @@ export default function CheckoutScreen() {
                               </Text>
                             ) : null}
                           </View>
-                          {sel ? <Check size={18} color="#8B0020" /> : null}
+                          {sel ? <Check size={18} color="#531625" /> : null}
                         </View>
                       </Pressable>
                     );
@@ -681,7 +681,7 @@ export default function CheckoutScreen() {
                         <View className="flex-row items-start gap-2">
                           <MapPin
                             size={16}
-                            color={selected ? '#8B0020' : '#94a3b8'}
+                            color={selected ? '#531625' : '#94a3b8'}
                             style={{ marginTop: 2 }}
                           />
                           <View className="min-w-0 flex-1">
@@ -699,7 +699,7 @@ export default function CheckoutScreen() {
                             </View>
                             <Text className="text-muted-foreground text-xs">{a.phone}</Text>
                           </View>
-                          {selected ? <Check size={18} color="#8B0020" /> : null}
+                          {selected ? <Check size={18} color="#531625" /> : null}
                         </View>
                       </Pressable>
                     );
@@ -716,7 +716,7 @@ export default function CheckoutScreen() {
                   className="border-primary bg-primary/5 rounded-2xl border-2 p-3"
                 >
                   <View className="flex-row items-center gap-2">
-                    <MapPin size={16} color="#8B0020" style={{ marginTop: 2 }} />
+                    <MapPin size={16} color="#531625" style={{ marginTop: 2 }} />
                     <View className="min-w-0 flex-1">
                       <Text className="text-foreground text-sm font-semibold">
                         {[address.firstName, address.lastName].filter(Boolean).join(' ')}
@@ -737,7 +737,7 @@ export default function CheckoutScreen() {
                 }}
                 className="border-border active:bg-muted flex-row items-center justify-center gap-2 rounded-2xl border border-dashed py-3"
               >
-                <Plus size={16} color="#8B0020" />
+                <Plus size={16} color="#531625" />
                 <Text className="text-primary text-sm font-semibold">Yangi qabul qiluvchi</Text>
               </Pressable>
             </View>
@@ -769,7 +769,7 @@ export default function CheckoutScreen() {
               </Pressable>
             ))}
             <View className="bg-muted mt-2 flex-row items-center gap-2 rounded-md p-2.5">
-              <ShieldCheck size={14} color="#10b981" />
+              <ShieldCheck size={14} color="#1F8A5B" />
               <Text className="text-muted-foreground flex-1 text-[11px]">
                 Karta ma&apos;lumotlari to&apos;lov tizimida saqlanadi
               </Text>
@@ -942,15 +942,20 @@ export default function CheckoutScreen() {
               Bu buyurtma uchun +{coinsForOrder(total)} Sello Coin olasiz
             </Text>
           </View>
-          {step === 'review' ? (
-            <Button fullWidth size="lg" loading={submitting} onPress={placeOrder}>
-              Buyurtmani tasdiqlash
-            </Button>
-          ) : (
-            <Button fullWidth size="lg" onPress={nextStep}>
-              Davom etish
-            </Button>
-          )}
+          {/* Crimson pill — chapda label, o'ngda jami (1i) */}
+          <Pressable
+            onPress={step === 'review' ? placeOrder : nextStep}
+            disabled={submitting}
+            className={cn(
+              'bg-primary h-[54px] flex-row items-center justify-between rounded-full px-6 active:opacity-85',
+              submitting && 'opacity-60',
+            )}
+          >
+            <Text className="text-base font-bold text-white">
+              {step === 'review' ? 'Buyurtmani tasdiqlash' : "To'lovga o'tish"}
+            </Text>
+            <Text className="text-base font-bold text-white">{formatMoney(total)}</Text>
+          </Pressable>
         </View>
       )}
 

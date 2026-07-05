@@ -222,7 +222,7 @@ export default function OrderDetailScreen() {
       <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
         <DetailHeader title={tr.title} onBack={() => router.back()} />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#8B0020" />
+          <ActivityIndicator color="#531625" />
         </View>
       </View>
     );
@@ -610,7 +610,7 @@ function EditModal({
                     )}
                   >
                     <Text className="text-foreground text-sm font-medium">{tr[opt.key]}</Text>
-                    {method === opt.id ? <Check size={16} color="#8B0020" /> : null}
+                    {method === opt.id ? <Check size={16} color="#531625" /> : null}
                   </Pressable>
                 ))}
               </View>

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useToast, type Toast } from '../store/toast';
+
 import { cn } from './cn';
 
 const TONE: Record<NonNullable<Toast['variant']>, { bg: string; icon: React.ReactNode }> = {

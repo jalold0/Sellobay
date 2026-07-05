@@ -19,7 +19,7 @@ export default function TabsLayout() {
       screenListeners={{ tabPress: () => haptics.select() }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#8B0020',
+        tabBarActiveTintColor: '#531625',
         tabBarInactiveTintColor: '#6B6B73',
         tabBarShowLabel: true,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 2 },
@@ -50,7 +50,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Savatcha',
+          title: 'Savat',
           tabBarIcon: ({ color, size }) => (
             <View>
               <ShoppingBag size={size} color={color} />

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Check,
   ChevronLeft,
+  ChevronRight,
   Heart,
   Minus,
   Plus,
@@ -35,9 +36,9 @@ import { Skeleton } from '../../src/ui/skeleton';
 const GALLERY_EXTRAS = ['-2', '-3', '-4', '-5'];
 const COLORS = [
   { id: 'black', label: 'Qora', hex: '#0A0A0C' },
-  { id: 'red', label: 'Qizil', hex: '#ef4444' },
-  { id: 'blue', label: "Ko'k", hex: '#3b82f6' },
-  { id: 'amber', label: 'Sariq', hex: '#f59e0b' },
+  { id: 'crimson', label: 'Bordo', hex: '#531625' },
+  { id: 'blue', label: "Ko'k", hex: '#3b5b8c' },
+  { id: 'sand', label: 'Qum', hex: '#C9A961' },
 ];
 const SIZES_CLOTHING = ['XS', 'S', 'M', 'L', 'XL'];
 const SIZES_FOOTWEAR = ['38', '39', '40', '41', '42', '43', '44'];
@@ -205,8 +206,8 @@ export default function ProductDetailScreen() {
               >
                 <Heart
                   size={18}
-                  color={wishlistHas ? '#B30029' : '#0A0A0C'}
-                  fill={wishlistHas ? '#B30029' : 'transparent'}
+                  color={wishlistHas ? '#762237' : '#0A0A0C'}
+                  fill={wishlistHas ? '#762237' : 'transparent'}
                 />
               </Pressable>
             </View>
@@ -268,14 +269,21 @@ export default function ProductDetailScreen() {
               SKU: ECM-{product.id.toUpperCase()}
             </Text>
           </View>
-          <Text className="text-foreground text-xl font-bold leading-tight">{name}</Text>
-          <View className="flex-row items-center gap-1">
-            <Star size={13} color="#f59e0b" fill="#f59e0b" />
-            <Text className="text-sm font-medium">{product.rating.toFixed(1)}</Text>
+          <Text className="text-foreground font-serif text-2xl leading-tight">{name}</Text>
+          <Pressable
+            onPress={() => router.push(`/product/reviews/${product.slug}` as never)}
+            className="flex-row items-center gap-1.5 active:opacity-70"
+          >
+            <Star size={14} color="#C9A961" fill="#C9A961" />
+            <Text className="text-foreground text-sm font-semibold">
+              {product.rating.toFixed(1)}
+            </Text>
             <Text className="text-muted-foreground text-xs">
               ({t('product.reviewsCount').replace('{count}', String(product.reviewCount))})
+              {product.soldCount ? ` · ${product.soldCount.toLocaleString()} sotildi` : ''}
             </Text>
-          </View>
+            <ChevronRight size={15} color="#531625" />
+          </Pressable>
 
           {/* Price */}
           <View className="border-border flex-row items-end justify-between border-y py-4">
@@ -286,11 +294,11 @@ export default function ProductDetailScreen() {
                 </Text>
               ) : null}
               <View className="flex-row items-baseline gap-2">
-                <Text className="text-foreground text-2xl font-black">
+                <Text className="text-primary font-serif text-[26px]">
                   {formatMoney(product.price)}
                 </Text>
                 {discount > 0 ? (
-                  <View className="bg-accent rounded-md px-1.5 py-0.5">
+                  <View className="bg-primary rounded-md px-1.5 py-0.5">
                     <Text className="text-[10px] font-bold text-white">−{discount}%</Text>
                   </View>
                 ) : null}
@@ -299,7 +307,7 @@ export default function ProductDetailScreen() {
             <View className="flex-row items-center gap-1">
               {product.inStock ? (
                 <>
-                  <Check size={12} color="#10b981" />
+                  <Check size={12} color="#1F8A5B" />
                   <Text className="text-success text-xs font-medium">{t('product.inStock')}</Text>
                 </>
               ) : (
@@ -469,25 +477,38 @@ export default function ProductDetailScreen() {
         style={{ paddingBottom: insets.bottom + 12 }}
         className="border-border bg-background absolute inset-x-0 bottom-0 border-t px-4 pt-3"
       >
-        <View className="flex-row gap-2">
-          <Button
-            variant="outline"
-            size="lg"
+        <View className="flex-row items-center gap-3">
+          {/* Wishlist doira */}
+          <Pressable
+            onPress={() => {
+              haptics.select();
+              toggleWishlist(product.id);
+            }}
+            className="border-border active:bg-muted h-[52px] w-[52px] items-center justify-center rounded-full border"
+            hitSlop={4}
+          >
+            <Heart
+              size={20}
+              color={wishlistHas ? '#531625' : '#0A0A0C'}
+              fill={wishlistHas ? '#531625' : 'transparent'}
+            />
+          </Pressable>
+          {/* Crimson "Savatga qo'shish" pill 52px */}
+          <Pressable
             onPress={() => onAdd(false)}
             disabled={!product.inStock}
-            leftIcon={<ShoppingBag size={16} color="#0A0A0C" />}
-            style={{ flex: 1 }}
+            className={cn(
+              'bg-primary h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-full active:opacity-85',
+              !product.inStock && 'opacity-60',
+            )}
           >
-            {t('product.addToCart')}
-          </Button>
-          <Button
-            size="lg"
-            onPress={() => onAdd(true)}
-            disabled={!product.inStock}
-            style={{ flex: 1.5 }}
-          >
-            {t('product.buyNow')}
-          </Button>
+            <ShoppingBag size={18} color="#fff" />
+            <Text className="text-base font-bold text-white">
+              {product.inStock
+                ? `${t('product.addToCart')} · ${formatMoney(product.price)}`
+                : t('product.outOfStock')}
+            </Text>
+          </Pressable>
         </View>
       </View>
     </View>

@@ -128,7 +128,7 @@ function buildHtml({
     map.on('load', function () {
       if (INTERACTIVE) {
         var start = PIN || { lat: C.lat, lng: C.lng };
-        marker = new maplibregl.Marker({ draggable: true, color: '#8B0020' })
+        marker = new maplibregl.Marker({ draggable: true, color: '#531625' })
           .setLngLat([start.lng, start.lat])
           .addTo(map);
         marker.on('dragend', function () {

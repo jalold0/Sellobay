@@ -100,7 +100,7 @@ export default function CategoriesScreen() {
               </Text>
               <View className="flex-row items-center gap-0.5">
                 <Text className="text-primary text-xs">{t('common.viewAll')}</Text>
-                <ChevronRight size={13} color="#8B0020" />
+                <ChevronRight size={13} color="#531625" />
               </View>
             </Pressable>
           </Link>

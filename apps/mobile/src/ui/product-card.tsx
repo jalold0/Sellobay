@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Heart, Plane, ShoppingBag, Star, Ticket, Truck, Zap } from 'lucide-react-native';
+import { Heart, ShoppingBag, Star } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -20,19 +20,14 @@ interface Props {
   locale?: 'uz' | 'ru' | 'en';
 }
 
-// Yetkazish signalining USLUBI (Coupang "Tomorrow/Rocket" analogi). Matn i18n
-// orqali komponentda hisoblanadi — bu funksiya faqat rang/ikonka qaytaradi.
-function getDeliveryStyle(product: MockProduct) {
-  if (product.origin === 'global') {
-    return { Icon: Plane, bg: 'bg-amber-50', text: 'text-amber-700', iconColor: '#B45309' };
-  }
-  if (product.delivery === 'tomorrow') {
-    return { Icon: Zap, bg: 'bg-emerald-50', text: 'text-emerald-700', iconColor: '#16A34A' };
-  }
-  return { Icon: Truck, bg: 'bg-muted', text: 'text-muted-foreground', iconColor: '#6B6B73' };
+// Yetkazish signalining rangi (redizayn build() bilan bir xil qiymatlar).
+function deliveryStyle(product: MockProduct): { bg: string; fg: string } {
+  if (product.origin === 'global') return { bg: '#FAEEDA', fg: '#B45309' };
+  if (product.delivery === 'tomorrow') return { bg: '#E1F5EE', fg: '#1F8A5B' };
+  return { bg: '#F1F1F3', fg: '#6B6B73' };
 }
 
-// "2340" → "2.3k" (Coupang/Temu ijtimoiy isbot ko'rinishi)
+// "2340" → "2.3k" (ijtimoiy isbot)
 function formatSold(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`;
   return String(n);
@@ -42,13 +37,13 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
   const { t } = useT();
   const name = pickLocalized(product.name, locale);
   const discount = discountPercent(product.price, product.oldPrice);
-  const ds = getDeliveryStyle(product);
+  const ds = deliveryStyle(product);
   const deliveryLabel =
     product.origin === 'global'
       ? `${product.deliveryDays ?? 14} kun`
       : product.delivery === 'tomorrow'
         ? t('product.deliveryTomorrow')
-        : t('product.deliveryFast');
+        : t('product.deliveryFastShort');
   const addItem = useCart((s) => s.addItem);
   const wishlistHas = useWishlist((s) => s.ids.includes(product.id));
   const toggleWishlist = useWishlist((s) => s.toggle);
@@ -74,8 +69,8 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
     <Link href={`/product/${product.slug}` as never} asChild>
       <Pressable
         className={cn(
-          'border-border bg-card flex-1 overflow-hidden rounded-xl border',
-          !product.inStock && 'opacity-70',
+          'border-border overflow-hidden rounded-2xl border bg-white',
+          !product.inStock && 'opacity-80',
         )}
       >
         <View className="bg-muted relative aspect-square">
@@ -84,7 +79,6 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
             className="h-full w-full"
             contentFit="cover"
           />
-          {/* Badge (SALE/NEW/TOP) — chegirma % endi narx yonida ko'rsatiladi */}
           {product.badge ? (
             <View className="absolute left-2 top-2">
               <Badge tone={product.badge.toLowerCase() as 'sale' | 'new' | 'top'}>
@@ -92,7 +86,6 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
               </Badge>
             </View>
           ) : null}
-          {/* Wishlist */}
           <Pressable
             onPress={(e) => {
               e.stopPropagation?.();
@@ -101,88 +94,86 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
             }}
             accessibilityRole="button"
             accessibilityLabel={t('product.addToWishlist')}
-            className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-full bg-white/90"
+            className="absolute right-2 top-2 h-[30px] w-[30px] items-center justify-center rounded-full bg-white/90"
+            style={{
+              shadowColor: '#0A0A0C',
+              shadowOpacity: 0.12,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }}
             hitSlop={8}
           >
             <Heart
-              size={14}
-              color={wishlistHas ? '#B30029' : '#6B6B73'}
-              fill={wishlistHas ? '#B30029' : 'transparent'}
+              size={15}
+              color={wishlistHas ? '#762237' : '#6B6B73'}
+              fill={wishlistHas ? '#762237' : 'transparent'}
             />
           </Pressable>
           {!product.inStock ? (
             <View className="absolute inset-0 items-center justify-center bg-black/40">
               <View className="rounded-full bg-white/95 px-3 py-1">
-                <Text className="text-foreground text-xs font-medium">
+                <Text className="text-foreground text-xs font-semibold">
                   {t('product.outOfStock')}
                 </Text>
               </View>
             </View>
           ) : null}
         </View>
-        <View className="gap-1 p-3">
-          <Text className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
+
+        <View className="gap-1 px-[11px] pb-3 pt-2.5">
+          <Text className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-neutral-300">
             {product.brand}
           </Text>
-          <Text numberOfLines={2} className="text-foreground text-sm font-medium">
+          <Text
+            numberOfLines={2}
+            className="text-foreground min-h-[34px] text-[13px] font-medium leading-[17px]"
+          >
             {name}
           </Text>
-          {/* Reyting + ijtimoiy isbot (sotilganlar soni) */}
+
           <View className="flex-row items-center gap-1">
-            <Star size={11} color="#f59e0b" fill="#f59e0b" />
-            <Text className="text-muted-foreground text-[11px]">
-              {product.rating.toFixed(1)} ({product.reviewCount})
+            <Star size={11} color="#C9A961" fill="#C9A961" />
+            <Text className="text-[11px] text-neutral-400">
+              {product.rating.toFixed(1)}
+              {product.soldCount
+                ? ` · ${t('product.soldSuffix').replace('{count}', formatSold(product.soldCount))}`
+                : ''}
             </Text>
-            {product.soldCount ? (
-              <Text className="text-muted-foreground text-[11px]">
-                {' · '}
-                {t('product.soldSuffix').replace('{count}', formatSold(product.soldCount))}
-              </Text>
-            ) : null}
           </View>
-          {/* Yetkazish / ishonch signallari */}
+
           <View className="mt-0.5 flex-row flex-wrap items-center gap-1.5">
-            <View className={cn('flex-row items-center gap-1 rounded px-1.5 py-0.5', ds.bg)}>
-              <ds.Icon size={9} color={ds.iconColor} />
-              <Text className={cn('text-[9px] font-bold', ds.text)}>{deliveryLabel}</Text>
+            <View
+              className="flex-row items-center gap-1 rounded-md px-1.5 py-0.5"
+              style={{ backgroundColor: ds.bg }}
+            >
+              <View className="h-1 w-1 rounded-full" style={{ backgroundColor: ds.fg }} />
+              <Text className="text-[9px] font-bold" style={{ color: ds.fg }}>
+                {deliveryLabel}
+              </Text>
             </View>
             {product.freeShipping ? (
-              <View className="flex-row items-center gap-0.5">
-                <Truck size={9} color="#0284c7" />
-                <Text className="text-[9px] font-semibold text-sky-600">
-                  {t('product.freeShip')}
-                </Text>
-              </View>
+              <Text className="text-success text-[9px] font-bold">{t('product.freeShip')}</Text>
             ) : null}
           </View>
-          {/* Kupon chip (mock — kupon tizimi keyin ulanadi) */}
-          {product.couponAmount ? (
-            <View className="mt-1 flex-row">
-              <View className="flex-row items-center gap-1 rounded border border-dashed border-red-400 px-1.5 py-0.5">
-                <Ticket size={9} color="#ef4444" />
-                <Text className="text-[9px] font-bold text-red-500">
-                  {t('product.couponSuffix').replace('{amount}', formatMoney(product.couponAmount))}
-                </Text>
-              </View>
-            </View>
+
+          <View className="mt-1 flex-row items-baseline gap-1.5">
+            <Text
+              className="font-serif-bold text-[17px]"
+              style={{ color: product.oldPrice ? '#531625' : '#0A0A0C' }}
+            >
+              {formatMoney(product.price)}
+            </Text>
+            {discount > 0 ? (
+              <Text className="text-accent text-[11px] font-extrabold">−{discount}%</Text>
+            ) : null}
+          </View>
+          {product.oldPrice ? (
+            <Text className="text-[10px] text-neutral-300 line-through">
+              {formatMoney(product.oldPrice)}
+            </Text>
           ) : null}
-          {/* Narx — ustuvor, yonida inline chegirma % */}
-          <View className="mt-1">
-            <View className="flex-row items-center gap-1.5">
-              <Text className="text-foreground text-base font-black">
-                {formatMoney(product.price)}
-              </Text>
-              {discount > 0 ? (
-                <Text className="text-[11px] font-bold text-red-500">−{discount}%</Text>
-              ) : null}
-            </View>
-            {product.oldPrice ? (
-              <Text className="text-muted-foreground text-[10px] line-through">
-                {formatMoney(product.oldPrice)}
-              </Text>
-            ) : null}
-          </View>
-          {/* To'liq kenglikdagi savat tugmasi — 44px (WCAG tap target) */}
+
           {product.inStock ? (
             <Pressable
               onPress={(e) => {
@@ -191,16 +182,16 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
               }}
               accessibilityRole="button"
               accessibilityLabel={t('product.addToCart')}
-              className="bg-primary mt-2 h-11 flex-row items-center justify-center gap-1.5 rounded-xl active:opacity-85"
+              className="bg-primary mt-2 h-[38px] flex-row items-center justify-center gap-1.5 rounded-xl active:opacity-85"
             >
-              <ShoppingBag size={16} color="#fff" />
-              <Text className="text-sm font-semibold text-white">
+              <ShoppingBag size={14} color="#fff" />
+              <Text className="text-xs font-semibold text-white">
                 {t('product.addToCartShort')}
               </Text>
             </Pressable>
           ) : (
-            <View className="bg-muted mt-2 h-11 items-center justify-center rounded-xl">
-              <Text className="text-muted-foreground text-sm font-medium">
+            <View className="bg-chip mt-2 h-[38px] items-center justify-center rounded-xl">
+              <Text className="text-xs font-semibold text-neutral-300">
                 {t('product.outOfStock')}
               </Text>
             </View>
@@ -211,8 +202,5 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
   );
 }
 
-// React.memo — grid/ro'yxatlarda ota qayta render bo'lganda (qidiruv, sort,
-// filtr) faqat o'zgargan kartalar qayta chiziladi. `product` React Query'dan
-// barqaror referens bilan keladi, shuning uchun taqqoslash to'g'ri ishlaydi.
 export const ProductCard = React.memo(ProductCardBase);
 ProductCard.displayName = 'ProductCard';

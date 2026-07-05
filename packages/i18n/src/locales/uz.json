@@ -25,7 +25,15 @@
     "from": "dan",
     "to": "gacha",
     "yes": "Ha",
-    "no": "Yo'q"
+    "no": "Yo'q",
+    "all": "Barchasi"
+  },
+  "utilityBar": {
+    "deliveryPromise": "O'zbekiston bo'ylab 24/7 yetkazib berish",
+    "becomeSeller": "Sotuvchi bo'lish",
+    "help": "Yordam",
+    "trackOrder": "Buyurtmani kuzatish",
+    "premium": "Sellobay Premium"
   },
   "nav": {
     "home": "Bosh sahifa",
@@ -58,12 +66,24 @@
     "accessories": "Aksessuarlar"
   },
   "hero": {
-    "eyebrow": "Premium 2026 · O'zbekistondan",
-    "headlineLine1": "Minglab brendlar.",
-    "headlineLine2": "Bitta marketplace.",
-    "subheadline": "Sellobay — O'zbekistondagi eng yirik multi-vendor marketplace. Premium kiyim, kosmetika, aksessuarlar va boshqalar. Tezkor yetkazib berish, kafolat, punktda tekshirib olish.",
+    "eyebrow": "Yangi mavsum · 2026",
+    "headlineLine1": "Uslub — bu til.",
+    "headlineLine2": "Uni Sellobay'da",
+    "headlineLine3": "so'zlang.",
+    "subheadline": "Minglab tekshirilgan sotuvchilar, 2 milliondan ortiq original mahsulot. 24 soat ichida eshigingizgacha.",
     "ctaShop": "Xarid qilish",
+    "ctaCollection": "Kolleksiyani ko'rish",
     "ctaSell": "Sotuvchi bo'lish",
+    "stats": {
+      "sellersValue": "50 000+",
+      "sellersLabel": "sotuvchi",
+      "productsValue": "2 mln+",
+      "productsLabel": "mahsulot",
+      "deliveryValue": "24 soat",
+      "deliveryLabel": "yetkazish",
+      "authenticValue": "100%",
+      "authenticLabel": "originallik kafolati"
+    },
     "trustFast": "Tezkor 24 soat",
     "trustAuthentic": "100% asl mahsulot",
     "trustReturn": "Tekshirib olish",
@@ -71,7 +91,10 @@
   },
   "home": {
     "categoriesTitle": "Kategoriyalar",
+    "categoriesHeadline": "Nimadan boshlaymiz?",
     "categoriesSubtitle": "Sevimli kategoriyangizni tanlang",
+    "viewAllLong": "Barchasini ko'rish",
+    "bestSellersEyebrow": "Xaridorlar tanlovi",
     "bestSellersTitle": "Eng ko'p sotilganlar",
     "recentlyViewed": "Yaqinda ko'rilgan",
     "bestSellersSubtitle": "Bizning bestseller'larimiz — eng ko'p tanlangan mahsulotlar",
@@ -84,6 +107,27 @@
       "fastDelivery": "Tezkor yetkazish",
       "fast24h": "24 soat",
       "satisfied": "Mijozlar mamnun"
+    },
+    "editorial": {
+      "eyebrow": "Tanlangan kolleksiya",
+      "titleLine1": "Kuz garderobi:",
+      "titleLine2": "25 ta asosiy buyum",
+      "link": "Kolleksiyani ochish",
+      "womenTitle": "Ayollar uchun",
+      "womenCount": "840 000+ mahsulot",
+      "saleEyebrow": "Faqat 48 soat",
+      "saleTitleLine1": "Mavsumiy SALE",
+      "saleTitleLine2": "−50% gacha",
+      "saleCta": "Chegirmalarga o'tish"
+    },
+    "sellerCta": {
+      "eyebrow": "Sotuvchilar uchun",
+      "titleLine1": "Millionlab xaridorga",
+      "titleLine2": "bugun yetib boring",
+      "perk1": "15 daqiqada ro'yxatdan o'tish",
+      "perk2": "Birinchi oy komissiyasiz",
+      "perk3": "Fulfillment ombori",
+      "cta": "Sotishni boshlash"
     }
   },
   "featured": {
@@ -131,7 +175,7 @@
   "footer": {
     "newsletterTitle": "Yangi tushgandan birinchi xabardor bo'ling",
     "newsletterSubtitle": "Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling. Spam yo'q — faqat yangiliklar.",
-    "tagline": "O'zbekistondagi eng yirik marketplace. Minglab sotuvchilar, premium brendlar va tezkor yetkazib berish.",
+    "tagline": "O'zbekistondagi eng yirik multi-vendor marketplace. Minglab sotuvchilar, millionlab original mahsulotlar.",
     "address": "Toshkent sh., Mirzo Ulug'bek tumani",
     "paymentMethods": "To'lov usullari:",
     "copyright": "© {year} Sellobay LLC. Barcha huquqlar himoyalangan.",
@@ -156,6 +200,7 @@
       "sellerGuide": "Sotuvchi qo'llanmasi",
       "commissions": "Komissiyalar",
       "sellerRules": "Sotuvchi qoidalari",
+      "sellerHub": "Seller Hub",
       "terms": "Foydalanish shartlari",
       "privacy": "Maxfiylik siyosati",
       "cookies": "Cookie siyosati",
@@ -191,6 +236,7 @@
       "MAC Ruby Woo lab bo'yog'i",
       "Adidas Ultraboost"
     ],
+    "placeholderLong": "Mahsulot, brend yoki kategoriya qidiring...",
     "pageTitle": "Qidiruv",
     "pageEmptyTitle": "Qidiruvni boshlang",
     "pageEmptyHint": "Yuqoridagi qidiruv qatoriga mahsulot nomi, brend yoki kategoriya nomini kiriting"
@@ -225,7 +271,13 @@
     "allProducts": "Hamma mahsulotlar",
     "searchResults": "\"{q}\" qidiruv natijalari",
     "priceFrom": "0",
-    "priceTo": "10M"
+    "priceTo": "10M",
+    "priceHeader": "Narx, so'm",
+    "brandMore": "+ yana {count} brend",
+    "filterOther": "Boshqa",
+    "onlyOriginal": "Faqat original",
+    "inDiscount": "Chegirmada",
+    "delivery24h": "24 soatda yetkazish"
   },
   "product": {
     "addToCart": "Savatga qo'shish",
@@ -255,7 +307,7 @@
     "addedToWishlist": "Sevimlilarga qo'shildi",
     "addedToCart": "Savatga qo'shildi",
     "deliveryTomorrow": "Ertaga",
-    "deliveryFast": "Tez yetkazish",
+    "deliveryFast": "Tezkor yetkazib berish — Toshkent bo'yicha 24 soat ichida",
     "freeShip": "Bepul",
     "soldSuffix": "{count} sotildi",
     "couponSuffix": "{amount} kupon",
@@ -274,13 +326,27 @@
     "verifiedPurchase": "Tasdiqlangan xarid",
     "helpful": "Foydali ({count})",
     "answer": "Javob",
-    "deliveryFast": "Tezkor yetkazib berish — Toshkent bo'yicha 24 soat ichida",
     "deliveryReturn": "Punktda ochib tekshiring — yoqmasa o'sha yerda qaytarasiz",
     "deliveryReturnLegal": "Qonun bo'yicha ishlatilmagan tovarni 14 kun ichida qaytarish huquqi saqlanadi",
     "deliveryAuthentic": "100% asl mahsulot kafolati",
     "trustPopular": "Mashhur mahsulot",
     "trustTopRated": "Yuqori baholangan",
-    "trustVerified": "Tasdiqlangan sotuvchi"
+    "trustVerified": "Tasdiqlangan sotuvchi",
+    "original": "Original",
+    "premiumSeller": "Premium sotuvchi",
+    "reviewsCountLong": "{count} ta sharh",
+    "soldCount": "{count}+ marta sotilgan",
+    "promoUntil": "aksiya {date}gacha amal qiladi",
+    "deliveryTomorrowFull": "Ertaga yetkaziladi — Toshkent bo'ylab, {price}",
+    "authenticityReturn": "Originallik kafolati — 14 kun ichida qaytarish bepul",
+    "installment4x": "Bo'lib to'lash — 4 × {amount}, foizsiz",
+    "visitStore": "Do'konga o'tish",
+    "sellerOrders": "{count} buyurtma",
+    "sellerYears": "{years} yildan beri",
+    "tabDelivery": "Yetkazish va qaytarish",
+    "reviewsVerified": "{count} ta tasdiqlangan sharh asosida",
+    "similarProducts": "O'xshash mahsulotlar",
+    "deliveryFastShort": "2-3 kun"
   },
   "cart": {
     "title": "Savatcha",
@@ -322,11 +388,13 @@
     "emptyHint": "Buyurtma rasmiylashtirish uchun kamida bitta mahsulot kerak.",
     "openCatalog": "Katalogga o'tish",
     "steps": {
+      "cart": "Savat",
       "address": "Manzil",
-      "shipping": "Yetkazib berish",
+      "shipping": "Yetkazish",
       "payment": "To'lov",
       "review": "Tasdiqlash"
     },
+    "securePayment": "Xavfsiz to'lov",
     "address": {
       "title": "Yetkazib berish manzili",
       "firstName": "Ism*",
@@ -365,7 +433,16 @@
       "standardSub": "24-48 soat",
       "tashkentOnly": "Uygacha yetkazish faqat Toshkent shahar uchun amal qiladi. Viloyat uchun olib ketish punktini tanlang.",
       "switchToPickup": "Olib ketish punktiga o'tish",
-      "pickupSoon": "Topshirish punktlari tez orada ulanadi. Hozircha viloyat va shaharni ko'rsating — buyurtmangizni eng yaqin punktga yetkazamiz."
+      "pickupSoon": "Topshirish punktlari tez orada ulanadi. Hozircha viloyat va shaharni ko'rsating — buyurtmangizni eng yaqin punktga yetkazamiz.",
+      "methodTitle": "Yetkazish usuli",
+      "courierRow": "Kuryer orqali — ertaga",
+      "courierWindow": "10:00 – 22:00 oralig'ida, eshikkacha",
+      "pickupRow": "Topshirish punkti",
+      "nearestPoint": "Sizga eng yaqini: {name}",
+      "freeBepul": "Bepul",
+      "expressRow": "Express — bugun, 3 soat ichida",
+      "expressChip": "TEZKOR",
+      "expressTashkent": "Faqat Toshkent shahri bo'ylab"
     },
     "payment": {
       "title": "To'lov usulini tanlang",
@@ -381,7 +458,13 @@
       "humoSub": "Plastik karta",
       "cash": "Naqd pul",
       "cashSub": "Kuryer kelganda to'laysiz",
-      "secureNote": "Karta ma'lumotlaringiz to'lov tizimi serverida xavfsiz saqlanadi, biz ko'rmaymiz."
+      "secureNote": "Karta ma'lumotlaringiz to'lov tizimi serverida xavfsiz saqlanadi, biz ko'rmaymiz.",
+      "methodTitle": "To'lov usuli",
+      "card": "Karta",
+      "cardSub": "Uzcard · Humo · Visa",
+      "appConfirm": "Ilovada tasdiqlash",
+      "cashShort": "Naqd",
+      "onReceive": "Qabul qilishda"
     },
     "review": {
       "title": "Buyurtmangizni tekshiring",
@@ -392,10 +475,19 @@
       "edit": "O'zgartirish"
     },
     "summary": "Buyurtma",
+    "summaryTitle": "Buyurtma · {count} mahsulot",
     "summaryItems": "Mahsulotlar",
-    "summaryShipping": "Yetkazib berish",
+    "summaryItemsCount": "Mahsulotlar ({count})",
+    "summaryDiscount": "Chegirma",
+    "summaryShipping": "Yetkazish",
     "summaryTotal": "Jami",
     "summaryMore": "Va yana {count} ta mahsulot...",
+    "goToPayment": "To'lovga o'tish",
+    "sslNote": "Ma'lumotlaringiz SSL bilan himoyalangan",
+    "promoAppliedChip": "{code} qo'llandi ✓",
+    "premiumPoints": "Ushbu buyurtma uchun +{points} ball olasiz — Sellobay Premium dasturi",
+    "pcs": "{count} dona",
+    "newAddress": "+ Yangi manzil",
     "coinsEarn": "Bu buyurtma uchun +{coins} Sello Coin olasiz",
     "useCoinsTitle": "Sello Coins ishlatish",
     "useCoinsAvail": "{coins} coin · −{som}",
@@ -474,7 +566,21 @@
     "accountCreated": "Hisob yaratildi",
     "accountCreatedHint": "Profil bo'limiga o'tamiz",
     "sellerApplied": "Sotuvchi arizasi qabul qilindi",
-    "sellerAppliedHint": "Admin tasdiqlagach, sotuvchi panelidan kira olasiz"
+    "sellerAppliedHint": "Admin tasdiqlagach, sotuvchi panelidan kira olasiz",
+    "welcomeTitle": "Xush kelibsiz",
+    "phoneFirstHint": "Telefon raqamingizni kiriting — SMS orqali tasdiqlash kodi yuboramiz. Hisob avtomatik yaratiladi.",
+    "getCode": "Kod olish",
+    "panel": {
+      "titleLine1": "2 million mahsulot.",
+      "titleLine2": "Bitta hisob.",
+      "benefit1": "Buyurtmalarni real vaqtda kuzatish",
+      "benefit2": "Har xariddan Premium ball",
+      "benefit3": "Shaxsiy chegirmalar va erta SALE"
+    },
+    "termsPrefix": "Davom etish orqali siz",
+    "offerLink": "Oferta",
+    "termsJoin": "va",
+    "termsAgreeSuffix": "ga rozilik bildirasiz"
   },
   "profile": {
     "title": "Shaxsiy ma'lumotlar",
@@ -488,7 +594,8 @@
       "reviews": "Mening sharhlarim",
       "settings": "Sozlamalar",
       "becomeSeller": "Sotuvchi bo'lish",
-      "promo": "Promokodlarim"
+      "promo": "Promokodlarim",
+      "returns": "Qaytarishlar"
     },
     "signOut": "Chiqish",
     "signingOut": "Chiqilmoqda...",
@@ -590,7 +697,26 @@
       "emptyTitle": "Hali buyurtmalar yo'q",
       "emptyDesc": "Birinchi buyurtmangizni amalga oshiring",
       "itemsCount": "{count} ta mahsulot",
-      "detail": "Batafsil"
+      "detail": "Batafsil",
+      "filterAll": "Barchasi",
+      "filterOnTheWay": "Yo'lda",
+      "filterDelivered": "Yetkazilgan",
+      "paidWith": "To'langan · {method}",
+      "timeline": {
+        "received": "Qabul qilindi",
+        "packed": "Yig'ildi",
+        "onTheWay": "Yo'lda",
+        "delivered": "Yetkazildi"
+      },
+      "courier": "Kuryer:",
+      "etaUntil": "Taxminan {time} gacha",
+      "trackOnMap": "Xaritada kuzatish",
+      "reorder": "Qayta buyurtma"
+    },
+    "premiumCard": {
+      "label": "Sellobay Premium",
+      "pointsTier": "ball · {tier} daraja",
+      "toNext": "{tier}'gacha {points} ball"
     }
   },
   "groupBuy": {
@@ -629,7 +755,12 @@
     "nextTier": "Keyingi: {tier}",
     "spendMore": "Yana {amount} so'm sotib oling",
     "cashback": "{pct}% cashback",
-    "tiers": { "bronze": "Bronza", "silver": "Kumush", "gold": "Oltin", "platinum": "Platina" },
+    "tiers": {
+      "bronze": "Bronza",
+      "silver": "Kumush",
+      "gold": "Oltin",
+      "platinum": "Platina"
+    },
     "tierFrom": "{amount} so'mdan",
     "tierStart": "Boshlang'ich",
     "earnTitle": "Coin qanday yig'iladi",

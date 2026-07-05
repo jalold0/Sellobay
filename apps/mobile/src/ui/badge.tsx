@@ -11,21 +11,22 @@ interface Props {
 }
 
 const TONES: Record<Tone, { bg: string; text: string }> = {
-  default: { bg: 'bg-muted', text: 'text-foreground' },
-  success: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  default: { bg: 'bg-chip', text: 'text-foreground' },
+  success: { bg: 'bg-success-chip', text: 'text-success' },
   warning: { bg: 'bg-amber-100', text: 'text-amber-700' },
-  danger: { bg: 'bg-red-100', text: 'text-red-700' },
+  danger: { bg: 'bg-crimson-chip', text: 'text-primary' },
   info: { bg: 'bg-sky-100', text: 'text-sky-700' },
-  sale: { bg: 'bg-red-500', text: 'text-white' },
-  new: { bg: 'bg-emerald-500', text: 'text-white' },
-  top: { bg: 'bg-amber-500', text: 'text-white' },
+  // Redesign badge konvensiyasi: SALE=crimson/oq, TOP=gold/crimson-deep, NEW=ink/gold-light
+  sale: { bg: 'bg-primary', text: 'text-white' },
+  new: { bg: 'bg-ink', text: 'text-gold-bright' },
+  top: { bg: 'bg-gold', text: 'text-bordeaux-deep' },
 };
 
 export function Badge({ children, tone = 'default', className }: Props) {
   const t = TONES[tone];
   return (
-    <View className={cn('rounded-md px-2 py-0.5', t.bg, className)}>
-      <Text className={cn('text-[10px] font-bold uppercase tracking-wide', t.text)}>
+    <View className={cn('rounded-full px-2.5 py-1', t.bg, className)}>
+      <Text className={cn('text-[10px] font-extrabold uppercase tracking-[0.1em]', t.text)}>
         {children}
       </Text>
     </View>

@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Coins,
   Gift,
+  ShoppingBag,
   Tag,
 } from 'lucide-react-native';
 import * as React from 'react';
@@ -15,7 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { checkinDaily, fetchLoyalty } from '../../src/lib/api';
 import { formatNumber } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
-import { useT } from '../../src/lib/useT';
 import {
   COIN_VALUE_SOM,
   EARN_WAYS,
@@ -28,7 +28,9 @@ import {
   tierProgressPct,
   type CoinTxn,
 } from '../../src/lib/loyalty';
+import { useT } from '../../src/lib/useT';
 import { toast } from '../../src/store/toast';
+import { Gradient } from '../../src/ui/gradient';
 
 const CHECKIN_REWARD = 5;
 
@@ -125,7 +127,7 @@ export default function LoyaltyScreen() {
       >
         {/* Balance hero */}
         <View className="overflow-hidden rounded-3xl">
-          <View className="bg-primary p-5">
+          <Gradient colors={['#16161A', '#0A0A0C']} style={{ padding: 20 }}>
             <View className="flex-row items-start justify-between">
               <View className="flex-row items-center gap-2.5">
                 <Text className="text-3xl">{cur.icon}</Text>
@@ -171,7 +173,18 @@ export default function LoyaltyScreen() {
                 </View>
               </View>
             ) : null}
-          </View>
+
+            <Pressable
+              onPress={() => router.push('/profile/coinshop' as never)}
+              className="mt-4 h-[46px] flex-row items-center justify-center gap-2 rounded-full active:opacity-85"
+              style={{ backgroundColor: '#C9A961' }}
+            >
+              <ShoppingBag size={16} color="#16161A" />
+              <Text className="text-sm font-extrabold" style={{ color: '#16161A' }}>
+                Tanga do'koni
+              </Text>
+            </Pressable>
+          </Gradient>
         </View>
 
         {/* Daily check-in */}

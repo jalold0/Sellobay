@@ -1,14 +1,14 @@
 import { useRouter } from 'expo-router';
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react-native';
+import { ArrowRight, Minus, Plus, ShoppingBag, Ticket, Trash2, Truck } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMoney } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
-import { useT } from '../../src/lib/useT';
 import { productImage } from '../../src/lib/mock-data';
-import { useCart, type CartItem } from '../../src/store/cart';
+import { useT } from '../../src/lib/useT';
+import { type CartItem, useCart } from '../../src/store/cart';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
 import { AppImage } from '../../src/ui/app-image';
@@ -24,9 +24,10 @@ export default function CartScreen() {
   const { t } = useT();
   const isAuthenticated = useSession((s) => s.isAuthenticated);
   const items = useCart((s) => s.items);
+  const removeItem = useCart((s) => s.removeItem);
+  const updateQuantity = useCart((s) => s.updateQuantity);
+  const clear = useCart((s) => s.clear);
 
-  // Buyurtma rasmiylashtirish — faqat ro'yxatdan o'tgan mijozlar uchun.
-  // Mehmon ko'rishi/savatga qo'shishi mumkin, lekin checkout'da login talab qilinadi.
   const onCheckout = () => {
     if (!isAuthenticated) {
       toast({ title: t('auth.loginRequired'), duration: 2500 });
@@ -35,9 +36,6 @@ export default function CartScreen() {
     }
     router.push('/checkout');
   };
-  const removeItem = useCart((s) => s.removeItem);
-  const updateQuantity = useCart((s) => s.updateQuantity);
-  const clear = useCart((s) => s.clear);
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE;
@@ -45,12 +43,12 @@ export default function CartScreen() {
 
   if (items.length === 0) {
     return (
-      <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
+      <View className="bg-paper flex-1" style={{ paddingTop: insets.top }}>
         <View className="px-4 pt-4">
-          <Text className="text-foreground text-2xl font-bold">{t('cart.title')}</Text>
+          <Text className="text-foreground font-serif text-2xl">{t('cart.title')}</Text>
         </View>
         <EmptyState
-          icon={<ShoppingBag size={32} color="#94a3b8" />}
+          icon={<ShoppingBag size={32} color="#c9c9d0" />}
           title={t('cart.empty')}
           description={t('cart.emptyHint')}
           action={
@@ -64,11 +62,11 @@ export default function CartScreen() {
   }
 
   return (
-    <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
-      <View className="flex-row items-center justify-between px-4 pb-2 pt-3">
+    <View className="bg-paper flex-1" style={{ paddingTop: insets.top }}>
+      <View className="flex-row items-center justify-between px-4 pb-2 pt-3.5">
         <View>
-          <Text className="text-foreground text-2xl font-bold">{t('cart.title')}</Text>
-          <Text className="text-muted-foreground text-xs">
+          <Text className="text-foreground font-serif text-2xl leading-7">{t('cart.title')}</Text>
+          <Text className="text-muted-foreground mt-1 text-xs">
             {items.length} ta · {items.reduce((s, i) => s + i.quantity, 0)} dona
           </Text>
         </View>
@@ -85,7 +83,12 @@ export default function CartScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 200, gap: 10 }}
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingBottom: 220,
+          gap: 10,
+          paddingTop: 4,
+        }}
       >
         {items.map((item) => (
           <CartItemRow
@@ -98,16 +101,37 @@ export default function CartScreen() {
             onQty={(q) => updateQuantity(item.id, q)}
           />
         ))}
+
+        {/* Promokod */}
+        <Pressable
+          onPress={() => router.push('/checkout')}
+          className="mt-0.5 flex-row items-center gap-2.5 rounded-2xl border border-dashed px-3.5 py-3"
+          style={{ backgroundColor: '#FDFBF6', borderColor: '#E5C77A' }}
+        >
+          <Ticket size={18} color="#8a6d2f" />
+          <Text className="flex-1 text-xs" style={{ color: '#8a6d2f' }}>
+            Promokod kiriting
+          </Text>
+          <View className="rounded-full px-3.5 py-1.5" style={{ backgroundColor: '#C9A961' }}>
+            <Text className="text-xs font-bold" style={{ color: '#3A0E19' }}>
+              Qo'llash
+            </Text>
+          </View>
+        </Pressable>
       </ScrollView>
 
       {/* Sticky footer */}
       <View
         style={{ paddingBottom: insets.bottom + 12 }}
-        className="border-border bg-background gap-3 border-t px-4 pt-4"
+        className="border-border gap-2.5 border-t bg-white px-4 pt-3.5"
       >
         {subtotal < FREE_SHIPPING_THRESHOLD ? (
-          <View className="rounded-md bg-amber-50 p-2.5">
-            <Text className="text-xs text-amber-800">
+          <View
+            className="flex-row items-center gap-2 rounded-xl px-3 py-2.5"
+            style={{ backgroundColor: '#FDF3F5' }}
+          >
+            <Truck size={15} color="#531625" />
+            <Text className="text-primary text-[11px]">
               {t('cart.freeShipHint').replace(
                 '{amount}',
                 formatMoney(FREE_SHIPPING_THRESHOLD - subtotal),
@@ -115,20 +139,26 @@ export default function CartScreen() {
             </Text>
           </View>
         ) : null}
-        <View className="gap-1">
+        <View className="gap-1.5">
           <View className="flex-row justify-between">
-            <Text className="text-muted-foreground text-sm">{t('cart.subtotal')}</Text>
-            <Text className="text-sm">{formatMoney(subtotal)}</Text>
+            <Text className="text-muted-foreground text-[13px]">{t('cart.subtotal')}</Text>
+            <Text className="text-foreground text-[13px]">{formatMoney(subtotal)}</Text>
           </View>
           <View className="flex-row justify-between">
-            <Text className="text-muted-foreground text-sm">{t('cart.shipping')}</Text>
-            <Text className={shipping === 0 ? 'text-success text-sm font-semibold' : 'text-sm'}>
+            <Text className="text-muted-foreground text-[13px]">{t('cart.shipping')}</Text>
+            <Text
+              className={
+                shipping === 0
+                  ? 'text-success text-[13px] font-semibold'
+                  : 'text-foreground text-[13px]'
+              }
+            >
               {shipping === 0 ? t('cart.shippingFree') : formatMoney(shipping)}
             </Text>
           </View>
-          <View className="border-border mt-1 flex-row justify-between border-t pt-2">
-            <Text className="text-base font-bold">{t('cart.total')}</Text>
-            <Text className="text-base font-bold">{formatMoney(total)}</Text>
+          <View className="border-border mt-1 flex-row items-center justify-between border-t pt-2">
+            <Text className="text-foreground text-[15px] font-bold">{t('cart.total')}</Text>
+            <Text className="text-foreground font-serif-bold text-lg">{formatMoney(total)}</Text>
           </View>
         </View>
         <Button
@@ -154,20 +184,26 @@ function CartItemRow({
   onQty: (q: number) => void;
 }) {
   const { t } = useT();
+  const router = useRouter();
   return (
-    <View className="border-border bg-card flex-row gap-3 rounded-2xl border p-3">
-      <AppImage
-        source={productImage(item.imageSeed, 200)}
-        className="bg-muted h-20 w-20 rounded-lg"
-        contentFit="cover"
-      />
+    <View className="border-border flex-row gap-3 rounded-2xl border bg-white p-3">
+      <Pressable onPress={() => router.push(`/product/${item.slug}` as never)}>
+        <AppImage
+          source={productImage(item.imageSeed, 200)}
+          className="bg-muted h-[82px] w-[82px] rounded-xl"
+          contentFit="cover"
+        />
+      </Pressable>
       <View className="flex-1 gap-1">
         <View className="flex-row items-start justify-between gap-2">
           <View className="flex-1">
-            <Text className="text-muted-foreground text-[10px] font-bold uppercase tracking-wide">
+            <Text className="text-[10px] font-extrabold uppercase tracking-wide text-neutral-300">
               {item.brand}
             </Text>
-            <Text numberOfLines={2} className="text-foreground text-sm font-medium">
+            <Text
+              numberOfLines={2}
+              className="text-foreground text-[13px] font-medium leading-[17px]"
+            >
               {item.name}
             </Text>
             {item.color || item.size ? (
@@ -186,34 +222,32 @@ function CartItemRow({
             hitSlop={6}
             className="active:bg-muted h-7 w-7 items-center justify-center rounded-full"
           >
-            <Trash2 size={14} color="#6B6B73" />
+            <Trash2 size={15} color="#9a9aa2" />
           </Pressable>
         </View>
         <View className="mt-auto flex-row items-end justify-between">
-          <View className="border-border flex-row items-center gap-2 rounded-full border">
+          <View className="border-border flex-row items-center rounded-full border">
             <Pressable
               onPress={() => {
                 haptics.light();
                 onQty(Math.max(1, item.quantity - 1));
               }}
-              hitSlop={4}
-              className="h-7 w-7 items-center justify-center"
+              className="h-[30px] w-[30px] items-center justify-center"
             >
-              <Minus size={12} color="#0A0A0C" />
+              <Minus size={13} color="#0A0A0C" />
             </Pressable>
-            <Text className="min-w-5 text-center text-sm font-semibold">{item.quantity}</Text>
+            <Text className="min-w-[22px] text-center text-[13px] font-bold">{item.quantity}</Text>
             <Pressable
               onPress={() => {
                 haptics.light();
                 onQty(item.quantity + 1);
               }}
-              hitSlop={4}
-              className="h-7 w-7 items-center justify-center"
+              className="h-[30px] w-[30px] items-center justify-center"
             >
-              <Plus size={12} color="#0A0A0C" />
+              <Plus size={13} color="#0A0A0C" />
             </Pressable>
           </View>
-          <Text className="text-foreground text-sm font-bold">
+          <Text className="text-foreground font-serif-bold text-base">
             {formatMoney(item.unitPrice * item.quantity)}
           </Text>
         </View>

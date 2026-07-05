@@ -79,7 +79,7 @@ export function UpdateBanner() {
             width: 32,
             height: 32,
             borderRadius: 16,
-            backgroundColor: '#8B0020',
+            backgroundColor: '#531625',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -120,7 +120,7 @@ export function UpdateBanner() {
             <Pressable
               onPress={applyUpdate}
               style={{
-                backgroundColor: '#8B0020',
+                backgroundColor: '#531625',
                 paddingHorizontal: 14,
                 paddingVertical: 8,
                 borderRadius: 10,

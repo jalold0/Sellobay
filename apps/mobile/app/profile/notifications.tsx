@@ -1,87 +1,148 @@
-import { Bell } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Bell, ChevronLeft, Gift, Star, Truck } from 'lucide-react-native';
 import * as React from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { haptics } from '../../src/lib/haptics';
 import { useT } from '../../src/lib/useT';
-import { usePrefs, type PrefsState } from '../../src/store/prefs';
-import { Header } from '../../src/ui/header';
 
-type ToggleKey = 'notifEmail' | 'notifSms' | 'notifPush' | 'notifMarketing';
+type NotifType = 'order' | 'promo' | 'coin' | 'system';
 
-const ROWS: Array<{ key: ToggleKey; labelKey: string; descKey: string }> = [
+interface NotifItem {
+  id: string;
+  type: NotifType;
+  title: string;
+  body: string;
+  time: string;
+  unread: boolean;
+}
+
+const TYPE_TINT: Record<NotifType, string> = {
+  order: '#FBF2F4',
+  promo: '#FAEEDA',
+  coin: '#FDF3F5',
+  system: '#E6F1FB',
+};
+
+const TYPE_ICON: Record<NotifType, React.ComponentType<{ size?: number; color?: string }>> = {
+  order: Truck,
+  promo: Gift,
+  coin: Star,
+  system: Bell,
+};
+
+const NOTIFICATIONS: NotifItem[] = [
   {
-    key: 'notifPush',
-    labelKey: 'profile.settingsPage.notifPushLabel',
-    descKey: 'profile.settingsPage.notifPushDesc',
+    id: '1',
+    type: 'order',
+    title: "Buyurtma yo'lda",
+    body: "#ECM-2481 bojxonadan o'tmoqda",
+    time: '2 soat oldin',
+    unread: true,
   },
   {
-    key: 'notifEmail',
-    labelKey: 'profile.settingsPage.notifEmailLabel',
-    descKey: 'profile.settingsPage.notifEmailDesc',
+    id: '2',
+    type: 'promo',
+    title: 'Flash Sale boshlandi',
+    body: 'Tanlangan mahsulotlarga 30% gacha chegirma',
+    time: '5 soat oldin',
+    unread: true,
   },
   {
-    key: 'notifSms',
-    labelKey: 'profile.settingsPage.notifSmsLabel',
-    descKey: 'profile.settingsPage.notifSmsDesc',
+    id: '3',
+    type: 'coin',
+    title: "+149 Sello Coin qo'shildi",
+    body: 'Nike Air Max 270 xaridi uchun',
+    time: '1 kun oldin',
+    unread: true,
   },
   {
-    key: 'notifMarketing',
-    labelKey: 'profile.settingsPage.notifMarketingLabel',
-    descKey: 'profile.settingsPage.notifMarketingDesc',
+    id: '4',
+    type: 'order',
+    title: 'Buyurtma yetkazildi',
+    body: '#ECM-2470 muvaffaqiyatli yetkazildi',
+    time: '3 kun oldin',
+    unread: false,
+  },
+  {
+    id: '5',
+    type: 'system',
+    title: 'Xavfsizlik ogohlantirishi',
+    body: 'Yangi qurilmadan hisobingizga kirildi',
+    time: '1 hafta oldin',
+    unread: false,
   },
 ];
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { t } = useT();
-  const prefs = usePrefs();
+  const [items, setItems] = React.useState<NotifItem[]>(NOTIFICATIONS);
 
-  const onToggle = (key: ToggleKey) => {
-    haptics.light();
-    prefs.toggle(key as keyof Omit<PrefsState, 'toggle'>);
+  const markAllRead = () => {
+    setItems((prev) => prev.map((n) => ({ ...n, unread: false })));
   };
 
+  const hasUnread = items.some((n) => n.unread);
+
   return (
-    <View className="bg-background flex-1">
-      <Header
-        title={t('profile.settingsPage.notificationsTitle')}
-        showBack
-        fallbackHref="/(tabs)/profile"
-      />
+    <View className="bg-paper flex-1" style={{ paddingTop: insets.top }}>
+      <View className="flex-row items-center gap-3 px-4 pb-3 pt-2">
+        <Pressable
+          onPress={() => router.back()}
+          className="bg-muted h-10 w-10 items-center justify-center rounded-full"
+        >
+          <ChevronLeft size={20} color="#0A0A0C" />
+        </Pressable>
+        <Text className="text-foreground flex-1 font-serif text-2xl leading-6">
+          {t('profile.settingsPage.notificationsTitle')}
+        </Text>
+        {hasUnread ? (
+          <Pressable onPress={markAllRead} hitSlop={8}>
+            <Text className="text-primary text-xs font-semibold">Barchasi o'qildi</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32, gap: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32, gap: 10 }}
       >
-        <View className="bg-primary/5 flex-row items-center gap-3 rounded-2xl p-4">
-          <Bell size={20} color="#6d28d9" />
-          <Text className="text-muted-foreground flex-1 text-xs">
-            {t('profile.settingsPage.notificationsTitle')}
-          </Text>
-        </View>
-
-        <View className="border-border bg-card overflow-hidden rounded-2xl border">
-          {ROWS.map((row, i) => (
+        {items.map((n) => {
+          const Icon = TYPE_ICON[n.type];
+          return (
             <View
-              key={row.key}
-              className={`flex-row items-center gap-3 px-4 py-3.5 ${
-                i < ROWS.length - 1 ? 'border-border border-b' : ''
-              }`}
+              key={n.id}
+              className="flex-row gap-3 rounded-2xl border border-[#EEEEF0] p-[13px]"
+              style={{ backgroundColor: n.unread ? '#FDFBFB' : '#FFFFFF' }}
             >
-              <View className="min-w-0 flex-1">
-                <Text className="text-foreground text-sm font-medium">{t(row.labelKey)}</Text>
-                <Text className="text-muted-foreground text-xs">{t(row.descKey)}</Text>
+              <View
+                className="h-10 w-10 items-center justify-center rounded-[12px]"
+                style={{ backgroundColor: TYPE_TINT[n.type] }}
+              >
+                <Icon size={18} color="#531625" />
               </View>
-              <Switch
-                value={prefs[row.key]}
-                onValueChange={() => onToggle(row.key)}
-                trackColor={{ true: '#6d28d9', false: '#cbd5e1' }}
-                thumbColor="#fff"
-              />
+              <View className="min-w-0 flex-1">
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-foreground text-[13px] font-bold">{n.title}</Text>
+                  {n.unread ? (
+                    <View
+                      className="rounded-full"
+                      style={{ width: 7, height: 7, backgroundColor: '#762237' }}
+                    />
+                  ) : null}
+                </View>
+                <Text className="text-muted-foreground text-[12px]" numberOfLines={2}>
+                  {n.body}
+                </Text>
+                <Text className="mt-1 text-[11px]" style={{ color: '#b0b0b6' }}>
+                  {n.time}
+                </Text>
+              </View>
             </View>
-          ))}
-        </View>
+          );
+        })}
       </ScrollView>
     </View>
   );

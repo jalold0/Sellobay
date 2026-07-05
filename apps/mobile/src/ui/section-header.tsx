@@ -13,7 +13,7 @@ export function SectionHeader({ title, description, actionLabel, actionHref }: P
   return (
     <View className="flex-row items-end justify-between px-4">
       <View className="flex-1">
-        <Text className="text-foreground text-lg font-bold">{title}</Text>
+        <Text className="text-foreground font-serif text-xl">{title}</Text>
         {description ? <Text className="text-muted-foreground text-xs">{description}</Text> : null}
       </View>
       {actionLabel && actionHref ? (

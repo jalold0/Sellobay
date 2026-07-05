@@ -8,9 +8,13 @@ import { loginWithPassword, sendOtp, verifyOtp, type AuthUser } from '../../src/
 import { useT } from '../../src/lib/useT';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
+import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
 import { cn } from '../../src/ui/cn';
 import { Input } from '../../src/ui/input';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const LOGO = require('../../assets/icon.png');
 
 type Tab = 'phone' | 'email';
 type PhoneStage = 'phone' | 'code';
@@ -60,10 +64,8 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="items-center pt-6">
-          <View className="bg-primary h-16 w-16 items-center justify-center rounded-2xl">
-            <Text className="text-2xl font-black text-white">E</Text>
-          </View>
-          <Text className="mt-4 text-2xl font-bold">{t('auth.loginWelcome')}</Text>
+          <AppImage source={LOGO} style={{ width: 64, height: 64, borderRadius: 18 }} />
+          <Text className="text-foreground mt-4 font-serif text-2xl">{t('auth.loginWelcome')}</Text>
           <Text className="text-muted-foreground mt-1 text-sm">{t('auth.haveAccount')}</Text>
         </View>
 
@@ -115,6 +117,18 @@ export default function LoginScreen() {
             </Pressable>
           ))}
         </View>
+
+        {/* Mehmon sifatida davom etish */}
+        <Pressable
+          onPress={() =>
+            router.replace(redirect && redirect.startsWith('/') ? (redirect as never) : '/(tabs)')
+          }
+          className="border-border active:bg-muted mt-4 h-[50px] flex-row items-center justify-center gap-2 rounded-2xl border"
+        >
+          <Text className="text-muted-foreground text-sm font-semibold">
+            Mehmon sifatida davom etish
+          </Text>
+        </Pressable>
 
         <Text className="text-muted-foreground mt-6 text-center text-[11px]">
           {t('auth.termsAgree')} <Text className="text-primary">{t('auth.termsLink')}</Text>{' '}

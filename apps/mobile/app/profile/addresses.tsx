@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react-native';
+import { AlertTriangle, Check, Home, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -221,7 +221,7 @@ export default function AddressesScreen() {
   };
 
   return (
-    <View className="bg-background flex-1">
+    <View className="bg-paper flex-1">
       <Header
         title={t('profile.addressesPage.title')}
         showBack
@@ -295,7 +295,7 @@ export default function AddressesScreen() {
                     }}
                     className="border-primary bg-primary/5 flex-row items-center gap-2 rounded-xl border border-dashed p-3 active:opacity-80"
                   >
-                    <MapPin size={18} color="#8B0020" />
+                    <MapPin size={18} color="#531625" />
                     <View className="flex-1">
                       <Text className="text-primary text-sm font-semibold">
                         {t('profile.addressesPage.pickOnMap')}
@@ -367,7 +367,7 @@ export default function AddressesScreen() {
                           <View className="flex-row items-start gap-2">
                             <MapPin
                               size={16}
-                              color={sel ? '#8B0020' : '#94a3b8'}
+                              color={sel ? '#531625' : '#94a3b8'}
                               style={{ marginTop: 2 }}
                             />
                             <View className="min-w-0 flex-1">
@@ -390,7 +390,7 @@ export default function AddressesScreen() {
                                 </Text>
                               ) : null}
                             </View>
-                            {sel ? <Check size={18} color="#8B0020" /> : null}
+                            {sel ? <Check size={18} color="#531625" /> : null}
                           </View>
                         </Pressable>
                       );
@@ -481,62 +481,89 @@ export default function AddressesScreen() {
               />
             ) : null
           ) : (
-            items.map((a) => (
-              <View key={a.id} className="border-border bg-card rounded-2xl border p-4">
-                <View className="flex-row items-start justify-between">
-                  <View className="min-w-0 flex-1">
+            <>
+              {items.map((a) => (
+                <View key={a.id} className="border-border rounded-[18px] border bg-white p-[15px]">
+                  <View className="flex-row items-center gap-3">
+                    <View
+                      className="h-10 w-10 items-center justify-center rounded-[12px]"
+                      style={{ backgroundColor: '#FBF2F4' }}
+                    >
+                      {a.type === 'HOME' ? (
+                        <Home size={20} color="#531625" />
+                      ) : (
+                        <MapPin size={20} color="#531625" />
+                      )}
+                    </View>
                     <View className="flex-row items-center gap-2">
                       <Text className="text-foreground text-sm font-bold">
                         {a.label || t(TYPES.find((x) => x.key === a.type)?.labelKey ?? '')}
                       </Text>
                       {a.isDefault ? (
-                        <View className="rounded-full bg-emerald-100 px-2 py-0.5">
-                          <Text className="text-[10px] font-bold text-emerald-700">
+                        <View
+                          className="rounded-full px-2 py-0.5"
+                          style={{ backgroundColor: '#FDF3F5' }}
+                        >
+                          <Text className="text-primary text-[10px] font-bold">
                             {t('profile.addressesPage.defaultBadge')}
                           </Text>
                         </View>
                       ) : null}
                     </View>
-                    <Text className="text-foreground mt-1 text-sm">{a.recipientName}</Text>
-                    <Text className="text-muted-foreground text-xs">{a.phone}</Text>
-                    <Text className="text-muted-foreground mt-0.5 text-xs">
-                      {[a.region, a.city, a.street, a.apartment].filter(Boolean).join(', ')}
-                    </Text>
-                    {a.landmark ? (
-                      <Text className="text-muted-foreground text-xs">
-                        {t('profile.addressesPage.landmarkPrefix')} {a.landmark}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View className="flex-row items-center">
+                    <View className="flex-1" />
                     <Pressable
                       onPress={() => openEdit(a)}
                       hitSlop={8}
-                      className="active:bg-muted h-9 w-9 items-center justify-center rounded-full"
+                      className="bg-muted h-8 w-8 items-center justify-center rounded-full active:opacity-70"
                     >
-                      <Pencil size={16} color="#0A0A0C" />
+                      <Pencil size={15} color="#0A0A0C" />
                     </Pressable>
                     <Pressable
                       onPress={() => onDelete(a)}
                       hitSlop={8}
-                      className="active:bg-muted h-9 w-9 items-center justify-center rounded-full"
+                      className="bg-muted ml-2 h-8 w-8 items-center justify-center rounded-full active:opacity-70"
                     >
-                      <Trash2 size={16} color="#ef4444" />
+                      <Trash2 size={15} color="#ef4444" />
                     </Pressable>
                   </View>
-                </View>
-                {!a.isDefault ? (
-                  <Pressable
-                    onPress={() => onMakeDefault(a)}
-                    className="border-border active:bg-muted mt-3 items-center rounded-xl border py-2"
-                  >
-                    <Text className="text-foreground text-xs font-semibold">
-                      {t('profile.addressesPage.makeDefault')}
+
+                  <Text className="mt-2.5 text-[13px] leading-5" style={{ color: '#3a3a40' }}>
+                    {a.recipientName} ·{' '}
+                    {[a.region, a.city, a.street, a.apartment].filter(Boolean).join(', ')}
+                  </Text>
+                  {a.landmark ? (
+                    <Text className="mt-1 text-[12px]" style={{ color: '#3a3a40' }}>
+                      {t('profile.addressesPage.landmarkPrefix')} {a.landmark}
                     </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            ))
+                  ) : null}
+                  <Text className="mt-1 text-[12px] text-neutral-300">{a.phone}</Text>
+
+                  {!a.isDefault ? (
+                    <Pressable
+                      onPress={() => onMakeDefault(a)}
+                      className="border-border active:bg-muted mt-3 items-center rounded-xl border py-2"
+                    >
+                      <Text className="text-foreground text-xs font-semibold">
+                        {t('profile.addressesPage.makeDefault')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+
+              {!showForm ? (
+                <Pressable
+                  onPress={openNew}
+                  className="flex-row items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed p-[15px] active:opacity-70"
+                  style={{ borderColor: '#DAD2CC' }}
+                >
+                  <Plus size={18} color="#531625" />
+                  <Text className="text-primary font-semibold">
+                    {t('profile.addressesPage.addAddress')}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </>
           )}
         </ScrollView>
       )}

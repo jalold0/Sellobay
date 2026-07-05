@@ -25,7 +25,8 @@
     "from": "от",
     "to": "до",
     "yes": "Да",
-    "no": "Нет"
+    "no": "Нет",
+    "all": "Все"
   },
   "nav": {
     "home": "Главная",
@@ -58,16 +59,28 @@
     "accessories": "Аксессуары"
   },
   "hero": {
-    "eyebrow": "Премиум 2026 · Из Узбекистана",
-    "headlineLine1": "Тысячи брендов.",
-    "headlineLine2": "Один маркетплейс.",
-    "subheadline": "Sellobay — крупнейший мультивендорный маркетплейс Узбекистана. Премиум-одежда, косметика, аксессуары и многое другое. Быстрая доставка, гарантия, проверка на пункте выдачи.",
+    "eyebrow": "Новый сезон · 2026",
+    "headlineLine1": "Стиль — это язык.",
+    "headlineLine2": "Говорите на нём",
+    "subheadline": "Тысячи проверенных продавцов, более 2 миллионов оригинальных товаров. До вашей двери за 24 часа.",
     "ctaShop": "Покупать",
     "ctaSell": "Стать продавцом",
     "trustFast": "Доставка 24 часа",
     "trustAuthentic": "100% оригинал",
     "trustReturn": "Проверка при получении",
-    "editorsPick": "Выбор редакции"
+    "editorsPick": "Выбор редакции",
+    "headlineLine3": "на Sellobay.",
+    "ctaCollection": "Смотреть коллекцию",
+    "stats": {
+      "sellersValue": "50 000+",
+      "sellersLabel": "продавцов",
+      "productsValue": "2 млн+",
+      "productsLabel": "товаров",
+      "deliveryValue": "24 часа",
+      "deliveryLabel": "доставка",
+      "authenticValue": "100%",
+      "authenticLabel": "гарантия оригинальности"
+    }
   },
   "home": {
     "categoriesTitle": "Категории",
@@ -84,6 +97,30 @@
       "fastDelivery": "Быстрая доставка",
       "fast24h": "24 часа",
       "satisfied": "Довольных клиентов"
+    },
+    "categoriesHeadline": "С чего начнём?",
+    "viewAllLong": "Смотреть все",
+    "bestSellersEyebrow": "Выбор покупателей",
+    "editorial": {
+      "eyebrow": "Избранная коллекция",
+      "titleLine1": "Осенний гардероб:",
+      "titleLine2": "25 базовых вещей",
+      "link": "Открыть коллекцию",
+      "womenTitle": "Для женщин",
+      "womenCount": "840 000+ товаров",
+      "saleEyebrow": "Только 48 часов",
+      "saleTitleLine1": "Сезонный SALE",
+      "saleTitleLine2": "до −50%",
+      "saleCta": "К скидкам"
+    },
+    "sellerCta": {
+      "eyebrow": "Для продавцов",
+      "titleLine1": "Дотянитесь до миллионов",
+      "titleLine2": "покупателей уже сегодня",
+      "perk1": "Регистрация за 15 минут",
+      "perk2": "Первый месяц без комиссии",
+      "perk3": "Fulfillment-склад",
+      "cta": "Начать продавать"
     }
   },
   "featured": {
@@ -131,7 +168,7 @@
   "footer": {
     "newsletterTitle": "Узнавайте о новинках первыми",
     "newsletterSubtitle": "Оставьте email и получите купон на 10% скидку. Без спама — только новости.",
-    "tagline": "Крупнейший маркетплейс Узбекистана. Тысячи продавцов, премиум-бренды и быстрая доставка.",
+    "tagline": "Крупнейший multi-vendor маркетплейс Узбекистана. Тысячи продавцов, миллионы оригинальных товаров.",
     "address": "г. Ташкент, Мирзо-Улугбекский район",
     "paymentMethods": "Способы оплаты:",
     "copyright": "© {year} Sellobay LLC. Все права защищены.",
@@ -159,7 +196,8 @@
       "terms": "Условия использования",
       "privacy": "Политика конфиденциальности",
       "cookies": "Политика cookie",
-      "offer": "Публичная оферта"
+      "offer": "Публичная оферта",
+      "sellerHub": "Seller Hub"
     },
     "newsletter": {
       "placeholder": "Ваш email",
@@ -193,7 +231,8 @@
     ],
     "pageTitle": "Поиск",
     "pageEmptyTitle": "Начните поиск",
-    "pageEmptyHint": "Введите название товара, бренд или категорию в строке поиска"
+    "pageEmptyHint": "Введите название товара, бренд или категорию в строке поиска",
+    "placeholderLong": "Ищите товар, бренд или категорию..."
   },
   "catalog": {
     "title": "Все товары",
@@ -225,7 +264,13 @@
     "allProducts": "Все товары",
     "searchResults": "Результаты поиска \"{q}\"",
     "priceFrom": "0",
-    "priceTo": "10M"
+    "priceTo": "10M",
+    "priceHeader": "Цена, сум",
+    "brandMore": "+ ещё {count} брендов",
+    "filterOther": "Другое",
+    "onlyOriginal": "Только оригинал",
+    "inDiscount": "Со скидкой",
+    "delivery24h": "Доставка за 24 часа"
   },
   "product": {
     "addToCart": "В корзину",
@@ -255,7 +300,7 @@
     "addedToWishlist": "Добавлено в избранное",
     "addedToCart": "Добавлено в корзину",
     "deliveryTomorrow": "Завтра",
-    "deliveryFast": "Быстрая доставка",
+    "deliveryFast": "Быстрая доставка — по Ташкенту в течение 24 часов",
     "freeShip": "Бесплатно",
     "soldSuffix": "{count} продано",
     "couponSuffix": "купон {amount}",
@@ -274,13 +319,27 @@
     "verifiedPurchase": "Подтверждённая покупка",
     "helpful": "Полезно ({count})",
     "answer": "Ответ",
-    "deliveryFast": "Быстрая доставка — по Ташкенту в течение 24 часов",
     "deliveryReturn": "Проверьте на пункте выдачи — вернёте на месте, если не подойдёт",
     "deliveryReturnLegal": "По закону сохраняется право вернуть неиспользованный товар в течение 14 дней",
     "deliveryAuthentic": "Гарантия 100% оригинала",
     "trustPopular": "Популярный товар",
     "trustTopRated": "Высокий рейтинг",
-    "trustVerified": "Проверенный продавец"
+    "trustVerified": "Проверенный продавец",
+    "original": "Оригинал",
+    "premiumSeller": "Premium продавец",
+    "reviewsCountLong": "{count} отзывов",
+    "soldCount": "продано {count}+ раз",
+    "promoUntil": "акция действует до {date}",
+    "deliveryTomorrowFull": "Доставка завтра — по Ташкенту, {price}",
+    "authenticityReturn": "Гарантия оригинальности — бесплатный возврат в течение 14 дней",
+    "installment4x": "Рассрочка — 4 × {amount}, без процентов",
+    "visitStore": "В магазин",
+    "sellerOrders": "{count} заказов",
+    "sellerYears": "на площадке {years} года",
+    "tabDelivery": "Доставка и возврат",
+    "reviewsVerified": "на основе {count} подтверждённых отзывов",
+    "similarProducts": "Похожие товары",
+    "deliveryFastShort": "2-3 дня"
   },
   "cart": {
     "title": "Корзина",
@@ -325,7 +384,8 @@
       "address": "Адрес",
       "shipping": "Доставка",
       "payment": "Оплата",
-      "review": "Подтверждение"
+      "review": "Подтверждение",
+      "cart": "Корзина"
     },
     "address": {
       "title": "Адрес доставки",
@@ -365,7 +425,16 @@
       "standardSub": "24-48 часов",
       "tashkentOnly": "Доставка на дом доступна только по городу Ташкенту. Для регионов выберите пункт самовывоза.",
       "switchToPickup": "Перейти к пунктам самовывоза",
-      "pickupSoon": "Пункты выдачи скоро появятся. Пока укажите регион и город — доставим в ближайший пункт."
+      "pickupSoon": "Пункты выдачи скоро появятся. Пока укажите регион и город — доставим в ближайший пункт.",
+      "methodTitle": "Способ доставки",
+      "courierRow": "Курьером — завтра",
+      "courierWindow": "с 10:00 до 22:00, до двери",
+      "pickupRow": "Пункт выдачи",
+      "nearestPoint": "Ближайший к вам: {name}",
+      "freeBepul": "Бесплатно",
+      "expressRow": "Express — сегодня, за 3 часа",
+      "expressChip": "БЫСТРО",
+      "expressTashkent": "Только по Ташкенту"
     },
     "payment": {
       "title": "Выберите способ оплаты",
@@ -381,7 +450,13 @@
       "humoSub": "Пластиковая карта",
       "cash": "Наличные",
       "cashSub": "Оплата курьеру при доставке",
-      "secureNote": "Данные карты надёжно хранятся на сервере платёжной системы, мы их не видим."
+      "secureNote": "Данные карты надёжно хранятся на сервере платёжной системы, мы их не видим.",
+      "methodTitle": "Способ оплаты",
+      "card": "Карта",
+      "cardSub": "Uzcard · Humo · Visa",
+      "appConfirm": "Подтверждение в приложении",
+      "cashShort": "Наличные",
+      "onReceive": "При получении"
     },
     "review": {
       "title": "Проверьте ваш заказ",
@@ -409,7 +484,17 @@
       "required": "Заполните обязательные поля",
       "network": "Ошибка сети",
       "failed": "Заказ не создан"
-    }
+    },
+    "securePayment": "Безопасная оплата",
+    "summaryTitle": "Заказ · {count} товара",
+    "summaryItemsCount": "Товары ({count})",
+    "summaryDiscount": "Скидка",
+    "goToPayment": "Перейти к оплате",
+    "sslNote": "Ваши данные защищены SSL",
+    "promoAppliedChip": "{code} применён ✓",
+    "premiumPoints": "За этот заказ вы получите +{points} баллов — программа Sellobay Premium",
+    "pcs": "{count} шт.",
+    "newAddress": "+ Новый адрес"
   },
   "auth": {
     "loginRequired": "Войдите в систему, чтобы оформить заказ",
@@ -474,7 +559,21 @@
     "accountCreated": "Аккаунт создан",
     "accountCreatedHint": "Переходим в профиль",
     "sellerApplied": "Заявка продавца принята",
-    "sellerAppliedHint": "После одобрения админа вы получите доступ к панели продавца"
+    "sellerAppliedHint": "После одобрения админа вы получите доступ к панели продавца",
+    "welcomeTitle": "Добро пожаловать",
+    "phoneFirstHint": "Введите номер телефона — отправим код подтверждения по SMS. Аккаунт создастся автоматически.",
+    "getCode": "Получить код",
+    "panel": {
+      "titleLine1": "2 миллиона товаров.",
+      "titleLine2": "Один аккаунт.",
+      "benefit1": "Отслеживание заказов в реальном времени",
+      "benefit2": "Premium-баллы с каждой покупки",
+      "benefit3": "Личные скидки и ранний SALE"
+    },
+    "termsPrefix": "Продолжая, вы соглашаетесь с",
+    "offerLink": "Офертой",
+    "termsJoin": "и",
+    "termsAgreeSuffix": ""
   },
   "profile": {
     "title": "Личные данные",
@@ -488,7 +587,8 @@
       "reviews": "Мои отзывы",
       "settings": "Настройки",
       "becomeSeller": "Стать продавцом",
-      "promo": "Мои промокоды"
+      "promo": "Мои промокоды",
+      "returns": "Возвраты"
     },
     "signOut": "Выйти",
     "signingOut": "Выход...",
@@ -590,7 +690,26 @@
       "emptyTitle": "Заказов пока нет",
       "emptyDesc": "Оформите свой первый заказ",
       "itemsCount": "{count} товаров",
-      "detail": "Подробнее"
+      "detail": "Подробнее",
+      "filterAll": "Все",
+      "filterOnTheWay": "В пути",
+      "filterDelivered": "Доставленные",
+      "paidWith": "Оплачено · {method}",
+      "timeline": {
+        "received": "Принят",
+        "packed": "Собран",
+        "onTheWay": "В пути",
+        "delivered": "Доставлен"
+      },
+      "courier": "Курьер:",
+      "etaUntil": "Примерно до {time}",
+      "trackOnMap": "Следить на карте",
+      "reorder": "Повторить заказ"
+    },
+    "premiumCard": {
+      "label": "Sellobay Premium",
+      "pointsTier": "баллов · уровень {tier}",
+      "toNext": "До {tier} — {points} баллов"
     }
   },
   "groupBuy": {
@@ -629,7 +748,12 @@
     "nextTier": "Следующий: {tier}",
     "spendMore": "Купите ещё на {amount} сум",
     "cashback": "{pct}% кэшбэк",
-    "tiers": { "bronze": "Бронза", "silver": "Серебро", "gold": "Золото", "platinum": "Платина" },
+    "tiers": {
+      "bronze": "Бронза",
+      "silver": "Серебро",
+      "gold": "Золото",
+      "platinum": "Платина"
+    },
     "tierFrom": "от {amount} сум",
     "tierStart": "Начальный",
     "earnTitle": "Как копить коины",
@@ -766,5 +890,12 @@
     "descFreeShip": "Бесплатная доставка",
     "minOrder": "При заказе от {amount} сум",
     "minOrderShort": "от {amount} сум"
+  },
+  "utilityBar": {
+    "deliveryPromise": "Доставка по Узбекистану 24/7",
+    "becomeSeller": "Стать продавцом",
+    "help": "Помощь",
+    "trackOrder": "Отследить заказ",
+    "premium": "Sellobay Premium"
   }
 }

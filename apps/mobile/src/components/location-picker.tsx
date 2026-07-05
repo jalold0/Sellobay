@@ -79,9 +79,9 @@ export function LocationPicker({ initial, onConfirm, onClose }: Props) {
           className="border-border bg-background absolute right-4 top-4 h-11 w-11 items-center justify-center rounded-full border shadow"
         >
           {locating ? (
-            <ActivityIndicator size="small" color="#8B0020" />
+            <ActivityIndicator size="small" color="#531625" />
           ) : (
-            <Crosshair size={20} color="#8B0020" />
+            <Crosshair size={20} color="#531625" />
           )}
         </Pressable>
       </View>
@@ -92,7 +92,7 @@ export function LocationPicker({ initial, onConfirm, onClose }: Props) {
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         <View className="flex-row items-start gap-2">
-          <MapPin size={18} color="#8B0020" style={{ marginTop: 1 }} />
+          <MapPin size={18} color="#531625" style={{ marginTop: 1 }} />
           <Text className="text-foreground flex-1 text-sm">{addressLine}</Text>
         </View>
         <Button

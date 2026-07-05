@@ -25,7 +25,8 @@
     "from": "from",
     "to": "to",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "all": "All"
   },
   "nav": {
     "home": "Home",
@@ -58,16 +59,28 @@
     "accessories": "Accessories"
   },
   "hero": {
-    "eyebrow": "Premium 2026 · From Uzbekistan",
-    "headlineLine1": "Thousands of brands.",
-    "headlineLine2": "One marketplace.",
-    "subheadline": "Sellobay — Uzbekistan's largest multi-vendor marketplace. Premium clothing, cosmetics, accessories and more. Fast delivery, warranty, inspect on pickup.",
+    "eyebrow": "New season · 2026",
+    "headlineLine1": "Style is a language.",
+    "headlineLine2": "Speak it",
+    "subheadline": "Thousands of verified sellers, over 2 million original products. At your door within 24 hours.",
     "ctaShop": "Shop now",
     "ctaSell": "Become a seller",
     "trustFast": "24-hour delivery",
     "trustAuthentic": "100% authentic",
     "trustReturn": "Inspect on pickup",
-    "editorsPick": "Editor's pick"
+    "editorsPick": "Editor's pick",
+    "headlineLine3": "on Sellobay.",
+    "ctaCollection": "View collection",
+    "stats": {
+      "sellersValue": "50,000+",
+      "sellersLabel": "sellers",
+      "productsValue": "2M+",
+      "productsLabel": "products",
+      "deliveryValue": "24 hours",
+      "deliveryLabel": "delivery",
+      "authenticValue": "100%",
+      "authenticLabel": "authenticity guarantee"
+    }
   },
   "home": {
     "categoriesTitle": "Categories",
@@ -84,6 +97,30 @@
       "fastDelivery": "Fast delivery",
       "fast24h": "24 hours",
       "satisfied": "Happy customers"
+    },
+    "categoriesHeadline": "Where shall we start?",
+    "viewAllLong": "View all",
+    "bestSellersEyebrow": "Shoppers' choice",
+    "editorial": {
+      "eyebrow": "Curated collection",
+      "titleLine1": "Autumn wardrobe:",
+      "titleLine2": "25 essential pieces",
+      "link": "Open the collection",
+      "womenTitle": "For women",
+      "womenCount": "840,000+ products",
+      "saleEyebrow": "48 hours only",
+      "saleTitleLine1": "Seasonal SALE",
+      "saleTitleLine2": "up to −50%",
+      "saleCta": "Shop the sale"
+    },
+    "sellerCta": {
+      "eyebrow": "For sellers",
+      "titleLine1": "Reach millions of buyers",
+      "titleLine2": "starting today",
+      "perk1": "Register in 15 minutes",
+      "perk2": "First month commission-free",
+      "perk3": "Fulfillment warehouse",
+      "cta": "Start selling"
     }
   },
   "featured": {
@@ -131,7 +168,7 @@
   "footer": {
     "newsletterTitle": "Be the first to know about new arrivals",
     "newsletterSubtitle": "Leave your email and get a 10% discount coupon. No spam — only news.",
-    "tagline": "Uzbekistan's largest marketplace. Thousands of sellers, premium brands, and fast delivery.",
+    "tagline": "Uzbekistan's largest multi-vendor marketplace. Thousands of sellers, millions of original products.",
     "address": "Tashkent, Mirzo Ulugbek district",
     "paymentMethods": "Payment methods:",
     "copyright": "© {year} Sellobay LLC. All rights reserved.",
@@ -159,7 +196,8 @@
       "terms": "Terms of use",
       "privacy": "Privacy policy",
       "cookies": "Cookie policy",
-      "offer": "Public offer"
+      "offer": "Public offer",
+      "sellerHub": "Seller Hub"
     },
     "newsletter": {
       "placeholder": "Your email",
@@ -193,7 +231,8 @@
     ],
     "pageTitle": "Search",
     "pageEmptyTitle": "Start your search",
-    "pageEmptyHint": "Type a product name, brand or category in the search bar above"
+    "pageEmptyHint": "Type a product name, brand or category in the search bar above",
+    "placeholderLong": "Search products, brands or categories..."
   },
   "catalog": {
     "title": "All products",
@@ -225,7 +264,13 @@
     "allProducts": "All products",
     "searchResults": "Search results for \"{q}\"",
     "priceFrom": "0",
-    "priceTo": "10M"
+    "priceTo": "10M",
+    "priceHeader": "Price, UZS",
+    "brandMore": "+ {count} more brands",
+    "filterOther": "Other",
+    "onlyOriginal": "Original only",
+    "inDiscount": "On sale",
+    "delivery24h": "24-hour delivery"
   },
   "product": {
     "addToCart": "Add to cart",
@@ -255,7 +300,7 @@
     "addedToWishlist": "Added to wishlist",
     "addedToCart": "Added to cart",
     "deliveryTomorrow": "Tomorrow",
-    "deliveryFast": "Fast delivery",
+    "deliveryFast": "Fast delivery — within 24 hours across Tashkent",
     "freeShip": "Free",
     "soldSuffix": "{count} sold",
     "couponSuffix": "{amount} coupon",
@@ -274,13 +319,27 @@
     "verifiedPurchase": "Verified purchase",
     "helpful": "Helpful ({count})",
     "answer": "Answer",
-    "deliveryFast": "Fast delivery — within 24 hours across Tashkent",
     "deliveryReturn": "Inspect at the pickup point — return on the spot",
     "deliveryReturnLegal": "By law you keep the right to return unused goods within 14 days",
     "deliveryAuthentic": "100% authentic product guarantee",
     "trustPopular": "Popular product",
     "trustTopRated": "Top rated",
-    "trustVerified": "Verified seller"
+    "trustVerified": "Verified seller",
+    "original": "Original",
+    "premiumSeller": "Premium seller",
+    "reviewsCountLong": "{count} reviews",
+    "soldCount": "sold {count}+ times",
+    "promoUntil": "offer valid until {date}",
+    "deliveryTomorrowFull": "Delivered tomorrow — across Tashkent, {price}",
+    "authenticityReturn": "Authenticity guarantee — free returns within 14 days",
+    "installment4x": "Installments — 4 × {amount}, interest-free",
+    "visitStore": "Visit store",
+    "sellerOrders": "{count} orders",
+    "sellerYears": "{years} years on the platform",
+    "tabDelivery": "Delivery & returns",
+    "reviewsVerified": "based on {count} verified reviews",
+    "similarProducts": "Similar products",
+    "deliveryFastShort": "2-3 days"
   },
   "cart": {
     "title": "Cart",
@@ -323,9 +382,10 @@
     "openCatalog": "Go to catalog",
     "steps": {
       "address": "Address",
-      "shipping": "Shipping",
+      "shipping": "Delivery",
       "payment": "Payment",
-      "review": "Review"
+      "review": "Review",
+      "cart": "Cart"
     },
     "address": {
       "title": "Delivery address",
@@ -365,7 +425,16 @@
       "standardSub": "24-48 hours",
       "tashkentOnly": "Home delivery is available only within Tashkent city. For regions, choose a pickup point.",
       "switchToPickup": "Switch to pickup point",
-      "pickupSoon": "Pickup points are coming soon. For now specify your region and city — we'll deliver to the nearest point."
+      "pickupSoon": "Pickup points are coming soon. For now specify your region and city — we'll deliver to the nearest point.",
+      "methodTitle": "Delivery method",
+      "courierRow": "By courier — tomorrow",
+      "courierWindow": "10:00 – 22:00, to your door",
+      "pickupRow": "Pickup point",
+      "nearestPoint": "Nearest to you: {name}",
+      "freeBepul": "Free",
+      "expressRow": "Express — today, within 3 hours",
+      "expressChip": "FAST",
+      "expressTashkent": "Tashkent city only"
     },
     "payment": {
       "title": "Choose payment method",
@@ -381,7 +450,13 @@
       "humoSub": "Plastic card",
       "cash": "Cash on delivery",
       "cashSub": "Pay courier on arrival",
-      "secureNote": "Your card details are securely stored on the payment provider's server — we don't see them."
+      "secureNote": "Your card details are securely stored on the payment provider's server — we don't see them.",
+      "methodTitle": "Payment method",
+      "card": "Card",
+      "cardSub": "Uzcard · Humo · Visa",
+      "appConfirm": "Confirm in app",
+      "cashShort": "Cash",
+      "onReceive": "On delivery"
     },
     "review": {
       "title": "Review your order",
@@ -409,7 +484,17 @@
       "required": "Please fill required fields",
       "network": "Network error",
       "failed": "Order not created"
-    }
+    },
+    "securePayment": "Secure payment",
+    "summaryTitle": "Order · {count} items",
+    "summaryItemsCount": "Items ({count})",
+    "summaryDiscount": "Discount",
+    "goToPayment": "Proceed to payment",
+    "sslNote": "Your data is protected with SSL",
+    "promoAppliedChip": "{code} applied ✓",
+    "premiumPoints": "You'll earn +{points} points on this order — Sellobay Premium",
+    "pcs": "{count} pcs",
+    "newAddress": "+ New address"
   },
   "auth": {
     "loginRequired": "Please sign in to place an order",
@@ -474,7 +559,21 @@
     "accountCreated": "Account created",
     "accountCreatedHint": "Redirecting to your profile",
     "sellerApplied": "Seller application received",
-    "sellerAppliedHint": "Once an admin approves, you'll access the seller panel"
+    "sellerAppliedHint": "Once an admin approves, you'll access the seller panel",
+    "welcomeTitle": "Welcome",
+    "phoneFirstHint": "Enter your phone number — we'll text you a confirmation code. Your account is created automatically.",
+    "getCode": "Get code",
+    "panel": {
+      "titleLine1": "2 million products.",
+      "titleLine2": "One account.",
+      "benefit1": "Track orders in real time",
+      "benefit2": "Premium points on every purchase",
+      "benefit3": "Personal discounts and early SALE access"
+    },
+    "termsPrefix": "By continuing you agree to the",
+    "offerLink": "Offer",
+    "termsJoin": "and",
+    "termsAgreeSuffix": ""
   },
   "profile": {
     "title": "Personal information",
@@ -488,7 +587,8 @@
       "reviews": "My reviews",
       "settings": "Settings",
       "becomeSeller": "Become a seller",
-      "promo": "My promo codes"
+      "promo": "My promo codes",
+      "returns": "Returns"
     },
     "signOut": "Sign out",
     "signingOut": "Signing out...",
@@ -590,7 +690,26 @@
       "emptyTitle": "No orders yet",
       "emptyDesc": "Place your first order",
       "itemsCount": "{count} items",
-      "detail": "Details"
+      "detail": "Details",
+      "filterAll": "All",
+      "filterOnTheWay": "On the way",
+      "filterDelivered": "Delivered",
+      "paidWith": "Paid · {method}",
+      "timeline": {
+        "received": "Received",
+        "packed": "Packed",
+        "onTheWay": "On the way",
+        "delivered": "Delivered"
+      },
+      "courier": "Courier:",
+      "etaUntil": "Est. by {time}",
+      "trackOnMap": "Track on map",
+      "reorder": "Reorder"
+    },
+    "premiumCard": {
+      "label": "Sellobay Premium",
+      "pointsTier": "points · {tier} tier",
+      "toNext": "{points} points to {tier}"
     }
   },
   "groupBuy": {
@@ -629,7 +748,12 @@
     "nextTier": "Next: {tier}",
     "spendMore": "Spend {amount} UZS more",
     "cashback": "{pct}% cashback",
-    "tiers": { "bronze": "Bronze", "silver": "Silver", "gold": "Gold", "platinum": "Platinum" },
+    "tiers": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum"
+    },
     "tierFrom": "from {amount} UZS",
     "tierStart": "Starter",
     "earnTitle": "How to earn coins",
@@ -766,5 +890,12 @@
     "descFreeShip": "Free shipping",
     "minOrder": "On orders from {amount} so'm",
     "minOrderShort": "from {amount} so'm"
+  },
+  "utilityBar": {
+    "deliveryPromise": "24/7 delivery across Uzbekistan",
+    "becomeSeller": "Become a seller",
+    "help": "Help",
+    "trackOrder": "Track order",
+    "premium": "Sellobay Premium"
   }
 }

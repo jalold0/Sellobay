@@ -248,7 +248,7 @@ export default function OrdersScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }}
           ItemSeparatorComponent={OrderSeparator}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#8B0020" />
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#531625" />
           }
           ListEmptyComponent={
             <EmptyState

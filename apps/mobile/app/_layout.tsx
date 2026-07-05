@@ -1,5 +1,11 @@
 import '../global.css';
 
+import { Inter_400Regular, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
+import {
+  PlayfairDisplay_600SemiBold,
+  PlayfairDisplay_700Bold,
+  useFonts,
+} from '@expo-google-fonts/playfair-display';
 import NetInfo from '@react-native-community/netinfo';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { QueryClient, focusManager, onlineManager } from '@tanstack/react-query';
@@ -45,6 +51,15 @@ export default function RootLayout() {
   const loading = useSession((s) => s.loading);
   const isAuthenticated = useSession((s) => s.isAuthenticated);
 
+  // Playfair Display (sarlavha/narx) + Inter (matn) — brend tipografiyasi
+  const [fontsLoaded] = useFonts({
+    PlayfairDisplay_600SemiBold,
+    PlayfairDisplay_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_700Bold,
+  });
+
   React.useEffect(() => {
     void hydrate();
   }, [hydrate]);
@@ -66,12 +81,12 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  if (loading) {
+  if (loading || !fontsLoaded) {
     return (
       <View
         style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}
       >
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#531625" />
       </View>
     );
   }

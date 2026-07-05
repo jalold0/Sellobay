@@ -72,7 +72,7 @@ export default function PickupPointsScreen() {
       >
         {isLoading ? (
           <View className="items-center py-8">
-            <ActivityIndicator color="#8B0020" />
+            <ActivityIndicator color="#531625" />
           </View>
         ) : points.length === 0 ? (
           <View className="items-center px-6 py-8">
