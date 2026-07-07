@@ -718,6 +718,23 @@
       "trackOnMap": "Track on map",
       "reorder": "Reorder"
     },
+    "orderDetail": {
+      "back": "Back to orders",
+      "items": "Items",
+      "subtotal": "Items total",
+      "shipping": "Shipping",
+      "discount": "Discount",
+      "total": "Total",
+      "deliveryAddress": "Delivery address",
+      "pickupPoint": "Pickup point",
+      "payment": "Payment",
+      "history": "Status history",
+      "reviewNote": "Receipt received — an admin is reviewing it. Your order is prepared once confirmed.",
+      "cancel": "Cancel order",
+      "cancelConfirm": "Confirm order cancellation?",
+      "cancelled": "Order cancelled",
+      "notFound": "Order not found"
+    },
     "premiumCard": {
       "label": "Sellobay Premium",
       "pointsTier": "points · {tier} tier",

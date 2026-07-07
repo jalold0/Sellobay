@@ -718,6 +718,23 @@
       "trackOnMap": "Следить на карте",
       "reorder": "Повторить заказ"
     },
+    "orderDetail": {
+      "back": "К заказам",
+      "items": "Товары",
+      "subtotal": "Стоимость товаров",
+      "shipping": "Доставка",
+      "discount": "Скидка",
+      "total": "Итого",
+      "deliveryAddress": "Адрес доставки",
+      "pickupPoint": "Пункт выдачи",
+      "payment": "Оплата",
+      "history": "История статуса",
+      "reviewNote": "Чек получен — администратор проверяет. После подтверждения заказ будет собран.",
+      "cancel": "Отменить заказ",
+      "cancelConfirm": "Подтвердить отмену заказа?",
+      "cancelled": "Заказ отменён",
+      "notFound": "Заказ не найден"
+    },
     "premiumCard": {
       "label": "Sellobay Premium",
       "pointsTier": "баллов · уровень {tier}",

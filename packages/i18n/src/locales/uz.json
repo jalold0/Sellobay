@@ -725,6 +725,23 @@
       "trackOnMap": "Xaritada kuzatish",
       "reorder": "Qayta buyurtma"
     },
+    "orderDetail": {
+      "back": "Buyurtmalarga qaytish",
+      "items": "Mahsulotlar",
+      "subtotal": "Mahsulotlar narxi",
+      "shipping": "Yetkazib berish",
+      "discount": "Chegirma",
+      "total": "Jami",
+      "deliveryAddress": "Yetkazib berish manzili",
+      "pickupPoint": "Olib ketish punkti",
+      "payment": "To'lov",
+      "history": "Holat tarixi",
+      "reviewNote": "To'lov cheki qabul qilindi — admin tekshirmoqda. Tasdiqlangach buyurtma tayyorlanadi.",
+      "cancel": "Buyurtmani bekor qilish",
+      "cancelConfirm": "Buyurtmani bekor qilishni tasdiqlaysizmi?",
+      "cancelled": "Buyurtma bekor qilindi",
+      "notFound": "Buyurtma topilmadi"
+    },
     "premiumCard": {
       "label": "Sellobay Premium",
       "pointsTier": "ball · {tier} daraja",

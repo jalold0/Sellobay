@@ -82,6 +82,11 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
       },
     },
   },
+  payments: {
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: { provider: true, status: true },
+  },
 });
 
 type OrderRow = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
@@ -95,10 +100,16 @@ function isReturnable(status: OrderRow['status'], deliveredAt: Date | null): boo
 }
 
 function serialize(o: OrderRow) {
+  const pay = o.payments[0];
   return {
     id: o.id,
     number: o.number,
     status: o.status,
+    paymentProvider: pay?.provider ?? null,
+    paymentStatus: pay?.status ?? null,
+    // Karta orqali to'lov cheki admin tasdiqini kutmoqdami?
+    paymentReview:
+      pay?.provider === 'UZCARD' && pay?.status === 'PENDING' && o.status !== 'CANCELLED',
     subtotal: o.subtotal.toString(),
     shippingTotal: o.shippingTotal.toString(),
     discountTotal: o.discountTotal.toString(),
