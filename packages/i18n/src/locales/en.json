@@ -836,7 +836,8 @@
       "CANCELLED": "Cancelled",
       "RETURNED": "Returned",
       "REFUNDED": "Refunded"
-    }
+    },
+    "paymentReview": "Payment under review"
   },
   "sell": {
     "title": "Become a seller",

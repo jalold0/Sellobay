@@ -477,6 +477,12 @@ export async function GET() {
           },
         },
       },
+      // Karta orqali qo'lda to'lov holati (chek admin tomonidan tekshirilmoqdami)
+      payments: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { provider: true, status: true },
+      },
     },
   });
 
@@ -492,6 +498,11 @@ export async function GET() {
       deliveredAt: o.deliveredAt?.toISOString() ?? null,
       cancelledAt: o.cancelledAt?.toISOString() ?? null,
       deliveryMethod: o.deliveryMethod,
+      // Karta orqali to'lov cheki admin tasdiqini kutmoqdami?
+      paymentReview:
+        o.payments[0]?.provider === 'UZCARD' &&
+        o.payments[0]?.status === 'PENDING' &&
+        o.status !== 'CANCELLED',
       // Hozircha barcha buyurtmalar lokal (UZ). Global (chegaralararo) keyingi bosqichda.
       scope: 'LOCAL' as const,
       shippingAddress: o.shippingAddress

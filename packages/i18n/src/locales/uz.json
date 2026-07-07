@@ -843,7 +843,8 @@
       "CANCELLED": "Bekor qilindi",
       "RETURNED": "Qaytarildi",
       "REFUNDED": "Pul qaytarildi"
-    }
+    },
+    "paymentReview": "To'lov tekshirilmoqda"
   },
   "sell": {
     "title": "Sotuvchi bo'lish",
