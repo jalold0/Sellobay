@@ -24,6 +24,7 @@ import {
 import { type ColumnDef } from '@tanstack/react-table';
 import {
   Archive,
+  CheckCircle2,
   Copy,
   Filter,
   MoreHorizontal,
@@ -31,13 +32,14 @@ import {
   Pencil,
   Plus,
   Trash2,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { ProductStatusBadge } from '../../components/status/product-status-badge';
-import { listProducts, type AdminProduct } from '@/lib/auth/client';
+import { listProducts, moderateProduct, type AdminProduct } from '@/lib/auth/client';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
 
 export default function AdminProductsPage() {
@@ -59,6 +61,26 @@ export default function AdminProductsPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  const moderate = React.useCallback(
+    async (id: string, action: 'approve' | 'reject') => {
+      const res = await moderateProduct(id, action);
+      if (res.success) {
+        toast({
+          title: action === 'approve' ? 'Mahsulot tasdiqlandi' : 'Mahsulot rad etildi',
+          description:
+            action === 'approve'
+              ? 'Endi web va mobil ilovada ko`rinadi'
+              : 'Qoralamaga qaytarildi — sotuvchi tahrirlashi mumkin',
+          variant: 'success',
+        });
+        await load();
+      } else {
+        toast({ title: res.error.message, variant: 'destructive' });
+      }
+    },
+    [load],
+  );
 
   // Filtr variantlari — yuklangan mahsulotlardan
   const brandOptions = React.useMemo(
@@ -196,6 +218,23 @@ export default function AdminProductsPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Amallar</DropdownMenuLabel>
+                {row.original.status === 'PENDING_REVIEW' ? (
+                  <>
+                    <DropdownMenuItem
+                      className="text-emerald-600"
+                      onClick={() => void moderate(row.original.id, 'approve')}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" /> Tasdiqlash
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => void moderate(row.original.id, 'reject')}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" /> Rad etish
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
                 <DropdownMenuItem asChild>
                   <Link href={`/products/${row.original.id}`}>
                     <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
@@ -223,7 +262,7 @@ export default function AdminProductsPage() {
         enableSorting: false,
       },
     ],
-    [],
+    [moderate],
   );
 
   const selectedCount = Object.keys(selection).length;

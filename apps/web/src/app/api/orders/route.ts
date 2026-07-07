@@ -8,8 +8,17 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import {
+  deductStockForOrder,
+  InsufficientStockError,
+  type StockLine,
+} from '@/lib/inventory-server';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
+import {
+  MANUAL_CARD_PROVIDER,
+  validateReceiptDataUrl,
+} from '@/lib/manual-payment';
 import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
@@ -43,6 +52,9 @@ const createSchema = z.object({
     .default('CLICK'),
   promoCode: z.string().trim().max(40).optional().nullable(),
   notes: z.string().trim().max(500).optional().nullable(),
+  // Karta orqali qo'lda to'lov (UZCARD) — chek (data-URL rasm) + ixtiyoriy izoh.
+  paymentReceipt: z.string().max(5_200_000).optional().nullable(),
+  paymentNote: z.string().trim().max(300).optional().nullable(),
   // Sello Coins — ishlatmoqchi bo'lgan coinlar (login user uchun; backend cheklaydi)
   redeemCoins: z.number().int().min(0).max(10_000_000).optional(),
 });
@@ -66,6 +78,12 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri ma'lumot");
   }
   const input = parsed.data;
+
+  // Karta orqali qo'lda to'lov (UZCARD) — chek majburiy va to'g'ri formatda bo'lishi shart.
+  if (input.paymentProvider === MANUAL_CARD_PROVIDER) {
+    const r = validateReceiptDataUrl(input.paymentReceipt);
+    if (!r.ok) return apiError(400, 'RECEIPT_REQUIRED', r.error);
+  }
 
   // Uygacha/Express yetkazish FAQAT Toshkent shahar uchun. Koordinata berilgan
   // bo'lsa (mobil) — shahar tashqarisini rad etamiz (punktdan foydalanilsin).
@@ -110,23 +128,59 @@ export async function POST(req: NextRequest) {
       basePrice: true,
       taxRate: true,
       sellerId: true,
+      // Ombor — varyant + inventar (MVP: bitta ombor, bitta inventar qatori/varyant)
+      variants: {
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          isActive: true,
+          inventory: { select: { id: true, warehouseId: true, quantityOnHand: true } },
+        },
+      },
     },
   });
   if (products.length !== productIds.length) {
     return apiError(400, 'PRODUCT_NOT_FOUND', "Ba'zi mahsulotlar topilmadi yoki faol emas");
   }
   const productById = new Map(products.map((p) => [p.id, p]));
+  const productName = (name: unknown): string => (name as { uz?: string })?.uz ?? 'Mahsulot';
 
-  // 2. Subtotal hisoblash
+  // 2. Subtotal + varyant/ombor aniqlash (pre-check). Har bir satr uchun sotiladigan
+  //    varyantni topamiz (aniq berilgan variantId yoki mahsulotning default varyanti),
+  //    inventar qatorini olamiz va zaxirani tez tekshiramiz. Yakuniy (race'siz) himoya
+  //    $transaction ichidagi shartli UPDATE'da (deductStockForOrder). Bu yer — tezkor javob.
   let subtotal = new Prisma.Decimal(0);
-  const orderItemsData = input.items.map((it) => {
+  const orderItemsData: Prisma.OrderItemUncheckedCreateWithoutOrderInput[] = [];
+  const stockLines: StockLine[] = [];
+  for (const it of input.items) {
     const p = productById.get(it.productId)!;
+
+    // Varyantni aniqlash
+    const variant = it.variantId
+      ? p.variants.find((v) => v.id === it.variantId)
+      : (p.variants.find((v) => v.isActive) ?? p.variants[0]);
+    if (it.variantId && !variant) {
+      return apiError(400, 'VARIANT_NOT_FOUND', 'Tanlangan variant topilmadi');
+    }
+    if (!variant) {
+      // Inventar sozlanmagan — sotib bo'lmaydi (oversell'dan ehtiyot). Seed/backfill kerak.
+      return apiError(409, 'STOCK_INSUFFICIENT', `«${productName(p.name)}» hozircha sotuvda yo'q`);
+    }
+    const inv = variant.inventory[0]; // MVP: bitta ombor → bitta inventar qatori
+    if (!inv || inv.quantityOnHand < it.quantity) {
+      return apiError(
+        409,
+        'STOCK_INSUFFICIENT',
+        `«${productName(p.name)}» omborda yetarli emas (${inv?.quantityOnHand ?? 0} dona qoldi)`,
+      );
+    }
+
     const unitPrice = p.basePrice;
     const totalPrice = unitPrice.mul(it.quantity);
     subtotal = subtotal.add(totalPrice);
-    return {
+    orderItemsData.push({
       productId: p.id,
-      variantId: it.variantId ?? null,
+      variantId: variant.id,
       sellerId: p.sellerId ?? null,
       sku: p.sku,
       nameSnapshot: p.name as Prisma.InputJsonValue,
@@ -134,8 +188,15 @@ export async function POST(req: NextRequest) {
       unitPrice,
       taxRate: p.taxRate,
       totalPrice,
-    };
-  });
+    });
+    stockLines.push({
+      productId: p.id,
+      variantId: variant.id,
+      inventoryItemId: inv.id,
+      warehouseId: inv.warehouseId,
+      quantity: it.quantity,
+    });
+  }
 
   // 3. Yetkazib berish narxi
   let shippingTotal = new Prisma.Decimal(0);
@@ -168,12 +229,12 @@ export async function POST(req: NextRequest) {
     shippingAddressId = address.id;
   }
 
-  // 5. Order + OrderItems + Sello Coins (atomik $transaction)
-  //    Order, redeem (spend) va earn yozuvlari birga commit/rollback —
-  //    balans hech qachon haqiqiy buyurtmalar bilan nomuvofiq bo'lmaydi.
+  // 5. Order + OrderItems + Ombor + Sello Coins (atomik $transaction)
+  //    Order, ombor kamaytirish (DISPATCH), redeem (spend) va earn yozuvlari birga
+  //    commit/rollback — balans va zaxira hech qachon buyurtmalar bilan nomuvofiq bo'lmaydi.
   const orderNumber = generateOrderNumber();
-  const { order, coinsEarned, coinsRedeemed, discountSom, promoDiscountSom, appliedPromoCode } =
-    await prisma.$transaction(async (tx) => {
+  const txResult = await prisma
+    .$transaction(async (tx) => {
       // 5a. Promokod — TX ichida tekshirib qo'llaymiz (usedCount race'siz)
       let promoDiscount = new Prisma.Decimal(0);
       let promoApplied: string | null = null;
@@ -249,6 +310,11 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // 5b′. Ombor — zaxirani ATOMIK kamaytirish (+ DISPATCH StockMovement).
+      //      Yetmasa InsufficientStockError tashlanadi → butun tx rollback
+      //      (buyurtma, coin, promo — hech biri commit bo'lmaydi). Oversell'ning oldi olinadi.
+      await deductStockForOrder(tx, stockLines, orderNumber);
+
       // 5c. Promokod hisoblagichlari — usedCount va UserCoupon redeemedAt
       if (promoApplied && promoId) {
         await tx.promoCode.update({
@@ -281,6 +347,15 @@ export async function POST(req: NextRequest) {
       //     (PENDING). Yetkazilganda PAID bo'ladi. Onlayn (Click/Payme) uchun
       //     Payment webhook'da yaratiladi, shu bois bu yerda yaratmaymiz.
       if (!isOnlineProvider(input.paymentProvider as PaymentProvider)) {
+        // Karta orqali qo'lda to'lov — chekni rawPayload'ga saqlaymiz (admin tekshiradi).
+        const rawPayload =
+          input.paymentProvider === MANUAL_CARD_PROVIDER
+            ? {
+                kind: 'MANUAL_CARD',
+                receipt: input.paymentReceipt,
+                note: input.paymentNote ?? null,
+              }
+            : undefined;
         await tx.payment.create({
           data: {
             orderId: created.id,
@@ -288,6 +363,7 @@ export async function POST(req: NextRequest) {
             status: 'PENDING',
             amount: grandTotal,
             currency: 'UZS',
+            ...(rawPayload ? { rawPayload } : {}),
           },
         });
       }
@@ -299,7 +375,25 @@ export async function POST(req: NextRequest) {
         promoDiscountSom: promoDiscount.toNumber(),
         appliedPromoCode: promoApplied,
       };
+    })
+    .catch((e: unknown) => {
+      // Ombor yetmasa — buyurtma (va barcha yon ta'sirlar) rollback bo'ladi.
+      // Sentinel qaytaramiz (409 uchun); boshqa xatolar odatdagidek yuqoriga.
+      if (e instanceof InsufficientStockError) return { stockError: e } as const;
+      throw e;
     });
+
+  if ('stockError' in txResult) {
+    const e = txResult.stockError;
+    const p = productById.get(e.productId);
+    return apiError(
+      409,
+      'STOCK_INSUFFICIENT',
+      `«${p ? productName(p.name) : 'Mahsulot'}» omborda yetarli emas (${e.available} dona qoldi)`,
+    );
+  }
+  const { order, coinsEarned, coinsRedeemed, discountSom, promoDiscountSom, appliedPromoCode } =
+    txResult;
 
   return apiOk({
     order: {

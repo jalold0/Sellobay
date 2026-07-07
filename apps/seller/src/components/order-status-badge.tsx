@@ -1,24 +1,29 @@
 import { StatusBadge, type StatusTone } from '@ecom/ui';
 
-import type { SellerOrder } from '../lib/mock';
+import type { OrderStatus } from '@ecom/database';
 
-const MAP: Record<SellerOrder['status'], { label: string; tone: StatusTone }> = {
+// DB'dagi OrderStatus enumining BARCHA qiymatlari (Record → TS to'liqlikni majburlaydi,
+// yangi status qo'shilsa shu yerda ham qo'shish shart bo'ladi).
+const MAP: Record<OrderStatus, { label: string; tone: StatusTone }> = {
   PENDING: { label: 'Kutilmoqda', tone: 'warning' },
   CONFIRMED: { label: 'Tasdiqlandi', tone: 'info' },
   PAID: { label: "To`landi", tone: 'info' },
   PROCESSING: { label: 'Tayyorlanmoqda', tone: 'info' },
   PACKED: { label: "O`ralgan", tone: 'info' },
   SHIPPED: { label: "Jo`natildi", tone: 'pending' },
+  OUT_FOR_DELIVERY: { label: 'Yetkazilmoqda', tone: 'pending' },
   DELIVERED: { label: 'Yetkazildi', tone: 'success' },
   CANCELLED: { label: 'Bekor', tone: 'danger' },
   RETURNED: { label: 'Qaytarildi', tone: 'danger' },
+  REFUNDED: { label: 'Pul qaytarildi', tone: 'danger' },
 };
 
-export function SellerOrderStatusBadge({ status }: { status: SellerOrder['status'] }) {
-  const cfg = MAP[status];
+// Noma'lum status kelsa ham yiqilmasin (himoyaviy fallback).
+export function SellerOrderStatusBadge({ status }: { status: string }) {
+  const cfg = MAP[status as OrderStatus] ?? { label: status, tone: 'neutral' as StatusTone };
   return <StatusBadge tone={cfg.tone}>{cfg.label}</StatusBadge>;
 }
 
 export const SELLER_ORDER_STATUS_LABELS = Object.fromEntries(
   Object.entries(MAP).map(([k, v]) => [k, v.label]),
-) as Record<SellerOrder['status'], string>;
+) as Record<OrderStatus, string>;

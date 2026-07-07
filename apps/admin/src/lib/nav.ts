@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Megaphone,
   Package,
+  ReceiptText,
   Settings,
   ShoppingCart,
   Store,
@@ -28,7 +29,7 @@ export interface NavItem {
   // Sidebar group
   group?: string;
   // Notification dot uchun keyinchalik
-  badgeKey?: 'pendingOrders' | 'pendingSellers' | 'pendingReviews';
+  badgeKey?: 'pendingOrders' | 'pendingSellers' | 'pendingReviews' | 'pendingPayments';
 }
 
 export const adminNav: NavItem[] = [
@@ -39,6 +40,13 @@ export const adminNav: NavItem[] = [
     icon: ShoppingCart,
     group: 'Savdo',
     badgeKey: 'pendingOrders',
+  },
+  {
+    href: '/orders/payment-review',
+    label: 'Karta to`lovlari',
+    icon: ReceiptText,
+    group: 'Savdo',
+    badgeKey: 'pendingPayments',
   },
   { href: '/products', label: 'Mahsulotlar', icon: Package, group: 'Katalog' },
   { href: '/categories', label: 'Kategoriyalar', icon: FolderTree, group: 'Katalog' },
