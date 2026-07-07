@@ -210,6 +210,53 @@ export function listPaymentReview() {
   return api<{ items: PaymentReviewItem[] }>('/api/orders/payment-review');
 }
 
+// Buyurtma to'liq tafsiloti (admin detal sahifasi uchun)
+interface LocalizedText {
+  uz?: string;
+  ru?: string;
+  en?: string;
+}
+export interface AdminOrderDetail {
+  id: string;
+  number: string;
+  status: AdminOrderStatus;
+  customerName: string;
+  customerPhone: string;
+  paymentStatus: AdminPaymentStatus;
+  paymentProvider: string;
+  subtotal: number;
+  shippingTotal: number;
+  discountTotal: number;
+  grandTotal: number;
+  placedAt: string;
+  deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
+  city: string;
+  notes?: string;
+  shippingAddress: {
+    recipientName: string;
+    phone: string;
+    region: string;
+    city: string;
+    street: string;
+    landmark?: string;
+  } | null;
+  items: Array<{
+    id: string;
+    productName: LocalizedText | string;
+    sku: string;
+    imageUrl: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
+  statusHistory: Array<{ status: AdminOrderStatus; changedAt: string; comment?: string }>;
+  manualCard: { pending: boolean; receipt: string; note: string | null } | null;
+}
+
+export function getOrderDetail(id: string) {
+  return api<AdminOrderDetail>(`/api/orders/${id}`);
+}
+
 /** Karta to'lovini tasdiqlash (verify → PAID) yoki rad etish (reject → FAILED). */
 export function reviewPayment(orderId: string, action: 'verify' | 'reject', comment?: string) {
   return api<{ orderId: string; orderStatus: string; paymentStatus: string }>(
