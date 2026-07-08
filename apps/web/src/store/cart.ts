@@ -14,6 +14,8 @@ export interface CartItem {
   brand: string;
   slug: string;
   imageSeed: string;
+  /** Haqiqiy rasm URL (DB'dan). Bo'lmasa imageSeed placeholder. */
+  imageUrl?: string;
   unitPrice: number;
   oldPrice?: number;
   currency: 'UZS';

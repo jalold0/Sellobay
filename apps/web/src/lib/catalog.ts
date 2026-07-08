@@ -37,6 +37,8 @@ interface DbProductRow {
   brand: { slug: string; name: string } | null;
   images: { url: string }[];
   categories: { category: { slug: string } }[];
+  // Ombor: mahsulot zaxirasi = varyantlari inventarining yig'indisi (admin/seller ham shunday)
+  variants: { inventory: { quantityOnHand: number }[] }[];
 }
 
 function deriveBadge(p: DbProductRow): MockProduct['badge'] {
@@ -49,6 +51,11 @@ function deriveBadge(p: DbProductRow): MockProduct['badge'] {
 function toMockProduct(p: DbProductRow): MockProduct {
   const imageUrl = p.images[0]?.url ?? '';
   const seedMatch = PICSUM_SEED_RE.exec(imageUrl);
+  // Zaxira = barcha varyantlar inventarining yig'indisi. 0 bo'lsa "omborda yo'q".
+  const stock = p.variants.reduce(
+    (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
+    0,
+  );
   return {
     id: p.id,
     slug: p.slug,
@@ -62,8 +69,10 @@ function toMockProduct(p: DbProductRow): MockProduct {
     rating: Number(p.rating),
     reviewCount: p.reviewCount,
     imageSeed: seedMatch?.[1] ?? p.slug,
+    // Haqiqiy rasm URL (picsum placeholder bo'lmasa) — komponentlar shuni ishlatadi.
+    imageUrl: imageUrl && !seedMatch ? imageUrl : undefined,
     badge: deriveBadge(p),
-    inStock: true, // inventar trekingi keyingi bosqichda
+    inStock: stock > 0,
   };
 }
 
@@ -82,6 +91,7 @@ const PRODUCT_SELECT = {
   brand: { select: { slug: true, name: true } },
   images: { select: { url: true }, orderBy: { position: 'asc' as const }, take: 1 },
   categories: { select: { category: { select: { slug: true } } }, take: 1 },
+  variants: { select: { inventory: { select: { quantityOnHand: true } } } },
 } as const;
 
 // ─── Public API ──────────────────────────────────────────────────
@@ -106,12 +116,21 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
     if (brand) where.brand = { slug: brand };
     if (category) where.categories = { some: { category: { slug: category } } };
     if (q) {
+      // JSON string_contains katta-kichik harfga sezgir — bosh-harfli variantni ham sinaymiz
+      const qCap = q.charAt(0).toUpperCase() + q.slice(1);
       where.OR = [
         { slug: { contains: q.toLowerCase() } },
         { brand: { name: { contains: q, mode: 'insensitive' } } },
         { name: { path: ['uz'], string_contains: q } },
         { name: { path: ['ru'], string_contains: q } },
         { name: { path: ['en'], string_contains: q } },
+        ...(qCap !== q
+          ? [
+              { name: { path: ['uz'], string_contains: qCap } },
+              { name: { path: ['ru'], string_contains: qCap } },
+              { name: { path: ['en'], string_contains: qCap } },
+            ]
+          : []),
       ];
     }
 
@@ -160,6 +179,82 @@ export async function fetchProducts(query: CatalogQuery = {}): Promise<{
   source: 'db' | 'mock';
 }> {
   return cachedQueryProducts(query);
+}
+
+/**
+ * Bitta mahsulot (slug bo'yicha) — DB'dan real ma'lumot + zaxira (inStock). Topilmasa null.
+ * Mahsulot detali sahifasi uchun: real DB UUID/slug/narx/zaxira qaytaradi (mock EMAS),
+ * shunda "Savatga qo'shish" to'g'ri UUID beradi va checkout ishlaydi. Keshsiz — zaxira
+ * yangiroq bo'lsin (oversell'ning avtoritar himoyasi baribir checkout'da).
+ */
+export async function fetchProductBySlug(slug: string): Promise<MockProduct | null> {
+  try {
+    const row = await prisma.product.findFirst({
+      where: { slug, status: 'ACTIVE', deletedAt: null },
+      select: PRODUCT_SELECT,
+    });
+    return row ? toMockProduct(row) : null;
+  } catch (err) {
+    console.error('[catalog] fetchProductBySlug DB xato:', err);
+    return null;
+  }
+}
+
+/** Detal sahifasi uchun real qo'shimchalar: barcha rasmlar + variantlar (rang/o'lcham). */
+export interface ProductDetailExtras {
+  galleryUrls: string[]; // haqiqiy rasm URL'lari (placeholder emas), position tartibida
+  colors: string[]; // variantlardagi noyob ranglar
+  sizes: { label: string; inStock: boolean }[]; // variantlardagi noyob o'lchamlar
+}
+
+export async function fetchProductDetailExtras(slug: string): Promise<ProductDetailExtras | null> {
+  try {
+    const row = await prisma.product.findFirst({
+      where: { slug, status: 'ACTIVE', deletedAt: null },
+      select: {
+        images: { select: { url: true }, orderBy: { position: 'asc' } },
+        variants: {
+          where: { isActive: true },
+          orderBy: { position: 'asc' },
+          select: {
+            inventory: { select: { quantityOnHand: true } },
+            attributes: {
+              select: { valueString: true, attribute: { select: { slug: true } } },
+            },
+          },
+        },
+      },
+    });
+    if (!row) return null;
+
+    // Placeholder (picsum) bo'lmagan haqiqiy URL'lar
+    const galleryUrls = row.images
+      .map((i) => i.url)
+      .filter((u) => u && !PICSUM_SEED_RE.test(u));
+
+    const colors: string[] = [];
+    const sizeMap = new Map<string, boolean>();
+    for (const v of row.variants) {
+      const inStock = v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0) > 0;
+      for (const a of v.attributes) {
+        if (!a.valueString) continue;
+        if (a.attribute.slug === 'color' && !colors.includes(a.valueString)) {
+          colors.push(a.valueString);
+        }
+        if (a.attribute.slug === 'size') {
+          sizeMap.set(a.valueString, (sizeMap.get(a.valueString) ?? false) || inStock);
+        }
+      }
+    }
+    return {
+      galleryUrls,
+      colors,
+      sizes: Array.from(sizeMap.entries()).map(([label, inStock]) => ({ label, inStock })),
+    };
+  } catch (err) {
+    console.error('[catalog] fetchProductDetailExtras DB xato:', err);
+    return null;
+  }
 }
 
 /** Bosh sahifa data — bitta so'rovda hero/featured/sale bo'limlari uchun. */

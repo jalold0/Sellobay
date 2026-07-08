@@ -55,6 +55,7 @@ export function ProductCardClient({ product, locale, className, stockLeft }: Pro
       brand: product.brand,
       slug: product.slug,
       imageSeed: product.imageSeed,
+      imageUrl: product.imageUrl,
       unitPrice: product.price,
       oldPrice: product.oldPrice,
       currency: product.currency,
@@ -75,7 +76,7 @@ export function ProductCardClient({ product, locale, className, stockLeft }: Pro
     <ProductCard
       name={name}
       brand={product.brand}
-      imageUrl={productImage(product.imageSeed)}
+      imageUrl={product.imageUrl ?? productImage(product.imageSeed)}
       href={`/product/${product.slug}`}
       price={product.price}
       oldPrice={product.oldPrice}

@@ -217,7 +217,7 @@ function CartItemRow({
         className="bg-muted relative h-24 w-24 shrink-0 overflow-hidden rounded-md sm:h-28 sm:w-28"
       >
         <Image
-          src={productImage(item.imageSeed, 200)}
+          src={item.imageUrl ?? productImage(item.imageSeed, 200)}
           alt={item.name}
           fill
           sizes="120px"

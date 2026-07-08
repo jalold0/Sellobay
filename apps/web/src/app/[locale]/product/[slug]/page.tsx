@@ -2,13 +2,22 @@ import { ChevronRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { ProductDetail } from '../../../../components/product/product-detail';
 import { BreadcrumbJsonLd, ProductJsonLd } from '../../../../components/seo/structured-data';
-import { type Locale, pickLocale, productImage } from '../../../../lib/mock-data';
-import { getProductDetail, getRelatedProducts } from '../../../../lib/product-details';
+import {
+  fetchProductBySlug,
+  fetchProductDetailExtras,
+  fetchProducts,
+} from '../../../../lib/catalog';
+import { type Locale, type MockProduct, pickLocale, productImage } from '../../../../lib/mock-data';
+import {
+  buildProductDetail,
+  getProductDetail,
+  getRelatedProducts,
+} from '../../../../lib/product-details';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -16,13 +25,14 @@ interface PageProps {
   params: { slug: string; locale: Locale };
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const detail = getProductDetail(params.slug);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const dbProduct = await fetchProductBySlug(params.slug);
+  const detail = dbProduct ? buildProductDetail(dbProduct) : getProductDetail(params.slug);
   if (!detail) return { title: 'Mahsulot topilmadi' };
   const { product, description } = detail;
   const name = pickLocale(product.name, params.locale);
   const desc = pickLocale(description, params.locale);
-  const img = productImage(product.imageSeed, 1200);
+  const img = product.imageUrl ?? productImage(product.imageSeed, 1200);
   return {
     title: name,
     description: desc.slice(0, 160),
@@ -49,13 +59,27 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function ProductDetailPage({ params }: PageProps) {
-  const detail = getProductDetail(params.slug);
+export default async function ProductDetailPage({ params }: PageProps) {
+  const dbProduct = await fetchProductBySlug(params.slug);
+  // Real rasm galereyasi + variantlar (rang/o'lcham) — DB'dan
+  const extras = dbProduct ? await fetchProductDetailExtras(params.slug) : null;
+  const detail = dbProduct
+    ? buildProductDetail(dbProduct, extras ?? undefined)
+    : getProductDetail(params.slug);
   if (!detail) notFound();
 
-  const locale = useLocale() as Locale;
-  const t = useTranslations('product');
-  const related = getRelatedProducts(detail.product.id, 4);
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations('product');
+
+  // O'xshash mahsulotlar — DB mahsuloti bo'lsa DB'dan (kartochka savatga to'g'ri UUID
+  // beradi va checkout ishlaydi); aks holda mock fallback.
+  let related: MockProduct[];
+  if (dbProduct && dbProduct.categoryId) {
+    const { items } = await fetchProducts({ category: dbProduct.categoryId, limit: 5 });
+    related = items.filter((p) => p.id !== dbProduct.id).slice(0, 4);
+  } else {
+    related = getRelatedProducts(detail.product.id, 4);
+  }
   const name = pickLocale(detail.product.name, locale);
 
   const url = `${SITE_URL}/${params.locale}/product/${detail.product.slug}`;
@@ -65,7 +89,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       <ProductJsonLd
         name={name}
         description={pickLocale(detail.description, locale).slice(0, 500)}
-        imageUrl={productImage(detail.product.imageSeed, 800)}
+        imageUrl={detail.product.imageUrl ?? productImage(detail.product.imageSeed, 800)}
         sku={`ECM-${detail.product.id.toUpperCase()}`}
         brand={detail.product.brand}
         price={detail.product.price}

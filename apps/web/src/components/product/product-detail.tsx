@@ -110,6 +110,7 @@ export function ProductDetail({ detail, locale }: Props) {
       brand: product.brand,
       slug: product.slug,
       imageSeed: product.imageSeed,
+      imageUrl: gallery[0]?.url ?? product.imageUrl,
       unitPrice: product.price,
       oldPrice: product.oldPrice,
       currency: product.currency,
@@ -146,7 +147,10 @@ export function ProductDetail({ detail, locale }: Props) {
         <div className="space-y-3">
           <div className="bg-muted relative aspect-square overflow-hidden rounded-2xl border">
             <Image
-              src={productImage(gallery[activeImageIdx]?.seed ?? product.imageSeed, 800)}
+              src={
+                gallery[activeImageIdx]?.url ??
+                productImage(gallery[activeImageIdx]?.seed ?? product.imageSeed, 800)
+              }
               alt={name}
               fill
               priority
@@ -179,7 +183,7 @@ export function ProductDetail({ detail, locale }: Props) {
                 aria-label={`${t('description')} ${i + 1}`}
               >
                 <Image
-                  src={productImage(g.seed, 200)}
+                  src={g.url ?? productImage(g.seed, 200)}
                   alt=""
                   fill
                   sizes="120px"
@@ -592,7 +596,7 @@ export function ProductDetail({ detail, locale }: Props) {
         <div className="container flex items-center gap-3 py-2.5">
           <div className="relative hidden h-12 w-12 shrink-0 overflow-hidden rounded-lg border sm:block">
             <Image
-              src={productImage(product.imageSeed, 100)}
+              src={gallery[0]?.url ?? productImage(product.imageSeed, 100)}
               alt={name}
               fill
               sizes="48px"

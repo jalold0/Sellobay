@@ -31,6 +31,8 @@ export interface MockProduct {
   rating: number;
   reviewCount: number;
   imageSeed: string;
+  /** DB'dagi haqiqiy rasm URL (bo'lsa). Bo'lmasa imageSeed placeholder ishlatiladi. */
+  imageUrl?: string;
   badge?: 'NEW' | 'SALE' | 'TOP';
   inStock: boolean;
 }

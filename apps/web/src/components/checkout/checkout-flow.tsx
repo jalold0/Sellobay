@@ -721,7 +721,7 @@ export function CheckoutFlow() {
                 <li key={i.id} className="flex items-center gap-3.5">
                   <div className="bg-soft relative h-[72px] w-[60px] shrink-0 overflow-hidden rounded-[10px]">
                     <Image
-                      src={productImage(i.imageSeed, 120)}
+                      src={i.imageUrl ?? productImage(i.imageSeed, 120)}
                       alt={i.name}
                       fill
                       sizes="60px"
