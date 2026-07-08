@@ -25,7 +25,6 @@ import {
 import { slugify } from '@ecom/utils';
 import { ArrowLeft, ImagePlus, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
@@ -66,7 +65,6 @@ const initialForm: FormState = {
 };
 
 export default function NewProductPage() {
-  const router = useRouter();
   const [form, setForm] = React.useState<FormState>(initialForm);
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -92,15 +90,16 @@ export default function NewProductPage() {
       return;
     }
     setSubmitting(true);
-    // Real holatda: apiClient.post('/products', { ... })
-    await new Promise((r) => setTimeout(r, 600));
+    // TODO: admin orqali mahsulot yaratish hali API'ga ulanmagan (mock kategoriya/brend
+    // ID'lari DB bilan mos emas). Yolg'on "saqlandi" ko'rsatmaymiz — halol xabar beramiz.
+    await new Promise((r) => setTimeout(r, 300));
     setSubmitting(false);
     toast({
-      title: 'Mahsulot saqlandi',
-      description: 'Qoralama saqlandi, faollashtirish uchun statusni o`zgartiring',
-      variant: 'success',
+      title: 'Admin orqali yaratish hali ulanmagan',
+      description:
+        "Mahsulotni Sotuvchi paneli (seller.sellobay / :3002) orqali qo'shing — u to'liq ishlaydi (zaxira, variant, rasm).",
+      variant: 'destructive',
     });
-    router.push('/products');
   };
 
   return (
