@@ -337,6 +337,27 @@ export interface CreateOrderInput {
   notes?: string;
   promoCode?: string;
   redeemCoins?: number;
+  // Karta orqali qo'lda to'lov (UZCARD): chek rasmi (data-URL) majburiy + ixtiyoriy izoh
+  paymentReceipt?: string;
+  paymentNote?: string;
+}
+
+// ─── Karta orqali to'lov — platforma kartalari ──────────────────
+
+export interface PaymentCard {
+  number: string;
+  holder: string;
+  bank?: string;
+}
+
+export async function fetchPaymentCards(): Promise<PaymentCard[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/payment-cards`);
+    const json = (await res.json()) as { success: boolean; data?: { cards: PaymentCard[] } };
+    return json.success && json.data ? json.data.cards : [];
+  } catch {
+    return [];
+  }
 }
 
 export interface CreateOrderResult {

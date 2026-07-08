@@ -1,3 +1,4 @@
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
@@ -6,6 +7,7 @@ import {
   Coins,
   CreditCard,
   Home,
+  ImageUp,
   MapPin,
   Package,
   Plus,
@@ -23,8 +25,10 @@ import {
   createOrder,
   fetchAddresses,
   fetchLoyalty,
+  fetchPaymentCards,
   validatePromo,
   type ApiAddress,
+  type PaymentCard,
   type PromoType,
 } from '../../src/lib/api';
 import { formatMoney, pickLocalized } from '../../src/lib/format';
@@ -61,7 +65,7 @@ const PAYMENT_OPTIONS = [
   { id: 'CLICK', label: 'Click', sub: 'Tezkor mobil to`lov', emoji: '💳' },
   { id: 'PAYME', label: 'Payme', sub: 'Onlayn to`lov', emoji: '💰' },
   { id: 'UZUM_BANK', label: 'Uzum Bank', sub: 'Bank ilovasi', emoji: '🏦' },
-  { id: 'UZCARD', label: 'Uzcard', sub: 'Plastik karta', emoji: '💳' },
+  { id: 'UZCARD', label: 'Karta o`tkazma', sub: 'Kartaga o`tkazib, chek yuklaysiz', emoji: '💳' },
   { id: 'HUMO', label: 'Humo', sub: 'Plastik karta', emoji: '💳' },
   { id: 'CASH_ON_DELIVERY', label: 'Naqd', sub: 'Kuryerga', emoji: '💵' },
 ] as const;
@@ -149,6 +153,38 @@ export default function CheckoutScreen() {
 
   const [payment, setPayment] = React.useState<(typeof PAYMENT_OPTIONS)[number]['id']>('CLICK');
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Karta orqali to'lov (UZCARD): platforma kartalari + chek (data-URL) + izoh
+  const [cards, setCards] = React.useState<PaymentCard[]>([]);
+  const [receipt, setReceipt] = React.useState<string | null>(null);
+  const [receiptNote, setReceiptNote] = React.useState('');
+  React.useEffect(() => {
+    if (payment !== 'UZCARD' || cards.length > 0) return;
+    let active = true;
+    fetchPaymentCards().then((c) => {
+      if (active) setCards(c);
+    });
+    return () => {
+      active = false;
+    };
+  }, [payment, cards.length]);
+
+  const pickReceipt = async () => {
+    haptics.light();
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.5,
+      base64: true,
+    });
+    const asset = res.assets?.[0];
+    if (res.canceled || !asset?.base64) return;
+    const mime =
+      asset.mimeType && /^image\/(jpeg|png|webp)$/.test(asset.mimeType)
+        ? asset.mimeType
+        : 'image/jpeg';
+    setReceipt(`data:${mime};base64,${asset.base64}`);
+    haptics.success();
+  };
 
   // Sello Coins — login bo'lsa real balans (Bearer). Aks holda 0 (redeem ko'rinmaydi).
   const [coinBalance, setCoinBalance] = React.useState(0);
@@ -275,6 +311,12 @@ export default function CheckoutScreen() {
       });
       return;
     }
+    // Karta o'tkazma tanlangan bo'lsa — chek (kvitansiya) rasmi majburiy
+    if (step === 'payment' && payment === 'UZCARD' && !receipt) {
+      haptics.warning();
+      toast({ title: 'Chek (kvitansiya) rasmini yuklang', variant: 'warning' });
+      return;
+    }
     haptics.light();
     const i = STEPS.findIndex((s) => s.id === step);
     if (i < STEPS.length - 1) setStep(STEPS[i + 1]!.id);
@@ -313,6 +355,9 @@ export default function CheckoutScreen() {
         pickupPointId:
           deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
         paymentProvider: payment,
+        paymentReceipt: payment === 'UZCARD' ? (receipt ?? undefined) : undefined,
+        paymentNote:
+          payment === 'UZCARD' && receiptNote.trim() ? receiptNote.trim() : undefined,
         promoCode: appliedPromo?.code,
         redeemCoins: coinsToRedeem,
       },
@@ -768,6 +813,87 @@ export default function CheckoutScreen() {
                 {payment === p.id ? <Check size={16} color="#0A0A0C" /> : null}
               </Pressable>
             ))}
+            {/* Karta o'tkazma — platforma kartalari + chek yuklash */}
+            {payment === 'UZCARD' ? (
+              <View className="border-primary/30 bg-primary/5 mt-1 gap-3 rounded-2xl border p-3.5">
+                <View>
+                  <Text className="text-sm font-bold">Karta orqali to&apos;lov</Text>
+                  <Text className="text-muted-foreground mt-1 text-[11px] leading-4">
+                    Quyidagi kartaga to&apos;lovni amalga oshiring, so&apos;ng chek (skrinshot)ni
+                    yuklang. Admin tasdiqlagach buyurtma jarayoni boshlanadi.
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center justify-between rounded-xl bg-white px-3 py-2.5">
+                  <Text className="text-muted-foreground text-xs">
+                    O&apos;tkaziladigan summa
+                  </Text>
+                  <Text className="text-sm font-extrabold">{formatMoney(total)}</Text>
+                </View>
+
+                {cards.map((c) => (
+                  <View key={c.number} className="rounded-xl bg-white px-3 py-2.5">
+                    <Text selectable className="font-mono text-[15px] font-semibold tracking-wider">
+                      {c.number}
+                    </Text>
+                    <Text className="text-muted-foreground text-[11px]">
+                      {c.holder}
+                      {c.bank ? ` · ${c.bank}` : ''}
+                    </Text>
+                  </View>
+                ))}
+
+                {/* Chek yuklash */}
+                <Pressable
+                  onPress={() => void pickReceipt()}
+                  className={cn(
+                    'flex-row items-center justify-center gap-2 rounded-xl border-2 border-dashed px-3 py-3',
+                    receipt ? 'border-emerald-400 bg-emerald-50' : 'border-border bg-white',
+                  )}
+                >
+                  {receipt ? (
+                    <Check size={16} color="#059669" />
+                  ) : (
+                    <ImageUp size={16} color="#531625" />
+                  )}
+                  <Text
+                    className={cn(
+                      'text-[13px] font-bold',
+                      receipt ? 'text-emerald-700' : 'text-primary',
+                    )}
+                  >
+                    {receipt ? 'Chek yuklandi · Almashtirish' : 'Chekni yuklash'}
+                  </Text>
+                </Pressable>
+                {receipt ? (
+                  <View className="flex-row items-center gap-2">
+                    <AppImage
+                      source={{ uri: receipt }}
+                      className="h-24 w-24 rounded-lg border"
+                      contentFit="cover"
+                    />
+                    <Pressable
+                      onPress={() => {
+                        haptics.light();
+                        setReceipt(null);
+                      }}
+                      className="flex-row items-center gap-1 rounded-full border border-red-200 px-3 py-1.5"
+                    >
+                      <X size={13} color="#dc2626" />
+                      <Text className="text-xs font-semibold text-red-600">O&apos;chirish</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                <Input
+                  value={receiptNote}
+                  onChangeText={setReceiptNote}
+                  placeholder="To'lov izohi (ixtiyoriy) — mas. karta oxirgi 4 raqami"
+                  maxLength={300}
+                />
+              </View>
+            ) : null}
+
             <View className="bg-muted mt-2 flex-row items-center gap-2 rounded-md p-2.5">
               <ShieldCheck size={14} color="#1F8A5B" />
               <Text className="text-muted-foreground flex-1 text-[11px]">
