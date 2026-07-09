@@ -163,7 +163,25 @@ export default function OrderDetailPage() {
   }
 
   const current = timelineIndex(order.status);
-  const isCancelled = order.status === 'CANCELLED';
+  // Yakunlangan (bekor/qaytarilgan/pul qaytarilgan) — fulfillment timeline ko'rsatilmaydi
+  // (aks holda "Qabul qilindi" bosqichida "yashil belgi" bilan qotib qolardi).
+  const isClosed =
+    order.status === 'CANCELLED' || order.status === 'RETURNED' || order.status === 'REFUNDED';
+  // Karta to'lov holatini lokalizatsiya qilamiz (raw enum ko'rsatmaymiz)
+  const KNOWN_PAY_STATUSES = [
+    'PENDING',
+    'AUTHORIZED',
+    'PAID',
+    'PARTIALLY_REFUNDED',
+    'REFUNDED',
+    'FAILED',
+    'CANCELLED',
+  ];
+  const paymentStatusLabel = order.paymentReview
+    ? to('paymentReview')
+    : order.paymentStatus && KNOWN_PAY_STATUSES.includes(order.paymentStatus)
+      ? to(`paymentStatus.${order.paymentStatus}`)
+      : '—';
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
@@ -187,7 +205,7 @@ export default function OrderDetailPage() {
             <span
               className={cn(
                 'rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.04em]',
-                isCancelled ? 'bg-chip text-muted-foreground' : 'bg-crimson-chip text-primary',
+                isClosed ? 'bg-chip text-muted-foreground' : 'bg-crimson-chip text-primary',
               )}
             >
               {to(`status.${order.status}`)}
@@ -207,8 +225,8 @@ export default function OrderDetailPage() {
           </div>
         ) : null}
 
-        {/* Timeline (bekor qilinmagan bo'lsa) */}
-        {!isCancelled ? (
+        {/* Timeline (faqat faol buyurtma uchun — yakunlanganlarda ko'rsatilmaydi) */}
+        {!isClosed ? (
           <div className="mt-6 flex items-center">
             {TIMELINE_STEPS.map((step, i) => {
               const done = i <= current;
@@ -303,7 +321,11 @@ export default function OrderDetailPage() {
               <div>{order.shippingAddress.phone}</div>
               <div className="mt-1">
                 {order.shippingAddress.region}, {order.shippingAddress.city},{' '}
-                {[order.shippingAddress.street, order.shippingAddress.building, order.shippingAddress.apartment]
+                {[
+                  order.shippingAddress.street,
+                  order.shippingAddress.building,
+                  order.shippingAddress.apartment,
+                ]
                   .filter(Boolean)
                   .join(', ')}
               </div>
@@ -324,11 +346,7 @@ export default function OrderDetailPage() {
                   order.paymentStatus === 'PAID' ? 'text-success' : 'text-amber-700',
                 )}
               >
-                {order.paymentStatus === 'PAID'
-                  ? to('status.PAID')
-                  : order.paymentReview
-                    ? to('paymentReview')
-                    : (order.paymentStatus ?? '—')}
+                {paymentStatusLabel}
               </span>
             </div>
             <div className="text-brand-ink flex justify-between font-bold">

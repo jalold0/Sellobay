@@ -854,7 +854,16 @@
       "RETURNED": "Returned",
       "REFUNDED": "Refunded"
     },
-    "paymentReview": "Payment under review"
+    "paymentReview": "Payment under review",
+    "paymentStatus": {
+      "PENDING": "Payment pending",
+      "AUTHORIZED": "Authorized",
+      "PAID": "Paid",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded",
+      "FAILED": "Payment failed",
+      "CANCELLED": "Cancelled"
+    }
   },
   "sell": {
     "title": "Become a seller",

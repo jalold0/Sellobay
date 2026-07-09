@@ -861,7 +861,16 @@
       "RETURNED": "Qaytarildi",
       "REFUNDED": "Pul qaytarildi"
     },
-    "paymentReview": "To'lov tekshirilmoqda"
+    "paymentReview": "To'lov tekshirilmoqda",
+    "paymentStatus": {
+      "PENDING": "To'lov kutilmoqda",
+      "AUTHORIZED": "Avtorizatsiya qilindi",
+      "PAID": "To'landi",
+      "PARTIALLY_REFUNDED": "Qisman qaytarildi",
+      "REFUNDED": "Pul qaytarildi",
+      "FAILED": "To'lov amalga oshmadi",
+      "CANCELLED": "Bekor qilindi"
+    }
   },
   "sell": {
     "title": "Sotuvchi bo'lish",

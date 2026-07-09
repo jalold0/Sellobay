@@ -276,7 +276,8 @@ export default function MyOrdersPage() {
 
   const filtered = orders.filter((o) => {
     if (filter === 'all') return true;
-    if (filter === 'onTheWay') return orderKind(o.status) === 'active';
+    // "Yo'lda" — faqat haqiqatan jo'natilgan/yetkazilayotgan buyurtmalar (yangi PENDING emas)
+    if (filter === 'onTheWay') return o.status === 'SHIPPED' || o.status === 'OUT_FOR_DELIVERY';
     return orderKind(o.status) === 'delivered';
   });
 

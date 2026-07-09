@@ -854,7 +854,16 @@
       "RETURNED": "Возвращён",
       "REFUNDED": "Возврат средств"
     },
-    "paymentReview": "Платёж проверяется"
+    "paymentReview": "Платёж проверяется",
+    "paymentStatus": {
+      "PENDING": "Ожидает оплаты",
+      "AUTHORIZED": "Авторизован",
+      "PAID": "Оплачено",
+      "PARTIALLY_REFUNDED": "Частичный возврат",
+      "REFUNDED": "Возвращено",
+      "FAILED": "Платёж не прошёл",
+      "CANCELLED": "Отменён"
+    }
   },
   "sell": {
     "title": "Стать продавцом",

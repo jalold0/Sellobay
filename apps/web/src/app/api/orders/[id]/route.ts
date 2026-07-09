@@ -93,10 +93,16 @@ type OrderRow = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
 
 // Qaytarish oynasi (gibrid siyosat) — yetkazilgan buyurtma 14 kun ichida qaytariladi
 const RETURN_WINDOW_DAYS = 14;
-function isReturnable(status: OrderRow['status'], deliveredAt: Date | null): boolean {
+// Qaytarish oynasi yetkazilgan sanadan (yo'q bo'lsa buyurtma sanasidan) hisoblanadi —
+// return route bilan bir xil (deliveredAt null bo'lganda ham muddat qo'llanadi).
+function isReturnable(
+  status: OrderRow['status'],
+  deliveredAt: Date | null,
+  placedAt: Date,
+): boolean {
   if (status !== 'DELIVERED') return false;
-  if (!deliveredAt) return true;
-  return Date.now() - deliveredAt.getTime() <= RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const ref = deliveredAt ?? placedAt;
+  return Date.now() - ref.getTime() <= RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 }
 
 function serialize(o: OrderRow) {
@@ -123,7 +129,7 @@ function serialize(o: OrderRow) {
     deliveredAt: o.deliveredAt?.toISOString() ?? null,
     cancelledAt: o.cancelledAt?.toISOString() ?? null,
     editable: o.status === 'PENDING',
-    returnable: isReturnable(o.status, o.deliveredAt),
+    returnable: isReturnable(o.status, o.deliveredAt, o.placedAt),
     returnWindowDays: RETURN_WINDOW_DAYS,
     scope: 'LOCAL' as const,
     shippingAddress: o.shippingAddress,
@@ -247,10 +253,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data.pickupPoint = pickupUpdate;
     }
 
-    // 3. Yetkazish usuli o'zgarsa — narxni qayta hisoblaymiz
+    // 3. Yetkazish usuli o'zgarsa — narxni qayta hisoblaymiz.
+    //    Pul hisob-kitobi Decimal'da (CLAUDE.md: pul hech qachon JS number'da saqlanmaydi).
     if (input.deliveryMethod && input.deliveryMethod !== existing.deliveryMethod) {
-      const subtotal = Number(existing.subtotal);
-      const newShipping = shippingFor(input.deliveryMethod as DeliveryMethod, subtotal);
+      const subtotal = existing.subtotal; // Decimal
+      const newShipping = new Prisma.Decimal(
+        shippingFor(input.deliveryMethod as DeliveryMethod, subtotal.toNumber()),
+      );
 
       // coin va promo chegirmalarini ajratamiz (discountTotal = promo + coin)
       const spendTxn = await tx.loyaltyTransaction.findFirst({
@@ -258,8 +267,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         select: { points: true },
       });
       const redeemed = spendTxn ? Math.abs(spendTxn.points) : 0;
-      const coinDiscount = redeemed * COIN_VALUE_SOM;
-      const oldPromoDiscount = Math.max(0, Number(existing.discountTotal) - coinDiscount);
+      const coinDiscount = new Prisma.Decimal(redeemed).mul(COIN_VALUE_SOM);
+      let oldPromoDiscount = existing.discountTotal.sub(coinDiscount);
+      if (oldPromoDiscount.lt(0)) oldPromoDiscount = new Prisma.Decimal(0);
 
       // FREE_SHIPPING promokod — chegirma yangi yetkazib berish narxiga teng
       let newPromoDiscount = oldPromoDiscount;
@@ -271,43 +281,42 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (promo?.type === 'FREE_SHIPPING') newPromoDiscount = newShipping;
       }
 
-      const newDiscountTotal = newPromoDiscount + coinDiscount;
-      const newGrandTotal = Math.max(0, subtotal + newShipping - newDiscountTotal);
+      const newDiscountTotal = newPromoDiscount.add(coinDiscount);
+      let newGrandTotal = subtotal.add(newShipping).sub(newDiscountTotal);
+      if (newGrandTotal.lt(0)) newGrandTotal = new Prisma.Decimal(0);
 
       data.deliveryMethod = input.deliveryMethod;
-      data.shippingTotal = new Prisma.Decimal(newShipping);
-      data.discountTotal = new Prisma.Decimal(newDiscountTotal);
-      data.grandTotal = new Prisma.Decimal(newGrandTotal);
+      data.shippingTotal = newShipping;
+      data.discountTotal = newDiscountTotal;
+      data.grandTotal = newGrandTotal;
 
-      // earn coinlarni yangi summaga moslaymiz (PENDING'da darrov berilган edi)
+      // Karta orqali qo'lda to'lov — kutayotgan Payment.amount'ni yangi summaga sinxronlaymiz,
+      // aks holda admin verify'da summa mos kelmaydi (kam to'lov "to'liq" bo'lib qolardi).
+      await tx.payment.updateMany({
+        where: { orderId: existing.id, status: 'PENDING' },
+        data: { amount: newGrandTotal },
+      });
+
+      // earn coinlarni yangi summaga moslaymiz — FAQAT allaqachon berilgan bo'lsa.
+      // UZCARD'da earn to'lov tasdiqlanganda beriladi (earnTxn hali yo'q) → yakuniy summadan.
       const earnTxn = await tx.loyaltyTransaction.findFirst({
         where: { userId: user.id, reference: existing.number, reason: 'ORDER_EARN' },
         select: { id: true, points: true },
       });
-      const oldEarned = earnTxn?.points ?? 0;
-      const newEarned = coinsForOrder(newGrandTotal);
-      if (newEarned !== oldEarned) {
-        if (earnTxn) {
+      if (earnTxn) {
+        const newEarned = coinsForOrder(newGrandTotal.toNumber());
+        if (newEarned !== earnTxn.points) {
           await tx.loyaltyTransaction.update({
             where: { id: earnTxn.id },
             data: { points: newEarned },
           });
-        } else if (newEarned > 0) {
-          await tx.loyaltyTransaction.create({
-            data: {
-              userId: user.id,
-              points: newEarned,
-              reason: 'ORDER_EARN',
-              reference: existing.number,
-            },
+          const u = await tx.user.findUnique({
+            where: { id: user.id },
+            select: { loyaltyPoints: true },
           });
+          const next = Math.max(0, (u?.loyaltyPoints ?? 0) + (newEarned - earnTxn.points));
+          await tx.user.update({ where: { id: user.id }, data: { loyaltyPoints: next } });
         }
-        const u = await tx.user.findUnique({
-          where: { id: user.id },
-          select: { loyaltyPoints: true },
-        });
-        const next = Math.max(0, (u?.loyaltyPoints ?? 0) + (newEarned - oldEarned));
-        await tx.user.update({ where: { id: user.id }, data: { loyaltyPoints: next } });
       }
     }
 

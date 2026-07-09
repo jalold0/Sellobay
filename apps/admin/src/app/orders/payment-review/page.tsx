@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Card,
-  CardContent,
-  EmptyState,
-  PageHeader,
-  Skeleton,
-  toast,
-} from '@ecom/ui';
+import { Button, Card, CardContent, EmptyState, PageHeader, Skeleton, toast } from '@ecom/ui';
 import { Check, MapPin, Phone, ReceiptText, X, ZoomIn } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -59,7 +51,9 @@ export default function PaymentReviewPage() {
           : 'Mijoz chekni qayta yuklashi mumkin',
       variant: action === 'verify' ? 'success' : 'destructive',
     });
-    setItems((prev) => prev.filter((p) => p.paymentId !== it.paymentId));
+    // Ro'yxatni serverdan qayta yuklaymiz — mijoz chekni qayta yuklagan yoki boshqa admin
+    // amal qilgan bo'lsa, lokal holat eskirmaydi (rad etilgan chekni "yo'q" deb ko'rsatib qo'ymaymiz).
+    await load();
   };
 
   return (
@@ -97,7 +91,7 @@ export default function PaymentReviewPage() {
                   <button
                     type="button"
                     onClick={() => setZoom(it.receipt)}
-                    className="group relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border bg-muted"
+                    className="bg-muted group relative h-32 w-32 shrink-0 overflow-hidden rounded-lg border"
                     title="Kattalashtirish"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -136,7 +130,7 @@ export default function PaymentReviewPage() {
                       <span>{formatDateTime(new Date(it.placedAt))}</span>
                     </div>
                     {it.note ? (
-                      <div className="mt-2 rounded-md bg-muted px-2.5 py-1.5 text-xs">
+                      <div className="bg-muted mt-2 rounded-md px-2.5 py-1.5 text-xs">
                         <span className="text-muted-foreground">Mijoz izohi: </span>
                         {it.note}
                       </div>

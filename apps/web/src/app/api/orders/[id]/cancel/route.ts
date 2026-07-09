@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { restockOrder } from '@/lib/inventory-server';
 import { reverseOrderLoyalty } from '@/lib/loyalty-server';
 
 import type { NextRequest } from 'next/server';
@@ -14,6 +15,14 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({ reason: z.string().trim().max(300).optional() });
+
+/** Parallel so'rov holatni allaqachon o'zgartirgan bo'lsa — tx rollback qilinadi. */
+class OrderStateChangedError extends Error {
+  constructor() {
+    super('ORDER_STATE_CHANGED');
+    this.name = 'OrderStateChangedError';
+  }
+}
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
@@ -37,49 +46,70 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const now = new Date();
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
+      const now = new Date();
 
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        status: 'CANCELLED',
-        cancelledAt: now,
-        cancellationReason: reason ?? 'Mijoz bekor qildi',
-        statusHistory: {
-          create: { status: 'CANCELLED', comment: reason ?? 'Mijoz bekor qildi' },
+      // ATOMIK holat o'tishi — faqat hali PENDING bo'lsa. Parallel (double-click) cancel'da
+      // ikkinchisi count===0 oladi va butun tx rollback bo'ladi (double restock/refund oldini oladi).
+      const moved = await tx.order.updateMany({
+        where: { id: order.id, status: 'PENDING' },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: now,
+          cancellationReason: reason ?? 'Mijoz bekor qildi',
         },
-      },
-    });
-
-    // Sello Coins — refund/revoke
-    const loyalty = await reverseOrderLoyalty(tx, user.id, order.number);
-
-    // Promokod — usedCount kamaytirish + UserCoupon redeemed bekor
-    if (order.promoCode) {
-      const promo = await tx.promoCode.findUnique({
-        where: { code: order.promoCode },
-        select: { id: true, usedCount: true },
       });
-      if (promo) {
-        await tx.promoCode.update({
-          where: { id: promo.id },
-          data: { usedCount: { decrement: promo.usedCount > 0 ? 1 : 0 } },
-        });
-        await tx.userCoupon.updateMany({
-          where: { userId: user.id, promoCodeId: promo.id },
-          data: { redeemedAt: null },
-        });
-      }
-    }
+      if (moved.count === 0) throw new OrderStateChangedError();
 
-    return loyalty;
-  });
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          statusHistory: {
+            create: { status: 'CANCELLED', comment: reason ?? 'Mijoz bekor qildi' },
+          },
+        },
+      });
+
+      // Ombor — zaxirani qaytarish (increment) + RETURN StockMovement
+      const stock = await restockOrder(tx, order.id, order.number, 'ORDER_CANCELLED');
+
+      // Sello Coins — refund/revoke
+      const loyalty = await reverseOrderLoyalty(tx, user.id, order.number);
+
+      // Promokod — usedCount kamaytirish + UserCoupon redeemed bekor
+      if (order.promoCode) {
+        const promo = await tx.promoCode.findUnique({
+          where: { code: order.promoCode },
+          select: { id: true, usedCount: true },
+        });
+        if (promo) {
+          await tx.promoCode.update({
+            where: { id: promo.id },
+            data: { usedCount: { decrement: promo.usedCount > 0 ? 1 : 0 } },
+          });
+          await tx.userCoupon.updateMany({
+            where: { userId: user.id, promoCodeId: promo.id },
+            data: { redeemedAt: null },
+          });
+        }
+      }
+
+      return { loyalty, stock };
+    });
+  } catch (e) {
+    if (e instanceof OrderStateChangedError) {
+      return apiError(409, 'NOT_CANCELLABLE', 'Buyurtma allaqachon qayta ishlangan');
+    }
+    throw e;
+  }
 
   return apiOk({
     id: order.id,
     status: 'CANCELLED',
-    coinsRefunded: result.refunded,
-    coinsRevoked: result.revoked,
+    coinsRefunded: result.loyalty.refunded,
+    coinsRevoked: result.loyalty.revoked,
+    stockRestocked: result.stock.restocked,
   });
 }

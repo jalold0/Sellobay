@@ -15,10 +15,7 @@ import {
 } from '@/lib/inventory-server';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
-import {
-  MANUAL_CARD_PROVIDER,
-  validateReceiptDataUrl,
-} from '@/lib/manual-payment';
+import { MANUAL_CARD_PROVIDER, validateReceiptDataUrl } from '@/lib/manual-payment';
 import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
@@ -331,14 +328,19 @@ export async function POST(req: NextRequest) {
       }
 
       // 5d. Sello Coins settle (earn to'langan summa bo'yicha, spend redeemed)
+      //     Karta orqali qo'lda to'lov (UZCARD) uchun earn KECHIKTIRILADI — admin to'lovni
+      //     tasdiqlaganda beriladi (to'lanmagan buyurtmadan coin "farming" oldini oladi).
+      //     Redeem (spend) esa darrov qo'llanadi (balansni bloklaydi, double-spend bo'lmaydi).
       let earned = 0;
       if (currentUser) {
+        const isManualCard = input.paymentProvider === MANUAL_CARD_PROVIDER;
         const settled = await settleOrderLoyalty(
           tx,
           currentUser.id,
           grandTotal.toNumber(),
           redeemed,
           orderNumber,
+          { grantEarn: !isManualCard },
         );
         earned = settled.earned;
       }
