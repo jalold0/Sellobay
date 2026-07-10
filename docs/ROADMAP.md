@@ -4,7 +4,13 @@
 > belgilangan. Maqsad: **bitta ishni ikki marta qilmaslik.** Boshqa kompyuter/dasturda
 > `git pull` qilib shu fayldan davom eting.
 >
-> **Oxirgi yangilanish:** 2026-07-03 · **MVP launch:** 2026-07-13
+> **Oxirgi yangilanish:** 2026-07-10 · **MVP launch:** 2026-07-13
+>
+> **2026-07-10:** **Sotuvchi go-live + to'lov** — ombor/inventar buyurtma oqimiga ulandi
+> (atomik deduct/restock, oversell himoyasi) · DELIVERED→COD Payment PAID (admin order-status
+> real) · seed InventoryItem+StockMovement · **Premium crimson redizayn** (#8B0020→#531625,
+> yagona logo, web layout/login/profile qayta dizayn) · qaytarish siyosati matni yangilandi ·
+> typecheck yashil
 >
 > **2026-07-03:** **Yetkazish modeli** — PickupPoint (12 punkt Neon'da) + topshirish punktlari API/UI + saqlangan manzil + xarita (MapLibre/PMTiles offline UZ) · **Buyurtma qaytarish** (14 kunlik oyna, atomik coin/promo refund) · **Promokod tizimi** (backend+checkout+mobil) · **Mobil Uzum-uslub redesign** (grid+karusel+kategoriya+Global demo) · **To'lov** — COD launch-ready + Click/Payme webhook hardening (simulyatsiya bilan tekshirilган, sertifikatsiya-tayyor) · Node 24 ESM fix + dev launcher skriptlar (WiFi login) · butun monorepo typecheck/lint yashil
 >
@@ -231,13 +237,16 @@
       COD 2/2 — hammasi lokal dev + Neon'da o'tdi (merchant kalitsiz)
 - [ ] 🔒 **Merchant kassa kalitlari** (Click/Payme shartnoma) — kelganda Vercel env + Payme
       sandbox sertifikatsiyasi (GetStatement/timeout edge-case'lari real tekshiriladi)
-- [ ] **DELIVERED → COD Payment PAID**: admin/seller order-status endpoint real bo'lgach
-      (hozir mock-first) — offline Payment yetkazilганda PAID qilinsin
+- [x] **DELIVERED → COD Payment PAID** (2026-07-10): admin order-status real —
+      `fulfillment-server.updateOrderStatus` DELIVERED o'tishida COD Payment'ni PAID+paidAt
+      qiladi (`codSettled`), soldCount++ (idempotent). Admin orders'da status-advance dropdown.
 - [ ] UZUM_BANK/UZCARD/HUMO real integratsiya (hozir COD kabi offline ishlanadi)
 
-> **⚠️ Alohida kritik (to'lovdan tashqari):** ombor/inventar hisobi ULANMAGAN — buyurtma
-> yaratish/bekor/qaytarishda stock kamaymaydi/qaytmaydi (`InventoryItem`/`StockMovement`
-> ishlatilmaydi) → oversell xavfi. Alohida task sifatida belgilangan.
+> **✅ Oversell xavfi HAL QILINDI (2026-07-10):** ombor/inventar buyurtma oqimiga ulandi —
+> `inventory-server.deductStockForOrder` (atomik `$transaction`, shartli UPDATE + DISPATCH
+> `StockMovement`, `InsufficientStockError`) buyurtma yaratishda; `restockOrder` bekor/qaytarishda.
+> seed har mahsulotga `InventoryItem` (stock=100) + RECEIVING movement beradi; product API
+> `stock`/`inStock` qaytaradi.
 
 ---
 
