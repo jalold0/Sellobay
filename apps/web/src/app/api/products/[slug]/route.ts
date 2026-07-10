@@ -23,12 +23,19 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
         categories: {
           include: { category: { select: { slug: true, name: true } } },
         },
+        // Ombor: zaxira = varyantlar inventarining yig'indisi
+        variants: { select: { inventory: { select: { quantityOnHand: true } } } },
       },
     });
 
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
+
+    const stock = product.variants.reduce(
+      (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
+      0,
+    );
 
     // Decimal va boshqa types'ni JSON-friendly qilish
     return NextResponse.json({
@@ -50,6 +57,8 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
       seller: product.seller ? { ...product.seller, rating: Number(product.seller.rating) } : null,
       images: product.images,
       categories: product.categories.map((c: (typeof product.categories)[number]) => c.category),
+      stock,
+      inStock: stock > 0,
     });
   } catch (err) {
     console.error('[api/products/[slug]] error:', err);

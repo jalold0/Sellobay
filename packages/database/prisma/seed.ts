@@ -1,4 +1,10 @@
-import { PrismaClient, UserRole, UserStatus, ProductStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  UserRole,
+  UserStatus,
+  ProductStatus,
+  StockMovementType,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -69,7 +75,7 @@ async function main() {
   console.info('[seed] super admin: admin@sellobay.uz');
 
   // ─── Asosiy ombor ─────────────────────────────────────────────
-  await prisma.warehouse.upsert({
+  const mainWarehouse = await prisma.warehouse.upsert({
     where: { code: 'WH-TASHKENT-MAIN' },
     update: {},
     create: {
@@ -81,6 +87,9 @@ async function main() {
     },
   });
   console.info('[seed] main warehouse ready');
+
+  // Har bir mahsulot uchun boshlang'ich zaxira (default varyant + inventar).
+  const INITIAL_STOCK = 100;
 
   // ─── Test sotuvchi ─────────────────────────────────────────────
   const sellerUser = await prisma.user.upsert({
@@ -270,9 +279,46 @@ async function main() {
       },
     });
     if (product) console.info(`[seed] product: ${p.slug}`);
+
+    // ── Ombor: default varyant + inventar (idempotent) ────────────
+    // InventoryItem/StockMovement VARYANT bo'yicha kalitlanadi, OrderItem esa
+    // varyantsiz (productId) kelishi mumkin — shuning uchun har bir mahsulotga
+    // bitta "default" varyant beramiz va zaxirani o'shanga bog'laymiz. Katalog,
+    // buyurtma (DISPATCH) va bekor/qaytarish (RETURN) shu qatordan foydalanadi.
+    const variant = await prisma.productVariant.upsert({
+      where: { sku: p.sku },
+      update: {},
+      create: { productId: product.id, sku: p.sku, position: 0, isActive: true },
+    });
+    // Inventar qatorini faqat yo'q bo'lsa yaratamiz — qayta seed'da zaxira ikki
+    // baravar oshib ketmasligi uchun (upsert emas, chunki locationId null).
+    const existingInv = await prisma.inventoryItem.findFirst({
+      where: { warehouseId: mainWarehouse.id, variantId: variant.id, locationId: null },
+      select: { id: true },
+    });
+    if (!existingInv) {
+      await prisma.inventoryItem.create({
+        data: {
+          warehouseId: mainWarehouse.id,
+          variantId: variant.id,
+          quantityOnHand: INITIAL_STOCK,
+          quantityReserved: 0,
+          reorderPoint: 10,
+        },
+      });
+      await prisma.stockMovement.create({
+        data: {
+          warehouseId: mainWarehouse.id,
+          variantId: variant.id,
+          type: StockMovementType.RECEIVING,
+          quantity: INITIAL_STOCK,
+          reason: 'seed:initial-stock',
+        },
+      });
+    }
   }
 
-  console.info(`[seed] ${products.length} mahsulot tayyor`);
+  console.info(`[seed] ${products.length} mahsulot + boshlang'ich zaxira tayyor`);
 
   // ── Promokodlar ─────────────────────────────────────────────────
   const promoEndsAt = new Date('2026-12-31T23:59:59Z');
