@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 const PERKS = [
   { Icon: Truck, title: 'Tez yetkazish', sub: '24 soatda' },
-  { Icon: RotateCcw, title: 'Qaytarish', sub: '14 kun' },
+  { Icon: RotateCcw, title: 'Qaytarish', sub: 'joyida tekshirib' },
   { Icon: ShieldCheck, title: '100% Original', sub: 'kafolat' },
 ];
 

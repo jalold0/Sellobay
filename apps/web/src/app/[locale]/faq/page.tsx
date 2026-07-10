@@ -11,11 +11,11 @@ const FAQ = [
     cat: 'Buyurtma',
     items: [
       {
-        q: "Buyurtmamni qanday qilib bekor qilaman?",
+        q: 'Buyurtmamni qanday qilib bekor qilaman?',
         a: "Profil → Buyurtmalarim bo'limidan buyurtmangizni topib, 'Bekor qilish' tugmasini bosing. Agar buyurtma allaqachon jo'natilgan bo'lsa, qo'llab-quvvatlash xizmatiga murojaat qiling.",
       },
       {
-        q: "Buyurtmamni qanday kuzataman?",
+        q: 'Buyurtmamni qanday kuzataman?',
         a: "Yuqori menyudagi 'Buyurtmamni kuzatish' tugmasini bosib, buyurtma raqamini kiriting. SMS orqali ham xabar olasiz.",
       },
       {
@@ -29,7 +29,7 @@ const FAQ = [
     items: [
       {
         q: "Qanday to'lov usullari mavjud?",
-        a: "Click, Payme, Uzum Bank, Uzcard, Humo va naqd (kuryer kelganda).",
+        a: 'Click, Payme, Uzum Bank, Uzcard, Humo va naqd (kuryer kelganda).',
       },
       {
         q: "To'lovim o'tmadi, nima qilay?",
@@ -41,11 +41,11 @@ const FAQ = [
     cat: 'Yetkazib berish',
     items: [
       {
-        q: "Yetkazib berish qancha vaqt oladi?",
+        q: 'Yetkazib berish qancha vaqt oladi?',
         a: "Toshkent bo'yicha 24 soat, viloyatlarga 2-3 ish kuni. Express 3 soat ichida (faqat Toshkent).",
       },
       {
-        q: "Yetkazib berish bepulmi?",
+        q: 'Yetkazib berish bepulmi?',
         a: "500 000 so'mdan ortiq buyurtmalarga uyga yetkazib berish bepul. Olib ketish punktida har doim bepul.",
       },
     ],
@@ -54,12 +54,12 @@ const FAQ = [
     cat: 'Qaytarish',
     items: [
       {
-        q: "14 kun shartlari qanday?",
-        a: "Mahsulot yetib kelgandan keyin 14 kun ichida hech qanday sababsiz qaytarishingiz mumkin. Asl o'ralma va etiketkalar saqlangan bo'lishi kerak.",
+        q: 'Mahsulotni qanday qaytaraman?',
+        a: "Mahsulotni yetkazib berilganda — kuryer oldida yoki topshirish punktida ochib tekshiring. Maqul kelmasa o'sha joyning o'zida qaytarasiz, pul qaytariladi. Asl o'ralma va etiketkalar saqlangan bo'lishi kerak.",
       },
       {
-        q: "Pul qachon qaytariladi?",
-        a: "Mahsulot omborga yetib kelgandan keyin 3-5 ish kuni ichida karta yoki naqd shaklida qaytariladi.",
+        q: 'Pul qachon qaytariladi?',
+        a: 'Mahsulot omborga yetib kelgandan keyin 3-5 ish kuni ichida karta yoki naqd shaklida qaytariladi.',
       },
     ],
   },
@@ -67,11 +67,11 @@ const FAQ = [
     cat: 'Hisob',
     items: [
       {
-        q: "Hisobni qanday yarataman?",
+        q: 'Hisobni qanday yarataman?',
         a: "Yuqori-o'ngdagi 'Kirish' tugmasini bosib, 'Ro'yxatdan o'tish'ni tanlang. Telefon yoki email orqali tasdiqlang.",
       },
       {
-        q: "Parolimni unutdim",
+        q: 'Parolimni unutdim',
         a: "Login sahifasidagi 'Parolni unutdingizmi?' havolasini bosing va emailingizga keladigan ko'rsatmalarga amal qiling.",
       },
     ],
@@ -83,7 +83,9 @@ export default function FaqPage() {
   const filtered = FAQ.map((c) => ({
     ...c,
     items: c.items.filter(
-      (it) => it.q.toLowerCase().includes(q.toLowerCase()) || it.a.toLowerCase().includes(q.toLowerCase()),
+      (it) =>
+        it.q.toLowerCase().includes(q.toLowerCase()) ||
+        it.a.toLowerCase().includes(q.toLowerCase()),
     ),
   })).filter((c) => c.items.length > 0);
 
@@ -97,7 +99,7 @@ export default function FaqPage() {
       />
 
       <div className="relative mx-auto max-w-xl">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -112,15 +114,17 @@ export default function FaqPage() {
             <h2 className="mb-3 text-xl font-bold">{c.cat}</h2>
             <div className="space-y-2">
               {c.items.map((it, i) => (
-                <details key={i} className="group rounded-xl border bg-card open:shadow-sm">
+                <details key={i} className="bg-card group rounded-xl border open:shadow-sm">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 font-medium">
                     <span>{it.q}</span>
                     <ChevronDown
                       size={16}
-                      className="shrink-0 text-muted-foreground transition group-open:rotate-180"
+                      className="text-muted-foreground shrink-0 transition group-open:rotate-180"
                     />
                   </summary>
-                  <div className="px-4 pb-4 pt-1 text-sm leading-relaxed text-muted-foreground">{it.a}</div>
+                  <div className="text-muted-foreground px-4 pb-4 pt-1 text-sm leading-relaxed">
+                    {it.a}
+                  </div>
                 </details>
               ))}
             </div>
@@ -129,7 +133,9 @@ export default function FaqPage() {
 
         {filtered.length === 0 && (
           <Card className="p-10 text-center">
-            <p className="text-muted-foreground">Hech narsa topilmadi. Boshqa so&apos;z bilan qidiring.</p>
+            <p className="text-muted-foreground">
+              Hech narsa topilmadi. Boshqa so&apos;z bilan qidiring.
+            </p>
           </Card>
         )}
       </div>

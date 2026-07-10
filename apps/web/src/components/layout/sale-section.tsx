@@ -25,11 +25,13 @@ export function SaleSection({ locale, saleProducts }: Props) {
       {/* Header with countdown */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="bg-brand-orange/15 text-brand-orange mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider">
+          <div className="text-primary mb-2 inline-flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.2em]">
             <Flame size={12} className="flash-glow" />
             {t('flashSale')}
           </div>
-          <h2 className="text-2xl font-black tracking-tight md:text-3xl">{t('homeTitle')}</h2>
+          <h2 className="text-brand-ink font-serif text-2xl font-semibold md:text-[32px]">
+            {t('homeTitle')}
+          </h2>
           <p className="text-muted-foreground mt-1 text-sm">{t('limitedTime')}</p>
         </div>
 

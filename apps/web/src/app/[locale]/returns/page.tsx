@@ -6,14 +6,22 @@ import { PageHero } from '../../../components/static/page-hero';
 export const metadata = { title: "Qaytarish va to'lash" };
 
 const STEPS = [
-  { icon: MessageCircle, title: 'So`rov yuboring', desc: '14 kun ichida tikets oching yoki app orqali bildiring' },
-  { icon: Package, title: 'Mahsulotni topshiring', desc: 'Kuryer oladi yoki pickup punktiga olib boring' },
-  { icon: Check, title: "Pul qaytariladi", desc: '3-5 ish kuni ichida kartangizga yoki naqd' },
+  {
+    icon: MessageCircle,
+    title: 'Yetkazilganda tekshiring',
+    desc: 'Kuryer oldida yoki punktda ochib ko`ring — maqul kelmasa o`sha joyda qaytaring',
+  },
+  {
+    icon: Package,
+    title: 'Mahsulotni topshiring',
+    desc: 'Kuryer oladi yoki pickup punktiga olib boring',
+  },
+  { icon: Check, title: 'Pul qaytariladi', desc: '3-5 ish kuni ichida kartangizga yoki naqd' },
 ];
 
 const CAN_RETURN = [
   'Kiyim-kechak — etiketka va o`ralma bilan',
-  "Poyabzal — kiyilmagan, asl qutida",
+  'Poyabzal — kiyilmagan, asl qutida',
   'Aksessuarlar — buzilmagan holatda',
   'Texnika — qutiyu hujjatlar bilan',
 ];
@@ -30,8 +38,8 @@ export default function ReturnsPage() {
     <div className="space-y-10">
       <PageHero
         icon={Undo2}
-        title="14 kun ichida qaytarish"
-        description="Hech qanday savol-javobsiz. Mahsulot yoqmasa — orqaga qaytaring va to'liq pul qaytib oling."
+        title="Yetkazilganda tekshirib qaytarish"
+        description="Mahsulotni yetkazib berilganda tekshirib oling — maqul kelmasa o'sha joyning o'zida qaytaring va to'liq pul qaytib oling."
         accent="emerald"
       />
 
@@ -43,13 +51,13 @@ export default function ReturnsPage() {
             return (
               <Card key={i} className="p-5">
                 <div className="flex items-center gap-3">
-                  <div className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground font-bold">
+                  <div className="bg-primary text-primary-foreground grid h-10 w-10 place-items-center rounded-full font-bold">
                     {i + 1}
                   </div>
                   <Icon size={20} className="text-muted-foreground" />
                 </div>
                 <h3 className="mt-3 font-semibold">{s.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
+                <p className="text-muted-foreground mt-1 text-sm">{s.desc}</p>
               </Card>
             );
           })}

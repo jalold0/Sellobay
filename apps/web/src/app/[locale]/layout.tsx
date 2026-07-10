@@ -29,7 +29,7 @@ const inter = Inter({
 // Playfair Display — Sellobay SB monogram va premium sarlavhalar uchun elegant serif
 const playfair = Playfair_Display({
   subsets: ['latin'],
-  weight: ['700', '900'],
+  weight: ['500', '600', '700', '900'],
   variable: '--font-serif',
   display: 'swap',
 });

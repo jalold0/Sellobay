@@ -126,17 +126,10 @@ export function Footer() {
         <div className="container grid gap-10 py-14 md:grid-cols-12">
           <div className="space-y-4 md:col-span-4">
             <div className="flex items-center gap-2.5">
-              <SellobayMark size={40} className="shadow" />
-              <div className="leading-tight">
-                <div className="text-lg font-bold tracking-tight text-white">
-                  {common('appName')}
-                </div>
-                <div className="text-[10px] uppercase tracking-widest text-white/60">
-                  {common('marketplace')}
-                </div>
-              </div>
+              <SellobayMark size={38} className="shadow" />
+              <span className="font-serif text-xl font-bold text-white">{common('appName')}</span>
             </div>
-            <p className="max-w-xs text-sm text-white/70">{t('tagline')}</p>
+            <p className="max-w-[280px] text-[13px] leading-[1.65] text-white/60">{t('tagline')}</p>
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2 text-white/70">
                 <Phone size={14} />{' '}
@@ -177,7 +170,7 @@ export function Footer() {
           <div className="grid gap-8 md:col-span-8 md:grid-cols-4">
             {COLUMNS.map((col) => (
               <div key={col.titleKey}>
-                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-white/50">
+                <div className="text-brand-gold mb-3 text-[11.5px] font-bold uppercase tracking-[0.16em]">
                   {t(`columns.${col.titleKey}`)}
                 </div>
                 <ul className="space-y-2">

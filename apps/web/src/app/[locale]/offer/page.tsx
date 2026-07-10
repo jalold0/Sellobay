@@ -71,14 +71,16 @@ Yetkazib berish muddatlari taxminiy bo'lib, logistika va bojxona jarayonlariga b
         },
         {
           title: 'Qaytarish va almashtirish',
-          body: `Xaridor sifatli mahsulotni qabul qilingandan keyin 14 kun ichida qaytarish huquqiga ega (mahsulot ishlatilmagan, tovar ko'rinishi va yorliqlari saqlangan bo'lsa).
+          body: `Qabul qilishda tekshirish (asosiy tartib). Xaridor mahsulotni yetkazib berilayotganda (kuryer oldida) yoki topshirish punktida ochib ko'rish va tekshirish huquqiga ega. Mahsulot maqul kelmasa yoki nuqson aniqlansa — o'sha joyning o'zida qaytarishi mumkin, pul qaytariladi.
+
+Yetkazib berilgandan keyin qaytarish. Mahsulotni olib ketgan bo'lsa ham, Xaridor sifatli mahsulotni qabul qilingandan keyin 14 kun ichida qaytarish huquqiga ega (mahsulot ishlatilmagan, tovar ko'rinishi va yorliqlari saqlangan bo'lsa). 14 kunlik muddat — Platformaning mijoz foydasiga belgilangan ichki qoidasi bo'lib, qonunchilikdagi minimal muddatdan kam emas.
 
 Ayrim toifadagi mahsulotlar qaytarilmaydi (ochilgan kosmetika/atir, ichki kiyim, oziq-ovqat, sovg'a sertifikatlari va qonunchilikda belgilangan boshqa tovarlar).
 
 Nuqsonli mahsulot aniqlangan hollarda qaytarish/almashtirish Platforma hisobidan amalga oshiriladi. Batafsil: "Qaytarish va to'lash" sahifasi.`,
         },
         {
-          title: "Tomonlarning huquq va majburiyatlari",
+          title: 'Tomonlarning huquq va majburiyatlari',
           body: `Platforma majburiyatlari: xizmatning uzluksiz ishlashini ta'minlashga harakat qilish, buyurtma holati to'g'risida xabardor qilish, shaxsiy ma'lumotlarni himoya qilish.
 
 Sotuvchi majburiyatlari: mahsulot to'g'risida aniq ma'lumot berish, sifatli mahsulotni belgilangan muddatda taqdim etish.

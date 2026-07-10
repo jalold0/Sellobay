@@ -23,7 +23,7 @@ const SECTIONS = [
   },
   {
     title: 'Yetkazib berish va qaytarish',
-    body: 'Sifatli mahsulot yetkazib berilgandan keyin 14 kun ichida qaytarilishi mumkin (qonunda qaytarilmaydigan deb belgilangan toifalardan tashqari). Batafsil shartlar "Qaytarish va to`lash" sahifasida.',
+    body: 'Mahsulotni yetkazib berilganda (kuryer oldida yoki punktda) tekshirib olishingiz mumkin — maqul kelmasa o`sha joyning o`zida qaytarasiz. To`liq shartlar ommaviy ofertada va "Qaytarish va to`lash" sahifasida.',
   },
   {
     title: 'Sotuvchilar uchun shartlar',

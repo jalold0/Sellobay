@@ -38,7 +38,7 @@ const CONTENT: Record<Locale, { title: string; subtitle: string; faqTitle: strin
         },
         {
           q: 'Mahsulotni qaytarish mumkinmi?',
-          a: 'Albatta. Punktdan olayotganda mahsulotni ochib tekshirasiz — yoqmasa oʻsha yerda qaytarasiz, pul qaytariladi. Uyga yetkazishda kuryer oldida tekshiring. Qonun boʻyicha ishlatilmagan tovarni 14 kun ichida qaytarish huquqingiz ham saqlanadi.',
+          a: 'Albatta. Punktdan olayotganda mahsulotni ochib tekshirasiz — yoqmasa oʻsha yerda qaytarasiz, pul qaytariladi. Uyga yetkazishda kuryer oldida tekshiring.',
         },
         {
           q: 'Sello Coins nima?',
@@ -62,7 +62,7 @@ const CONTENT: Record<Locale, { title: string; subtitle: string; faqTitle: strin
         { q: 'Как оплатить заказ?', a: 'Click, Payme, Uzcard/Humo или наличными при доставке.' },
         {
           q: 'Можно ли вернуть товар?',
-          a: 'Конечно. При получении на пункте выдачи вы вскрываете и проверяете товар — не понравится, вернёте на месте с возвратом денег. При доставке на дом проверьте при курьере. По закону также сохраняется право вернуть неиспользованный товар в течение 14 дней.',
+          a: 'Конечно. При получении на пункте выдачи вы вскрываете и проверяете товар — не понравится, вернёте на месте с возвратом денег. При доставке на дом проверьте при курьере.',
         },
         {
           q: 'Что такое Sello Coins?',
@@ -86,7 +86,7 @@ const CONTENT: Record<Locale, { title: string; subtitle: string; faqTitle: strin
         { q: 'How do I pay?', a: 'Click, Payme, Uzcard/Humo, or cash on delivery.' },
         {
           q: 'Can I return a product?',
-          a: 'Yes. At the pickup point you can open and inspect the item — if it is not right, return it on the spot with a refund. For home delivery, check while the courier is there. By law you also keep the right to return unused goods within 14 days.',
+          a: 'Yes. At the pickup point you can open and inspect the item — if it is not right, return it on the spot with a refund. For home delivery, check while the courier is there.',
         },
         {
           q: 'What are Sello Coins?',

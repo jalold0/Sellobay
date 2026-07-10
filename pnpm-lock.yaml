@@ -323,6 +323,12 @@ importers:
       '@ecom/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@expo-google-fonts/inter':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/playfair-display':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@react-native-community/netinfo':
         specifier: 11.4.1
         version: 11.4.1(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))
@@ -359,6 +365,12 @@ importers:
       expo-image:
         specifier: ~3.0.11
         version: 3.0.11(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-image-picker:
+        specifier: ~17.0.11
+        version: 17.0.11(expo@54.0.35)
+      expo-linear-gradient:
+        specifier: ~15.0.8
+        version: 15.0.8(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       expo-linking:
         specifier: ~8.0.12
         version: 8.0.12(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -1758,6 +1770,12 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@expo-google-fonts/inter@0.4.2':
+    resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+
+  '@expo-google-fonts/playfair-display@0.4.2':
+    resolution: {integrity: sha512-mWhBV59RUjSS3aYpytUb7UyHHTnXcHh7epAn7gq+M4XAEh5PuMKUrP8eiUfkJLb6UwHZCi7EhQpUzxHu5OL96w==}
 
   '@expo/cli@54.0.25':
     resolution: {integrity: sha512-WnUqIb8oMBhtwSfIqdCHCzcaDIpLNXItRVd5miuvWi4GO0SGo89PSsAkbVJ+LJgcaY+v5rbgMELJS9I/CqOulA==}
@@ -5190,6 +5208,16 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-image-loader@6.0.0:
+    resolution: {integrity: sha512-nKs/xnOGw6ACb4g26xceBD57FKLFkSwEUTDXEDF3Gtcu3MqF3ZIYd3YM+sSb1/z9AKV1dYT7rMSGVNgsveXLIQ==}
+    peerDependencies:
+      expo: '*'
+
+  expo-image-picker@17.0.11:
+    resolution: {integrity: sha512-/apkoyukDvsCHHb9fzP+F34A1uQqSzUtYH/2P/xJACNEwq+mwEXjXvVU8bzlJq6ih0Qo1+tpVivIa7B9kYSwOQ==}
+    peerDependencies:
+      expo: '*'
+
   expo-image@3.0.11:
     resolution: {integrity: sha512-4TudfUCLgYgENv+f48omnU8tjS2S0Pd9EaON5/s1ZUBRwZ7K8acEr4NfvLPSaeXvxW24iLAiyQ7sV7BXQH3RoA==}
     peerDependencies:
@@ -5209,6 +5237,13 @@ packages:
     peerDependencies:
       expo: '*'
       react: 19.1.0
+
+  expo-linear-gradient@15.0.8:
+    resolution: {integrity: sha512-V2d8Wjn0VzhPHO+rrSBtcl+Fo+jUUccdlmQ6OoL9/XQB7Qk3d9lYrqKDJyccwDxmQT10JdST3Tmf2K52NLc3kw==}
+    peerDependencies:
+      expo: '*'
+      react: 19.1.0
+      react-native: '*'
 
   expo-linking@8.0.12:
     resolution: {integrity: sha512-FpXeIpFgZuxihwT9lBo86YD3y6LphBuAhN680MMxm/Y7fmsc57vimn2d3vFu68VI0+Z9w457t494mu2wvlgWTQ==}
@@ -9758,6 +9793,10 @@ snapshots:
 
   '@eslint/js@8.57.1': {}
 
+  '@expo-google-fonts/inter@0.4.2': {}
+
+  '@expo-google-fonts/playfair-display@0.4.2': {}
+
   '@expo/cli@54.0.25(expo-router@6.0.24)(expo@54.0.35)(graphql@15.8.0)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(typescript@5.4.5)':
     dependencies:
       '@0no-co/graphql.web': 1.2.0(graphql@15.8.0)
@@ -14080,6 +14119,15 @@ snapshots:
     dependencies:
       expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@3.2.3(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.24)(graphql@15.8.0)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
 
+  expo-image-loader@6.0.0(expo@54.0.35):
+    dependencies:
+      expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@3.2.3(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.24)(graphql@15.8.0)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
+
+  expo-image-picker@17.0.11(expo@54.0.35):
+    dependencies:
+      expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@3.2.3(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.24)(graphql@15.8.0)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
+      expo-image-loader: 6.0.0(expo@54.0.35)
+
   expo-image@3.0.11(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
       expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@3.2.3(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.24)(graphql@15.8.0)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
@@ -14092,6 +14140,12 @@ snapshots:
     dependencies:
       expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@3.2.3(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.24)(graphql@15.8.0)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
       react: 19.1.0
+
+  expo-linear-gradient@15.0.8(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      expo: 54.0.35(@babel/core@7.29.7)(@expo/metro-runtime@3.2.3(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)))(expo-router@6.0.24)(graphql@15.8.0)(react-native-webview@13.15.0(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0)
 
   expo-linking@8.0.12(expo@54.0.35)(react-native@0.81.5(@babel/core@7.29.7)(@react-native-community/cli@13.6.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:

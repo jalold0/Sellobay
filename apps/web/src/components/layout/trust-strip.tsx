@@ -49,14 +49,14 @@ export function TrustStrip() {
                 idx < 2 ? 'border-border border-b md:border-b-0' : ''
               }`}
             >
-              <div className="bg-brand-bordeaux/10 grid h-12 w-12 shrink-0 place-items-center rounded-xl md:h-14 md:w-14">
-                <Icon className="text-brand-bordeaux h-6 w-6 md:h-7 md:w-7" strokeWidth={2.2} />
+              <div className="bg-soft grid h-12 w-12 shrink-0 place-items-center rounded-full md:h-14 md:w-14">
+                <Icon className="text-primary h-6 w-6 md:h-7 md:w-7" strokeWidth={1.8} />
               </div>
               <div className="min-w-0">
-                <div className="text-foreground text-xl font-extrabold leading-none md:text-2xl">
+                <div className="text-brand-ink font-serif text-xl font-bold leading-none md:text-2xl">
                   {m.value}
                 </div>
-                <div className="text-foreground mt-1 text-xs font-semibold md:text-sm">
+                <div className="text-brand-ink mt-1 text-xs font-semibold md:text-sm">
                   {m.label}
                 </div>
                 <div className="text-muted-foreground hidden text-[11px] sm:block">
