@@ -39,6 +39,8 @@ interface DbProductRow {
   categories: { category: { slug: string } }[];
   // Ombor: mahsulot zaxirasi = varyantlari inventarining yig'indisi (admin/seller ham shunday)
   variants: { inventory: { quantityOnHand: number }[] }[];
+  // Sotuvchi — verified chip uchun (null = platform-rasmiy mahsulot)
+  seller: { status: string } | null;
 }
 
 function deriveBadge(p: DbProductRow): MockProduct['badge'] {
@@ -73,6 +75,8 @@ function toMockProduct(p: DbProductRow): MockProduct {
     imageUrl: imageUrl && !seedMatch ? imageUrl : undefined,
     badge: deriveBadge(p),
     inStock: stock > 0,
+    // Verified: seller yo'q (platform-rasmiy) yoki seller ACTIVE holatda
+    sellerVerified: !p.seller || p.seller.status === 'ACTIVE',
   };
 }
 
@@ -92,6 +96,7 @@ const PRODUCT_SELECT = {
   images: { select: { url: true }, orderBy: { position: 'asc' as const }, take: 1 },
   categories: { select: { category: { select: { slug: true } } }, take: 1 },
   variants: { select: { inventory: { select: { quantityOnHand: true } } } },
+  seller: { select: { status: true } },
 } as const;
 
 // ─── Public API ──────────────────────────────────────────────────
@@ -228,9 +233,7 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
     if (!row) return null;
 
     // Placeholder (picsum) bo'lmagan haqiqiy URL'lar
-    const galleryUrls = row.images
-      .map((i) => i.url)
-      .filter((u) => u && !PICSUM_SEED_RE.test(u));
+    const galleryUrls = row.images.map((i) => i.url).filter((u) => u && !PICSUM_SEED_RE.test(u));
 
     const colors: string[] = [];
     const sizeMap = new Map<string, boolean>();

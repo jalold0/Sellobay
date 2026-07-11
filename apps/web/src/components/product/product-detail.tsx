@@ -223,12 +223,14 @@ export function ProductDetail({ detail, locale }: Props) {
               </Link>
             </div>
 
-            {/* Trust / social-proof chiplari — real data (rating, reviewCount) asosida */}
+            {/* Trust / social-proof chiplari — real data (sotuvchi holati, rating, reviewCount) asosida */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                <BadgeCheck size={13} />
-                {t('trustVerified')}
-              </span>
+              {product.sellerVerified !== false && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  <BadgeCheck size={13} />
+                  {t('trustVerified')}
+                </span>
+              )}
               {product.reviewCount >= 100 && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">
                   <Flame size={13} />
