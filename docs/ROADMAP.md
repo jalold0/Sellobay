@@ -78,7 +78,10 @@
 - [ ] Onboarding (3-4 ekran, mobile, birinchi ochilishda)
 - [ ] Bottom sheet filtrlar (mobile)
 - [x] Recently viewed + qidiruv tarixi (mobile store, MMKV) — 2026-07-03
-- [ ] Bo'sh holatlar (empty states) polish
+- [x] Bo'sh holatlar (empty states) polish (2026-07-11): umumiy `@ecom/ui` EmptyState crimson/serif
+      dizaynga yangilandi (rounded-2xl solid border, bg-soft 16px doira, Playfair sarlavha) →
+      savat/wishlist/orders/addresses/payment/reviews/search bir vaqtda; katalog "natija yo'q" ham
+      shu komponentga o'tkazildi (yagona manba)
 
 ---
 

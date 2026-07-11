@@ -1,3 +1,4 @@
+import { EmptyState } from '@ecom/ui';
 import { ChevronDown, Filter, X } from 'lucide-react';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -294,21 +295,19 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
         <div>
           {list.length === 0 ? (
-            <div className="border-border rounded-2xl border p-16 text-center">
-              <div className="bg-soft mx-auto grid h-16 w-16 place-items-center rounded-full">
-                <Filter className="text-muted-foreground h-7 w-7" />
-              </div>
-              <h3 className="text-brand-ink mt-5 font-serif text-xl font-semibold">
-                {t('noResults')}
-              </h3>
-              <p className="text-muted-foreground mt-1 text-sm">{t('noResultsHint')}</p>
-              <Link
-                href="/catalog"
-                className="bg-primary hover:bg-brand-crimson-deep mt-6 inline-flex rounded-full px-6 py-2.5 text-sm font-semibold text-white transition"
-              >
-                {t('allProducts')}
-              </Link>
-            </div>
+            <EmptyState
+              icon={Filter}
+              title={t('noResults')}
+              description={t('noResultsHint')}
+              action={
+                <Link
+                  href="/catalog"
+                  className="bg-primary hover:bg-brand-crimson-deep inline-flex rounded-full px-6 py-2.5 text-sm font-semibold text-white transition"
+                >
+                  {t('allProducts')}
+                </Link>
+              }
+            />
           ) : (
             <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
               {list.map((p) => (
