@@ -47,9 +47,13 @@
 - [x] **H3 — Oversell concurrency test.** ✅ 2026-07-12: 4/4 PASS. stock=1 da N ta parallel buyurtma → aynan 1 tasi o'tadi,
       qolganlari `InsufficientStockError`. **Qabul:** parallel `Promise.allSettled`, aynan 1
       fulfilled, rollback. Fayl: `scripts/oversell-concurrency-test.ts`.
-- [ ] **H4 — To'lov simulyatsiyalari qayta yashil.** `apps/web/scripts/payments/` (Click/Payme/COD)
-      skriptlarini ishga tushirib, oxirgi o'zgarishlardan keyin ham 6/6, 15/15, 2/2 o'tishini
-      tasdiqla. **Qabul:** hammasi PASS; tushsa — sababni topib tuzat yoki jurnalда belgila.
+- [~] **H4 — To'lov simulyatsiyalari qayta yashil.** ⚠️ 2026-07-12: PAUSA — bu skriptlar launch DB'ga
+  doimiy "Test Xaridor" buyurtmalarини yozadi (POST /api/orders, rollback emas). Launch arafasida
+  DB'ni ifloslantirmaslik uchun SIZNING qaroringiz kerak: (a) scratch/local DB'da yurgizamizmi,
+  yoki (b) yozib keyin test buyurtmalarни tozalaymizmi. To'lov webhook kodi oxirgi commitlarда
+  o'zgarmagan → regressiya xavfi past. `apps/web/scripts/payments/` (Click/Payme/COD)
+  skriptlarini ishga tushirib, oxirgi o'zgarishlardan keyin ham 6/6, 15/15, 2/2 o'tishini
+  tasdiqla. **Qabul:** hammasi PASS; tushsa — sababni topib tuzat yoki jurnalда belgila.
 
 ## P1 — i18n / to'g'rilik qarzi (launch oqimlarida)
 
@@ -58,7 +62,7 @@
       kontekstiga ega emas → matnlarni **prop orqali** uzat (masalan `labels?: {...}`), default
       ingliz/uz emas, chaqiruvchi (`apps/web` ProductCardClient) `t()` bilan beradi. **Qabul:**
       typecheck yashil, katalog/PDP kartalarida 3 tilda to'g'ri matn (preview).
-- [ ] **I2 — i18n kalit pariteti tekshiruvi.** uz/ru/en o'rtasida yetishmayotgan kalitlarni topuvchi
+- [x] **I2 — i18n kalit pariteti tekshiruvi.** ✅ 2026-07-12: 804 kalit, 0 farq (uz/ru/en). `scripts/i18n-check.ts`. uz/ru/en o'rtasida yetishmayotgan kalitlarni topuvchi
       kichik skript (`scripts/i18n-check.ts`) — chuqur obyekt kalitlarini solishtiradi. Topilgan
       farqlarni to'ldir. **Qabul:** skript "0 farq" chiqaradi.
 - [ ] **I3 — Kritik oqimlarda qolgan hardcoded matnlar.** catalog/PDP/cart/checkout/orders/profile
@@ -97,3 +101,7 @@
 - **2026-07-12** · H3 (oversell concurrency) · `scripts/oversell-concurrency-test.ts` · **4/4 PASS**
   (stock=1, 5 parallel alohida tx → aynan 1 o'tdi, 4 InsufficientStock, yakuniy 0, 1 DISPATCH).
   Real DB'ga tegdi (throwaway variant+inventar), ortidan 0 qoldiq — tozalandi. Keyingi: H4 (to'lov sim).
+- **2026-07-12** · H4 (to'lov sim) · ⏸️ PAUSA — launch DB'ga doimiy test buyurtma yozadi, sizning
+  qaroringiz kerak (yuqoriga qarang). Skip qilindi.
+- **2026-07-12** · I2 (i18n parity) · `scripts/i18n-check.ts` · **0 farq** (804 kalit, uz/ru/en toza).
+  Keyingi: I1 (product-card hardcoded matn → prop) — kod refaktori, ertaga davom.
