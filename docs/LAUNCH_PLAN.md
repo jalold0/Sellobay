@@ -37,7 +37,7 @@
 > ichida ATAYIN rollback — hech narsa saqlanmaydi). Namuna: `scripts/inventory-test.ts`,
 > `scripts/fulfillment-test.ts`.
 
-- [ ] **H1 — Buyurtma hayotiy sikli (COD) e2e smoke.** Bitta skript: buyurtma yaratish → stock
+- [x] **H1 — Buyurtma hayotiy sikli (COD) e2e smoke.** ✅ 2026-07-12: 9/9 PASS. Bitta skript: buyurtma yaratish → stock
       kamayadi (`deductStockForOrder`) → admin status DELIVERED → COD `Payment` PAID + `paidAt` + `soldCount++` (`fulfillment-server.updateOrderStatus`). **Qabul:** skript yashil, har qadam
       assert bilan, oxirida rollback. Fayl: `scripts/order-lifecycle-test.ts`.
 - [ ] **H2 — Qaytarish/bekor restock + reversal smoke.** Buyurtma → return → stock tiklanadi
@@ -88,4 +88,6 @@
 
 > Har bajarilgan vazifa/sessiya bu yerga bir-ikki qator: sana · vazifa · commit · natija/eslatma.
 
-- _(bo'sh — birinchi `/launch-continue` ishlaganda to'ladi)_
+- **2026-07-12** · H1 (order lifecycle COD e2e) · `scripts/order-lifecycle-test.ts` · **9/9 PASS**
+  (stock 100→98, DISPATCH yozildi, DELIVERED, COD Payment PAID + paidAt, soldCount +2, yetkazishда
+  qayta restock yo'q — hammasi rollback). Loop birinchi marta ishga tushdi, ishlaydi. Keyingi: H2.
