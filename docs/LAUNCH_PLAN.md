@@ -44,7 +44,7 @@
       (`restockOrder`) + Sello Coins cashback revoke + ishlatilgan coin refund + promokod
       usedCount/UserCoupon tiklanadi. **Qabul:** har reversal assert bilan, rollback. Fayl:
       `scripts/return-reversal-test.ts`.
-- [ ] **H3 — Oversell concurrency test.** stock=1 da N ta parallel buyurtma → aynan 1 tasi o'tadi,
+- [x] **H3 — Oversell concurrency test.** ✅ 2026-07-12: 4/4 PASS. stock=1 da N ta parallel buyurtma → aynan 1 tasi o'tadi,
       qolganlari `InsufficientStockError`. **Qabul:** parallel `Promise.allSettled`, aynan 1
       fulfilled, rollback. Fayl: `scripts/oversell-concurrency-test.ts`.
 - [ ] **H4 — To'lov simulyatsiyalari qayta yashil.** `apps/web/scripts/payments/` (Click/Payme/COD)
@@ -94,3 +94,6 @@
 - **2026-07-12** · H2 (return reversal) · `scripts/return-reversal-test.ts` · **9/9 PASS** (restock
   98→100 + RETURN movement, loyalty refunded 30/revoked 50, ballar 1000→980, promokod usedCount 1→0,
   UserCoupon redeemedAt bekor — rollback). Keyingi: H3 (oversell concurrency).
+- **2026-07-12** · H3 (oversell concurrency) · `scripts/oversell-concurrency-test.ts` · **4/4 PASS**
+  (stock=1, 5 parallel alohida tx → aynan 1 o'tdi, 4 InsufficientStock, yakuniy 0, 1 DISPATCH).
+  Real DB'ga tegdi (throwaway variant+inventar), ortidan 0 qoldiq — tozalandi. Keyingi: H4 (to'lov sim).
