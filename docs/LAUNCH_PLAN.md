@@ -40,7 +40,7 @@
 - [x] **H1 — Buyurtma hayotiy sikli (COD) e2e smoke.** ✅ 2026-07-12: 9/9 PASS. Bitta skript: buyurtma yaratish → stock
       kamayadi (`deductStockForOrder`) → admin status DELIVERED → COD `Payment` PAID + `paidAt` + `soldCount++` (`fulfillment-server.updateOrderStatus`). **Qabul:** skript yashil, har qadam
       assert bilan, oxirida rollback. Fayl: `scripts/order-lifecycle-test.ts`.
-- [ ] **H2 — Qaytarish/bekor restock + reversal smoke.** Buyurtma → return → stock tiklanadi
+- [x] **H2 — Qaytarish/bekor restock + reversal smoke.** ✅ 2026-07-12: 9/9 PASS. Buyurtma → return → stock tiklanadi
       (`restockOrder`) + Sello Coins cashback revoke + ishlatilgan coin refund + promokod
       usedCount/UserCoupon tiklanadi. **Qabul:** har reversal assert bilan, rollback. Fayl:
       `scripts/return-reversal-test.ts`.
@@ -91,3 +91,6 @@
 - **2026-07-12** · H1 (order lifecycle COD e2e) · `scripts/order-lifecycle-test.ts` · **9/9 PASS**
   (stock 100→98, DISPATCH yozildi, DELIVERED, COD Payment PAID + paidAt, soldCount +2, yetkazishда
   qayta restock yo'q — hammasi rollback). Loop birinchi marta ishga tushdi, ishlaydi. Keyingi: H2.
+- **2026-07-12** · H2 (return reversal) · `scripts/return-reversal-test.ts` · **9/9 PASS** (restock
+  98→100 + RETURN movement, loyalty refunded 30/revoked 50, ballar 1000→980, promokod usedCount 1→0,
+  UserCoupon redeemedAt bekor — rollback). Keyingi: H3 (oversell concurrency).
