@@ -57,11 +57,11 @@
 
 ## P1 — i18n / to'g'rilik qarzi (launch oqimlarida)
 
-- [ ] **I1 — product-card hardcoded matnlar (`@ecom/ui`).** "Mavjud emas", "Faqat X ta qoldi!",
-      hover "tez ko'rish" — `packages/ui/src/components/product-card.tsx`. UI paketi i18n
-      kontekstiga ega emas → matnlarni **prop orqali** uzat (masalan `labels?: {...}`), default
-      ingliz/uz emas, chaqiruvchi (`apps/web` ProductCardClient) `t()` bilan beradi. **Qabul:**
-      typecheck yashil, katalog/PDP kartalarida 3 tilda to'g'ri matn (preview).
+- [x] **I1 — product-card hardcoded matnlar (`@ecom/ui`).** ✅ 2026-07-13 · `4a12614`. ProductCard
+      endi majburiy `labels` prop oladi (quickView/outOfStock/addToCart/onlyLeft/wishlist),
+      ProductCardClient `t()` bilan uzatadi. Yangi kalitlar: `product.quickView`,
+      `product.onlyLeft` (uz/ru/en). Typecheck yashil, i18n paritet 806/806, preview'da 3 tilda
+      tekshirildi (uz/ru/en — addToCart, onlyLeft, console xatosiz).
 - [x] **I2 — i18n kalit pariteti tekshiruvi.** ✅ 2026-07-12: 804 kalit, 0 farq (uz/ru/en). `scripts/i18n-check.ts`. uz/ru/en o'rtasida yetishmayotgan kalitlarni topuvchi
       kichik skript (`scripts/i18n-check.ts`) — chuqur obyekt kalitlarini solishtiradi. Topilgan
       farqlarni to'ldir. **Qabul:** skript "0 farq" chiqaradi.
@@ -105,3 +105,6 @@
   qaroringiz kerak (yuqoriga qarang). Skip qilindi.
 - **2026-07-12** · I2 (i18n parity) · `scripts/i18n-check.ts` · **0 farq** (804 kalit, uz/ru/en toza).
   Keyingi: I1 (product-card hardcoded matn → prop) — kod refaktori, ertaga davom.
+- **2026-07-13** · I1 (product-card labels prop) · `4a12614` · ProductCard'dagi 5 hardcoded matn
+  (`Tez ko'rish`, `Mavjud emas`, `Savatga qo'shish`, `Faqat X ta qoldi!`, wishlist aria) labels
+  prop'ga ko'chdi, 2 yangi kalit qo'shildi — paritet 806/806, preview 3 tilda yashil. Keyingi: I3.
