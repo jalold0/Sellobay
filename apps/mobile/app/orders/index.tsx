@@ -224,7 +224,7 @@ export default function OrdersScreen() {
         </View>
       ) : isError ? (
         <EmptyState
-          icon={<Package size={26} color="#94a3b8" />}
+          icon={<Package size={26} color="#762237" />}
           title={tr.loadError}
           description={tr.loadErrorDesc}
           action={
@@ -235,7 +235,7 @@ export default function OrdersScreen() {
         />
       ) : scope === 'GLOBAL' ? (
         <EmptyState
-          icon={<Package size={26} color="#94a3b8" />}
+          icon={<Package size={26} color="#762237" />}
           title={tr.globalEmpty}
           description={tr.globalDesc}
         />
@@ -252,7 +252,7 @@ export default function OrdersScreen() {
           }
           ListEmptyComponent={
             <EmptyState
-              icon={<Package size={26} color="#94a3b8" />}
+              icon={<Package size={26} color="#762237" />}
               title={onlyActive ? tr.activeEmpty : t('profile.ordersPage.emptyTitle')}
               description={t('profile.ordersPage.emptyDesc')}
               action={

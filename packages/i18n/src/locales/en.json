@@ -346,6 +346,7 @@
   },
   "cart": {
     "title": "Cart",
+    "itemsSummary": "{items} items · {units} pcs",
     "empty": "Cart is empty",
     "emptyHint": "Choose products from the catalog and add to cart",
     "openCatalog": "Open catalog",
@@ -900,6 +901,12 @@
     "subtitle": "An operator will contact you shortly to confirm your order.",
     "orderNumber": "Order number",
     "goToOrders": "Go to my orders"
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "savedCount": "{count} items saved",
+    "emptyTitle": "Your wishlist is empty",
+    "emptyDesc": "Tap the heart on a product card to save items you like"
   },
   "brand": {
     "notFound": "Brand not found",

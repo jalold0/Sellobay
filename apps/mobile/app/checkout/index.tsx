@@ -37,6 +37,7 @@ import { haptics } from '../../src/lib/haptics';
 import { usePickupPoints } from '../../src/lib/hooks';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../src/lib/loyalty';
 import { productImage } from '../../src/lib/mock-data';
+import { useT } from '../../src/lib/useT';
 import { useCart } from '../../src/store/cart';
 import { useLocale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
@@ -77,6 +78,7 @@ function makeIdempotencyKey(): string {
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useT();
   const isAuthenticated = useSession((s) => s.isAuthenticated);
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
@@ -279,12 +281,12 @@ export default function CheckoutScreen() {
       <View className="bg-background flex-1" style={{ paddingTop: insets.top }}>
         <Header onBack={() => router.back()} title="Buyurtma" />
         <EmptyState
-          icon={<Package size={32} color="#94a3b8" />}
-          title="Savatcha bo`sh"
-          description="Avval mahsulot qo`shing"
+          icon={<Package size={32} color="#762237" />}
+          title={t('cart.empty')}
+          description={t('checkout.emptyTitle')}
           action={
             <Button fullWidth onPress={() => router.replace('/(tabs)/catalog')}>
-              Katalogga
+              {t('checkout.openCatalog')}
             </Button>
           }
         />
@@ -356,8 +358,7 @@ export default function CheckoutScreen() {
           deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
         paymentProvider: payment,
         paymentReceipt: payment === 'UZCARD' ? (receipt ?? undefined) : undefined,
-        paymentNote:
-          payment === 'UZCARD' && receiptNote.trim() ? receiptNote.trim() : undefined,
+        paymentNote: payment === 'UZCARD' && receiptNote.trim() ? receiptNote.trim() : undefined,
         promoCode: appliedPromo?.code,
         redeemCoins: coinsToRedeem,
       },
@@ -825,9 +826,7 @@ export default function CheckoutScreen() {
                 </View>
 
                 <View className="flex-row items-center justify-between rounded-xl bg-white px-3 py-2.5">
-                  <Text className="text-muted-foreground text-xs">
-                    O&apos;tkaziladigan summa
-                  </Text>
+                  <Text className="text-muted-foreground text-xs">O&apos;tkaziladigan summa</Text>
                   <Text className="text-sm font-extrabold">{formatMoney(total)}</Text>
                 </View>
 

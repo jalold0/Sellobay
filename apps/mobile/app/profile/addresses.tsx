@@ -470,7 +470,7 @@ export default function AddressesScreen() {
           ) : !items || items.length === 0 ? (
             !showForm ? (
               <EmptyState
-                icon={<MapPin size={26} color="#94a3b8" />}
+                icon={<MapPin size={26} color="#762237" />}
                 title={t('profile.addressesPage.emptyTitle')}
                 description={t('profile.addressesPage.emptyDesc')}
                 action={

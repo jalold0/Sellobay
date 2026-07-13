@@ -353,6 +353,7 @@
   },
   "cart": {
     "title": "Savatcha",
+    "itemsSummary": "{items} ta · {units} dona",
     "empty": "Savatcha bo'sh",
     "emptyHint": "Mahsulotlarni katalogdan tanlab, savatga qo'shing",
     "openCatalog": "Katalogni ochish",
@@ -907,6 +908,12 @@
     "subtitle": "Buyurtmangizni tasdiqlash uchun operator siz bilan tez orada bog'lanadi.",
     "orderNumber": "Buyurtma raqami",
     "goToOrders": "Buyurtmalarimga o'tish"
+  },
+  "wishlist": {
+    "title": "Sevimlilar",
+    "savedCount": "{count} ta mahsulot saqlandi",
+    "emptyTitle": "Sevimlilar bo'sh",
+    "emptyDesc": "Yoqtirgan mahsulotlaringizni saqlash uchun kartochkadagi yurakcha tugmasini bosing"
   },
   "brand": {
     "notFound": "Brend topilmadi",

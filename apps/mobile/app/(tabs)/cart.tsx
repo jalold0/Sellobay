@@ -48,7 +48,7 @@ export default function CartScreen() {
           <Text className="text-foreground font-serif text-2xl">{t('cart.title')}</Text>
         </View>
         <EmptyState
-          icon={<ShoppingBag size={32} color="#c9c9d0" />}
+          icon={<ShoppingBag size={32} color="#762237" />}
           title={t('cart.empty')}
           description={t('cart.emptyHint')}
           action={
@@ -67,7 +67,9 @@ export default function CartScreen() {
         <View>
           <Text className="text-foreground font-serif text-2xl leading-7">{t('cart.title')}</Text>
           <Text className="text-muted-foreground mt-1 text-xs">
-            {items.length} ta · {items.reduce((s, i) => s + i.quantity, 0)} dona
+            {t('cart.itemsSummary')
+              .replace('{items}', String(items.length))
+              .replace('{units}', String(items.reduce((s, i) => s + i.quantity, 0)))}
           </Text>
         </View>
         <Pressable
