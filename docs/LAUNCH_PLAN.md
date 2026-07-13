@@ -65,9 +65,15 @@
 - [x] **I2 — i18n kalit pariteti tekshiruvi.** ✅ 2026-07-12: 804 kalit, 0 farq (uz/ru/en). `scripts/i18n-check.ts`. uz/ru/en o'rtasida yetishmayotgan kalitlarni topuvchi
       kichik skript (`scripts/i18n-check.ts`) — chuqur obyekt kalitlarini solishtiradi. Topilgan
       farqlarni to'ldir. **Qabul:** skript "0 farq" chiqaradi.
-- [ ] **I3 — Kritik oqimlarda qolgan hardcoded matnlar.** catalog/PDP/cart/checkout/orders/profile
-      da qolgan user-facing hardcoded satrlarni skaner qilib (grep) `t()`/`pickLocalized`ga o'tkaz.
-      **Qabul:** ro'yxatdagi fayllarda hardcoded user-string qolmaydi; typecheck+preview yashil.
+- [x] **I3 — Kritik oqimlarda qolgan hardcoded matnlar.** ✅ 2026-07-13 · `7204c51`. Skaner natijasi:
+      cart/checkout/catalog komponentlari allaqachon toza edi; qarz orders tracker, orders/success,
+      profile personal, brand sahifasi va metadata title'larda edi — hammasi `t()`ga o'tdi (yangi
+      `tracking`/`orderSuccess`/`brand` ns + profile kengaytmasi, paritet 836/836). Bonus fix:
+      `[locale]/layout`da locale validatsiyasi — /favicon.ico invalid locale bilan SSR bo'lib har
+      sahifada Intl RangeError log qilardi. Preview: brand/success/cart/checkout/PDP-404 3 tilda
+      yashil, console/server xatosiz. Eslatma: /orders va /profile auth ortida — kalitlar parity
+      skript bilan tasdiqlangan, vizual smoke login talab qiladi (statik sahifalar faq/terms/offer
+      I3 doirasiga kirmadi — kritik oqim emas).
 
 ## P2 — Kichik polish (xavfsiz, vaqt qolsa)
 
@@ -108,3 +114,8 @@
 - **2026-07-13** · I1 (product-card labels prop) · `4a12614` · ProductCard'dagi 5 hardcoded matn
   (`Tez ko'rish`, `Mavjud emas`, `Savatga qo'shish`, `Faqat X ta qoldi!`, wishlist aria) labels
   prop'ga ko'chdi, 2 yangi kalit qo'shildi — paritet 806/806, preview 3 tilda yashil. Keyingi: I3.
+- **2026-07-13** · I3 (kritik oqim hardcode skaneri) · `7204c51` · orders tracker + success +
+  profile + brand + metadata title'lar t()ga o'tdi (30 yangi kalit, paritet 836/836). Muhim topilma:
+  /favicon.ico `[locale]` segmentiga tushib invalid locale bilan SSR bo'lar, har sahifa yuklashda
+  server logda IntlError RangeError to'planardi — layout'da locale validatsiyasi (notFound) bilan
+  tuzatildi. Keyingi: S1 (Toshkent bbox yetkazish siyosati).
