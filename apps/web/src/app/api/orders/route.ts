@@ -2,7 +2,7 @@
 // GET /api/orders — joriy foydalanuvchining buyurtmalari ro'yxati
 
 import { Prisma } from '@ecom/database';
-import { isInTashkentCity } from '@ecom/utils';
+import { isInTashkentCity, looksLikeTashkentCityText } from '@ecom/utils';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -83,18 +83,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Uygacha/Express yetkazish FAQAT Toshkent shahar uchun. Koordinata berilgan
-  // bo'lsa (mobil) — shahar tashqarisini rad etamiz (punktdan foydalanilsin).
-  if (
-    (input.deliveryMethod === 'HOME_DELIVERY' || input.deliveryMethod === 'EXPRESS') &&
-    input.latitude != null &&
-    input.longitude != null &&
-    !isInTashkentCity(input.latitude, input.longitude)
-  ) {
-    return apiError(
-      400,
-      'DELIVERY_OUT_OF_ZONE',
-      'Uygacha yetkazish faqat Toshkent shahar uchun. Olib ketish punktini tanlang.',
-    );
+  // bo'lsa (mobil) — bbox bo'yicha, bo'lmasa (web forma) region/city matni bo'yicha
+  // tekshiramiz; ikkalasi ham tashqarida bo'lsa punktdan foydalanilsin.
+  if (input.deliveryMethod === 'HOME_DELIVERY' || input.deliveryMethod === 'EXPRESS') {
+    const hasCoords = input.latitude != null && input.longitude != null;
+    const outOfZone = hasCoords
+      ? !isInTashkentCity(input.latitude as number, input.longitude as number)
+      : !looksLikeTashkentCityText(input.region, input.city);
+    if (outOfZone) {
+      return apiError(
+        400,
+        'DELIVERY_OUT_OF_ZONE',
+        'Uygacha yetkazish faqat Toshkent shahar uchun. Olib ketish punktini tanlang.',
+      );
+    }
   }
 
   // PICKUP_POINT tanlangan bo'lsa — punkt majburiy va faol bo'lishi kerak

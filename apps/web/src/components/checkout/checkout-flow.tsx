@@ -19,6 +19,8 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import { looksLikeTashkentCityText } from '@ecom/utils';
+
 import { formatMoney } from '../../lib/format';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../lib/loyalty';
 import { productImage } from '../../lib/mock-data';
@@ -58,12 +60,6 @@ interface PickupPointDTO {
   longitude: number;
   phone: string | null;
   workingHours: string | null;
-}
-
-/** Web'da GPS yo'q — kiritilgan viloyat/shahar matni Toshkent shaharmi? */
-function looksLikeTashkentCity(region: string, city: string): boolean {
-  const text = `${region} ${city}`.toLowerCase();
-  return text.includes('toshkent') || text.includes('tashkent') || text.includes('ташкент');
 }
 
 interface PaymentCardDTO {
@@ -222,7 +218,7 @@ export function CheckoutFlow() {
   const homeOutsideTashkent =
     deliveryType === 'TASHKENT_HOME' &&
     Boolean(address.region.trim() || address.city.trim()) &&
-    !looksLikeTashkentCity(address.region, address.city);
+    !looksLikeTashkentCityText(address.region, address.city);
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
@@ -263,7 +259,7 @@ export function CheckoutFlow() {
     address.phone.replace(/\D/g, '').length >= 12 &&
     (deliveryType === 'REGION_PICKUP'
       ? Boolean(selectedPickupId)
-      : Boolean(address.city.trim() && address.street.trim()));
+      : Boolean(address.city.trim() && address.street.trim()) && !homeOutsideTashkent);
 
   const placeOrder = async () => {
     if (!canSubmit) {
@@ -271,7 +267,9 @@ export function CheckoutFlow() {
         title:
           deliveryType === 'REGION_PICKUP' && !selectedPickupId
             ? t('shipping.selectPickup')
-            : t('errors.required'),
+            : homeOutsideTashkent
+              ? t('shipping.tashkentOnly')
+              : t('errors.required'),
         variant: 'warning',
       });
       return;

@@ -28,3 +28,14 @@ export function isInTashkentCity(lat: number, lng: number): boolean {
     lng <= TASHKENT_CITY_BBOX.lngMax
   );
 }
+
+/**
+ * Koordinata bo'lmaganda (web forma) matndan Toshkent shaharni taxmin qilish.
+ * Heuristika: region/city ichida "toshkent/tashkent/ташкент" uchrasa — shahar deb
+ * qabul qilinadi (viloyat markazlari chekka holat — kuryer ops hal qiladi).
+ * Klient (checkout) va server (/api/orders) BIR XIL qoidani ishlatishi shart.
+ */
+export function looksLikeTashkentCityText(region: string, city: string): boolean {
+  const text = `${region} ${city}`.toLowerCase();
+  return text.includes('toshkent') || text.includes('tashkent') || text.includes('ташкент');
+}
