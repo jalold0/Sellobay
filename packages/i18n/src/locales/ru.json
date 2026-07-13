@@ -299,6 +299,8 @@
     "removedFromWishlist": "Удалено из избранного",
     "addedToWishlist": "Добавлено в избранное",
     "addedToCart": "Добавлено в корзину",
+    "quickView": "Быстрый просмотр",
+    "onlyLeft": "Осталось всего {count} шт.!",
     "deliveryTomorrow": "Завтра",
     "deliveryFast": "Быстрая доставка — по Ташкенту в течение 24 часов",
     "freeShip": "Бесплатно",

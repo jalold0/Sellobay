@@ -306,6 +306,8 @@
     "removedFromWishlist": "Sevimlilardan olib tashlandi",
     "addedToWishlist": "Sevimlilarga qo'shildi",
     "addedToCart": "Savatga qo'shildi",
+    "quickView": "Tez ko'rish",
+    "onlyLeft": "Faqat {count} ta qoldi!",
     "deliveryTomorrow": "Ertaga",
     "deliveryFast": "Tezkor yetkazib berish — Toshkent bo'yicha 24 soat ichida",
     "freeShip": "Bepul",

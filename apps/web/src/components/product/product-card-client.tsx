@@ -86,6 +86,13 @@ export function ProductCardClient({ product, locale, className, stockLeft }: Pro
       badge={product.badge}
       inStock={product.inStock}
       stockLeft={stockLeft}
+      labels={{
+        quickView: t('quickView'),
+        outOfStock: t('outOfStock'),
+        addToCart: t('addToCart'),
+        onlyLeft: t('onlyLeft', { count: stockLeft ?? 0 }),
+        wishlist: t('addToWishlist'),
+      }}
       isWishlisted={isWishlisted}
       onAddToCart={product.inStock ? onAddToCart : undefined}
       onToggleWishlist={onToggleWishlist}

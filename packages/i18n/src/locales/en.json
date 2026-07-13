@@ -299,6 +299,8 @@
     "removedFromWishlist": "Removed from wishlist",
     "addedToWishlist": "Added to wishlist",
     "addedToCart": "Added to cart",
+    "quickView": "Quick view",
+    "onlyLeft": "Only {count} left!",
     "deliveryTomorrow": "Tomorrow",
     "deliveryFast": "Fast delivery — within 24 hours across Tashkent",
     "freeShip": "Free",

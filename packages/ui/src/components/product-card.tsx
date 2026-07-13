@@ -3,6 +3,15 @@ import * as React from 'react';
 
 import { cn } from '../lib/cn';
 
+// UI paketi i18n kontekstiga ega emas — barcha user-facing matn chaqiruvchidan keladi
+export interface ProductCardLabels {
+  quickView: string;
+  outOfStock: string;
+  addToCart: string;
+  onlyLeft: string; // chaqiruvchi count bilan formatlab beradi
+  wishlist: string; // aria-label
+}
+
 export interface ProductCardProps {
   name: string;
   brand?: string;
@@ -16,7 +25,8 @@ export interface ProductCardProps {
   reviewCount?: number;
   badge?: 'NEW' | 'SALE' | 'TOP';
   inStock?: boolean;
-  stockLeft?: number; // "Faqat 5 ta qoldi!" — TZ §5
+  stockLeft?: number; // low-stock indikator — TZ §5
+  labels: ProductCardLabels;
   className?: string;
   onAddToCart?: () => void;
   onToggleWishlist?: () => void;
@@ -89,6 +99,7 @@ export function ProductCard({
   badge,
   inStock = true,
   stockLeft,
+  labels,
   className,
   onAddToCart,
   onToggleWishlist,
@@ -157,7 +168,7 @@ export function ProductCard({
                 ? 'bg-primary hover:bg-primary/90 text-white'
                 : 'text-brand-ink hover:text-primary bg-white/[0.92] hover:bg-white',
             )}
-            aria-label="Wishlist"
+            aria-label={labels.wishlist}
           >
             <Heart size={16} strokeWidth={1.8} className={isWishlisted ? 'fill-current' : ''} />
           </button>
@@ -179,7 +190,7 @@ export function ProductCard({
               'group-hover:opacity-100',
             )}
           >
-            <Eye size={14} /> Tez ko&apos;rish
+            <Eye size={14} /> {labels.quickView}
           </button>
         )}
 
@@ -187,7 +198,7 @@ export function ProductCard({
         {!inStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <div className="text-brand-ink rounded-full bg-white/95 px-4 py-1.5 text-xs font-semibold">
-              Mavjud emas
+              {labels.outOfStock}
             </div>
           </div>
         )}
@@ -209,7 +220,7 @@ export function ProductCard({
             )}
           >
             <ShoppingBag size={15} />
-            Savatga qo&apos;shish
+            {labels.addToCart}
           </button>
         )}
       </LinkComponent>
@@ -258,7 +269,7 @@ export function ProductCard({
         {lowStock && inStock && (
           <div className="mt-1 space-y-1">
             <div className="flex items-center justify-between text-[10px] font-medium">
-              <span className="text-primary">Faqat {stockLeft} ta qoldi!</span>
+              <span className="text-primary">{labels.onlyLeft}</span>
             </div>
             <div className="bg-chip h-1 overflow-hidden rounded-full">
               <div
