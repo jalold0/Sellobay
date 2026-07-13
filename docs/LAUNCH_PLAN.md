@@ -82,8 +82,12 @@
       endi koordinatasiz (web) so'rovlarda ham region/city matni bo'yicha DELIVERY_OUT_OF_ZONE
       qaytaradi; checkout'da viloyat manzili submit'ni bloklaydi (avval faqat warning edi).
       Preview'da ikkala yo'nalish tekshirildi, DB'ga yozilmadi.
-- [ ] **S2 — Bo'sh holatlar qayta ko'rish (mobil).** Web tugadi; mobil bo'sh holatlar (savat/
-      wishlist/orders) yangi crimson uslubga mosligini tekshir.
+- [x] **S2 — Bo'sh holatlar qayta ko'rish (mobil).** ✅ 2026-07-13 · `5c9d7ef`. EmptyState ikon
+      doirasi crimson-chip + serif sarlavha; 7 ta empty-state ikonkasi slate/kulrangdan
+      crimson-bright'ga o'tdi (cart/orders/checkout/addresses/payment). Bonus: mobil wishlist +
+      cart + checkout-empty hardcoded matnlari va web wishlist sahifasi t()ga o'tdi (yangi
+      `wishlist` ns, paritet 841/841). Typecheck yashil. ⚠️ RN qurilmada vizual smoke qolgan
+      (bu muhitda Expo preview yo'q).
 
 ---
 
@@ -126,3 +130,7 @@
   yetkazish → submit blok + punktga o'tish taklifi. Server: matn-heuristika bilan
   DELIVERY_OUT_OF_ZONE (koordinatasiz web so'rovlar ham qamraldi). Preview'da real oqim bilan
   tekshirildi (savat→checkout→blok; API 400; Toshkent o'tadi). Keyingi: S2 (mobil bo'sh holatlar).
+- **2026-07-13** · S2 (mobil bo'sh holatlar) · `5c9d7ef` · EmptyState crimson uslub (chip fon,
+  serif sarlavha, crimson ikonlar) + wishlist/cart/checkout-empty i18n qarzi yopildi (mobil+web,
+  paritet 841/841). NAVBAT BO'SH: P0/P1/P2 barcha ochiq vazifalar tugadi. Qolganlar: H4 (sizning
+  qaroringiz) + 🔒 bloklanganlar. RN vizual smoke qurilmada tekshirilsin.
