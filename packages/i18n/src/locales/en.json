@@ -301,6 +301,7 @@
     "addedToCart": "Added to cart",
     "quickView": "Quick view",
     "onlyLeft": "Only {count} left!",
+    "notFound": "Product not found",
     "deliveryTomorrow": "Tomorrow",
     "deliveryFast": "Fast delivery — within 24 hours across Tashkent",
     "freeShip": "Free",
@@ -592,6 +593,22 @@
   },
   "profile": {
     "title": "Personal information",
+    "subtitle": "Keep your details up to date and your account secure",
+    "infoTitle": "Profile details",
+    "saving": "Saving...",
+    "stats": {
+      "orders": "Orders",
+      "points": "Loyalty points",
+      "reviews": "Reviews",
+      "tier": "Tier"
+    },
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "gender": "Gender"
+    },
     "nav": {
       "personal": "Personal information",
       "orders": "My orders",
@@ -620,7 +637,8 @@
       "title": "Gender",
       "male": "Male",
       "female": "Female",
-      "other": "Other"
+      "other": "Other",
+      "unspecified": "Not specified"
     },
     "birthday": "Date of birth",
     "saveChanges": "Save changes",
@@ -867,6 +885,28 @@
       "FAILED": "Payment failed",
       "CANCELLED": "Cancelled"
     }
+  },
+  "tracking": {
+    "title": "Track my order",
+    "subtitle": "Track your delivery status by order number",
+    "notFound": "No order found with this number",
+    "orderNumber": "Order number",
+    "courier": "Courier",
+    "helpTitle": "Need help?",
+    "helpDesc": "Our support team is available 24/7."
+  },
+  "orderSuccess": {
+    "title": "Thank you! Your order has been received",
+    "subtitle": "An operator will contact you shortly to confirm your order.",
+    "orderNumber": "Order number",
+    "goToOrders": "Go to my orders"
+  },
+  "brand": {
+    "notFound": "Brand not found",
+    "metaDescription": "{name} — all products",
+    "heroSubtitle": "All products by {name}. Original, with warranty and fast delivery.",
+    "productsLabel": "Products",
+    "empty": "No {name} products yet"
   },
   "sell": {
     "title": "Become a seller",

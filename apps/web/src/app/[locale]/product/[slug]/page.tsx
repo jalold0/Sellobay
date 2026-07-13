@@ -28,7 +28,10 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const dbProduct = await fetchProductBySlug(params.slug);
   const detail = dbProduct ? buildProductDetail(dbProduct) : getProductDetail(params.slug);
-  if (!detail) return { title: 'Mahsulot topilmadi' };
+  if (!detail) {
+    const t = await getTranslations('product');
+    return { title: t('notFound') };
+  }
   const { product, description } = detail;
   const name = pickLocale(product.name, params.locale);
   const desc = pickLocale(description, params.locale);

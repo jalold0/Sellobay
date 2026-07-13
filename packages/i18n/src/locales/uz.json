@@ -308,6 +308,7 @@
     "addedToCart": "Savatga qo'shildi",
     "quickView": "Tez ko'rish",
     "onlyLeft": "Faqat {count} ta qoldi!",
+    "notFound": "Mahsulot topilmadi",
     "deliveryTomorrow": "Ertaga",
     "deliveryFast": "Tezkor yetkazib berish — Toshkent bo'yicha 24 soat ichida",
     "freeShip": "Bepul",
@@ -599,6 +600,22 @@
   },
   "profile": {
     "title": "Shaxsiy ma'lumotlar",
+    "subtitle": "Ma'lumotlaringizni yangilang va xavfsizlikni ta'minlang",
+    "infoTitle": "Profil ma'lumotlari",
+    "saving": "Saqlanmoqda...",
+    "stats": {
+      "orders": "Buyurtmalar",
+      "points": "Sodiqlik balli",
+      "reviews": "Sharhlar",
+      "tier": "Daraja"
+    },
+    "fields": {
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "email": "Email",
+      "phone": "Telefon",
+      "gender": "Jinsi"
+    },
     "nav": {
       "personal": "Shaxsiy ma'lumotlar",
       "orders": "Buyurtmalarim",
@@ -627,7 +644,8 @@
       "title": "Jins",
       "male": "Erkak",
       "female": "Ayol",
-      "other": "Boshqa"
+      "other": "Boshqa",
+      "unspecified": "Belgilamagan"
     },
     "birthday": "Tug'ilgan kun",
     "saveChanges": "O'zgarishlarni saqlash",
@@ -874,6 +892,28 @@
       "FAILED": "To'lov amalga oshmadi",
       "CANCELLED": "Bekor qilindi"
     }
+  },
+  "tracking": {
+    "title": "Buyurtmamni kuzatish",
+    "subtitle": "Buyurtma raqami orqali yetkazib berish holatini kuzating",
+    "notFound": "Bunday raqam bilan buyurtma topilmadi",
+    "orderNumber": "Buyurtma raqami",
+    "courier": "Kuryer",
+    "helpTitle": "Yordamga muhtojmisiz?",
+    "helpDesc": "Operatorimiz 24/7 yordam berishga tayyor."
+  },
+  "orderSuccess": {
+    "title": "Rahmat! Buyurtmangiz qabul qilindi",
+    "subtitle": "Buyurtmangizni tasdiqlash uchun operator siz bilan tez orada bog'lanadi.",
+    "orderNumber": "Buyurtma raqami",
+    "goToOrders": "Buyurtmalarimga o'tish"
+  },
+  "brand": {
+    "notFound": "Brend topilmadi",
+    "metaDescription": "{name} — barcha mahsulotlar",
+    "heroSubtitle": "{name} brendining barcha mahsulotlari. Asl, kafolatli, tezkor yetkazib berish bilan.",
+    "productsLabel": "Mahsulotlar",
+    "empty": "Hozircha {name} mahsulotlari yo'q"
   },
   "sell": {
     "title": "Sotuvchi bo'lish",
