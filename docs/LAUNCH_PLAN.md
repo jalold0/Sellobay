@@ -77,8 +77,11 @@
 
 ## P2 — Kichik polish (xavfsiz, vaqt qolsa)
 
-- [ ] **S1 — Toshkent bbox vs viloyat yetkazish siyosati polish** (ROADMAP §12): uyga yetkazish
-      faqat Toshkent bbox ichida, viloyatlarga punkt majburiy — checkout validatsiyasi.
+- [x] **S1 — Toshkent bbox vs viloyat yetkazish siyosati polish** ✅ 2026-07-13 · `e016fd0`.
+      Umumiy `looksLikeTashkentCityText` heuristika `@ecom/utils/geo`ga ko'chdi; `/api/orders`
+      endi koordinatasiz (web) so'rovlarda ham region/city matni bo'yicha DELIVERY_OUT_OF_ZONE
+      qaytaradi; checkout'da viloyat manzili submit'ni bloklaydi (avval faqat warning edi).
+      Preview'da ikkala yo'nalish tekshirildi, DB'ga yozilmadi.
 - [ ] **S2 — Bo'sh holatlar qayta ko'rish (mobil).** Web tugadi; mobil bo'sh holatlar (savat/
       wishlist/orders) yangi crimson uslubga mosligini tekshir.
 
@@ -119,3 +122,7 @@
   /favicon.ico `[locale]` segmentiga tushib invalid locale bilan SSR bo'lar, har sahifa yuklashda
   server logda IntlError RangeError to'planardi — layout'da locale validatsiyasi (notFound) bilan
   tuzatildi. Keyingi: S1 (Toshkent bbox yetkazish siyosati).
+- **2026-07-13** · S1 (yetkazish zonasi validatsiyasi) · `e016fd0` · Klient: viloyat + uyga
+  yetkazish → submit blok + punktga o'tish taklifi. Server: matn-heuristika bilan
+  DELIVERY_OUT_OF_ZONE (koordinatasiz web so'rovlar ham qamraldi). Preview'da real oqim bilan
+  tekshirildi (savat→checkout→blok; API 400; Toshkent o'tadi). Keyingi: S2 (mobil bo'sh holatlar).
