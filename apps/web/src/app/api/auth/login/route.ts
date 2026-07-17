@@ -5,11 +5,16 @@ import { prisma } from '@/lib/db';
 import { loginSchema } from '@/lib/auth/validators';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { createSession, requestMeta, setCookies } from '@/lib/auth/session';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Brute-force himoyasi: bitta IP'dan 60 soniyada ko'pi bilan 10 urinish
+  const limited = await enforceRateLimit(req, 'login', { limit: 10, windowSec: 60 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {

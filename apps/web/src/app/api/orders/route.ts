@@ -24,6 +24,7 @@ import { settleOrderLoyalty } from '@/lib/loyalty-server';
 import { MANUAL_CARD_PROVIDER, validateReceiptDataUrl } from '@/lib/manual-payment';
 import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
 
@@ -71,6 +72,10 @@ function generateOrderNumber(): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Buyurtma-spam himoyasi: bitta IP'dan 60 soniyada 10 buyurtma urinishi
+  const limited = await enforceRateLimit(req, 'orders-create', { limit: 10, windowSec: 60 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {

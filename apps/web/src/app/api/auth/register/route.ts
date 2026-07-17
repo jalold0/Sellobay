@@ -5,11 +5,16 @@ import { prisma } from '@/lib/db';
 import { registerSchema } from '@/lib/auth/validators';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { createSession, requestMeta, setCookies } from '@/lib/auth/session';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Spam-registratsiya himoyasi: bitta IP'dan 60 soniyada 5 urinish
+  const limited = await enforceRateLimit(req, 'register', { limit: 5, windowSec: 60 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
