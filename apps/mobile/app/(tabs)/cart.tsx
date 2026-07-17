@@ -15,8 +15,7 @@ import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
 import { EmptyState } from '../../src/ui/empty-state';
 
-const FREE_SHIPPING_THRESHOLD = 500_000;
-const SHIPPING_FEE = 20_000;
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@ecom/core-domain';
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();

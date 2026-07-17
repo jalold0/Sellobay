@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ecom/core-domain": "workspace:*",
     "@ecom/i18n": "workspace:*",
     "@ecom/types": "workspace:*",
     "@ecom/utils": "workspace:*",

@@ -48,9 +48,7 @@ import { cn } from '../../src/ui/cn';
 import { EmptyState } from '../../src/ui/empty-state';
 import { Input } from '../../src/ui/input';
 
-const SHIPPING_FEE = 20_000;
-const EXPRESS_FEE = 50_000;
-const FREE_SHIPPING_THRESHOLD = 500_000;
+import { SHIPPING_FEE, EXPRESS_FEE, FREE_SHIPPING_THRESHOLD } from '@ecom/core-domain';
 
 type Step = 'delivery' | 'payment' | 'review';
 type DeliveryType = 'TASHKENT_HOME' | 'REGION_PICKUP';
