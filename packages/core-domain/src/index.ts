@@ -1,0 +1,5 @@
+// @ecom/core-domain — sof biznes-logika (framework/DB'ga bog'liq emas).
+// Web (apps/web) va mobil (apps/mobile) UCHUN yagona haqiqat manbai.
+export * from './pricing.ts';
+export * from './loyalty.ts';
+export * from './zone.ts';

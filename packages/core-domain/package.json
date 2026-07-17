@@ -1,5 +1,5 @@
 {
-  "name": "@ecom/utils",
+  "name": "@ecom/core-domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,6 @@
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@ecom/core-domain": "workspace:*",
-    "date-fns": "^3.6.0"
   },
   "devDependencies": {
     "@ecom/eslint-config": "workspace:*",

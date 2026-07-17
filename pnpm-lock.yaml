@@ -497,6 +497,9 @@ importers:
       '@ecom/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@ecom/core-domain':
+        specifier: workspace:*
+        version: link:../../packages/core-domain
       '@ecom/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -595,6 +598,18 @@ importers:
       '@ecom/types':
         specifier: workspace:*
         version: link:../types
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/core-domain:
+    devDependencies:
+      '@ecom/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@ecom/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
@@ -783,6 +798,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@ecom/core-domain':
+        specifier: workspace:*
+        version: link:../core-domain
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0

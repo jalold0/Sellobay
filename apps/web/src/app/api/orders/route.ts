@@ -1,8 +1,14 @@
 // POST /api/orders — buyurtma yaratish (web + mobile uchun umumiy)
 // GET /api/orders — joriy foydalanuvchining buyurtmalari ro'yxati
 
+import {
+  SHIPPING_FEE,
+  EXPRESS_FEE,
+  FREE_SHIPPING_THRESHOLD,
+  isInTashkentCity,
+  looksLikeTashkentCityText,
+} from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
-import { isInTashkentCity, looksLikeTashkentCityText } from '@ecom/utils';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -55,10 +61,6 @@ const createSchema = z.object({
   // Sello Coins — ishlatmoqchi bo'lgan coinlar (login user uchun; backend cheklaydi)
   redeemCoins: z.number().int().min(0).max(10_000_000).optional(),
 });
-
-const SHIPPING_FEE = 20_000;
-const EXPRESS_FEE = 50_000;
-const FREE_SHIPPING_THRESHOLD = 500_000;
 
 function generateOrderNumber(): string {
   const year = 2026; // statik — Date.now() server timezone'idan ehtiyot

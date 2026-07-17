@@ -19,17 +19,18 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
-import { looksLikeTashkentCityText } from '@ecom/utils';
+import {
+  SHIPPING_FEE,
+  EXPRESS_FEE,
+  FREE_SHIPPING_THRESHOLD,
+  looksLikeTashkentCityText,
+} from '@ecom/core-domain';
 
 import { formatMoney } from '../../lib/format';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../lib/loyalty';
 import { productImage } from '../../lib/mock-data';
 import { isOnlineProvider } from '../../lib/payments';
 import { useCart } from '../../store/cart';
-
-const SHIPPING_FEE = 20_000;
-const EXPRESS_FEE = 50_000;
-const FREE_SHIPPING_THRESHOLD = 500_000;
 
 interface AddressForm {
   firstName: string;
