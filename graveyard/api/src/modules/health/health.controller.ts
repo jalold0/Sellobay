@@ -10,9 +10,7 @@ export class HealthController {
 
   @Get()
   async check() {
-    const dbOk = await this.prisma
-      .$queryRaw`SELECT 1`.then(() => true)
-      .catch(() => false);
+    const dbOk = await this.prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false);
     return {
       status: dbOk ? 'ok' : 'degraded',
       uptime: process.uptime(),

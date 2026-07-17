@@ -37,7 +37,10 @@ export class AuthService {
       include: { roles: true },
     });
 
-    return this.issueTokens(user.id, user.roles.map((r) => r.role));
+    return this.issueTokens(
+      user.id,
+      user.roles.map((r) => r.role),
+    );
   }
 
   async login(dto: LoginDto) {
@@ -52,7 +55,10 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-    return this.issueTokens(user.id, user.roles.map((r) => r.role));
+    return this.issueTokens(
+      user.id,
+      user.roles.map((r) => r.role),
+    );
   }
 
   private issueTokens(userId: string, roles: string[]) {

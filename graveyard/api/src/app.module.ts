@@ -28,7 +28,10 @@ import { PrismaModule } from './shared/prisma/prisma.module';
       },
     }),
     ThrottlerModule.forRoot([
-      { ttl: Number(process.env.RATE_LIMIT_TTL ?? 60_000), limit: Number(process.env.RATE_LIMIT_LIMIT ?? 100) },
+      {
+        ttl: Number(process.env.RATE_LIMIT_TTL ?? 60_000),
+        limit: Number(process.env.RATE_LIMIT_LIMIT ?? 100),
+      },
     ]),
     PrismaModule,
     HealthModule,

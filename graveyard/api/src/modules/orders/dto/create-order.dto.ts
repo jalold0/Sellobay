@@ -1,6 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsEnum, IsInt, IsOptional, IsPositive, IsString, IsUUID, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 
 class OrderItemDto {
   @ApiProperty()
@@ -35,9 +44,27 @@ export class CreateOrderDto {
   deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS' = 'HOME_DELIVERY';
 
   @ApiProperty({
-    enum: ['CLICK', 'PAYME', 'UZUM_BANK', 'UZCARD', 'HUMO', 'VISA', 'MASTERCARD', 'CASH_ON_DELIVERY'],
+    enum: [
+      'CLICK',
+      'PAYME',
+      'UZUM_BANK',
+      'UZCARD',
+      'HUMO',
+      'VISA',
+      'MASTERCARD',
+      'CASH_ON_DELIVERY',
+    ],
   })
-  @IsEnum(['CLICK', 'PAYME', 'UZUM_BANK', 'UZCARD', 'HUMO', 'VISA', 'MASTERCARD', 'CASH_ON_DELIVERY'])
+  @IsEnum([
+    'CLICK',
+    'PAYME',
+    'UZUM_BANK',
+    'UZCARD',
+    'HUMO',
+    'VISA',
+    'MASTERCARD',
+    'CASH_ON_DELIVERY',
+  ])
   paymentProvider!:
     | 'CLICK'
     | 'PAYME'

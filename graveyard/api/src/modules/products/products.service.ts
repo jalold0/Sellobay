@@ -25,10 +25,10 @@ export class ProductsService {
       query.sortBy === 'price'
         ? { basePrice: query.sortOrder ?? 'asc' }
         : query.sortBy === 'rating'
-        ? { rating: query.sortOrder ?? 'desc' }
-        : query.sortBy === 'newest'
-        ? { publishedAt: 'desc' }
-        : { soldCount: 'desc' };
+          ? { rating: query.sortOrder ?? 'desc' }
+          : query.sortBy === 'newest'
+            ? { publishedAt: 'desc' }
+            : { soldCount: 'desc' };
 
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({

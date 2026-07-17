@@ -25,8 +25,8 @@ export class CartService {
     const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
     if (!product) throw new NotFoundException('Product not found');
     const unitPrice = dto.variantId
-      ? (await this.prisma.productVariant.findUnique({ where: { id: dto.variantId } }))?.price ??
-        product.basePrice
+      ? ((await this.prisma.productVariant.findUnique({ where: { id: dto.variantId } }))?.price ??
+        product.basePrice)
       : product.basePrice;
     return this.prisma.cartItem.upsert({
       where: {
