@@ -1,46 +1,36 @@
 'use client';
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Badge,
-  Button,
-  Rating,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  toast,
-} from '@ecom/ui';
+// Mahsulot sahifasi — orkestr: variant tanlash (rang/o'lcham/miqdor), savatga
+// qo'shish/ulashish va info ustuni shu yerda. Gallery/Tabs/StickyBar alohida
+// komponentlarda (product-gallery, product-tabs, sticky-cart-bar).
+import { Badge, Button, Rating, toast } from '@ecom/ui';
 import {
   BadgeCheck,
   Check,
   Flame,
   Heart,
-  HelpCircle,
   Minus,
   Plus,
   ShieldCheck,
   Share2,
   ShoppingCart,
-  Star,
-  ThumbsUp,
   TrendingUp,
   Truck,
   Undo2,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { formatMoney, formatRelative, discountPercent } from '../../lib/format';
+import { formatMoney, discountPercent } from '../../lib/format';
 import { type Locale, pickLocale, productImage } from '../../lib/mock-data';
 import { type ProductFullDetail } from '../../lib/product-details';
 import { useCart } from '../../store/cart';
 import { useWishlist } from '../../store/wishlist';
+import { ProductGallery } from './product-gallery';
+import { ProductTabs } from './product-tabs';
+import { StickyCartBar } from './sticky-cart-bar';
 
 interface Props {
   detail: ProductFullDetail;
@@ -50,21 +40,9 @@ interface Props {
 export function ProductDetail({ detail, locale }: Props) {
   const router = useRouter();
   const t = useTranslations('product');
-  const {
-    product,
-    gallery,
-    colors,
-    sizes,
-    description,
-    features,
-    specs,
-    reviews,
-    questions,
-    ratingBreakdown,
-  } = detail;
+  const { product, gallery, colors, sizes } = detail;
   const name = pickLocale(product.name, locale);
 
-  const [activeImageIdx, setActiveImageIdx] = React.useState(0);
   const [color, setColor] = React.useState(colors[0]?.id);
   const [size, setSize] = React.useState(sizes.find((s) => s.inStock !== false)?.id);
   const [quantity, setQuantity] = React.useState(1);
@@ -89,11 +67,6 @@ export function ProductDetail({ detail, locale }: Props) {
   const selectedColor = colors.find((c) => c.id === color);
   const selectedSize = sizes.find((s) => s.id === size);
   const discount = discountPercent(product.price, product.oldPrice);
-
-  const ratingBars = ([5, 4, 3, 2, 1] as const).map((star) => ({
-    star,
-    pct: ratingBreakdown[star] ?? 0,
-  }));
 
   const handleAdd = (buyNow = false) => {
     if (sizes.length > 0 && !size) {
@@ -143,56 +116,14 @@ export function ProductDetail({ detail, locale }: Props) {
   return (
     <div className="space-y-10">
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Gallery */}
-        <div className="space-y-3">
-          <div className="bg-muted relative aspect-square overflow-hidden rounded-2xl border">
-            <Image
-              src={
-                gallery[activeImageIdx]?.url ??
-                productImage(gallery[activeImageIdx]?.seed ?? product.imageSeed, 800)
-              }
-              alt={name}
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 600px"
-              className="object-cover"
-            />
-            {discount > 0 && (
-              <Badge className="absolute left-3 top-3 rounded-md bg-rose-600 text-white shadow hover:bg-rose-600">
-                −{discount}%
-              </Badge>
-            )}
-            <button
-              type="button"
-              onClick={() => toggleWishlist(product.id)}
-              className="text-foreground absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow-sm transition hover:bg-white"
-              aria-label={t('addToWishlist')}
-            >
-              <Heart size={18} className={wishlistHas ? 'fill-rose-500 text-rose-500' : ''} />
-            </button>
-          </div>
-          <div className="grid grid-cols-5 gap-2">
-            {gallery.slice(0, 5).map((g, i) => (
-              <button
-                key={g.seed}
-                type="button"
-                onClick={() => setActiveImageIdx(i)}
-                className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${
-                  i === activeImageIdx ? 'border-primary' : 'hover:border-input border-transparent'
-                }`}
-                aria-label={`${t('description')} ${i + 1}`}
-              >
-                <Image
-                  src={g.url ?? productImage(g.seed, 200)}
-                  alt=""
-                  fill
-                  sizes="120px"
-                  className="object-cover"
-                />
-              </button>
-            ))}
-          </div>
-        </div>
+        <ProductGallery
+          gallery={gallery}
+          name={name}
+          imageSeed={product.imageSeed}
+          discount={discount}
+          wishlistHas={wishlistHas}
+          onToggleWishlist={() => toggleWishlist(product.id)}
+        />
 
         {/* Info */}
         <div className="space-y-5">
@@ -434,199 +365,17 @@ export function ProductDetail({ detail, locale }: Props) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <section className="border-t pt-8">
-        <Tabs defaultValue="description">
-          <TabsList>
-            <TabsTrigger value="description">{t('tabDescription')}</TabsTrigger>
-            <TabsTrigger value="specs">{t('tabSpecs')}</TabsTrigger>
-            <TabsTrigger value="reviews" id="reviews">
-              {t('tabReviews')} ({product.reviewCount})
-            </TabsTrigger>
-            <TabsTrigger value="qa">
-              {t('tabQa')} ({questions.length})
-            </TabsTrigger>
-          </TabsList>
+      <ProductTabs detail={detail} locale={locale} />
 
-          <TabsContent value="description">
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="space-y-4 text-sm leading-relaxed md:col-span-2">
-                <p>{pickLocale(description, locale)}</p>
-                <ul className="list-disc space-y-1 pl-5">
-                  {features.map((f, i) => (
-                    <li key={i}>{pickLocale(f, locale)}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-card rounded-xl border p-4 text-sm">
-                <div className="mb-3 font-semibold">{t('quickSpecs')}</div>
-                <dl className="space-y-2">
-                  {specs.slice(0, 4).map((s) => (
-                    <div key={s.value} className="flex justify-between gap-3">
-                      <dt className="text-muted-foreground">{pickLocale(s.label, locale)}</dt>
-                      <dd className="text-right font-medium">{s.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="specs">
-            <div className="bg-card rounded-xl border">
-              <dl className="divide-y">
-                {specs.map((s) => (
-                  <div key={s.value} className="flex justify-between gap-3 px-4 py-3 text-sm">
-                    <dt className="text-muted-foreground">{pickLocale(s.label, locale)}</dt>
-                    <dd className="text-right font-medium">{s.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="reviews">
-            <div className="grid gap-8 md:grid-cols-3">
-              <aside className="space-y-4">
-                <div className="bg-card rounded-xl border p-5 text-center">
-                  <div className="text-5xl font-bold">{product.rating.toFixed(1)}</div>
-                  <div className="mt-2 flex justify-center">
-                    <Rating value={product.rating} size={18} />
-                  </div>
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    {t('reviewsBasedOn', { count: product.reviewCount })}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {ratingBars.map((b) => (
-                    <div key={b.star} className="flex items-center gap-2 text-xs">
-                      <span className="inline-flex w-6 items-center gap-0.5">
-                        {b.star} <Star size={10} className="fill-amber-400 text-amber-400" />
-                      </span>
-                      <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-                        <div
-                          className="h-full rounded-full bg-amber-400"
-                          style={{ width: `${b.pct}%` }}
-                        />
-                      </div>
-                      <span className="text-muted-foreground w-8 text-right">{b.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full">
-                  {t('writeReview')}
-                </Button>
-              </aside>
-              <div className="space-y-4 md:col-span-2">
-                {reviews.map((r) => (
-                  <article key={r.id} className="bg-card rounded-xl border p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={productImage(r.avatarSeed, 80)} alt={r.author} />
-                          <AvatarFallback>{r.author[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="text-sm font-medium">{r.author}</div>
-                          <div className="text-muted-foreground text-[11px]">
-                            {formatRelative(r.createdAt)}
-                            {r.verifiedPurchase && (
-                              <span className="ml-2 inline-flex items-center gap-0.5 text-emerald-700">
-                                <Check size={10} /> {t('verifiedPurchase')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <Rating value={r.rating} size={14} />
-                    </div>
-                    {r.title && <div className="mt-3 text-sm font-medium">{r.title}</div>}
-                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{r.body}</p>
-                    <div className="mt-3 flex items-center gap-3 text-xs">
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                      >
-                        <ThumbsUp size={12} /> {t('helpful', { count: r.helpfulCount ?? 0 })}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="qa">
-            <div className="space-y-4">
-              {questions.map((q) => (
-                <article key={q.id} className="bg-card rounded-xl border p-4">
-                  <div className="flex items-start gap-3">
-                    <HelpCircle size={18} className="text-primary mt-0.5 shrink-0" />
-                    <div className="space-y-2">
-                      <div>
-                        <div className="text-muted-foreground text-xs">
-                          {q.author} · {formatRelative(q.createdAt)}
-                        </div>
-                        <div className="mt-0.5 text-sm font-medium">{q.question}</div>
-                      </div>
-                      {q.answer && (
-                        <div className="bg-muted rounded-md p-3">
-                          <div className="text-primary text-xs font-semibold">
-                            {q.answeredBy ?? t('answer')}
-                          </div>
-                          <div className="mt-1 text-sm">{q.answer}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              ))}
-              <Button variant="outline" className="w-full">
-                {t('askQuestion')}
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </section>
-
-      {/* Sticky add-to-cart bar — asosiy CTA ekrandan chiqsa paydo bo'ladi */}
-      <div
-        className={`bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur transition-transform duration-300 ${
-          showSticky ? 'translate-y-0' : 'translate-y-full'
-        }`}
-      >
-        <div className="container flex items-center gap-3 py-2.5">
-          <div className="relative hidden h-12 w-12 shrink-0 overflow-hidden rounded-lg border sm:block">
-            <Image
-              src={gallery[0]?.url ?? productImage(product.imageSeed, 100)}
-              alt={name}
-              fill
-              sizes="48px"
-              className="object-cover"
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="line-clamp-1 text-sm font-medium">{name}</div>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold">{formatMoney(product.price)}</span>
-              {product.oldPrice && (
-                <span className="text-muted-foreground text-xs line-through">
-                  {formatMoney(product.oldPrice)}
-                </span>
-              )}
-            </div>
-          </div>
-          <Button
-            size="lg"
-            className="h-11 shrink-0 rounded-full px-6 text-sm font-semibold"
-            onClick={() => handleAdd(false)}
-            disabled={!product.inStock}
-          >
-            <ShoppingCart size={16} className="mr-1.5" />
-            {t('addToCart')}
-          </Button>
-        </div>
-      </div>
+      <StickyCartBar
+        show={showSticky}
+        name={name}
+        imageSrc={gallery[0]?.url ?? productImage(product.imageSeed, 100)}
+        price={product.price}
+        oldPrice={product.oldPrice}
+        inStock={product.inStock}
+        onAdd={() => handleAdd(false)}
+      />
     </div>
   );
 }
