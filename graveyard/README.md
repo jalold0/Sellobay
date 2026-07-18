@@ -22,6 +22,12 @@ Ombor logikasi aslida `apps/web/src/lib/inventory-server.ts` da (atomik deduct/r
 oversell himoyasi — e2e test o'tgan). `apps/wms` shu logikaning ishlatilmaydigan
 dublikat skeleti (255 qator) edi.
 
+### `helm-api/` (eski `infrastructure/kubernetes/helm/api`)
+
+Karantinlangan NestJS `api` uchun Helm chart skeleti (hech qanday CI/CD undan
+foydalanmasdi — deploy Vercel'da). Xizmatning o'zi `graveyard/api`ga ko'chgach,
+chart ham yetim qoldi va shu yerga ko'chirildi (2026-07-18).
+
 ## Qaytarish
 
 ```bash

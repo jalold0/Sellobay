@@ -25,7 +25,7 @@
 ## 0. Asos (Foundation) — TAYYOR
 
 - [x] Turborepo monorepo (9 app + 8 paket), pnpm, TypeScript strict
-- [x] Backend: NestJS + Prisma + Neon PostgreSQL (jonli)
+- [x] Backend: Next.js API routes (`apps/web`) + Prisma + Neon PostgreSQL (jonli; NestJS skeletlari karantinda — ADR 0004)
 - [x] Auth: custom JWT + argon2 + OTP (end-to-end ishlaydi)
 - [x] Web (Next.js 14): 40+ sahifa, Zustand cart/wishlist, SSR-safe formatter, SEO
 - [x] Mobile (Expo SDK 54): 11 ekran, NativeWind, Zustand+MMKV, EAS APK
