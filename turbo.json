@@ -36,6 +36,9 @@
     "clean": {
       "cache": false
     },
+    "@ecom/core-domain#test": {
+      "outputs": []
+    },
     "@ecom/database#build": {
       "cache": false
     },
