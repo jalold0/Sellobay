@@ -1,161 +1,25 @@
+// Buyurtma detali ekrani — orkestr: React Query hooklar, bekor/qaytarish
+// amallari va bo'limlar renderi. i18n lug'ati, UI bo'laklar va tahrir modali
+// src/components/orders/* da.
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, ChevronLeft, MapPin, Package, Pencil, Phone, Undo2, X } from 'lucide-react-native';
+import { MapPin, Package, Pencil, Phone, Undo2, X } from 'lucide-react-native';
 import * as React from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { updateOrder, type OrderDetail, type UpdateOrderInput } from '../../src/lib/api';
+import { L, STATUS_BADGE } from '../../src/components/orders/order-detail-i18n';
+import { DetailHeader, Row } from '../../src/components/orders/order-detail-ui';
+import { OrderEditModal } from '../../src/components/orders/order-edit-modal';
 import { formatDate, formatMoney, pickLocalized } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
 import { useCancelOrder, useOrder, useReturnOrder } from '../../src/lib/hooks';
 import { useT } from '../../src/lib/useT';
-import { useLocale, type Locale } from '../../src/store/locale';
+import { useLocale } from '../../src/store/locale';
 import { toast } from '../../src/store/toast';
 import { AppImage } from '../../src/ui/app-image';
 import { Button } from '../../src/ui/button';
 import { cn } from '../../src/ui/cn';
-import { Input } from '../../src/ui/input';
-
-const L: Record<Locale, Record<string, string>> = {
-  uz: {
-    title: 'Buyurtma',
-    edit: 'Tahrirlash',
-    cancel: 'Bekor qilish',
-    cancelConfirm: 'Buyurtmani bekor qilasizmi?',
-    cancelDesc: 'Ishlatilgan Sello Coins va promokod qaytariladi.',
-    no: 'Yo‘q',
-    yes: 'Ha, bekor qilish',
-    cancelled: 'Buyurtma bekor qilindi',
-    saved: 'O‘zgarishlar saqlandi',
-    delivery: 'Yetkazib berish',
-    home: 'Manzilga',
-    express: 'Express',
-    pickup: 'Topshirish punkti',
-    recipient: 'Qabul qiluvchi',
-    items: 'Mahsulotlar',
-    subtotal: 'Mahsulotlar',
-    shipping: 'Yetkazib berish',
-    discount: 'Chegirma',
-    total: 'Jami',
-    free: 'Tekin',
-    promo: 'Promokod',
-    editTitle: 'Buyurtmani tahrirlash',
-    name: 'Ism familiya',
-    phone: 'Telefon',
-    city: 'Shahar',
-    street: 'Ko‘cha, uy',
-    apt: 'Kvartira/podyezd',
-    save: 'Saqlash',
-    notEditable: 'Bu buyurtmani endi tahrirlab bo‘lmaydi',
-    return: 'Qaytarish',
-    returnConfirm: 'Mahsulotni qaytarasizmi?',
-    returnDesc: 'Sello Coins qaytariladi. Pul mablag‘i operator tomonidan qaytariladi.',
-    returnYes: 'Ha, qaytarish',
-    returned: 'Qaytarish qabul qilindi',
-  },
-  ru: {
-    title: 'Заказ',
-    edit: 'Изменить',
-    cancel: 'Отменить',
-    cancelConfirm: 'Отменить заказ?',
-    cancelDesc: 'Использованные Sello Coins и промокод вернутся.',
-    no: 'Нет',
-    yes: 'Да, отменить',
-    cancelled: 'Заказ отменён',
-    saved: 'Изменения сохранены',
-    delivery: 'Доставка',
-    home: 'На адрес',
-    express: 'Экспресс',
-    pickup: 'Пункт выдачи',
-    recipient: 'Получатель',
-    items: 'Товары',
-    subtotal: 'Товары',
-    shipping: 'Доставка',
-    discount: 'Скидка',
-    total: 'Итого',
-    free: 'Бесплатно',
-    promo: 'Промокод',
-    editTitle: 'Изменить заказ',
-    name: 'Имя и фамилия',
-    phone: 'Телефон',
-    city: 'Город',
-    street: 'Улица, дом',
-    apt: 'Квартира/подъезд',
-    save: 'Сохранить',
-    notEditable: 'Этот заказ больше нельзя изменить',
-    return: 'Вернуть',
-    returnConfirm: 'Вернуть товар?',
-    returnDesc: 'Sello Coins вернутся. Деньги возвращает оператор.',
-    returnYes: 'Да, вернуть',
-    returned: 'Возврат принят',
-  },
-  en: {
-    title: 'Order',
-    edit: 'Edit',
-    cancel: 'Cancel',
-    cancelConfirm: 'Cancel this order?',
-    cancelDesc: 'Used Sello Coins and promo code will be refunded.',
-    no: 'No',
-    yes: 'Yes, cancel',
-    cancelled: 'Order cancelled',
-    saved: 'Changes saved',
-    delivery: 'Delivery',
-    home: 'Home delivery',
-    express: 'Express',
-    pickup: 'Pickup point',
-    recipient: 'Recipient',
-    items: 'Items',
-    subtotal: 'Items',
-    shipping: 'Shipping',
-    discount: 'Discount',
-    total: 'Total',
-    free: 'Free',
-    promo: 'Promo code',
-    editTitle: 'Edit order',
-    name: 'Full name',
-    phone: 'Phone',
-    city: 'City',
-    street: 'Street, house',
-    apt: 'Apartment/entrance',
-    save: 'Save',
-    notEditable: 'This order can no longer be edited',
-    return: 'Return',
-    returnConfirm: 'Return this item?',
-    returnDesc: 'Sello Coins will be refunded. Money is refunded by an operator.',
-    returnYes: 'Yes, return',
-    returned: 'Return accepted',
-  },
-};
-
-const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
-  PENDING: { bg: 'bg-amber-100', text: 'text-amber-700' },
-  CONFIRMED: { bg: 'bg-sky-100', text: 'text-sky-700' },
-  PAID: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  PROCESSING: { bg: 'bg-sky-100', text: 'text-sky-700' },
-  PACKED: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-  SHIPPED: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-  OUT_FOR_DELIVERY: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-  DELIVERED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  CANCELLED: { bg: 'bg-rose-100', text: 'text-rose-700' },
-  RETURNED: { bg: 'bg-rose-100', text: 'text-rose-700' },
-  REFUNDED: { bg: 'bg-muted', text: 'text-muted-foreground' },
-};
-
-const DELIVERY_OPTIONS: Array<{ id: UpdateOrderInput['deliveryMethod']; key: string }> = [
-  { id: 'HOME_DELIVERY', key: 'home' },
-  { id: 'EXPRESS', key: 'express' },
-  { id: 'PICKUP_POINT', key: 'pickup' },
-];
 
 export default function OrderDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -457,7 +321,7 @@ export default function OrderDetailScreen() {
       ) : null}
 
       {editing ? (
-        <EditModal
+        <OrderEditModal
           order={order}
           tr={tr}
           onClose={() => setEditing(false)}
@@ -472,156 +336,5 @@ export default function OrderDetailScreen() {
         />
       ) : null}
     </View>
-  );
-}
-
-function Row({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <View className="flex-row items-center justify-between">
-      <Text className="text-muted-foreground text-sm">{label}</Text>
-      <Text className={cn('text-sm', accent ? 'text-success font-medium' : 'text-foreground')}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function DetailHeader({ title, onBack }: { title: string; onBack: () => void }) {
-  return (
-    <View className="flex-row items-center px-3 pb-1">
-      <Pressable
-        onPress={onBack}
-        hitSlop={8}
-        className="active:bg-muted h-10 w-10 items-center justify-center rounded-full"
-      >
-        <ChevronLeft size={22} color="#0A0A0C" />
-      </Pressable>
-      <Text numberOfLines={1} className="flex-1 text-center text-base font-semibold">
-        {title}
-      </Text>
-      <View className="w-10" />
-    </View>
-  );
-}
-
-function EditModal({
-  order,
-  tr,
-  onClose,
-  onSaved,
-}: {
-  order: OrderDetail;
-  tr: Record<string, string>;
-  onClose: () => void;
-  onSaved: (o: OrderDetail) => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const a = order.shippingAddress;
-  const [form, setForm] = React.useState({
-    recipientName: a?.recipientName ?? '',
-    phone: a?.phone ?? '',
-    city: a?.city ?? '',
-    street: a?.street ?? '',
-    apartment: a?.apartment ?? '',
-  });
-  const [method, setMethod] = React.useState<UpdateOrderInput['deliveryMethod']>(
-    order.deliveryMethod as UpdateOrderInput['deliveryMethod'],
-  );
-  const [saving, setSaving] = React.useState(false);
-
-  const onSave = async () => {
-    setSaving(true);
-    const res = await updateOrder(order.id, {
-      recipientName: form.recipientName.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      city: form.city.trim() || undefined,
-      street: form.street.trim() || undefined,
-      apartment: form.apartment.trim() || null,
-      deliveryMethod: method,
-    });
-    setSaving(false);
-    if (!res.success || !res.order) {
-      haptics.error();
-      toast({ title: res.error?.message ?? tr.saved, variant: 'destructive' });
-      return;
-    }
-    onSaved(res.order);
-  };
-
-  return (
-    <Pressable className="absolute inset-0 bg-black/40" onPress={onClose} style={{ elevation: 10 }}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1, justifyContent: 'flex-end' }}
-      >
-        <Pressable
-          className="bg-background gap-3 rounded-t-3xl p-5"
-          style={{ paddingBottom: insets.bottom + 20 }}
-          onPress={(e) => e.stopPropagation()}
-        >
-          <View className="flex-row items-center justify-between">
-            <Text className="text-foreground text-lg font-bold">{tr.editTitle}</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <X size={22} color="#6B6B73" />
-            </Pressable>
-          </View>
-
-          <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 420 }}>
-            <View className="gap-3">
-              <Input
-                label={tr.name}
-                value={form.recipientName}
-                onChangeText={(v) => setForm({ ...form, recipientName: v })}
-              />
-              <Input
-                label={tr.phone}
-                value={form.phone}
-                onChangeText={(v) => setForm({ ...form, phone: v })}
-                keyboardType="phone-pad"
-              />
-              <Input
-                label={tr.city}
-                value={form.city}
-                onChangeText={(v) => setForm({ ...form, city: v })}
-              />
-              <Input
-                label={tr.street}
-                value={form.street}
-                onChangeText={(v) => setForm({ ...form, street: v })}
-              />
-              <Input
-                label={tr.apt}
-                value={form.apartment}
-                onChangeText={(v) => setForm({ ...form, apartment: v })}
-              />
-
-              <Text className="text-muted-foreground text-xs font-medium">{tr.delivery}</Text>
-              <View className="gap-2">
-                {DELIVERY_OPTIONS.map((opt) => (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => {
-                      haptics.select();
-                      setMethod(opt.id);
-                    }}
-                    className={cn(
-                      'flex-row items-center justify-between rounded-xl border-2 p-3',
-                      method === opt.id ? 'border-primary bg-primary/5' : 'border-border',
-                    )}
-                  >
-                    <Text className="text-foreground text-sm font-medium">{tr[opt.key]}</Text>
-                    {method === opt.id ? <Check size={16} color="#531625" /> : null}
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-
-          <Button fullWidth size="lg" loading={saving} onPress={onSave}>
-            {tr.save}
-          </Button>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </Pressable>
   );
 }
