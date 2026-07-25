@@ -16,12 +16,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@ecom/core-domain';
+
 import { formatMoney } from '../../lib/format';
 import { productImage } from '../../lib/mock-data';
 import { useCart, type CartItem } from '../../store/cart';
-
-const FREE_SHIPPING_THRESHOLD = 500_000;
-const SHIPPING_FEE = 20_000;
 
 export function CartView() {
   const t = useTranslations('cart');
@@ -217,7 +216,7 @@ function CartItemRow({
         className="bg-muted relative h-24 w-24 shrink-0 overflow-hidden rounded-md sm:h-28 sm:w-28"
       >
         <Image
-          src={productImage(item.imageSeed, 200)}
+          src={item.imageUrl ?? productImage(item.imageSeed, 200)}
           alt={item.name}
           fill
           sizes="120px"

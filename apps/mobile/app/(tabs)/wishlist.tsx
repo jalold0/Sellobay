@@ -29,16 +29,16 @@ export default function WishlistScreen() {
   return (
     <View className="bg-paper flex-1" style={{ paddingTop: insets.top }}>
       <View className="px-4 pb-2 pt-3.5">
-        <Text className="text-foreground font-serif text-2xl leading-7">Sevimlilar</Text>
+        <Text className="text-foreground font-serif text-2xl leading-7">{t('wishlist.title')}</Text>
         <Text className="text-muted-foreground mt-1 text-xs">
-          {items.length} ta mahsulot saqlandi
+          {t('wishlist.savedCount').replace('{count}', String(items.length))}
         </Text>
       </View>
       {items.length === 0 ? (
         <EmptyState
           icon={<Heart size={32} color="#762237" />}
-          title="Sevimlilar bo'sh"
-          description="Yurakcha bilan mahsulotlarni saqlang"
+          title={t('wishlist.emptyTitle')}
+          description={t('wishlist.emptyDesc')}
           action={
             <Button fullWidth onPress={() => router.push('/catalog')}>
               {t('cart.openCatalog')}

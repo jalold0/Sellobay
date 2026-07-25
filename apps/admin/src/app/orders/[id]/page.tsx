@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
   PageHeader,
   Separator,
+  Skeleton,
   toast,
 } from '@ecom/ui';
 import {
@@ -27,13 +28,14 @@ import {
   Loader2,
   MapPin,
   Phone,
-  Printer,
+  ReceiptText,
   Truck,
   UserRound,
   X,
+  ZoomIn,
 } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
@@ -42,33 +44,113 @@ import {
   OrderStatusBadge,
 } from '../../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../../components/status/payment-status-badge';
+import {
+  forwardStatuses,
+  getOrderDetail,
+  reviewPayment,
+  updateOrderStatus,
+  type AdminOrderDetail,
+  type AdminOrderStatus,
+} from '@/lib/auth/client';
 import { formatDateTime, formatMoney, formatRelative, pickLocalized } from '../../../lib/format';
-import { getOrderDetail } from '../../../lib/mock';
 
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
-  const order = getOrderDetail(id);
-  if (!order) return notFound();
 
-  const onStatusChange = (status: string) => {
+  const [order, setOrder] = React.useState<AdminOrderDetail | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [notFound, setNotFound] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [zoom, setZoom] = React.useState(false);
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    const res = await getOrderDetail(id);
+    if (res.success) setOrder(res.data);
+    else {
+      setNotFound(true);
+      toast({ title: res.error.message, variant: 'destructive' });
+    }
+    setLoading(false);
+  }, [id]);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
+  const onStatusChange = async (status: AdminOrderStatus) => {
+    setBusy(true);
+    const res = await updateOrderStatus(id, status);
+    setBusy(false);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
     toast({
       title: 'Status yangilandi',
-      description: `Buyurtma → ${ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS]}`,
+      description: `Buyurtma → ${ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS] ?? status}`,
       variant: 'success',
     });
+    void load();
   };
+
+  const onPayment = async (action: 'verify' | 'reject') => {
+    let comment: string | undefined;
+    if (action === 'reject') {
+      const reason = window.prompt("To'lovni rad etish sababi (ixtiyoriy):");
+      if (reason === null) return;
+      comment = reason.trim() || undefined;
+    }
+    setBusy(true);
+    const res = await reviewPayment(id, action, comment);
+    setBusy(false);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: action === 'verify' ? "To'lov tasdiqlandi" : "To'lov rad etildi",
+      variant: action === 'verify' ? 'success' : 'destructive',
+    });
+    void load();
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-96 lg:col-span-2" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || !order) {
+    return (
+      <div className="space-y-4">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/orders">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Ro`yxat
+          </Link>
+        </Button>
+        <Alert variant="destructive">
+          <AlertTitle>Buyurtma topilmadi</AlertTitle>
+          <AlertDescription>Bunday buyurtma mavjud emas yoki o`chirilgan.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const nextStatuses = forwardStatuses(order.status);
+  const showManualCard = order.manualCard?.pending;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumbs={
-          <Breadcrumbs
-            overrides={{
-              [`/orders/${id}`]: order.number,
-            }}
-          />
-        }
+        breadcrumbs={<Breadcrumbs overrides={{ [`/orders/${id}`]: order.number }} />}
         title={order.number}
         description={`${formatDateTime(order.placedAt)} · ${formatRelative(order.placedAt)}`}
         actions={
@@ -78,23 +160,24 @@ export default function OrderDetailPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Ro`yxat
               </Link>
             </Button>
-            <Button variant="outline" size="sm">
-              <Printer className="mr-2 h-4 w-4" /> Chop etish
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm">Status o`zgartirish</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {Object.entries(ORDER_STATUS_LABELS).map(([k, l]) => (
-                  <DropdownMenuItem key={k} onClick={() => onStatusChange(k)}>
-                    {l}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {nextStatuses.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" disabled={busy}>
+                    Status o`zgartirish
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Keyingi holat</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {nextStatuses.map((k) => (
+                    <DropdownMenuItem key={k} onClick={() => void onStatusChange(k)}>
+                      {ORDER_STATUS_LABELS[k as keyof typeof ORDER_STATUS_LABELS] ?? k}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </>
         }
       />
@@ -105,19 +188,69 @@ export default function OrderDetailPage() {
         <span className="text-muted-foreground text-xs">{order.paymentProvider}</span>
       </div>
 
-      {order.status === 'PENDING' ? (
+      {/* Karta orqali to'lov — tasdiqlash kutilmoqda */}
+      {showManualCard ? (
+        <Alert variant="warning">
+          <ReceiptText className="h-4 w-4" />
+          <AlertTitle>Karta to`lovi tasdiqlashni kutmoqda</AlertTitle>
+          <AlertDescription>
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start">
+              <button
+                type="button"
+                onClick={() => setZoom(true)}
+                className="bg-muted group relative h-28 w-28 shrink-0 overflow-hidden rounded-lg border"
+                title="Kattalashtirish"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={order.manualCard!.receipt}
+                  alt="chek"
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
+                  <ZoomIn size={20} />
+                </span>
+              </button>
+              <div className="flex-1">
+                {order.manualCard!.note ? (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Mijoz izohi: </span>
+                    {order.manualCard!.note}
+                  </p>
+                ) : null}
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => void onPayment('verify')}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Check size={14} className="mr-1" /> Tasdiqlash
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void onPayment('reject')}
+                    className="text-red-600 hover:bg-red-50"
+                  >
+                    <X size={14} className="mr-1" /> Rad etish
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      ) : order.status === 'PENDING' ? (
         <Alert variant="warning">
           <Loader2 className="h-4 w-4" />
           <AlertTitle>Tasdiqlash kutilmoqda</AlertTitle>
-          <AlertDescription>
-            Mijoz to`lovni amalga oshirmagan. 30 daqiqadan ortiq kutilsa avtomatik bekor qilinadi.
-          </AlertDescription>
+          <AlertDescription>Mijoz to`lovni amalga oshirmagan yoki tasdiqlanmagan.</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          {/* Items */}
           <Card>
             <CardHeader>
               <CardTitle>Mahsulotlar ({order.items.length})</CardTitle>
@@ -168,7 +301,6 @@ export default function OrderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Timeline */}
           <Card>
             <CardHeader>
               <CardTitle>Tarix</CardTitle>
@@ -220,31 +352,33 @@ export default function OrderDetailPage() {
             <CardContent className="text-sm">
               <div className="font-medium">{order.customerName}</div>
               <div className="text-muted-foreground mt-2 flex items-center gap-2">
-                <Phone className="h-3.5 w-3.5" /> {order.customerPhone}
+                <Phone className="h-3.5 w-3.5" /> {order.customerPhone || '—'}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-              <MapPin className="text-muted-foreground h-4 w-4" />
-              <CardTitle className="text-sm">Yetkazib berish manzili</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1 text-sm">
-              <div className="font-medium">{order.shippingAddress.recipientName}</div>
-              <div className="text-muted-foreground">{order.shippingAddress.phone}</div>
-              <Separator className="my-2" />
-              <div>{order.shippingAddress.region}</div>
-              <div>
-                {order.shippingAddress.city}, {order.shippingAddress.street}
-              </div>
-              {order.shippingAddress.landmark ? (
-                <div className="text-muted-foreground text-xs">
-                  Mo`ljal: {order.shippingAddress.landmark}
+          {order.shippingAddress ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                <MapPin className="text-muted-foreground h-4 w-4" />
+                <CardTitle className="text-sm">Yetkazib berish manzili</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 text-sm">
+                <div className="font-medium">{order.shippingAddress.recipientName}</div>
+                <div className="text-muted-foreground">{order.shippingAddress.phone}</div>
+                <Separator className="my-2" />
+                <div>{order.shippingAddress.region}</div>
+                <div>
+                  {order.shippingAddress.city}, {order.shippingAddress.street}
                 </div>
-              ) : null}
-            </CardContent>
-          </Card>
+                {order.shippingAddress.landmark ? (
+                  <div className="text-muted-foreground text-xs">
+                    Mo`ljal: {order.shippingAddress.landmark}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
@@ -285,6 +419,20 @@ export default function OrderDetailPage() {
           </Card>
         </div>
       </div>
+
+      {zoom && order.manualCard ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+          onClick={() => setZoom(false)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={order.manualCard.receipt}
+            alt="chek"
+            className="max-h-[90vh] max-w-full rounded-lg object-contain"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

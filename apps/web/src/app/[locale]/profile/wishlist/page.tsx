@@ -3,7 +3,7 @@
 import { Button, EmptyState, Skeleton } from '@ecom/ui';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
@@ -52,6 +52,7 @@ function toMockProduct(p: ApiProduct): MockProduct {
 
 export default function WishlistPage() {
   const locale = useLocale() as Locale;
+  const t = useTranslations();
   const ids = useWishlist((s) => s.ids);
   const [mounted, setMounted] = React.useState(false);
   const [items, setItems] = React.useState<MockProduct[]>([]);
@@ -83,7 +84,7 @@ export default function WishlistPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Sevimlilar</h1>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('wishlist.title')}</h1>
           <p className="text-muted-foreground mt-1 text-sm">...</p>
         </div>
       </div>
@@ -93,8 +94,10 @@ export default function WishlistPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Sevimlilar</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{ids.length} ta mahsulot saqlandi</p>
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('wishlist.title')}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {t('wishlist.savedCount', { count: ids.length })}
+        </p>
       </div>
 
       {loading && items.length === 0 ? (
@@ -106,11 +109,11 @@ export default function WishlistPage() {
       ) : ids.length === 0 ? (
         <EmptyState
           icon={Heart}
-          title="Sevimlilar bo`sh"
-          description="Yoqtirgan mahsulotlaringizni saqlab qo`yish uchun kartochkadagi yurakcha tugmasini bosing"
+          title={t('wishlist.emptyTitle')}
+          description={t('wishlist.emptyDesc')}
           action={
             <Button asChild>
-              <Link href="/catalog">Katalogni ochish</Link>
+              <Link href="/catalog">{t('cart.openCatalog')}</Link>
             </Button>
           }
         />

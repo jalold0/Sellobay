@@ -73,9 +73,13 @@ export async function settleOrderLoyalty(
   paidTotalSom: number,
   redeemCoins: number,
   orderNumber: string,
+  opts: { grantEarn?: boolean } = {},
 ): Promise<OrderLoyaltyResult> {
+  // grantEarn=false — earn (cashback) hali kreditlanmaydi (masalan karta orqali qo'lda to'lov:
+  // coinlar admin to'lovni tasdiqlaganda beriladi, to'lanmagan buyurtmadan coin "farming" bo'lmasin).
+  const grantEarn = opts.grantEarn ?? true;
   const redeemed = Math.max(0, Math.floor(redeemCoins));
-  const earned = coinsForOrder(paidTotalSom);
+  const earned = grantEarn ? coinsForOrder(paidTotalSom) : 0;
 
   if (redeemed > 0) {
     await tx.loyaltyTransaction.create({

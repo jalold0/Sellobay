@@ -1,108 +1,54 @@
 'use client';
 
-import { Button, Input, Label, Separator, toast } from '@ecom/ui';
-import {
-  AlertTriangle,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Coins,
-  CreditCard,
-  Home,
-  MapPin,
-  Package,
-  ShieldCheck,
-  Store,
-} from 'lucide-react';
+// Checkout orkestratori — barcha state/effektlar/placeOrder shu yerda,
+// UI bo'limlari alohida komponentlarda (address/shipping/payment/summary).
+// Split 2026-07-17: 943 qatorlik god-file'dan ajratildi, logika o'zgarmagan.
+
+import { toast } from '@ecom/ui';
+import { Package, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
-import { formatMoney } from '../../lib/format';
-import { COIN_VALUE_SOM, coinsForOrder } from '../../lib/loyalty';
-import { productImage } from '../../lib/mock-data';
+import {
+  SHIPPING_FEE,
+  EXPRESS_FEE,
+  FREE_SHIPPING_THRESHOLD,
+  looksLikeTashkentCityText,
+} from '@ecom/core-domain';
+
+import { COIN_VALUE_SOM } from '../../lib/loyalty';
 import { isOnlineProvider } from '../../lib/payments';
 import { useCart } from '../../store/cart';
+import { AddressSection } from './address-section';
+import type {
+  AddressForm,
+  DeliveryType,
+  HomeSpeed,
+  PaymentCardDTO,
+  PaymentProvider,
+  PickupPointDTO,
+} from './checkout-types';
+import { Step } from './checkout-ui';
+import { OrderSummary } from './order-summary';
+import { PaymentSection } from './payment-section';
+import { downscaleToDataUrl } from './receipt-image';
+import { ShippingSection } from './shipping-section';
 
-const SHIPPING_FEE = 20_000;
-const EXPRESS_FEE = 50_000;
-const FREE_SHIPPING_THRESHOLD = 500_000;
-
-type Step = 'address' | 'shipping' | 'payment' | 'review';
-
-interface AddressForm {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  region: string;
-  city: string;
-  street: string;
-  apartment: string;
-  notes: string;
-}
-
-type DeliveryType = 'TASHKENT_HOME' | 'REGION_PICKUP';
-type HomeSpeed = 'STANDARD' | 'EXPRESS';
-
-interface PickupPointDTO {
-  id: string;
-  code: string;
-  provider: string;
-  name: Record<string, string> | string;
-  region: string;
-  city: string;
-  district: string | null;
-  street: string;
-  building: string | null;
-  latitude: number;
-  longitude: number;
-  phone: string | null;
-  workingHours: string | null;
-}
-
-/** Web'da GPS yo'q — kiritilgan viloyat/shahar matni Toshkent shaharmi? */
-function looksLikeTashkentCity(region: string, city: string): boolean {
-  const text = `${region} ${city}`.toLowerCase();
-  return text.includes('toshkent') || text.includes('tashkent') || text.includes('ташкент');
-}
-
-interface PaymentForm {
-  provider: 'CLICK' | 'PAYME' | 'UZUM_BANK' | 'UZCARD' | 'HUMO' | 'CASH_ON_DELIVERY';
-}
-
-// Tanlov birinchi: avval yetkazib berish turi, keyin manzil/qabul qiluvchi
-const STEP_KEYS: Step[] = ['shipping', 'address', 'payment', 'review'];
-const STEP_ICONS: Record<Step, typeof MapPin> = {
-  address: MapPin,
-  shipping: Package,
-  payment: CreditCard,
-  review: Check,
-};
-
-const PAYMENT_OPTIONS: {
-  id: PaymentForm['provider'];
-  key: 'click' | 'payme' | 'uzumBank' | 'uzcard' | 'humo' | 'cash';
-  emoji: string;
-}[] = [
-  { id: 'CLICK', key: 'click', emoji: '💳' },
-  { id: 'PAYME', key: 'payme', emoji: '💰' },
-  { id: 'UZUM_BANK', key: 'uzumBank', emoji: '🏦' },
-  { id: 'UZCARD', key: 'uzcard', emoji: '💳' },
-  { id: 'HUMO', key: 'humo', emoji: '💳' },
-  { id: 'CASH_ON_DELIVERY', key: 'cash', emoji: '💵' },
-];
+// Haqiqiy DB mahsuloti = UUID. Mock/demo (p1..p12) yoki eskirgan savat elementlari emas.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function CheckoutFlow() {
   const router = useRouter();
   const t = useTranslations('checkout');
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
+  const removeItem = useCart((s) => s.removeItem);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
-  const [step, setStep] = React.useState<Step>('shipping');
   const [address, setAddress] = React.useState<AddressForm>({
     firstName: '',
     lastName: '',
@@ -115,8 +61,50 @@ export function CheckoutFlow() {
   });
   const [deliveryType, setDeliveryType] = React.useState<DeliveryType>('TASHKENT_HOME');
   const [homeSpeed, setHomeSpeed] = React.useState<HomeSpeed>('STANDARD');
-  const [payment, setPayment] = React.useState<PaymentForm>({ provider: 'CLICK' });
+  const [payment, setPayment] = React.useState<PaymentProvider>('UZCARD');
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Karta orqali to'lov — platforma kartalari, chek (data-URL) va izoh.
+  const [cards, setCards] = React.useState<PaymentCardDTO[]>([]);
+  const [receipt, setReceipt] = React.useState('');
+  const [receiptBusy, setReceiptBusy] = React.useState(false);
+  const [paymentNote, setPaymentNote] = React.useState('');
+  const [copiedCard, setCopiedCard] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (payment !== 'UZCARD' || cards.length > 0) return;
+    let active = true;
+    fetch('/api/payment-cards', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (active && res?.success && res.data) setCards(res.data.cards as PaymentCardDTO[]);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [payment, cards.length]);
+
+  const onReceiptFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      toast({ title: t('payment.receiptRequired'), variant: 'destructive' });
+      return;
+    }
+    setReceiptBusy(true);
+    try {
+      setReceipt(await downscaleToDataUrl(file));
+    } catch {
+      toast({ title: t('errors.failed'), variant: 'destructive' });
+    }
+    setReceiptBusy(false);
+  };
+
+  const copyCard = (num: string) => {
+    void navigator.clipboard?.writeText(num.replace(/\s/g, ''));
+    setCopiedCard(num);
+    window.setTimeout(() => setCopiedCard((c) => (c === num ? null : c)), 1500);
+  };
 
   // Sello Coins — login user balansi (guest uchun 0; 401 → 0)
   const [coinBalance, setCoinBalance] = React.useState(0);
@@ -135,7 +123,6 @@ export function CheckoutFlow() {
   }, []);
 
   // Topshirish punktlari (REGION_PICKUP)
-  const locale = useLocale();
   const [pickupPoints, setPickupPoints] = React.useState<PickupPointDTO[]>([]);
   const [selectedPickupId, setSelectedPickupId] = React.useState<string | null>(null);
   const selectedPickup = pickupPoints.find((p) => p.id === selectedPickupId) ?? null;
@@ -151,8 +138,6 @@ export function CheckoutFlow() {
       active = false;
     };
   }, []);
-  const pickName = (n: PickupPointDTO['name']) =>
-    typeof n === 'string' ? n : (n[locale] ?? n.uz ?? Object.values(n)[0] ?? '');
 
   // Joylashuvga qarab yetkazish turi → backend deliveryMethod
   const deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS' =
@@ -161,11 +146,10 @@ export function CheckoutFlow() {
       : homeSpeed === 'EXPRESS'
         ? 'EXPRESS'
         : 'HOME_DELIVERY';
-  // Uygacha tanlangan, lekin manzil Toshkentdan tashqarida ko'rinadi
   const homeOutsideTashkent =
     deliveryType === 'TASHKENT_HOME' &&
     Boolean(address.region.trim() || address.city.trim()) &&
-    !looksLikeTashkentCity(address.region, address.city);
+    !looksLikeTashkentCityText(address.region, address.city);
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const shippingFee =
@@ -177,13 +161,10 @@ export function CheckoutFlow() {
           ? 0
           : SHIPPING_FEE;
   const baseTotal = subtotal + shippingFee;
-  // Ishlatish mumkin bo'lgan coinlar: balansdan va summadan oshmaydi
   const redeemableCoins = Math.min(coinBalance, Math.floor(baseTotal / COIN_VALUE_SOM));
   const coinsToRedeem = useCoins ? redeemableCoins : 0;
   const coinDiscount = coinsToRedeem * COIN_VALUE_SOM;
   const total = baseTotal - coinDiscount;
-
-  const stepIdx = STEP_KEYS.indexOf(step);
 
   if (!mounted) return <div className="h-96" aria-hidden />;
 
@@ -191,39 +172,53 @@ export function CheckoutFlow() {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
         <Package className="text-muted-foreground mx-auto h-12 w-12" />
-        <h1 className="mt-4 text-2xl font-bold">{t('emptyTitle')}</h1>
+        <h1 className="text-brand-ink mt-4 font-serif text-2xl font-semibold">{t('emptyTitle')}</h1>
         <p className="text-muted-foreground mt-2 text-sm">{t('emptyHint')}</p>
-        <Button asChild className="mt-6">
-          <Link href="/catalog">{t('openCatalog')}</Link>
-        </Button>
+        <Link
+          href="/catalog"
+          className="bg-primary hover:bg-primary/90 mt-6 inline-flex h-11 items-center rounded-full px-6 text-sm font-bold text-white transition"
+        >
+          {t('openCatalog')}
+        </Link>
       </div>
     );
   }
 
-  const canNextFromAddress =
-    address.firstName.trim() &&
-    address.lastName.trim() &&
-    address.phone.length >= 12 &&
-    (deliveryType === 'REGION_PICKUP' || (address.city.trim() && address.street.trim()));
-
-  const nextStep = () => {
-    if (step === 'shipping' && deliveryType === 'REGION_PICKUP' && !selectedPickupId) {
-      toast({ title: 'Topshirish punktini tanlang', variant: 'warning' });
-      return;
-    }
-    if (step === 'address' && !canNextFromAddress) {
-      toast({ title: t('errors.required'), variant: 'warning' });
-      return;
-    }
-    const i = STEP_KEYS.indexOf(step);
-    if (i < STEP_KEYS.length - 1) setStep(STEP_KEYS[i + 1]!);
-  };
-  const prevStep = () => {
-    const i = STEP_KEYS.indexOf(step);
-    if (i > 0) setStep(STEP_KEYS[i - 1]!);
-  };
+  const canSubmit =
+    Boolean(address.firstName.trim()) &&
+    Boolean(address.lastName.trim()) &&
+    address.phone.replace(/\D/g, '').length >= 12 &&
+    (deliveryType === 'REGION_PICKUP'
+      ? Boolean(selectedPickupId)
+      : Boolean(address.city.trim() && address.street.trim()) && !homeOutsideTashkent);
 
   const placeOrder = async () => {
+    if (!canSubmit) {
+      toast({
+        title:
+          deliveryType === 'REGION_PICKUP' && !selectedPickupId
+            ? t('shipping.selectPickup')
+            : homeOutsideTashkent
+              ? t('shipping.tashkentOnly')
+              : t('errors.required'),
+        variant: 'warning',
+      });
+      return;
+    }
+    // Karta orqali to'lov — chek majburiy.
+    if (payment === 'UZCARD' && !receipt) {
+      toast({ title: t('payment.receiptRequired'), variant: 'warning' });
+      return;
+    }
+    // Eskirgan (mock/demo) savat elementlari — productId UUID emas. Bunday element
+    // serverda "Invalid uuid" beradi. Ularni jimgina olib tashlab, foydalanuvchini
+    // ogohlantiramiz (savatni yangilab qaytadan qo'shsin).
+    const staleItems = items.filter((it) => !UUID_RE.test(it.productId));
+    if (staleItems.length > 0) {
+      staleItems.forEach((it) => removeItem(it.id));
+      toast({ title: t('errors.staleItems'), variant: 'warning' });
+      return;
+    }
     setSubmitting(true);
     const payload = {
       items: items.map((it) => ({
@@ -249,7 +244,9 @@ export function CheckoutFlow() {
       deliveryMethod,
       pickupPointId:
         deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
-      paymentProvider: payment.provider,
+      paymentProvider: payment,
+      paymentReceipt: payment === 'UZCARD' ? receipt : undefined,
+      paymentNote: payment === 'UZCARD' && paymentNote.trim() ? paymentNote.trim() : undefined,
       notes: address.notes.trim() || undefined,
       redeemCoins: coinsToRedeem,
     };
@@ -273,10 +270,7 @@ export function CheckoutFlow() {
     setSubmitting(false);
 
     if (!result.success || !result.data) {
-      toast({
-        title: result.error?.message ?? t('errors.failed'),
-        variant: 'destructive',
-      });
+      toast({ title: result.error?.message ?? t('errors.failed'), variant: 'destructive' });
       return;
     }
 
@@ -284,14 +278,13 @@ export function CheckoutFlow() {
     const orderId = result.data.order.id;
     clear();
 
-    // Online to'lov (Click/Payme) — checkout sahifasiga yo'naltiramiz
-    if (isOnlineProvider(payment.provider)) {
+    if (isOnlineProvider(payment)) {
       try {
         const payRes = await fetch('/api/payments/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ orderId, provider: payment.provider }),
+          body: JSON.stringify({ orderId, provider: payment }),
         });
         const payJson = (await payRes.json()) as {
           success: boolean;
@@ -316,583 +309,89 @@ export function CheckoutFlow() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+    // Konteynerdan chiqib, to'liq kenglik — #FAF9F7 fon (1d)
+    <div className="bg-paper relative left-1/2 right-1/2 -mx-[50vw] -my-6 w-screen md:-my-10">
+      {/* Header: logo + 3-bosqich progress + xavfsiz to'lov */}
+      <header className="border-border flex items-center justify-between border-b bg-white px-5 py-4 md:px-12">
+        <Link href="/" className="flex items-center gap-2.5">
+          <Image
+            src="/sellobay-square.png?v9"
+            alt="Sellobay"
+            width={38}
+            height={38}
+            className="rounded-[9px]"
+          />
+          <span className="text-brand-ink hidden font-serif text-xl font-bold sm:inline">
+            Sellobay
+          </span>
+        </Link>
+        <ol className="flex items-center">
+          <Step done label={t('steps.cart')} />
+          <span className="bg-brand-ink mx-3 h-[1.5px] w-8 md:w-14" aria-hidden />
+          <Step index="2" active label={t('steps.shipping')} />
+          <span className="bg-border mx-3 h-[1.5px] w-8 md:w-14" aria-hidden />
+          <Step index="3" label={t('steps.payment')} />
+        </ol>
+        <div className="text-muted-foreground hidden items-center gap-1.5 text-[12.5px] md:flex">
+          <ShieldCheck size={15} className="text-primary" />
+          {t('securePayment')}
+        </div>
+      </header>
 
-      <ol className="flex items-center gap-2 overflow-x-auto pb-2">
-        {STEP_KEYS.map((s, i) => {
-          const Icon = STEP_ICONS[s];
-          const done = i < stepIdx;
-          const active = i === stepIdx;
-          return (
-            <React.Fragment key={s}>
-              <li
-                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : done
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                      : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {done ? <Check size={14} /> : <Icon size={14} />}
-                <span className="whitespace-nowrap">
-                  {i + 1}. {t(`steps.${s}`)}
-                </span>
-              </li>
-              {i < STEP_KEYS.length - 1 && (
-                <span className="bg-border h-px w-4 shrink-0 sm:w-8" aria-hidden />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </ol>
+      <div className="grid gap-6 px-5 pb-16 pt-8 md:grid-cols-[1fr_440px] md:gap-8 md:px-12 md:pb-20 md:pt-9">
+        {/* Chap ustun */}
+        <div className="flex flex-col gap-6">
+          <AddressSection
+            address={address}
+            onChange={setAddress}
+            homeOutsideTashkent={homeOutsideTashkent}
+            onSwitchToPickup={() => setDeliveryType('REGION_PICKUP')}
+          />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="bg-card space-y-4 rounded-xl border p-5 md:p-6">
-          {step === 'address' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <MapPin className="text-primary h-4 w-4" />
-                <h2 className="text-base font-semibold">{t('address.title')}</h2>
-              </div>
+          <ShippingSection
+            deliveryType={deliveryType}
+            homeSpeed={homeSpeed}
+            subtotal={subtotal}
+            pickupPoints={pickupPoints}
+            selectedPickupId={selectedPickupId}
+            selectedPickup={selectedPickup}
+            onSelectHome={(speed) => {
+              setDeliveryType('TASHKENT_HOME');
+              setHomeSpeed(speed);
+            }}
+            onSelectPickup={() => setDeliveryType('REGION_PICKUP')}
+            onPickPoint={setSelectedPickupId}
+          />
 
-              {/* Toshkent tashqarisi — uygacha tanlangan bo'lsa ogohlantirish */}
-              {deliveryType === 'TASHKENT_HOME' && homeOutsideTashkent && (
-                <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/30">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                    <p className="text-xs leading-5 text-amber-800 dark:text-amber-200">
-                      {t('shipping.tashkentOnly')}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setDeliveryType('REGION_PICKUP');
-                      setStep('shipping');
-                    }}
-                  >
-                    {t('shipping.switchToPickup')}
-                  </Button>
-                </div>
-              )}
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={t('address.firstName')}>
-                  <Input
-                    value={address.firstName}
-                    onChange={(e) => setAddress({ ...address, firstName: e.target.value })}
-                  />
-                </Field>
-                <Field label={t('address.lastName')}>
-                  <Input
-                    value={address.lastName}
-                    onChange={(e) => setAddress({ ...address, lastName: e.target.value })}
-                  />
-                </Field>
-                <Field label={t('address.phone')}>
-                  <Input
-                    value={address.phone}
-                    onChange={(e) => setAddress({ ...address, phone: e.target.value })}
-                    placeholder={t('address.phonePlaceholder')}
-                  />
-                </Field>
-                <Field label={t('address.region')}>
-                  <Input
-                    value={address.region}
-                    onChange={(e) => setAddress({ ...address, region: e.target.value })}
-                    placeholder={t('address.regionPlaceholder')}
-                  />
-                </Field>
-                <Field label={t('address.city')}>
-                  <Input
-                    value={address.city}
-                    onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                    placeholder={t('address.cityPlaceholder')}
-                  />
-                </Field>
-                <Field label={t('address.street')}>
-                  <Input
-                    value={address.street}
-                    onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                    placeholder={t('address.streetPlaceholder')}
-                  />
-                </Field>
-                <Field label={t('address.apartment')} className="sm:col-span-2">
-                  <Input
-                    value={address.apartment}
-                    onChange={(e) => setAddress({ ...address, apartment: e.target.value })}
-                    placeholder={t('address.apartmentPlaceholder')}
-                  />
-                </Field>
-                <Field label={t('address.notes')} className="sm:col-span-2">
-                  <Input
-                    value={address.notes}
-                    onChange={(e) => setAddress({ ...address, notes: e.target.value })}
-                    placeholder={t('address.notesPlaceholder')}
-                  />
-                </Field>
-              </div>
-            </div>
-          )}
-
-          {step === 'shipping' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Package className="text-primary h-4 w-4" />
-                <h2 className="text-base font-semibold">{t('shipping.chooseType')}</h2>
-              </div>
-
-              {/* 1. Yetkazib berish turi — 2 ta tanlov */}
-              <div className="space-y-2">
-                {[
-                  {
-                    id: 'TASHKENT_HOME' as const,
-                    Icon: Home,
-                    label: t('shipping.tashkentHome'),
-                    sub: t('shipping.tashkentHomeSub'),
-                  },
-                  {
-                    id: 'REGION_PICKUP' as const,
-                    Icon: Store,
-                    label: t('shipping.regionPickup'),
-                    sub: t('shipping.regionPickupSub'),
-                  },
-                ].map((opt) => {
-                  const active = deliveryType === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setDeliveryType(opt.id)}
-                      className={`flex w-full items-center gap-3 rounded-lg border-2 p-4 text-left transition ${
-                        active
-                          ? 'border-primary bg-primary/5'
-                          : 'border-input hover:border-foreground/30'
-                      }`}
-                    >
-                      <opt.Icon
-                        className={
-                          active ? 'text-primary h-5 w-5' : 'text-muted-foreground h-5 w-5'
-                        }
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium">{opt.label}</div>
-                        <div className="text-muted-foreground text-xs">{opt.sub}</div>
-                      </div>
-                      {active && <Check className="text-primary h-4 w-4" />}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 2a. TASHKENT_HOME — tezlik + Toshkent eslatmasi */}
-              {deliveryType === 'TASHKENT_HOME' && (
-                <div className="space-y-3">
-                  {homeOutsideTashkent ? (
-                    <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:bg-amber-950/30">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                        <p className="text-xs leading-5 text-amber-800 dark:text-amber-200">
-                          {t('shipping.tashkentOnly')}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDeliveryType('REGION_PICKUP')}
-                      >
-                        {t('shipping.switchToPickup')}
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-xs">{t('shipping.tashkentOnly')}</p>
-                  )}
-
-                  <div className="space-y-2">
-                    <div className="text-muted-foreground text-xs font-medium">
-                      {t('shipping.speedTitle')}
-                    </div>
-                    {[
-                      {
-                        id: 'STANDARD' as const,
-                        label: t('shipping.standard'),
-                        sub: t('shipping.standardSub'),
-                        price: subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE,
-                      },
-                      {
-                        id: 'EXPRESS' as const,
-                        label: t('shipping.express'),
-                        sub: t('shipping.expressSub'),
-                        price: EXPRESS_FEE,
-                      },
-                    ].map((opt) => {
-                      const active = homeSpeed === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setHomeSpeed(opt.id)}
-                          className={`flex w-full items-center justify-between rounded-lg border-2 p-4 text-left transition ${
-                            active
-                              ? 'border-primary bg-primary/5'
-                              : 'border-input hover:border-foreground/30'
-                          }`}
-                        >
-                          <div>
-                            <div className="font-medium">{opt.label}</div>
-                            <div className="text-muted-foreground text-xs">{opt.sub}</div>
-                          </div>
-                          <div className="font-semibold">
-                            {opt.price === 0 ? t('shipping.free') : formatMoney(opt.price)}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* 2b. REGION_PICKUP — punkt tanlash */}
-              {deliveryType === 'REGION_PICKUP' && (
-                <div className="space-y-2">
-                  <div className="text-muted-foreground text-xs font-medium">
-                    {t('shipping.selectPickup')}
-                  </div>
-                  {pickupPoints.length === 0 ? (
-                    <div className="bg-muted text-muted-foreground rounded-lg p-3 text-xs">
-                      {t('shipping.pickupSoon')}
-                    </div>
-                  ) : (
-                    pickupPoints.map((p) => {
-                      const sel = selectedPickupId === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setSelectedPickupId(p.id)}
-                          className={`w-full rounded-lg border-2 p-3 text-left transition ${
-                            sel ? 'border-primary bg-primary/5' : 'border-border'
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <MapPin
-                              className={`mt-0.5 h-4 w-4 shrink-0 ${sel ? 'text-primary' : 'text-muted-foreground'}`}
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="flex-1 truncate text-sm font-semibold">
-                                  {pickName(p.name)}
-                                </span>
-                                <span className="bg-muted rounded-full px-2 py-0.5 text-[10px] font-bold">
-                                  {p.provider}
-                                </span>
-                              </div>
-                              <div className="text-muted-foreground text-xs">
-                                {[p.region, p.city, p.street].filter(Boolean).join(', ')}
-                              </div>
-                              {p.workingHours && (
-                                <div className="text-muted-foreground text-[11px]">
-                                  {p.workingHours}
-                                </div>
-                              )}
-                            </div>
-                            {sel && <Check className="text-primary h-4 w-4 shrink-0" />}
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 'payment' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CreditCard className="text-primary h-4 w-4" />
-                <h2 className="text-base font-semibold">{t('payment.title')}</h2>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {PAYMENT_OPTIONS.map((p) => {
-                  const active = payment.provider === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPayment({ provider: p.id })}
-                      className={`flex items-center gap-3 rounded-lg border-2 p-3.5 text-left transition ${
-                        active
-                          ? 'border-primary bg-primary/5'
-                          : 'border-input hover:border-foreground/30'
-                      }`}
-                    >
-                      <div className="bg-muted grid h-10 w-10 shrink-0 place-items-center rounded-md text-xl">
-                        {p.emoji}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate font-medium">{t(`payment.${p.key}`)}</div>
-                        <div className="text-muted-foreground truncate text-xs">
-                          {t(`payment.${p.key}Sub`)}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="bg-secondary/40 text-muted-foreground rounded-md p-3 text-xs">
-                <ShieldCheck size={12} className="mr-1 inline text-emerald-600" />
-                {t('payment.secureNote')}
-              </div>
-            </div>
-          )}
-
-          {step === 'review' && (
-            <div className="space-y-4">
-              <h2 className="text-base font-semibold">{t('review.title')}</h2>
-
-              <ReviewBlock
-                title={t('review.addressLabel')}
-                editLabel={t('review.edit')}
-                onEdit={() => setStep('address')}
-              >
-                <div>
-                  {address.firstName} {address.lastName} · {address.phone}
-                </div>
-                <div className="text-muted-foreground">
-                  {[address.region, address.city, address.street, address.apartment]
-                    .filter(Boolean)
-                    .join(', ')}
-                </div>
-                {address.notes && (
-                  <div className="text-muted-foreground">
-                    {t('address.notesLabel')}: {address.notes}
-                  </div>
-                )}
-              </ReviewBlock>
-
-              <ReviewBlock
-                title={t('review.shippingLabel')}
-                editLabel={t('review.edit')}
-                onEdit={() => setStep('shipping')}
-              >
-                <div>
-                  {deliveryType === 'REGION_PICKUP'
-                    ? `${t('shipping.regionPickup')}${selectedPickup ? ` — ${pickName(selectedPickup.name)}` : ''}`
-                    : deliveryMethod === 'EXPRESS'
-                      ? `${t('shipping.tashkentHome')} · ${t('shipping.express')}`
-                      : t('shipping.tashkentHome')}
-                </div>
-                {deliveryType === 'REGION_PICKUP' && selectedPickup && (
-                  <div className="text-muted-foreground">
-                    {[selectedPickup.region, selectedPickup.city, selectedPickup.street]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </div>
-                )}
-              </ReviewBlock>
-
-              <ReviewBlock
-                title={t('review.paymentLabel')}
-                editLabel={t('review.edit')}
-                onEdit={() => setStep('payment')}
-              >
-                <div>
-                  {(() => {
-                    const opt = PAYMENT_OPTIONS.find((p) => p.id === payment.provider);
-                    return opt ? t(`payment.${opt.key}`) : '';
-                  })()}
-                </div>
-              </ReviewBlock>
-
-              <ReviewBlock
-                title={t('review.itemsLabel', { count: items.length })}
-                editLabel={t('review.edit')}
-              >
-                <ul className="-my-2 divide-y">
-                  {items.map((i) => (
-                    <li key={i.id} className="flex items-center gap-3 py-2">
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded">
-                        <Image
-                          src={productImage(i.imageSeed, 100)}
-                          alt={i.name}
-                          fill
-                          sizes="48px"
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm">{i.name}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {i.quantity} × {formatMoney(i.unitPrice)}
-                        </div>
-                      </div>
-                      <div className="text-sm font-medium">
-                        {formatMoney(i.quantity * i.unitPrice)}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </ReviewBlock>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-2 pt-2">
-            <Button
-              variant="ghost"
-              onClick={prevStep}
-              disabled={stepIdx === 0}
-              className="gap-1"
-              type="button"
-            >
-              <ChevronLeft size={16} /> {t('back')}
-            </Button>
-            {step === 'review' ? (
-              <Button onClick={placeOrder} disabled={submitting} size="lg">
-                {submitting ? t('submitting') : t('placeOrder')}
-              </Button>
-            ) : (
-              <Button onClick={nextStep} size="lg" className="gap-1">
-                {t('next')} <ChevronRight size={16} />
-              </Button>
-            )}
-          </div>
+          <PaymentSection
+            payment={payment}
+            onSelectPayment={setPayment}
+            total={total}
+            cards={cards}
+            copiedCard={copiedCard}
+            onCopyCard={copyCard}
+            receipt={receipt}
+            receiptBusy={receiptBusy}
+            onReceiptFile={(f) => void onReceiptFile(f)}
+            paymentNote={paymentNote}
+            onPaymentNote={setPaymentNote}
+          />
         </div>
 
-        <aside className="lg:sticky lg:top-32 lg:self-start">
-          <div className="bg-card space-y-3 rounded-xl border p-5">
-            <div className="text-base font-semibold">{t('summary')}</div>
-            <ul className="space-y-2 text-sm">
-              {items.slice(0, 3).map((i) => (
-                <li key={i.id} className="flex justify-between gap-2">
-                  <span className="text-muted-foreground line-clamp-1">
-                    {i.quantity} × {i.name}
-                  </span>
-                  <span className="whitespace-nowrap">{formatMoney(i.quantity * i.unitPrice)}</span>
-                </li>
-              ))}
-              {items.length > 3 && (
-                <li className="text-muted-foreground text-xs">
-                  {t('summaryMore', { count: items.length - 3 })}
-                </li>
-              )}
-            </ul>
-            <Separator />
-            <div className="space-y-1 text-sm">
-              <Row label={t('summaryItems')} value={formatMoney(subtotal)} />
-              <Row
-                label={t('summaryShipping')}
-                value={shippingFee === 0 ? t('shipping.free') : formatMoney(shippingFee)}
-                highlight={shippingFee === 0}
-              />
-              {coinDiscount > 0 && (
-                <Row label={t('coinDiscount')} value={`−${formatMoney(coinDiscount)}`} highlight />
-              )}
-            </div>
-
-            {/* Sello Coins redeem toggle — faqat balans > 0 bo'lsa */}
-            {redeemableCoins > 0 && (
-              <button
-                type="button"
-                onClick={() => setUseCoins((v) => !v)}
-                className={`flex w-full items-center gap-2.5 rounded-lg border p-3 text-left transition ${
-                  useCoins
-                    ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30'
-                    : 'border-input hover:border-amber-300'
-                }`}
-              >
-                <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded border-2 ${
-                    useCoins ? 'border-amber-500 bg-amber-500 text-white' : 'border-input'
-                  }`}
-                >
-                  {useCoins ? <Check size={13} /> : null}
-                </span>
-                <Coins size={16} className="shrink-0 text-amber-500" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{t('useCoinsTitle')}</span>
-                  <span className="text-muted-foreground block text-xs">
-                    {t('useCoinsAvail', {
-                      coins: redeemableCoins,
-                      som: formatMoney(redeemableCoins * COIN_VALUE_SOM),
-                    })}
-                  </span>
-                </span>
-              </button>
-            )}
-
-            <Separator />
-            <div className="flex justify-between text-base font-bold">
-              <span>{t('summaryTotal')}</span>
-              <span>{formatMoney(total)}</span>
-            </div>
-            {/* Sello Coins earn hint — conversion + signup driver */}
-            <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-              <Coins size={14} className="shrink-0" />
-              <span>{t('coinsEarn', { coins: coinsForOrder(total) })}</span>
-            </div>
-          </div>
-        </aside>
+        {/* O'ng ustun — sticky xulosa + premium karta */}
+        <OrderSummary
+          items={items}
+          subtotal={subtotal}
+          shippingFee={shippingFee}
+          coinDiscount={coinDiscount}
+          total={total}
+          redeemableCoins={redeemableCoins}
+          useCoins={useCoins}
+          onToggleCoins={() => setUseCoins((v) => !v)}
+          submitting={submitting}
+          onPlaceOrder={() => void placeOrder()}
+        />
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      <Label className="mb-1 block text-xs">{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={highlight ? 'font-medium text-emerald-700' : ''}>{value}</span>
-    </div>
-  );
-}
-
-function ReviewBlock({
-  title,
-  onEdit,
-  editLabel,
-  children,
-}: {
-  title: string;
-  onEdit?: () => void;
-  editLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-background rounded-md border p-3 text-sm">
-      <div className="mb-1 flex items-center justify-between">
-        <div className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
-          {title}
-        </div>
-        {onEdit && (
-          <button type="button" onClick={onEdit} className="text-primary text-xs hover:underline">
-            {editLabel}
-          </button>
-        )}
-      </div>
-      <div className="space-y-0.5">{children}</div>
     </div>
   );
 }

@@ -43,6 +43,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Unit-testlar (hozircha @ecom/core-domain — sof domen qatlami, 21 test)
+      - name: Test
+        run: pnpm turbo run test --filter=@ecom/core-domain
+
       # Vercel'da deploy bo'ladigan Next.js app'lari (web, admin, seller)
       - name: Build (deployable apps)
         run: pnpm turbo run build --filter=@ecom/web --filter=@ecom/admin --filter=@ecom/seller

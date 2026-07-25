@@ -1,19 +1,20 @@
 import { ORDER_STATUS_TONE as UI_TONE, type StatusTone } from '@ecom/ui';
 
-export const ORDER_STATUS_LABELS = {
-  PENDING: 'Kutilmoqda',
-  CONFIRMED: 'Tasdiqlandi',
-  PAID: "To`landi",
-  PROCESSING: 'Tayyorlanmoqda',
-  PACKED: "O`ralgan",
-  SHIPPED: "Jo`natildi",
-  OUT_FOR_DELIVERY: 'Yetkazib berishda',
-  DELIVERED: 'Yetkazildi',
-  CANCELLED: 'Bekor qilindi',
-  RETURNED: 'Qaytarildi',
-  REFUNDED: 'Pul qaytarildi',
-} as const;
+// Status matnlari i18n'da: `order.status.*` (useTranslations('order.status'))
+export const ORDER_STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'PAID',
+  'PROCESSING',
+  'PACKED',
+  'SHIPPED',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'CANCELLED',
+  'RETURNED',
+  'REFUNDED',
+] as const;
 
-export type OrderStatus = keyof typeof ORDER_STATUS_LABELS;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_TONE = UI_TONE as Record<OrderStatus, StatusTone>;

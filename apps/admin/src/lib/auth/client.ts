@@ -91,6 +91,14 @@ export function listProducts() {
   return api<{ items: AdminProduct[] }>('/api/products');
 }
 
+// Mahsulot moderatsiyasi: approve → ACTIVE, reject → DRAFT (faqat PENDING_REVIEW)
+export function moderateProduct(id: string, action: 'approve' | 'reject') {
+  return api<{ product: { id: string; status: string } }>(`/api/products/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action }),
+  });
+}
+
 type Localized = { uz: string; ru: string; en: string };
 
 export type AdminProductStatus =
@@ -143,6 +151,118 @@ export interface AdminCustomer {
 export function listOrders(status?: string) {
   const qs = status && status !== 'all' ? `?status=${status}` : '';
   return api<{ items: AdminOrder[] }>(`/api/orders${qs}`);
+}
+
+// Fulfillment kanonik tartibi — status faqat OLDINGA suriladi (backend ham shuni tekshiradi).
+const FULFILLMENT_FLOW: AdminOrderStatus[] = [
+  'PENDING',
+  'CONFIRMED',
+  'PAID',
+  'PROCESSING',
+  'PACKED',
+  'SHIPPED',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+];
+
+/** Berilgan statusdan keyin qo'yish mumkin bo'lgan (oldingi) statuslar. Flow'da bo'lmasa (masalan
+ *  CANCELLED/RETURNED) — bo'sh (bu endpoint orqali o'zgartirib bo'lmaydi). */
+export function forwardStatuses(current: string): AdminOrderStatus[] {
+  const i = FULFILLMENT_FLOW.indexOf(current as AdminOrderStatus);
+  return i === -1 ? [] : FULFILLMENT_FLOW.slice(i + 1);
+}
+
+export interface OrderStatusUpdateResult {
+  id: string;
+  number: string;
+  status: AdminOrderStatus;
+  codSettled: boolean;
+  soldCountItems: number;
+}
+
+/** Buyurtma statusini oldinga suradi (admin fulfillment). DELIVERED'da COD to'lov PAID + soldCount. */
+export function updateOrderStatus(id: string, status: AdminOrderStatus, comment?: string) {
+  return api<OrderStatusUpdateResult>(`/api/orders/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, comment }),
+  });
+}
+
+// Karta orqali qo'lda to'lov — tasdiqlashni kutayotgan buyurtmalar
+export interface PaymentReviewItem {
+  paymentId: string;
+  orderId: string;
+  orderNumber: string;
+  orderStatus: string;
+  amount: number;
+  grandTotal: number;
+  customerName: string;
+  customerPhone: string;
+  city: string;
+  itemCount: number;
+  note: string | null;
+  receipt: string; // data-URL rasm
+  placedAt: string;
+  createdAt: string;
+}
+
+export function listPaymentReview() {
+  return api<{ items: PaymentReviewItem[] }>('/api/orders/payment-review');
+}
+
+// Buyurtma to'liq tafsiloti (admin detal sahifasi uchun)
+interface LocalizedText {
+  uz?: string;
+  ru?: string;
+  en?: string;
+}
+export interface AdminOrderDetail {
+  id: string;
+  number: string;
+  status: AdminOrderStatus;
+  customerName: string;
+  customerPhone: string;
+  paymentStatus: AdminPaymentStatus;
+  paymentProvider: string;
+  subtotal: number;
+  shippingTotal: number;
+  discountTotal: number;
+  grandTotal: number;
+  placedAt: string;
+  deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
+  city: string;
+  notes?: string;
+  shippingAddress: {
+    recipientName: string;
+    phone: string;
+    region: string;
+    city: string;
+    street: string;
+    landmark?: string;
+  } | null;
+  items: Array<{
+    id: string;
+    productName: LocalizedText | string;
+    sku: string;
+    imageUrl: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }>;
+  statusHistory: Array<{ status: AdminOrderStatus; changedAt: string; comment?: string }>;
+  manualCard: { pending: boolean; receipt: string; note: string | null } | null;
+}
+
+export function getOrderDetail(id: string) {
+  return api<AdminOrderDetail>(`/api/orders/${id}`);
+}
+
+/** Karta to'lovini tasdiqlash (verify → PAID) yoki rad etish (reject → FAILED). */
+export function reviewPayment(orderId: string, action: 'verify' | 'reject', comment?: string) {
+  return api<{ orderId: string; orderStatus: string; paymentStatus: string }>(
+    `/api/orders/${orderId}/payment`,
+    { method: 'PATCH', body: JSON.stringify({ action, comment }) },
+  );
 }
 
 export type AdminOrderStatus =

@@ -2,9 +2,10 @@
 
 import { Button, Card, Input, StatusBadge } from '@ecom/ui';
 import { CheckCircle2, MapPin, Package, Phone, Search, Truck } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
-import { ORDER_STATUS_LABELS, ORDER_STATUS_TONE } from '../../../lib/order-status';
+import { ORDER_STATUS_TONE } from '../../../lib/order-status';
 import { formatDateTime } from '../../../lib/format';
 
 // Mock — order tracking endpointi backend tayyor bo'lganda
@@ -33,6 +34,9 @@ function findOrder(query: string) {
 }
 
 export default function OrderTrackerPage() {
+  const t = useTranslations('tracking');
+  const tStatus = useTranslations('order.status');
+  const tc = useTranslations('common');
   const [query, setQuery] = React.useState('');
   const [result, setResult] = React.useState<ReturnType<typeof findOrder>>(null);
   const [searched, setSearched] = React.useState(false);
@@ -46,15 +50,13 @@ export default function OrderTrackerPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Buyurtmamni kuzatish</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Buyurtma raqami orqali yetkazib berish holatini kuzating
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t('subtitle')}</p>
       </div>
 
       <form onSubmit={onSearch} className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -62,52 +64,50 @@ export default function OrderTrackerPage() {
             className="pl-9"
           />
         </div>
-        <Button type="submit">Qidirish</Button>
+        <Button type="submit">{tc('search')}</Button>
       </form>
 
       {searched && !result && (
         <Card className="p-6 text-center">
-          <Package className="mx-auto h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">
-            Bunday raqam bilan buyurtma topilmadi
-          </p>
+          <Package className="text-muted-foreground mx-auto h-10 w-10" />
+          <p className="text-muted-foreground mt-3 text-sm">{t('notFound')}</p>
         </Card>
       )}
 
       {result && (
         <Card className="overflow-hidden">
-          <div className="border-b bg-secondary/40 p-5">
+          <div className="bg-secondary/40 border-b p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Buyurtma raqami
+                <div className="text-muted-foreground text-xs uppercase tracking-wide">
+                  {t('orderNumber')}
                 </div>
                 <div className="font-mono text-lg font-bold">{result.number}</div>
               </div>
               <StatusBadge tone={ORDER_STATUS_TONE[result.status]}>
-                {ORDER_STATUS_LABELS[result.status]}
+                {tStatus(result.status)}
               </StatusBadge>
             </div>
           </div>
 
           <div className="p-5">
             <ol className="relative space-y-4 border-l pl-6">
-              {result.timeline.map((t, i) => {
+              {result.timeline.map((step, i) => {
                 const isLast = i === result.timeline.length - 1;
                 return (
                   <li key={i} className="relative">
                     <span
                       className={`absolute -left-[31px] grid h-6 w-6 place-items-center rounded-full border ${
-                        isLast ? 'border-primary bg-primary text-primary-foreground' : 'bg-background'
+                        isLast
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'bg-background'
                       }`}
                     >
                       <CheckCircle2 size={12} />
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="font-medium">{ORDER_STATUS_LABELS[t.status]}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDateTime(t.at)}
-                      </div>
+                      <div className="font-medium">{tStatus(step.status)}</div>
+                      <div className="text-muted-foreground text-xs">{formatDateTime(step.at)}</div>
                     </div>
                   </li>
                 );
@@ -116,25 +116,27 @@ export default function OrderTrackerPage() {
           </div>
 
           {result.courier && (
-            <div className="border-t bg-secondary/30 p-5">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Kuryer</div>
+            <div className="bg-secondary/30 border-t p-5">
+              <div className="text-muted-foreground text-xs uppercase tracking-wide">
+                {t('courier')}
+              </div>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary">
+                <div className="bg-primary/10 text-primary grid h-10 w-10 place-items-center rounded-full">
                   <Truck size={18} />
                 </div>
                 <div>
                   <div className="font-medium">{result.courier.name}</div>
-                  <div className="text-xs text-muted-foreground">{result.courier.vehicle}</div>
+                  <div className="text-muted-foreground text-xs">{result.courier.vehicle}</div>
                 </div>
                 <a
                   href={`tel:${result.courier.phone.replace(/\s/g, '')}`}
-                  className="ml-auto inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 ml-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
                 >
                   <Phone size={14} /> {result.courier.phone}
                 </a>
               </div>
               <div className="mt-3 flex items-start gap-2 text-sm">
-                <MapPin size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
+                <MapPin size={14} className="text-muted-foreground mt-0.5 shrink-0" />
                 <span>{result.destination}</span>
               </div>
             </div>
@@ -143,13 +145,11 @@ export default function OrderTrackerPage() {
       )}
 
       <Card className="p-5 text-sm">
-        <div className="font-semibold">Yordamga muhtojmisiz?</div>
-        <p className="mt-1 text-muted-foreground">
-          Operatorimiz 24/7 yordam berishga tayyor.
-        </p>
+        <div className="font-semibold">{t('helpTitle')}</div>
+        <p className="text-muted-foreground mt-1">{t('helpDesc')}</p>
         <a
           href="tel:+998712000000"
-          className="mt-3 inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm hover:bg-accent"
+          className="bg-background hover:bg-accent mt-3 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
         >
           <Phone size={14} className="text-primary" /> +998 71 200 00 00
         </a>

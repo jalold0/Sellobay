@@ -14,8 +14,10 @@ jobs:
     strategy:
       # Bittasi xato bo'lsa boshqalarini bekor qilmasin
       fail-fast: false
+      # api/wms graveyard'ga karantinlangan (qarang graveyard/README.md) — matritsada yo'q,
+      # aks holda apps/<app>/Dockerfile topilmay job yiqiladi.
       matrix:
-        app: [api, wms, web, admin, seller, telegram-mini-app, telegram-bot]
+        app: [web, admin, seller, telegram-mini-app, telegram-bot]
     permissions:
       contents: read
       packages: write

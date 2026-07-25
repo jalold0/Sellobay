@@ -2,6 +2,7 @@
 
 import { Button, Card, Input, Label, Skeleton, toast } from '@ecom/ui';
 import { Crown, Gift, Package, Star } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { formatNumber } from '../../../lib/format';
@@ -33,6 +34,9 @@ function userToForm(u: AuthUser): ProfileForm {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations('profile');
+  const tc = useTranslations('common');
+  const tLoyalty = useTranslations('loyalty');
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [form, setForm] = React.useState<ProfileForm | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -70,19 +74,24 @@ export default function ProfilePage() {
     }
     setUser(res.data.user);
     setForm(userToForm(res.data.user));
-    toast({ title: 'Saqlandi', variant: 'success' });
+    toast({ title: t('saved'), variant: 'success' });
   };
 
   const stats = [
-    { label: 'Buyurtmalar', value: 0, icon: Package, accent: 'bg-sky-100 text-sky-700' },
+    { label: t('stats.orders'), value: 0, icon: Package, accent: 'bg-sky-100 text-sky-700' },
     {
-      label: 'Sodiqlik balli',
+      label: t('stats.points'),
       value: user?.loyaltyPoints ?? 0,
       icon: Gift,
       accent: 'bg-amber-100 text-amber-700',
     },
-    { label: 'Sharhlar', value: 0, icon: Star, accent: 'bg-violet-100 text-violet-700' },
-    { label: 'Daraja', value: 'Bronze', icon: Crown, accent: 'bg-emerald-100 text-emerald-700' },
+    { label: t('stats.reviews'), value: 0, icon: Star, accent: 'bg-violet-100 text-violet-700' },
+    {
+      label: t('stats.tier'),
+      value: tLoyalty('tiers.bronze'),
+      icon: Crown,
+      accent: 'bg-emerald-100 text-emerald-700',
+    },
   ];
 
   if (loading || !form) {
@@ -102,10 +111,8 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Shaxsiy ma&apos;lumotlar</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Ma&apos;lumotlaringizni yangilang va xavfsizlikni ta&apos;minlang
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('title')}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t('subtitle')}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -130,34 +137,34 @@ export default function ProfilePage() {
       </div>
 
       <Card className="p-5 md:p-6">
-        <h2 className="mb-4 text-base font-semibold">Profil ma&apos;lumotlari</h2>
+        <h2 className="mb-4 text-base font-semibold">{t('infoTitle')}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Ism">
+          <Field label={t('fields.firstName')}>
             <Input
               value={form.firstName}
               onChange={(e) => setForm({ ...form, firstName: e.target.value })}
             />
           </Field>
-          <Field label="Familiya">
+          <Field label={t('fields.lastName')}>
             <Input
               value={form.lastName}
               onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             />
           </Field>
-          <Field label="Email">
+          <Field label={t('fields.email')}>
             <Input
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </Field>
-          <Field label="Telefon">
+          <Field label={t('fields.phone')}>
             <Input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
           </Field>
-          <Field label="Jinsi">
+          <Field label={t('fields.gender')}>
             <select
               value={form.gender}
               onChange={(e) =>
@@ -165,12 +172,12 @@ export default function ProfilePage() {
               }
               className="border-input bg-background focus:border-primary h-10 w-full rounded-md border px-3 text-sm outline-none"
             >
-              <option value="MALE">Erkak</option>
-              <option value="FEMALE">Ayol</option>
-              <option value="UNSPECIFIED">Belgilamagan</option>
+              <option value="MALE">{t('gender.male')}</option>
+              <option value="FEMALE">{t('gender.female')}</option>
+              <option value="UNSPECIFIED">{t('gender.unspecified')}</option>
             </select>
           </Field>
-          <Field label="Tug`ilgan kun">
+          <Field label={t('birthday')}>
             <Input
               type="date"
               value={form.birthDate}
@@ -180,10 +187,10 @@ export default function ProfilePage() {
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="outline" type="button" onClick={reset} disabled={saving}>
-            Bekor qilish
+            {tc('cancel')}
           </Button>
           <Button type="button" onClick={save} disabled={saving}>
-            {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+            {saving ? t('saving') : tc('save')}
           </Button>
         </div>
       </Card>

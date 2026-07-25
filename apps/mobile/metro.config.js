@@ -24,4 +24,13 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
+// Watcher'dan chetlashtirish: .claude (agent worktree'lari — vaqtinchalik fayllari
+// ENOENT shovqin beradi), .next/.turbo build kataloglari (mobilga keraksiz, crawl sekin).
+const extraBlock = [/[\\/]\.claude[\\/]/, /[\\/]\.next[\\/]/, /[\\/]\.turbo[\\/]/];
+const prevBlock = config.resolver.blockList;
+config.resolver.blockList = [
+  ...(Array.isArray(prevBlock) ? prevBlock : prevBlock ? [prevBlock] : []),
+  ...extraBlock,
+];
+
 module.exports = withNativeWind(config, { input: './global.css' });

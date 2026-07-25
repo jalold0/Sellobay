@@ -6,11 +6,17 @@ import { otpVerifySchema } from '@/lib/auth/validators';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { createSession, requestMeta, setCookies } from '@/lib/auth/session';
 import { OTP_MAX_ATTEMPTS } from '@/lib/auth/constants';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // OTP kod brute-force himoyasi: bitta IP'dan 60 soniyada 10 urinish
+  // (per-kod OTP_MAX_ATTEMPTS bunga qo'shimcha ravishda ishlaydi)
+  const limited = await enforceRateLimit(req, 'otp-verify', { limit: 10, windowSec: 60 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = otpVerifySchema.safeParse(body);
   if (!parsed.success) {

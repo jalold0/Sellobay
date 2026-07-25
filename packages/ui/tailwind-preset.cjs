@@ -57,6 +57,13 @@ module.exports = {
           smoke: 'hsl(var(--brand-smoke))',
           gold: 'hsl(var(--brand-gold))',
           'gold-bright': 'hsl(var(--brand-gold-bright))',
+          'gold-text': 'hsl(var(--brand-gold-text))',
+          // Redesign nomlari (dizayn-handoff bilan bir xil o'qilishi uchun)
+          crimson: 'hsl(var(--brand-bordeaux))',
+          'crimson-deep': 'hsl(var(--brand-bordeaux-deep))',
+          ink: 'hsl(var(--brand-black))',
+          'ink-soft': 'hsl(var(--brand-charcoal))',
+          'gold-light': 'hsl(var(--brand-gold-bright))',
           // Legacy aliases — vaqtinchalik mavjud kod buzilmasligi uchun
           red: 'hsl(var(--brand-bordeaux))',
           'red-bright': 'hsl(var(--brand-bordeaux-bright))',
@@ -71,6 +78,13 @@ module.exports = {
           amber: 'hsl(var(--editorial-amber))',
         },
         footer: 'hsl(var(--footer-bg))',
+        // Redesign neutral / chip tokenlari
+        paper: 'hsl(var(--paper))',
+        soft: 'hsl(var(--muted))',
+        chip: 'hsl(var(--chip))',
+        promo: 'hsl(var(--promo))',
+        'crimson-chip': 'hsl(var(--crimson-chip))',
+        'success-chip': 'hsl(var(--success-chip))',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -81,22 +95,16 @@ module.exports = {
         sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'Manrope', 'Inter', 'system-ui', 'sans-serif'],
         // Sellobay SB monogram, premium sarlavhalar uchun
-        serif: [
-          'var(--font-serif)',
-          'Playfair Display',
-          'Didot',
-          'Bodoni 72',
-          'Georgia',
-          'Times New Roman',
-          'serif',
-        ],
+        serif: ['var(--font-serif)', 'Playfair Display', 'Didot', 'Georgia', 'serif'],
       },
       boxShadow: {
-        bordeaux: '0 12px 32px rgba(139, 0, 32, 0.25)',
-        'card-hover': '0 20px 60px -15px rgba(10, 10, 12, 0.20)',
-        editorial: '0 30px 60px -25px rgba(10, 10, 12, 0.15), 0 8px 24px -8px rgba(10, 10, 12, 0.08)',
+        bordeaux: '0 12px 32px rgba(83, 22, 37, 0.25)',
+        'card-hover': '0 20px 48px -20px rgba(10, 10, 12, 0.22)',
+        frame: '0 24px 80px -32px rgba(10, 10, 12, 0.35)',
+        editorial:
+          '0 30px 60px -25px rgba(10, 10, 12, 0.15), 0 8px 24px -8px rgba(10, 10, 12, 0.08)',
         'editorial-hover':
-          '0 40px 80px -25px rgba(10, 10, 12, 0.22), 0 12px 32px -8px rgba(139, 0, 32, 0.1)',
+          '0 40px 80px -25px rgba(10, 10, 12, 0.22), 0 12px 32px -8px rgba(83, 22, 37, 0.1)',
         gold: '0 8px 24px rgba(201, 169, 97, 0.25)',
       },
       keyframes: {

@@ -14,6 +14,8 @@ export interface CartItem {
   brand: string;
   slug: string;
   imageSeed: string;
+  /** Haqiqiy rasm URL (DB'dan). Bo'lmasa imageSeed placeholder. */
+  imageUrl?: string;
   unitPrice: number;
   oldPrice?: number;
   currency: 'UZS';
@@ -75,7 +77,10 @@ export const useCart = create<CartState>()(
         set((state) => ({
           items: state.items.map((i) =>
             i.id === id
-              ? { ...i, quantity: Math.max(1, Math.min(qty, i.maxQuantity ?? Number.MAX_SAFE_INTEGER)) }
+              ? {
+                  ...i,
+                  quantity: Math.max(1, Math.min(qty, i.maxQuantity ?? Number.MAX_SAFE_INTEGER)),
+                }
               : i,
           ),
         })),
@@ -83,7 +88,10 @@ export const useCart = create<CartState>()(
         set((state) => ({
           items: state.items.map((i) =>
             i.id === id
-              ? { ...i, quantity: Math.min(i.quantity + 1, i.maxQuantity ?? Number.MAX_SAFE_INTEGER) }
+              ? {
+                  ...i,
+                  quantity: Math.min(i.quantity + 1, i.maxQuantity ?? Number.MAX_SAFE_INTEGER),
+                }
               : i,
           ),
         })),

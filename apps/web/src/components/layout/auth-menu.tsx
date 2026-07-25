@@ -51,12 +51,9 @@ export function AuthMenu() {
 
   if (!user) {
     return (
-      <Link
-        href="/login"
-        className="hover:bg-muted hidden h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium md:flex"
-      >
-        <UserIcon size={18} />
-        <span>{nav('login')}</span>
+      <Link href="/login" className="hidden flex-col items-center gap-[3px] md:flex">
+        <UserIcon size={22} strokeWidth={1.8} className="text-brand-ink" />
+        <span className="text-[10.5px] font-semibold text-[#55555c]">{nav('login')}</span>
       </Link>
     );
   }

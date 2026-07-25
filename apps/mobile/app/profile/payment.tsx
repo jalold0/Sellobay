@@ -79,7 +79,7 @@ export default function PaymentScreen() {
             </View>
           ) : !items || items.length === 0 ? (
             <EmptyState
-              icon={<CreditCard size={26} color="#94a3b8" />}
+              icon={<CreditCard size={26} color="#762237" />}
               title={t('profile.paymentPage.emptyTitle')}
               description={t('profile.paymentPage.emptyDesc')}
             />

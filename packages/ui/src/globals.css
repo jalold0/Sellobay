@@ -14,10 +14,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 9% 4%;
 
-    /* PRIMARY — Bordo #8B0020 */
-    --primary: 351 100% 27%;
+    /* PRIMARY — Crimson #531625 (sellobay-master-square.png dan olingan brend rang) */
+    --primary: 345 58% 21%;
     --primary-foreground: 0 0% 100%;
-    --primary-bright: 351 100% 35%; /* #B30029 */
+    --primary-bright: 345 55% 30%; /* #762237 */
 
     /* SECONDARY — Qora #0A0A0C */
     --secondary: 240 9% 4%;
@@ -33,26 +33,34 @@
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 76% 36%;
+    --success: 154 63% 33%; /* #1F8A5B — bepul yetkazish, yetkazildi, to'landi */
     --warning: 38 92% 50%;
 
     --border: 30 15% 91%; /* #EAEAEC warm tone */
     --input: 30 15% 91%;
-    --ring: 351 100% 27%;
+    --ring: 345 58% 21%;
 
     --radius: 0.875rem; /* 14px — slightly bigger for premium feel */
 
     /* ===== Sellobay brand tokens ===== */
-    --brand-bordeaux: 351 100% 27%; /* #8B0020 */
-    --brand-bordeaux-deep: 351 100% 18%; /* #5C0015 */
-    --brand-bordeaux-bright: 351 100% 35%; /* #B30029 */
-    --brand-wine: 350 100% 21%; /* #6B0019 */
+    --brand-bordeaux: 345 58% 21%; /* #531625 — crimson */
+    --brand-bordeaux-deep: 345 61% 14%; /* #3A0E19 — crimson-deep */
+    --brand-bordeaux-bright: 345 55% 30%; /* #762237 */
+    --brand-wine: 345 60% 18%; /* crimson va deep oralig'i */
     --brand-black: 240 9% 4%; /* #0A0A0C */
     --brand-charcoal: 240 8% 9%; /* #16161A */
     --brand-graphite: 240 8% 13%; /* #1F1F24 */
     --brand-smoke: 240 7% 17%; /* #2A2A30 */
     --brand-gold: 41 49% 59%; /* #C9A961 */
     --brand-gold-bright: 40 67% 69%; /* #E5C77A */
+    --brand-gold-text: 41 49% 36%; /* #8a6d2f — och fonda oltin matn */
+
+    /* ===== Redesign neutral / chip tokenlari ===== */
+    --paper: 40 23% 97%; /* #FAF9F7 — iliq sahifa foni */
+    --chip: 240 8% 95%; /* #F1F1F3 — muted chip */
+    --promo: 43 64% 98%; /* #FDFBF6 — promo-kod foni */
+    --crimson-chip: 348 71% 97%; /* #FDF3F5 — crimson chip foni */
+    --success-chip: 144 38% 95%; /* #EDF7F1 — yashil chip foni */
 
     /* UMBRA-style editorial soft tones */
     --editorial-bg: 30 35% 97%; /* warm cream */
@@ -69,7 +77,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 8% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 351 100% 35%;
+    --primary: 345 55% 30%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 8% 13%;
     --secondary-foreground: 0 0% 98%;
@@ -81,7 +89,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 7% 17%;
     --input: 240 7% 17%;
-    --ring: 351 100% 35%;
+    --ring: 345 55% 30%;
   }
 
   * {
@@ -229,7 +237,7 @@
   }
   .editorial-card:hover {
     transform: translateY(-8px) scale(1.01);
-    box-shadow: 0 40px 80px -25px rgba(10, 10, 12, 0.22), 0 12px 32px -8px rgba(139, 0, 32, 0.1);
+    box-shadow: 0 40px 80px -25px rgba(10, 10, 12, 0.22), 0 12px 32px -8px rgba(83, 22, 37, 0.1);
   }
 
   /* Tilt variants — UMBRA-style asymmetric layout */

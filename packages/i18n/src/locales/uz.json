@@ -306,6 +306,9 @@
     "removedFromWishlist": "Sevimlilardan olib tashlandi",
     "addedToWishlist": "Sevimlilarga qo'shildi",
     "addedToCart": "Savatga qo'shildi",
+    "quickView": "Tez ko'rish",
+    "onlyLeft": "Faqat {count} ta qoldi!",
+    "notFound": "Mahsulot topilmadi",
     "deliveryTomorrow": "Ertaga",
     "deliveryFast": "Tezkor yetkazib berish — Toshkent bo'yicha 24 soat ichida",
     "freeShip": "Bepul",
@@ -327,7 +330,7 @@
     "helpful": "Foydali ({count})",
     "answer": "Javob",
     "deliveryReturn": "Punktda ochib tekshiring — yoqmasa o'sha yerda qaytarasiz",
-    "deliveryReturnLegal": "Qonun bo'yicha ishlatilmagan tovarni 14 kun ichida qaytarish huquqi saqlanadi",
+    "deliveryReturnLegal": "Yetkazilganda tekshirib olasiz — maqul kelmasa joyida qaytarasiz",
     "deliveryAuthentic": "100% asl mahsulot kafolati",
     "trustPopular": "Mashhur mahsulot",
     "trustTopRated": "Yuqori baholangan",
@@ -338,7 +341,7 @@
     "soldCount": "{count}+ marta sotilgan",
     "promoUntil": "aksiya {date}gacha amal qiladi",
     "deliveryTomorrowFull": "Ertaga yetkaziladi — Toshkent bo'ylab, {price}",
-    "authenticityReturn": "Originallik kafolati — 14 kun ichida qaytarish bepul",
+    "authenticityReturn": "Originallik kafolati — yoqmasa joyida bepul qaytarish",
     "installment4x": "Bo'lib to'lash — 4 × {amount}, foizsiz",
     "visitStore": "Do'konga o'tish",
     "sellerOrders": "{count} buyurtma",
@@ -350,6 +353,7 @@
   },
   "cart": {
     "title": "Savatcha",
+    "itemsSummary": "{items} ta · {units} dona",
     "empty": "Savatcha bo'sh",
     "emptyHint": "Mahsulotlarni katalogdan tanlab, savatga qo'shing",
     "openCatalog": "Katalogni ochish",
@@ -461,10 +465,22 @@
       "secureNote": "Karta ma'lumotlaringiz to'lov tizimi serverida xavfsiz saqlanadi, biz ko'rmaymiz.",
       "methodTitle": "To'lov usuli",
       "card": "Karta",
-      "cardSub": "Uzcard · Humo · Visa",
+      "cardSub": "Karta orqali o'tkazma",
       "appConfirm": "Ilovada tasdiqlash",
       "cashShort": "Naqd",
-      "onReceive": "Qabul qilishda"
+      "onReceive": "Qabul qilishda",
+      "cardTransferTitle": "Karta orqali to'lov",
+      "cardTransferHint": "Quyidagi kartaga to'lovni amalga oshiring, so'ng chek (skrinshot)ni yuklang. Admin tasdiqlagach buyurtmangiz jarayoni boshlanadi.",
+      "amountToTransfer": "O'tkaziladigan summa",
+      "copyCard": "Nusxalash",
+      "copied": "Nusxalandi",
+      "uploadReceipt": "Chekni yuklash",
+      "receiptUploaded": "Chek yuklandi",
+      "replaceReceipt": "Boshqa rasm",
+      "receiptRequired": "Chek (kvitansiya) rasmini yuklang",
+      "receiptProcessing": "Rasm tayyorlanmoqda...",
+      "receiptNoteLabel": "To'lov izohi (ixtiyoriy)",
+      "receiptNotePlaceholder": "Masalan: to'lagan karta oxirgi 4 raqami"
     },
     "review": {
       "title": "Buyurtmangizni tekshiring",
@@ -500,7 +516,8 @@
     "errors": {
       "required": "Majburiy maydonlarni to'ldiring",
       "network": "Tarmoq xatosi",
-      "failed": "Buyurtma yaratilmadi"
+      "failed": "Buyurtma yaratilmadi",
+      "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing."
     }
   },
   "auth": {
@@ -527,6 +544,7 @@
     "codeInvalid": "4–6 raqamli kodni kiriting",
     "forgotPassword": "Parolni unutdingizmi?",
     "phonePlaceholder": "+998 90 123 45 67",
+    "phonePlaceholderNational": "90 123 45 67",
     "emailPlaceholder": "example@mail.uz",
     "phoneHint": "SMS orqali tasdiqlash kodi yuboramiz",
     "codeLabel": "Kodingizni kiriting",
@@ -584,6 +602,22 @@
   },
   "profile": {
     "title": "Shaxsiy ma'lumotlar",
+    "subtitle": "Ma'lumotlaringizni yangilang va xavfsizlikni ta'minlang",
+    "infoTitle": "Profil ma'lumotlari",
+    "saving": "Saqlanmoqda...",
+    "stats": {
+      "orders": "Buyurtmalar",
+      "points": "Sodiqlik balli",
+      "reviews": "Sharhlar",
+      "tier": "Daraja"
+    },
+    "fields": {
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "email": "Email",
+      "phone": "Telefon",
+      "gender": "Jinsi"
+    },
     "nav": {
       "personal": "Shaxsiy ma'lumotlar",
       "orders": "Buyurtmalarim",
@@ -612,7 +646,8 @@
       "title": "Jins",
       "male": "Erkak",
       "female": "Ayol",
-      "other": "Boshqa"
+      "other": "Boshqa",
+      "unspecified": "Belgilamagan"
     },
     "birthday": "Tug'ilgan kun",
     "saveChanges": "O'zgarishlarni saqlash",
@@ -712,6 +747,23 @@
       "etaUntil": "Taxminan {time} gacha",
       "trackOnMap": "Xaritada kuzatish",
       "reorder": "Qayta buyurtma"
+    },
+    "orderDetail": {
+      "back": "Buyurtmalarga qaytish",
+      "items": "Mahsulotlar",
+      "subtotal": "Mahsulotlar narxi",
+      "shipping": "Yetkazib berish",
+      "discount": "Chegirma",
+      "total": "Jami",
+      "deliveryAddress": "Yetkazib berish manzili",
+      "pickupPoint": "Olib ketish punkti",
+      "payment": "To'lov",
+      "history": "Holat tarixi",
+      "reviewNote": "To'lov cheki qabul qilindi — admin tekshirmoqda. Tasdiqlangach buyurtma tayyorlanadi.",
+      "cancel": "Buyurtmani bekor qilish",
+      "cancelConfirm": "Buyurtmani bekor qilishni tasdiqlaysizmi?",
+      "cancelled": "Buyurtma bekor qilindi",
+      "notFound": "Buyurtma topilmadi"
     },
     "premiumCard": {
       "label": "Sellobay Premium",
@@ -831,7 +883,45 @@
       "CANCELLED": "Bekor qilindi",
       "RETURNED": "Qaytarildi",
       "REFUNDED": "Pul qaytarildi"
+    },
+    "paymentReview": "To'lov tekshirilmoqda",
+    "paymentStatus": {
+      "PENDING": "To'lov kutilmoqda",
+      "AUTHORIZED": "Avtorizatsiya qilindi",
+      "PAID": "To'landi",
+      "PARTIALLY_REFUNDED": "Qisman qaytarildi",
+      "REFUNDED": "Pul qaytarildi",
+      "FAILED": "To'lov amalga oshmadi",
+      "CANCELLED": "Bekor qilindi"
     }
+  },
+  "tracking": {
+    "title": "Buyurtmamni kuzatish",
+    "subtitle": "Buyurtma raqami orqali yetkazib berish holatini kuzating",
+    "notFound": "Bunday raqam bilan buyurtma topilmadi",
+    "orderNumber": "Buyurtma raqami",
+    "courier": "Kuryer",
+    "helpTitle": "Yordamga muhtojmisiz?",
+    "helpDesc": "Operatorimiz 24/7 yordam berishga tayyor."
+  },
+  "orderSuccess": {
+    "title": "Rahmat! Buyurtmangiz qabul qilindi",
+    "subtitle": "Buyurtmangizni tasdiqlash uchun operator siz bilan tez orada bog'lanadi.",
+    "orderNumber": "Buyurtma raqami",
+    "goToOrders": "Buyurtmalarimga o'tish"
+  },
+  "wishlist": {
+    "title": "Sevimlilar",
+    "savedCount": "{count} ta mahsulot saqlandi",
+    "emptyTitle": "Sevimlilar bo'sh",
+    "emptyDesc": "Yoqtirgan mahsulotlaringizni saqlash uchun kartochkadagi yurakcha tugmasini bosing"
+  },
+  "brand": {
+    "notFound": "Brend topilmadi",
+    "metaDescription": "{name} — barcha mahsulotlar",
+    "heroSubtitle": "{name} brendining barcha mahsulotlari. Asl, kafolatli, tezkor yetkazib berish bilan.",
+    "productsLabel": "Mahsulotlar",
+    "empty": "Hozircha {name} mahsulotlari yo'q"
   },
   "sell": {
     "title": "Sotuvchi bo'lish",

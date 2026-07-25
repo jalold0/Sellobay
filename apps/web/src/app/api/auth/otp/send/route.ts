@@ -6,11 +6,16 @@ import { prisma } from '@/lib/db';
 import { otpSendSchema } from '@/lib/auth/validators';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { OTP_TTL_MINUTES } from '@/lib/auth/constants';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // SMS-spam himoyasi (IP bo'yicha) — per-telefon 60s cheklov pastda DB'da bor
+  const limited = await enforceRateLimit(req, 'otp-send', { limit: 5, windowSec: 60 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = otpSendSchema.safeParse(body);
   if (!parsed.success) {

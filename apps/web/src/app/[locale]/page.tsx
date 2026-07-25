@@ -21,7 +21,6 @@ export default async function HomePage() {
   const locale = (await getLocale()) as Locale;
   const { hero, featured, collection, sale } = await fetchHomeProducts();
   const t = await getTranslations('home');
-  const common = await getTranslations('common');
 
   return (
     <div className="space-y-12 md:space-y-20">
@@ -34,15 +33,25 @@ export default async function HomePage() {
       {/* 3. Categories — visual grid */}
       <CategoryGrid locale={locale} />
 
-      {/* 4. Bestsellers */}
-      <section className="space-y-5">
-        <SectionTitle
-          title={t('bestSellersTitle')}
-          description={t('bestSellersSubtitle')}
-          actionHref="/catalog?sort=popularity"
-          actionLabel={common('viewAll')}
-        />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      {/* 4. Bestsellers — eyebrow + Playfair sarlavha */}
+      <section>
+        <div className="mb-7 flex items-end justify-between">
+          <div>
+            <div className="text-primary text-[11.5px] font-bold uppercase tracking-[0.2em]">
+              {t('bestSellersEyebrow')}
+            </div>
+            <h2 className="text-brand-ink mt-2 font-serif text-2xl font-semibold md:text-[32px]">
+              {t('bestSellersTitle')}
+            </h2>
+          </div>
+          <Link
+            href="/catalog?sort=popularity"
+            className="text-primary border-primary border-b-[1.5px] pb-0.5 text-[13.5px] font-semibold"
+          >
+            {t('viewAllLong')}
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
           {featured.map((p) => (
             <ProductCardClient key={p.id} product={p} locale={locale} />
           ))}

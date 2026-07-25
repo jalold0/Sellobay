@@ -4,6 +4,12 @@ import {
   Button,
   Card,
   DataTable,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   EmptyState,
   PageHeader,
   Select,
@@ -15,14 +21,20 @@ import {
   toast,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
-import { ArrowDownToLine, Filter, ShoppingCart } from 'lucide-react';
+import { ArrowDownToLine, ChevronRight, Filter, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { OrderStatusBadge, ORDER_STATUS_LABELS } from '../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../components/status/payment-status-badge';
-import { listOrders, type AdminOrder } from '@/lib/auth/client';
+import {
+  forwardStatuses,
+  listOrders,
+  updateOrderStatus,
+  type AdminOrder,
+  type AdminOrderStatus,
+} from '@/lib/auth/client';
 import { formatDateTime, formatMoney, formatNumber } from '../../lib/format';
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -37,6 +49,8 @@ export default function AdminOrdersPage() {
   const [paymentFilter, setPaymentFilter] = React.useState<string>('all');
   const [deliveryFilter, setDeliveryFilter] = React.useState<string>('all');
 
+  const [updatingId, setUpdatingId] = React.useState<string | null>(null);
+
   const load = React.useCallback(async () => {
     setLoading(true);
     const res = await listOrders('all');
@@ -48,6 +62,23 @@ export default function AdminOrdersPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  const advanceStatus = React.useCallback(
+    async (order: AdminOrder, status: AdminOrderStatus) => {
+      setUpdatingId(order.id);
+      const res = await updateOrderStatus(order.id, status);
+      if (res.success) {
+        const label = ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS] ?? status;
+        const extra = res.data.codSettled ? ' · COD to`lov PAID' : '';
+        toast({ title: `${order.number} → ${label}${extra}`, variant: 'success' });
+        await load();
+      } else {
+        toast({ title: res.error.message, variant: 'destructive' });
+      }
+      setUpdatingId(null);
+    },
+    [load],
+  );
 
   const data = React.useMemo(() => {
     return orders.filter((o) => {
@@ -80,7 +111,7 @@ export default function AdminOrdersPage() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <div className="truncate font-medium">{row.original.customerName}</div>
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="text-muted-foreground truncate text-xs">
               {row.original.customerPhone}
             </div>
           </div>
@@ -93,11 +124,11 @@ export default function AdminOrdersPage() {
       },
       {
         accessorKey: 'paymentStatus',
-        header: "To`lov",
+        header: 'To`lov',
         cell: ({ row }) => (
           <div className="space-y-0.5">
             <PaymentStatusBadge status={row.original.paymentStatus} />
-            <div className="text-xs text-muted-foreground">{row.original.paymentProvider}</div>
+            <div className="text-muted-foreground text-xs">{row.original.paymentProvider}</div>
           </div>
         ),
       },
@@ -113,7 +144,7 @@ export default function AdminOrdersPage() {
                   ? 'Pickup'
                   : 'Express'}
             </div>
-            <div className="text-xs text-muted-foreground">{row.original.city}</div>
+            <div className="text-muted-foreground text-xs">{row.original.city}</div>
           </div>
         ),
       },
@@ -133,13 +164,43 @@ export default function AdminOrdersPage() {
         accessorKey: 'placedAt',
         header: 'Sana',
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {formatDateTime(new Date(row.original.placedAt))}
           </span>
         ),
       },
+      {
+        id: 'actions',
+        header: () => <div className="text-right">Amal</div>,
+        cell: ({ row }) => {
+          const next = forwardStatuses(row.original.status);
+          if (next.length === 0) {
+            return <div className="text-muted-foreground text-right text-xs">—</div>;
+          }
+          return (
+            <div className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={updatingId === row.original.id}>
+                    Holat <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>Keyingi holat</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {next.map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => void advanceStatus(row.original, s)}>
+                      {ORDER_STATUS_LABELS[s as keyof typeof ORDER_STATUS_LABELS] ?? s}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      },
     ],
-    [],
+    [advanceStatus, updatingId],
   );
 
   return (
@@ -162,7 +223,7 @@ export default function AdminOrdersPage() {
 
       <Card className="p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Filter className="text-muted-foreground h-4 w-4" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-9 w-[180px]">
               <SelectValue placeholder="Status" />

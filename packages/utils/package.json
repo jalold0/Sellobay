@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ecom/core-domain": "workspace:*",
     "date-fns": "^3.6.0"
   },
   "devDependencies": {

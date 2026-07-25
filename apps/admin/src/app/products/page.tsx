@@ -24,6 +24,7 @@ import {
 import { type ColumnDef } from '@tanstack/react-table';
 import {
   Archive,
+  CheckCircle2,
   Copy,
   Filter,
   MoreHorizontal,
@@ -31,13 +32,14 @@ import {
   Pencil,
   Plus,
   Trash2,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { ProductStatusBadge } from '../../components/status/product-status-badge';
-import { listProducts, type AdminProduct } from '@/lib/auth/client';
+import { listProducts, moderateProduct, type AdminProduct } from '@/lib/auth/client';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
 
 export default function AdminProductsPage() {
@@ -59,6 +61,26 @@ export default function AdminProductsPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  const moderate = React.useCallback(
+    async (id: string, action: 'approve' | 'reject') => {
+      const res = await moderateProduct(id, action);
+      if (res.success) {
+        toast({
+          title: action === 'approve' ? 'Mahsulot tasdiqlandi' : 'Mahsulot rad etildi',
+          description:
+            action === 'approve'
+              ? 'Endi web va mobil ilovada ko`rinadi'
+              : 'Qoralamaga qaytarildi — sotuvchi tahrirlashi mumkin',
+          variant: 'success',
+        });
+        await load();
+      } else {
+        toast({ title: res.error.message, variant: 'destructive' });
+      }
+    },
+    [load],
+  );
 
   // Filtr variantlari — yuklangan mahsulotlardan
   const brandOptions = React.useMemo(
@@ -105,7 +127,7 @@ export default function AdminProductsPage() {
         header: 'Mahsulot',
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+            <div className="bg-muted h-10 w-10 shrink-0 overflow-hidden rounded-md">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
             </div>
@@ -116,7 +138,7 @@ export default function AdminProductsPage() {
               >
                 {pickLocalized(row.original.name)}
               </Link>
-              <div className="truncate text-xs text-muted-foreground">{row.original.sku}</div>
+              <div className="text-muted-foreground truncate text-xs">{row.original.sku}</div>
             </div>
           </div>
         ),
@@ -130,13 +152,15 @@ export default function AdminProductsPage() {
         accessorKey: 'brandName',
         header: 'Brend',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">{row.original.brandName}</span>
+          <span className="text-muted-foreground text-sm">{row.original.brandName}</span>
         ),
       },
       {
         accessorKey: 'categoryName',
         header: 'Kategoriya',
-        cell: ({ row }) => <span className="text-sm">{pickLocalized(row.original.categoryName)}</span>,
+        cell: ({ row }) => (
+          <span className="text-sm">{pickLocalized(row.original.categoryName)}</span>
+        ),
       },
       {
         accessorKey: 'basePrice',
@@ -145,7 +169,7 @@ export default function AdminProductsPage() {
           <div className="text-right">
             <div className="font-medium">{formatMoney(row.original.basePrice)}</div>
             {row.original.compareAtPrice ? (
-              <div className="text-xs text-muted-foreground line-through">
+              <div className="text-muted-foreground text-xs line-through">
                 {formatMoney(row.original.compareAtPrice)}
               </div>
             ) : null}
@@ -196,6 +220,23 @@ export default function AdminProductsPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Amallar</DropdownMenuLabel>
+                {row.original.status === 'PENDING_REVIEW' ? (
+                  <>
+                    <DropdownMenuItem
+                      className="text-emerald-600"
+                      onClick={() => void moderate(row.original.id, 'approve')}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" /> Tasdiqlash
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => void moderate(row.original.id, 'reject')}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" /> Rad etish
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
                 <DropdownMenuItem asChild>
                   <Link href={`/products/${row.original.id}`}>
                     <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
@@ -223,7 +264,7 @@ export default function AdminProductsPage() {
         enableSorting: false,
       },
     ],
-    [],
+    [moderate],
   );
 
   const selectedCount = Object.keys(selection).length;
@@ -250,7 +291,7 @@ export default function AdminProductsPage() {
 
       <Card className="p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Filter className="text-muted-foreground h-4 w-4" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-9 w-[160px]">
               <SelectValue placeholder="Status" />
@@ -303,7 +344,7 @@ export default function AdminProductsPage() {
               Tozalash
             </Button>
           )}
-          <div className="ml-auto text-xs text-muted-foreground">
+          <div className="text-muted-foreground ml-auto text-xs">
             {data.length} / {products.length}
           </div>
         </div>

@@ -75,7 +75,7 @@ export default function ReturnsScreen() {
         <View className="bg-muted mt-2 flex-row items-center gap-[11px] rounded-2xl p-[14px]">
           <ShieldCheck size={22} color="#531625" />
           <Text className="flex-1 text-[12px] leading-4" style={{ color: '#3a3a40' }}>
-            Yetkazilgan mahsulotlarni 14 kun ichida bepul qaytarish mumkin
+            Yetkazilganda tekshirib oling — maqul kelmasa o'sha joyda bepul qaytarasiz
           </Text>
         </View>
 

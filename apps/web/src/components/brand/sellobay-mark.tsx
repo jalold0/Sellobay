@@ -15,19 +15,11 @@ interface SellobayMarkProps {
  * SVG chizish yo'q, har joyda AYNAN bir xil rasmiy logo ishlatiladi.
  */
 // Cache-bust: logo yangilanganda versiyani oshiring
-const ICON_VERSION = 'v8-official-s';
+const ICON_VERSION = 'v9-master-square';
 
 export function SellobayMark({ size = 40, className = '', priority = false }: SellobayMarkProps) {
-  // O'lchamga qarab eng yaqin assetni tanlaymiz (bandwidth tejash)
-  const base =
-    size <= 32
-      ? '/sellobay-icon-32.png'
-      : size <= 64
-        ? '/sellobay-icon-64.png'
-        : size <= 192
-          ? '/sellobay-icon-192.png'
-          : '/sellobay-icon-512.png';
-  const src = `${base}?${ICON_VERSION}`;
+  // Redesign: yagona master-square asset (crimson #531625 fon, oq S)
+  const src = `/sellobay-square.png?${ICON_VERSION}`;
 
   return (
     <Image

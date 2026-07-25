@@ -1,38 +1,8 @@
-import { SectionTitle } from '@ecom/ui';
-import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { categories, pickLocale, productImage, type Locale } from '../../lib/mock-data';
-
-// TZ §3: Har bir kategoriya o'z rang palitrasiga ega
-const CATEGORY_THEMES: Record<string, { gradient: string; shadow: string }> = {
-  clothing: {
-    gradient: 'from-[#1E3A5F]/95 via-[#1E3A5F]/70 to-transparent',
-    shadow: 'hover:shadow-[0_20px_60px_-15px_rgba(30,58,95,0.6)]',
-  },
-  shoes: {
-    gradient: 'from-[#2D1B69]/95 via-[#2D1B69]/70 to-transparent',
-    shadow: 'hover:shadow-[0_20px_60px_-15px_rgba(45,27,105,0.6)]',
-  },
-  perfume: {
-    gradient: 'from-[#6B2D5E]/95 via-[#6B2D5E]/70 to-transparent',
-    shadow: 'hover:shadow-[0_20px_60px_-15px_rgba(107,45,94,0.6)]',
-  },
-  cosmetics: {
-    gradient: 'from-[#C8102E]/95 via-[#C8102E]/70 to-transparent',
-    shadow: 'hover:shadow-[0_20px_60px_-15px_rgba(200,16,46,0.6)]',
-  },
-  beauty: {
-    gradient: 'from-[#1A5C4A]/95 via-[#1A5C4A]/70 to-transparent',
-    shadow: 'hover:shadow-[0_20px_60px_-15px_rgba(26,92,74,0.6)]',
-  },
-  accessories: {
-    gradient: 'from-[#4A3728]/95 via-[#4A3728]/70 to-transparent',
-    shadow: 'hover:shadow-[0_20px_60px_-15px_rgba(74,55,40,0.6)]',
-  },
-};
 
 interface Props {
   locale: Locale;
@@ -40,68 +10,55 @@ interface Props {
 
 export function CategoryGrid({ locale }: Props) {
   const t = useTranslations('home');
-  const common = useTranslations('common');
+
   return (
-    <section className="space-y-5">
-      <SectionTitle
-        title={t('categoriesTitle')}
-        description={t('categoriesSubtitle')}
-        actionHref="/catalog"
-        actionLabel={common('viewAll')}
-      />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {categories.map((c, i) => {
-          const theme = CATEGORY_THEMES[c.slug] ?? CATEGORY_THEMES.clothing!;
-          return (
-            <Link
-              key={c.id}
-              href={`/catalog?category=${c.slug}`}
-              className={
-                'bg-muted group relative aspect-[2/3] overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 ' +
-                'hover:-translate-y-1 ' +
-                theme.shadow +
-                ' fade-up'
-              }
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              {/* Background image */}
+    <section>
+      {/* Eyebrow + Playfair h2 + "Barchasini ko'rish" */}
+      <div className="mb-7 flex items-end justify-between">
+        <div>
+          <div className="text-primary text-[11.5px] font-bold uppercase tracking-[0.2em]">
+            {t('categoriesTitle')}
+          </div>
+          <h2 className="text-brand-ink mt-2 font-serif text-2xl font-semibold md:text-[32px]">
+            {t('categoriesHeadline')}
+          </h2>
+        </div>
+        <Link
+          href="/catalog"
+          className="text-primary border-primary border-b-[1.5px] pb-0.5 text-[13.5px] font-semibold"
+        >
+          {t('viewAllLong')}
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {categories.map((c) => (
+          <Link
+            key={c.id}
+            href={`/catalog?category=${c.slug}`}
+            className="group flex flex-col gap-2.5"
+          >
+            <div className="bg-soft relative aspect-square overflow-hidden rounded-2xl">
               <Image
                 src={productImage(c.imageSeed, 400)}
                 alt={pickLocale(c.name, locale)}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
-
-              {/* Per-category color gradient overlay */}
-              <div className={'absolute inset-0 bg-gradient-to-t ' + theme.gradient} />
-
-              {/* Glass count badge — top right */}
-              <div className="absolute right-2.5 top-2.5">
-                <span className="glass inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold text-white">
-                  {t('productCount', {
-                    count: c.productCount.toLocaleString('en-US').replace(/,/g, ' '),
-                  })}
-                </span>
+            </div>
+            <div className="text-center">
+              <div className="text-brand-ink text-[13.5px] font-bold">
+                {pickLocale(c.name, locale)}
               </div>
-
-              {/* Bottom content */}
-              <div className="absolute inset-x-3 bottom-3 text-white">
-                <div className="text-2xl">{c.emoji}</div>
-                <div className="mt-1.5 text-sm font-bold leading-tight transition-transform duration-300 group-hover:-translate-y-0.5">
-                  {pickLocale(c.name, locale)}
-                </div>
-                <div className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-white/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  {t('view')}
-                  <ChevronRight size={12} />
-                </div>
+              <div className="text-muted-foreground mt-0.5 text-[11.5px]">
+                {t('productCount', {
+                  count: c.productCount.toLocaleString('en-US').replace(/,/g, ' '),
+                })}
               </div>
-
-              {/* Hover border glow */}
-              <div className="absolute inset-0 rounded-2xl border-2 border-white/0 transition-colors duration-300 group-hover:border-white/40" />
-            </Link>
-          );
-        })}
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   );

@@ -1,6 +1,6 @@
 # ADR 0002: Backend — NestJS
 
-**Status:** Qabul qilingan
+**Status:** BEKOR QILINGAN — ADR 0004 bilan almashtirildi (2026-07-17: haqiqiy backend `apps/web` Next.js API route'lari)
 **Sana:** 2026-06-06
 
 ## Kontekst
@@ -12,6 +12,7 @@ TZ ko'rsatadi: NestJS (Node.js). Alternativ variantlar: Express, Fastify (toza),
 **NestJS 10** asosiy backend uchun.
 
 Sabablari:
+
 - Modular arxitektura — DDD bounded context'larga juda mos
 - DI (Dependency Injection) box dan tashqari
 - Decorators bilan Swagger avtomatik

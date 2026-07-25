@@ -13,28 +13,31 @@
 ## 🏗 Texnologiyalar
 
 - **Frontend (web):** Next.js 14 App Router + Tailwind + shadcn/ui (`@ecom/ui`)
-- **Backend:** NestJS + Prisma + PostgreSQL
+- **Backend:** `apps/web` Next.js API routes + Prisma + PostgreSQL (Neon) —
+  mobil ilova ham shu API'ga ulanadi
+- **Domen:** `@ecom/core-domain` — sof biznes-logika (narx/loyalty/zona), unit-testlar bilan
 - **Mobile:** Expo (React Native, Expo Router)
-- **Cache/Queue:** Redis + BullMQ
-- **Search:** Elasticsearch
+- **Cache/Queue:** Redis + BullMQ (rejalashtirilgan)
+- **Search:** Elasticsearch (rejalashtirilgan)
 - **i18n:** uz / ru / en (next-intl)
 
 ## 📦 Loyiha tuzilishi
 
 ```
 apps/
-  web/             — Mijozlar sayti
+  web/             — Mijozlar sayti VA asosiy backend (Next.js API routes)
   admin/           — Boshqaruv paneli
   seller/          — Sotuvchi paneli
   telegram-mini-app/ — Telegram WebApp
   mobile/          — Expo (iOS/Android)
-  api/             — NestJS asosiy API
-  wms/             — Ombor backend
 
 packages/
+  core-domain/     — Sof biznes-logika (narx/loyalty/zona) + unit-testlar
   ui/              — shadcn/ui + Sellobay design system
   database/        — Prisma client
   types/, utils/, auth/, i18n/
+
+graveyard/         — Karantinlangan o'lik kod (api, wms) — workspace'ga kirmaydi
 
 docs/
   ROADMAP.md          — ⭐ Master roadmap & progress (yagona haqiqat manbai)

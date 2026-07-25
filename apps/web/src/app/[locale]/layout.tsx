@@ -1,8 +1,10 @@
 import '@ecom/ui/globals.css';
 
+import { locales } from '@ecom/i18n';
 import { Toaster, TooltipProvider } from '@ecom/ui';
 import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
+import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
@@ -29,7 +31,7 @@ const inter = Inter({
 // Playfair Display — Sellobay SB monogram va premium sarlavhalar uchun elegant serif
 const playfair = Playfair_Display({
   subsets: ['latin'],
-  weight: ['700', '900'],
+  weight: ['500', '600', '700', '900'],
   variable: '--font-serif',
   display: 'swap',
 });
@@ -87,6 +89,9 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: { locale: string };
 }) {
+  // /favicon.ico kabi statik so'rovlar [locale] segmentiga tushmasin —
+  // noto'g'ri locale NextIntlClientProvider'ga o'tsa Intl RangeError beradi
+  if (!(locales as readonly string[]).includes(locale)) notFound();
   const messages = await getMessages();
   return (
     <html

@@ -4,23 +4,28 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
 
 ## Texnologiya tanlovi (qat'iy)
 
-- **Backend:** NestJS + Prisma + PostgreSQL
+- **Backend:** `apps/web` Next.js 14 App Router API route'lari (`src/app/api/**`) —
+  HAQIQIY va deploy qilingan backend. Biznes-logika `apps/web/src/lib/*-server.ts` da,
+  sof domen `@ecom/core-domain` paketida. Mobil ham shu API'ga ulanadi.
+  (NestJS `apps/api`/`apps/wms` — ishlatilmagan skelet edi, `graveyard/` ga karantinlangan;
+  qarang `graveyard/README.md`.)
 - **Frontend (web):** Next.js 14 App Router + Tailwind + shadcn/ui (`@ecom/ui`)
 - **Mobile:** Expo (React Native, Expo Router)
-- **DB:** PostgreSQL — ORM faqat Prisma orqali
-- **Cache/Queue:** Redis + BullMQ
-- **Search:** Elasticsearch (mahsulot indeksi)
+- **DB:** PostgreSQL (Neon) — ORM faqat Prisma orqali
+- **Cache/Queue:** Redis + BullMQ (rejalashtirilgan — hozircha `unstable_cache`)
+- **Search:** Elasticsearch (rejalashtirilgan — hozircha DB query)
 - **i18n:** `@ecom/i18n` — har doim `pickLocalized()` orqali, hardcode YO'Q
 - **Auth:** `@ecom/auth` — argon2 (parol), jose (JWT)
 
 ## Loyiha tuzilishi
 
-- `apps/api` — asosiy backend
-- `apps/wms` — Ombor backend
-- `apps/web`, `apps/admin`, `apps/seller`, `apps/telegram-mini-app` — Next.js
+- `apps/web` — mijoz sayti **va asosiy backend** (Next.js API routes)
+- `apps/admin`, `apps/seller`, `apps/telegram-mini-app` — Next.js
 - `apps/mobile`, `apps/courier` — Expo
 - `apps/telegram-bot` — grammY
-- `packages/*` — umumiy paketlar (database, ui, types, i18n, utils, auth)
+- `packages/*` — umumiy paketlar (core-domain, database, ui, types, i18n, utils, auth)
+  - `@ecom/core-domain` — sof biznes-logika (narx/loyalty/zona), framework'ga bog'liq emas
+- `graveyard/*` — karantinlangan o'lik kod (workspace'ga kirmaydi) — `api`, `wms`
 - `infrastructure/*` — Docker, K8s, monitoring
 - `docs/*` — ARCHITECTURE, TZ, API, DEPLOYMENT, adr/
 

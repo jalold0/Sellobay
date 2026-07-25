@@ -299,6 +299,9 @@
     "removedFromWishlist": "Удалено из избранного",
     "addedToWishlist": "Добавлено в избранное",
     "addedToCart": "Добавлено в корзину",
+    "quickView": "Быстрый просмотр",
+    "onlyLeft": "Осталось всего {count} шт.!",
+    "notFound": "Товар не найден",
     "deliveryTomorrow": "Завтра",
     "deliveryFast": "Быстрая доставка — по Ташкенту в течение 24 часов",
     "freeShip": "Бесплатно",
@@ -320,7 +323,7 @@
     "helpful": "Полезно ({count})",
     "answer": "Ответ",
     "deliveryReturn": "Проверьте на пункте выдачи — вернёте на месте, если не подойдёт",
-    "deliveryReturnLegal": "По закону сохраняется право вернуть неиспользованный товар в течение 14 дней",
+    "deliveryReturnLegal": "Проверяете при получении — если не подойдёт, вернёте на месте",
     "deliveryAuthentic": "Гарантия 100% оригинала",
     "trustPopular": "Популярный товар",
     "trustTopRated": "Высокий рейтинг",
@@ -331,7 +334,7 @@
     "soldCount": "продано {count}+ раз",
     "promoUntil": "акция действует до {date}",
     "deliveryTomorrowFull": "Доставка завтра — по Ташкенту, {price}",
-    "authenticityReturn": "Гарантия оригинальности — бесплатный возврат в течение 14 дней",
+    "authenticityReturn": "Гарантия оригинальности — бесплатный возврат на месте",
     "installment4x": "Рассрочка — 4 × {amount}, без процентов",
     "visitStore": "В магазин",
     "sellerOrders": "{count} заказов",
@@ -343,6 +346,7 @@
   },
   "cart": {
     "title": "Корзина",
+    "itemsSummary": "{items} тов. · {units} шт.",
     "empty": "Корзина пуста",
     "emptyHint": "Выберите товары в каталоге и добавьте в корзину",
     "openCatalog": "Открыть каталог",
@@ -453,10 +457,22 @@
       "secureNote": "Данные карты надёжно хранятся на сервере платёжной системы, мы их не видим.",
       "methodTitle": "Способ оплаты",
       "card": "Карта",
-      "cardSub": "Uzcard · Humo · Visa",
+      "cardSub": "Перевод на карту",
       "appConfirm": "Подтверждение в приложении",
       "cashShort": "Наличные",
-      "onReceive": "При получении"
+      "onReceive": "При получении",
+      "cardTransferTitle": "Оплата на карту",
+      "cardTransferHint": "Переведите сумму на карту ниже, затем загрузите чек (скриншот). После подтверждения администратором заказ будет обработан.",
+      "amountToTransfer": "Сумма к переводу",
+      "copyCard": "Копировать",
+      "copied": "Скопировано",
+      "uploadReceipt": "Загрузить чек",
+      "receiptUploaded": "Чек загружен",
+      "replaceReceipt": "Другое фото",
+      "receiptRequired": "Загрузите фото чека (квитанции)",
+      "receiptProcessing": "Обработка изображения...",
+      "receiptNoteLabel": "Комментарий к оплате (необязательно)",
+      "receiptNotePlaceholder": "Например: последние 4 цифры карты"
     },
     "review": {
       "title": "Проверьте ваш заказ",
@@ -483,7 +499,8 @@
     "errors": {
       "required": "Заполните обязательные поля",
       "network": "Ошибка сети",
-      "failed": "Заказ не создан"
+      "failed": "Заказ не создан",
+      "staleItems": "Некоторые товары в корзине устарели и были удалены. Пожалуйста, добавьте их заново."
     },
     "securePayment": "Безопасная оплата",
     "summaryTitle": "Заказ · {count} товара",
@@ -520,6 +537,7 @@
     "codeInvalid": "Введите код из 4–6 цифр",
     "forgotPassword": "Забыли пароль?",
     "phonePlaceholder": "+998 90 123 45 67",
+    "phonePlaceholderNational": "90 123 45 67",
     "emailPlaceholder": "example@mail.uz",
     "phoneHint": "Отправим код подтверждения по SMS",
     "codeLabel": "Введите ваш код",
@@ -577,6 +595,22 @@
   },
   "profile": {
     "title": "Личные данные",
+    "subtitle": "Обновляйте свои данные и заботьтесь о безопасности",
+    "infoTitle": "Данные профиля",
+    "saving": "Сохранение...",
+    "stats": {
+      "orders": "Заказы",
+      "points": "Баллы лояльности",
+      "reviews": "Отзывы",
+      "tier": "Уровень"
+    },
+    "fields": {
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "email": "Email",
+      "phone": "Телефон",
+      "gender": "Пол"
+    },
     "nav": {
       "personal": "Личные данные",
       "orders": "Мои заказы",
@@ -605,7 +639,8 @@
       "title": "Пол",
       "male": "Мужской",
       "female": "Женский",
-      "other": "Другой"
+      "other": "Другой",
+      "unspecified": "Не указан"
     },
     "birthday": "Дата рождения",
     "saveChanges": "Сохранить изменения",
@@ -705,6 +740,23 @@
       "etaUntil": "Примерно до {time}",
       "trackOnMap": "Следить на карте",
       "reorder": "Повторить заказ"
+    },
+    "orderDetail": {
+      "back": "К заказам",
+      "items": "Товары",
+      "subtotal": "Стоимость товаров",
+      "shipping": "Доставка",
+      "discount": "Скидка",
+      "total": "Итого",
+      "deliveryAddress": "Адрес доставки",
+      "pickupPoint": "Пункт выдачи",
+      "payment": "Оплата",
+      "history": "История статуса",
+      "reviewNote": "Чек получен — администратор проверяет. После подтверждения заказ будет собран.",
+      "cancel": "Отменить заказ",
+      "cancelConfirm": "Подтвердить отмену заказа?",
+      "cancelled": "Заказ отменён",
+      "notFound": "Заказ не найден"
     },
     "premiumCard": {
       "label": "Sellobay Premium",
@@ -824,7 +876,45 @@
       "CANCELLED": "Отменён",
       "RETURNED": "Возвращён",
       "REFUNDED": "Возврат средств"
+    },
+    "paymentReview": "Платёж проверяется",
+    "paymentStatus": {
+      "PENDING": "Ожидает оплаты",
+      "AUTHORIZED": "Авторизован",
+      "PAID": "Оплачено",
+      "PARTIALLY_REFUNDED": "Частичный возврат",
+      "REFUNDED": "Возвращено",
+      "FAILED": "Платёж не прошёл",
+      "CANCELLED": "Отменён"
     }
+  },
+  "tracking": {
+    "title": "Отследить заказ",
+    "subtitle": "Следите за статусом доставки по номеру заказа",
+    "notFound": "Заказ с таким номером не найден",
+    "orderNumber": "Номер заказа",
+    "courier": "Курьер",
+    "helpTitle": "Нужна помощь?",
+    "helpDesc": "Наш оператор готов помочь 24/7."
+  },
+  "orderSuccess": {
+    "title": "Спасибо! Ваш заказ принят",
+    "subtitle": "Оператор скоро свяжется с вами для подтверждения заказа.",
+    "orderNumber": "Номер заказа",
+    "goToOrders": "К моим заказам"
+  },
+  "wishlist": {
+    "title": "Избранное",
+    "savedCount": "Сохранено товаров: {count}",
+    "emptyTitle": "В избранном пусто",
+    "emptyDesc": "Нажимайте на сердечко на карточке, чтобы сохранять понравившиеся товары"
+  },
+  "brand": {
+    "notFound": "Бренд не найден",
+    "metaDescription": "{name} — все товары",
+    "heroSubtitle": "Все товары бренда {name}. Оригинал, с гарантией и быстрой доставкой.",
+    "productsLabel": "Товары",
+    "empty": "Товаров {name} пока нет"
   },
   "sell": {
     "title": "Стать продавцом",

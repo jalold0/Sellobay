@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { brands, findBySlug, type Locale, products } from '../../../../lib/mock-data';
@@ -9,16 +9,18 @@ interface PageProps {
   params: { slug: string };
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const t = await getTranslations('brand');
   const brand = findBySlug(brands, params.slug);
-  if (!brand) return { title: 'Brend topilmadi' };
-  return { title: brand.name, description: `${brand.name} — barcha mahsulotlar` };
+  if (!brand) return { title: t('notFound') };
+  return { title: brand.name, description: t('metaDescription', { name: brand.name }) };
 }
 
-export default function BrandPage({ params }: PageProps) {
+export default async function BrandPage({ params }: PageProps) {
   const brand = findBySlug(brands, params.slug);
   if (!brand) notFound();
-  const locale = useLocale() as Locale;
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations('brand');
   const brandProducts = products.filter((p) => p.brandId === brand.id);
 
   return (
@@ -32,12 +34,10 @@ export default function BrandPage({ params }: PageProps) {
             >
               {brand.logoText}
             </div>
-            <p className="mt-3 max-w-md text-white/80">
-              {brand.name} brendining barcha mahsulotlari. Asl, kafolatli, tezkor yetkazib berish bilan.
-            </p>
+            <p className="mt-3 max-w-md text-white/80">{t('heroSubtitle', { name: brand.name })}</p>
           </div>
           <div className="rounded-xl bg-white/10 px-4 py-3 backdrop-blur">
-            <div className="text-xs uppercase tracking-wide opacity-70">Mahsulotlar</div>
+            <div className="text-xs uppercase tracking-wide opacity-70">{t('productsLabel')}</div>
             <div className="text-3xl font-bold">{brandProducts.length}</div>
           </div>
         </div>
@@ -45,8 +45,8 @@ export default function BrandPage({ params }: PageProps) {
 
       <section>
         {brandProducts.length === 0 ? (
-          <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">
-            Hozircha {brand.name} mahsulotlari yo&apos;q
+          <div className="bg-card text-muted-foreground rounded-xl border p-10 text-center">
+            {t('empty', { name: brand.name })}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">

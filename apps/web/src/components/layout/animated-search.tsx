@@ -146,10 +146,10 @@ export function AnimatedSearch({ className }: { className?: string }) {
   return (
     <div ref={rootRef} className={`relative ${className ?? ''}`}>
       <form onSubmit={onSubmit} role="search">
-        <div className="border-input bg-background focus-within:border-primary focus-within:ring-primary/20 relative flex h-11 items-center rounded-full border transition focus-within:ring-2">
+        <div className="bg-paper focus-within:border-primary focus-within:ring-primary/20 border-border relative flex h-12 items-center rounded-full border-[1.5px] transition focus-within:bg-white focus-within:ring-2">
           <Search
             size={18}
-            className="text-muted-foreground pointer-events-none absolute left-4 top-1/2 -translate-y-1/2"
+            className="text-muted-foreground pointer-events-none absolute left-5 top-1/2 -translate-y-1/2"
           />
           <input
             type="search"
@@ -158,9 +158,9 @@ export function AnimatedSearch({ className }: { className?: string }) {
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => setOpen(true)}
             placeholder={
-              open ? `${common('search')}...` : `${common('search')} — ${suggestions[idx] ?? ''}`
+              open ? t('placeholderLong') : `${suggestions[idx] ?? t('placeholderLong')}`
             }
-            className="h-full w-full rounded-full bg-transparent pl-11 pr-32 text-sm outline-none"
+            className="h-full w-full rounded-full bg-transparent pl-12 pr-32 text-sm outline-none placeholder:text-[#9a9aa2]"
             autoComplete="off"
           />
           {value ? (

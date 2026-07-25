@@ -58,6 +58,7 @@ export default function SellerNewProductPage() {
     barcode: '',
     basePrice: '',
     compareAtPrice: '',
+    stock: '',
     weightGrams: '',
     categorySlug: '',
     brandSlug: '',
@@ -73,33 +74,43 @@ export default function SellerNewProductPage() {
     color: string;
     size: string;
     priceOverride: string;
+    stock: string;
   }
   const [variants, setVariants] = React.useState<VariantRow[]>([]);
-  const addVariant = () => setVariants((p) => [...p, { color: '', size: '', priceOverride: '' }]);
+  const addVariant = () =>
+    setVariants((p) => [...p, { color: '', size: '', priceOverride: '', stock: '' }]);
   const removeVariant = (idx: number) => setVariants((p) => p.filter((_, i) => i !== idx));
   const setVariant = (idx: number, key: keyof VariantRow, value: string) =>
     setVariants((p) => p.map((v, i) => (i === idx ? { ...v, [key]: value } : v)));
 
   React.useEffect(() => {
-    // Sellobay web /api/categories va /api/brands sayt API'lari — seller panelda yo'q
-    // shu sababli to'g'ridan-to'g'ri Sellobay web URL'iga so'rov yuboramiz (CORS muammosi bo'lishi mumkin)
-    // Yoki localStorage cache + seller'da kichik proxy
-    // Hozircha hardcode list (DB'da ham shu slug'lar):
-    setCategories([
-      { id: '1', slug: 'clothing', name: 'Kiyim-kechak' },
-      { id: '2', slug: 'shoes', name: 'Poyabzal' },
-      { id: '3', slug: 'perfume', name: 'Atirlar' },
-      { id: '4', slug: 'cosmetics', name: 'Kosmetika' },
-      { id: '5', slug: 'beauty', name: "Go'zallik" },
-      { id: '6', slug: 'accessories', name: 'Aksessuarlar' },
-    ]);
-    setBrands([
-      { id: '1', slug: 'nike', name: 'Nike' },
-      { id: '2', slug: 'adidas', name: 'Adidas' },
-      { id: '3', slug: 'zara', name: 'Zara' },
-      { id: '4', slug: 'chanel', name: 'Chanel' },
-      { id: '5', slug: 'dior', name: 'Dior' },
-    ]);
+    // Kategoriya + brendlarni real DB'dan olamiz (seller /api/taxonomy).
+    // Hardcode YO'Q — slug'lar har doim DB bilan mos bo'ladi.
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/taxonomy', { credentials: 'same-origin' });
+        const json = (await res.json()) as ApiResult<{
+          categories: CategoryItem[];
+          brands: BrandItem[];
+        }>;
+        if (!cancelled && json.success && json.data) {
+          setCategories(json.data.categories);
+          setBrands(json.data.brands);
+        } else if (!cancelled) {
+          toast({
+            title: json.error?.message ?? 'Kategoriyalar yuklanmadi',
+            variant: 'destructive',
+          });
+        }
+      } catch {
+        if (!cancelled)
+          toast({ title: 'Kategoriyalar yuklanmadi (tarmoq)', variant: 'destructive' });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const set = <K extends keyof typeof form>(key: K, value: string) =>
@@ -110,6 +121,18 @@ export default function SellerNewProductPage() {
     if (!form.sku.trim()) return 'SKU kerak';
     if (!form.basePrice || Number(form.basePrice) <= 0) return "Narx 0 dan katta bo'lishi kerak";
     if (!form.categorySlug) return 'Kategoriya tanlang';
+    // Zaxira — mahsulot sotiladigan bo'lishi uchun (variant + inventar) shart.
+    const hasVariants = variants.some((v) => v.color.trim() || v.size.trim());
+    if (hasVariants) {
+      const variantStockSum = variants.reduce((s, v) => s + Math.max(0, Number(v.stock) || 0), 0);
+      if (variantStockSum <= 0)
+        return 'Kamida bitta variantga zaxira (dona) kiriting — aks holda mahsulot sotuvga chiqmaydi';
+    } else {
+      if (form.stock === '' || Number(form.stock) < 0 || !Number.isInteger(Number(form.stock)))
+        return "Zaxira (dona) — 0 yoki musbat butun son bo'lishi kerak";
+      if (Number(form.stock) <= 0)
+        return "Zaxira 0 dan katta bo'lishi kerak (aks holda mahsulot 'sotuvda yo'q' bo'lib qoladi)";
+    }
     for (let i = 0; i < images.length; i++) {
       const u = images[i]?.trim();
       if (u && !/^https?:\/\//i.test(u)) {
@@ -132,6 +155,7 @@ export default function SellerNewProductPage() {
       nameUz: form.nameUz.trim(),
       sku: form.sku.trim(),
       basePrice: Number(form.basePrice),
+      stock: form.stock === '' ? 0 : Number(form.stock),
       categorySlug: form.categorySlug,
     };
     if (form.nameRu.trim()) payload.nameRu = form.nameRu.trim();
@@ -151,6 +175,7 @@ export default function SellerNewProductPage() {
         size: v.size.trim() || undefined,
         priceOverride:
           v.priceOverride && Number(v.priceOverride) > 0 ? Number(v.priceOverride) : undefined,
+        stock: v.stock === '' ? 0 : Math.max(0, Number(v.stock) || 0),
       }))
       .filter((v) => v.color || v.size);
     if (filledVariants.length > 0) payload.variants = filledVariants;
@@ -276,9 +301,9 @@ export default function SellerNewProductPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Narx va vazn</CardTitle>
+              <CardTitle>Narx, zaxira va vazn</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
+            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <Label>Narx (UZS)*</Label>
                 <Input
@@ -298,6 +323,20 @@ export default function SellerNewProductPage() {
                   onChange={(e) => set('compareAtPrice', e.target.value)}
                   placeholder="0"
                 />
+              </div>
+              <div>
+                <Label>Zaxira (dona)*</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.stock}
+                  onChange={(e) => set('stock', e.target.value)}
+                  placeholder="0"
+                />
+                <p className="text-muted-foreground mt-1 text-[10px]">
+                  Variant qo&apos;shsangiz — har variantga alohida kiritiladi
+                </p>
               </div>
               <div>
                 <Label>Vazn (g)</Label>
@@ -428,25 +467,34 @@ export default function SellerNewProductPage() {
                       className="h-8 text-xs"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Input
                       type="number"
                       min="0"
                       value={v.priceOverride}
                       onChange={(e) => setVariant(i, 'priceOverride', e.target.value)}
                       placeholder="Narx (ixtiyoriy)"
-                      className="h-8 flex-1 text-xs"
+                      className="h-8 text-xs"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeVariant(i)}
-                      className="h-8 text-red-600 hover:bg-red-50"
-                    >
-                      O&apos;chirish
-                    </Button>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={v.stock}
+                      onChange={(e) => setVariant(i, 'stock', e.target.value)}
+                      placeholder="Zaxira (dona)"
+                      className="h-8 text-xs"
+                    />
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeVariant(i)}
+                    className="h-8 w-full text-red-600 hover:bg-red-50"
+                  >
+                    O&apos;chirish
+                  </Button>
                 </div>
               ))}
               <Button

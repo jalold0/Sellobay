@@ -4,7 +4,13 @@
 > belgilangan. Maqsad: **bitta ishni ikki marta qilmaslik.** Boshqa kompyuter/dasturda
 > `git pull` qilib shu fayldan davom eting.
 >
-> **Oxirgi yangilanish:** 2026-07-03 · **MVP launch:** 2026-07-13
+> **Oxirgi yangilanish:** 2026-07-10 · **MVP launch:** 2026-07-13
+>
+> **2026-07-10:** **Sotuvchi go-live + to'lov** — ombor/inventar buyurtma oqimiga ulandi
+> (atomik deduct/restock, oversell himoyasi) · DELIVERED→COD Payment PAID (admin order-status
+> real) · seed InventoryItem+StockMovement · **Premium crimson redizayn** (#8B0020→#531625,
+> yagona logo, web layout/login/profile qayta dizayn) · qaytarish siyosati matni yangilandi ·
+> typecheck yashil
 >
 > **2026-07-03:** **Yetkazish modeli** — PickupPoint (12 punkt Neon'da) + topshirish punktlari API/UI + saqlangan manzil + xarita (MapLibre/PMTiles offline UZ) · **Buyurtma qaytarish** (14 kunlik oyna, atomik coin/promo refund) · **Promokod tizimi** (backend+checkout+mobil) · **Mobil Uzum-uslub redesign** (grid+karusel+kategoriya+Global demo) · **To'lov** — COD launch-ready + Click/Payme webhook hardening (simulyatsiya bilan tekshirilган, sertifikatsiya-tayyor) · Node 24 ESM fix + dev launcher skriptlar (WiFi login) · butun monorepo typecheck/lint yashil
 >
@@ -19,7 +25,7 @@
 ## 0. Asos (Foundation) — TAYYOR
 
 - [x] Turborepo monorepo (9 app + 8 paket), pnpm, TypeScript strict
-- [x] Backend: NestJS + Prisma + Neon PostgreSQL (jonli)
+- [x] Backend: Next.js API routes (`apps/web`) + Prisma + Neon PostgreSQL (jonli; NestJS skeletlari karantinda — ADR 0004)
 - [x] Auth: custom JWT + argon2 + OTP (end-to-end ishlaydi)
 - [x] Web (Next.js 14): 40+ sahifa, Zustand cart/wishlist, SSR-safe formatter, SEO
 - [x] Mobile (Expo SDK 54): 11 ekran, NativeWind, Zustand+MMKV, EAS APK
@@ -72,7 +78,10 @@
 - [ ] Onboarding (3-4 ekran, mobile, birinchi ochilishda)
 - [ ] Bottom sheet filtrlar (mobile)
 - [x] Recently viewed + qidiruv tarixi (mobile store, MMKV) — 2026-07-03
-- [ ] Bo'sh holatlar (empty states) polish
+- [x] Bo'sh holatlar (empty states) polish (2026-07-11): umumiy `@ecom/ui` EmptyState crimson/serif
+      dizaynga yangilandi (rounded-2xl solid border, bg-soft 16px doira, Playfair sarlavha) →
+      savat/wishlist/orders/addresses/payment/reviews/search bir vaqtda; katalog "natija yo'q" ham
+      shu komponentga o'tkazildi (yagona manba)
 
 ---
 
@@ -117,7 +126,9 @@
 - [~] Group buy (Pinduoduo mexanizmi): web UI to'liq — /group-buy sahifa, progress, countdown, join, share, 3 til, footer havola, mock-first (2026-06-28). Qoldiq: real backend (Prisma GroupBuy/GroupBuyMember + API + Neon migratsiya) va checkout ulanishi
 - [ ] Wishlist sharing (link orqali "sovg'a ro'yxati", viral)
 - [ ] Multi-language smart description (sotuvchi UZ yozadi → AI RU/EN)
-- [~] Verified Seller: backend to'liq (admin approve/reject + sotuvchilar ro'yxati real DB, 2026-06-28); mahsulotdagi "Tasdiqlangan" chip hali har doim ko'rinadi (kosmetik qoldiq)
+- [x] Verified Seller: backend to'liq (admin approve/reject + sotuvchilar ro'yxati real DB, 2026-06-28);
+      mahsulot PDP "Tasdiqlangan sotuvchi" chip endi REAL — `sellerVerified` (seller null=platform-rasmiy
+      yoki `status==='ACTIVE'`) asosida shartli ko'rsatiladi (2026-07-11)
 
 ---
 
@@ -231,13 +242,16 @@
       COD 2/2 — hammasi lokal dev + Neon'da o'tdi (merchant kalitsiz)
 - [ ] 🔒 **Merchant kassa kalitlari** (Click/Payme shartnoma) — kelganda Vercel env + Payme
       sandbox sertifikatsiyasi (GetStatement/timeout edge-case'lari real tekshiriladi)
-- [ ] **DELIVERED → COD Payment PAID**: admin/seller order-status endpoint real bo'lgach
-      (hozir mock-first) — offline Payment yetkazilганda PAID qilinsin
+- [x] **DELIVERED → COD Payment PAID** (2026-07-10): admin order-status real —
+      `fulfillment-server.updateOrderStatus` DELIVERED o'tishida COD Payment'ni PAID+paidAt
+      qiladi (`codSettled`), soldCount++ (idempotent). Admin orders'da status-advance dropdown.
 - [ ] UZUM_BANK/UZCARD/HUMO real integratsiya (hozir COD kabi offline ishlanadi)
 
-> **⚠️ Alohida kritik (to'lovdan tashqari):** ombor/inventar hisobi ULANMAGAN — buyurtma
-> yaratish/bekor/qaytarishda stock kamaymaydi/qaytmaydi (`InventoryItem`/`StockMovement`
-> ishlatilmaydi) → oversell xavfi. Alohida task sifatida belgilangan.
+> **✅ Oversell xavfi HAL QILINDI (2026-07-10):** ombor/inventar buyurtma oqimiga ulandi —
+> `inventory-server.deductStockForOrder` (atomik `$transaction`, shartli UPDATE + DISPATCH
+> `StockMovement`, `InsufficientStockError`) buyurtma yaratishda; `restockOrder` bekor/qaytarishda.
+> seed har mahsulotga `InventoryItem` (stock=100) + RECEIVING movement beradi; product API
+> `stock`/`inStock` qaytaradi.
 
 ---
 

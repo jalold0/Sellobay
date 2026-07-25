@@ -1,23 +1,14 @@
 'use client';
 
-import {
-  Button,
-  Card,
-  CardContent,
-  Input,
-  Label,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  toast,
-} from '@ecom/ui';
-import { ArrowLeft, Loader2, Lock, Mail, Phone, ShieldCheck } from 'lucide-react';
+import { toast } from '@ecom/ui';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
-import { loginWithEmail, sendOtp, verifyOtp } from '@/lib/auth/client';
+
+import { SellobayMark } from '../brand/sellobay-mark';
+import { sendOtp, verifyOtp } from '@/lib/auth/client';
 
 type OtpStage = 'phone' | 'code';
 
@@ -27,81 +18,68 @@ function useNextHref(): string {
   return next && next.startsWith('/') ? next : '/profile';
 }
 
+/** "90 123 45 67" ko'rinishida guruhlash — faqat ko'rinish uchun */
+function formatNational(digits: string): string {
+  const d = digits.slice(0, 9);
+  const parts = [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean);
+  return parts.join(' ');
+}
+
 export function LoginFlow() {
   const t = useTranslations('auth');
+
   return (
-    <div className="mx-auto max-w-md">
-      <Card>
-        <CardContent className="space-y-5 p-6 md:p-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight">{t('loginTitle')}</h1>
-            <p className="text-muted-foreground mt-1 text-sm">{t('loginWelcome')}</p>
-          </div>
-
-          <Tabs defaultValue="phone">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="phone">
-                <Phone size={14} className="mr-1" /> {t('tabPhone')}
-              </TabsTrigger>
-              <TabsTrigger value="email">
-                <Mail size={14} className="mr-1" /> {t('tabEmail')}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="phone">
-              <PhoneOtpForm />
-            </TabsContent>
-            <TabsContent value="email">
-              <EmailForm />
-            </TabsContent>
-          </Tabs>
-
-          <div className="relative">
-            <div className="bg-border absolute inset-x-0 top-1/2 h-px" />
-            <div className="bg-card text-muted-foreground relative mx-auto w-fit px-3 text-xs">
-              {t('or')}
+    // Konteynerdan chiqib, to'liq kenglikdagi split ekran (1e)
+    <div className="relative left-1/2 right-1/2 -mx-[50vw] -my-6 w-screen md:-my-10">
+      <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 md:grid-cols-[minmax(0,600px)_1fr]">
+        {/* Chap ink panel — faqat desktop */}
+        <div className="bg-brand-ink relative hidden overflow-hidden md:block">
+          {/* Brendli gradient fon — tashqi rasmga bog'liq emas (go-live xavfsiz) */}
+          <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_20%_0%,rgba(83,22,37,0.9),transparent_62%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(10,10,12,0.92)] to-[rgba(10,10,12,0.35)]" />
+          <div className="relative flex h-full flex-col justify-between p-14">
+            <div className="flex items-center gap-3">
+              <SellobayMark size={44} priority />
+              <span className="font-serif text-2xl font-bold text-white">Sellobay</span>
+            </div>
+            <div>
+              <div className="bg-brand-gold mb-[18px] h-[1.5px] w-8" />
+              <h2 className="font-serif text-[38px] font-semibold leading-[1.2] text-white">
+                {t('panel.titleLine1')}
+                <br />
+                {t('panel.titleLine2')}
+              </h2>
+              <ul className="mt-7 flex flex-col gap-3 text-[13.5px] text-white/80">
+                {(['benefit1', 'benefit2', 'benefit3'] as const).map((k) => (
+                  <li key={k} className="flex items-center gap-2.5">
+                    <span className="text-brand-gold">✓</span>
+                    {t(`panel.${k}`)}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
+        </div>
 
-          <div className="grid gap-2">
-            <OAuthButton provider="google" />
-            <OAuthButton provider="telegram" />
-            <OAuthButton provider="apple" />
-          </div>
-
-          <p className="text-muted-foreground text-center text-xs">
-            {t('termsAgree')}{' '}
-            <Link href="/terms" className="text-primary hover:underline">
-              {t('termsLink')}
-            </Link>{' '}
-            {t('and')}{' '}
-            <Link href="/privacy" className="text-primary hover:underline">
-              {t('privacyLink')}
-            </Link>
-            {t('termsSuffix')}
-          </p>
-        </CardContent>
-      </Card>
-
-      <p className="text-muted-foreground mt-4 text-center text-sm">
-        {t('noAccount')}{' '}
-        <Link href="/register" className="text-primary font-medium hover:underline">
-          {t('registerLink')}
-        </Link>
-      </p>
+        {/* O'ng forma paneli */}
+        <div className="flex items-center justify-center px-6 py-16 md:p-14">
+          <PhoneOtpForm />
+        </div>
+      </div>
     </div>
   );
 }
 
 function PhoneOtpForm() {
-  const router = useRouter();
   const t = useTranslations('auth');
   const nextHref = useNextHref();
   const [stage, setStage] = React.useState<OtpStage>('phone');
-  const [phone, setPhone] = React.useState('+998 ');
+  const [national, setNational] = React.useState('');
   const [code, setCode] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [resendIn, setResendIn] = React.useState(0);
+
+  const fullPhone = `+998${national}`;
 
   React.useEffect(() => {
     if (resendIn <= 0) return;
@@ -110,13 +88,12 @@ function PhoneOtpForm() {
   }, [resendIn]);
 
   const sendCode = async () => {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 12) {
+    if (national.length < 9) {
       toast({ title: t('phoneInvalid'), variant: 'warning' });
       return;
     }
     setSubmitting(true);
-    const result = await sendOtp(phone);
+    const result = await sendOtp(fullPhone);
     setSubmitting(false);
     if (!result.success) {
       toast({ title: result.error.message, variant: 'destructive' });
@@ -124,7 +101,7 @@ function PhoneOtpForm() {
     }
     setStage('code');
     setResendIn(60);
-    toast({ title: t('codeSent'), description: phone, variant: 'success' });
+    toast({ title: t('codeSent'), description: fullPhone, variant: 'success' });
   };
 
   const verify = async () => {
@@ -133,180 +110,140 @@ function PhoneOtpForm() {
       return;
     }
     setSubmitting(true);
-    const result = await verifyOtp(phone, code);
+    const result = await verifyOtp(fullPhone, code);
     setSubmitting(false);
     if (!result.success) {
       toast({ title: result.error.message, variant: 'destructive' });
       return;
     }
     toast({ title: t('loginSuccess'), variant: 'success' });
-    router.push(nextHref);
-    router.refresh();
+    // Hard navigatsiya (SPA push emas): login httpOnly cookie'ni fetch orqali
+    // o'rnatadi; production build'da router.push eski prefetch/RSC keshdan
+    // (logout paytidagi /login redirect) o'qib, foydalanuvchini login'ga qaytaradi.
+    // To'liq hujjat so'rovi yangi cookie bilan ketadi va keshni chetlab o'tadi.
+    window.location.assign(nextHref);
   };
 
-  if (stage === 'phone') {
-    return (
-      <div className="space-y-3 pt-2">
-        <div>
-          <Label className="text-xs">{t('phone')}</Label>
-          <div className="relative">
-            <Phone className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-            <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder={t('phonePlaceholder')}
-              className="pl-9"
-              autoComplete="tel"
+  return (
+    <div className="flex w-full max-w-[400px] flex-col">
+      {/* Mobil logo — chap panel yashiringanda */}
+      <div className="mb-8 flex items-center gap-3 md:hidden">
+        <SellobayMark size={40} />
+        <span className="text-brand-ink font-serif text-xl font-bold">Sellobay</span>
+      </div>
+
+      <h1 className="text-brand-ink font-serif text-[30px] font-semibold">{t('welcomeTitle')}</h1>
+      <p className="text-muted-foreground mt-2.5 text-sm leading-[1.55]">{t('phoneFirstHint')}</p>
+
+      {stage === 'phone' ? (
+        <div className="mt-8">
+          <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('phone')}</div>
+          <label className="border-brand-ink focus-within:ring-primary/20 flex h-[54px] items-center overflow-hidden rounded-[14px] border-2 focus-within:ring-2">
+            <span className="bg-muted text-brand-ink border-border flex h-full items-center border-r px-4 text-[15px] font-bold">
+              +998
+            </span>
+            <input
+              value={formatNational(national)}
+              onChange={(e) => setNational(e.target.value.replace(/\D/g, '').slice(0, 9))}
+              placeholder={t('phonePlaceholderNational')}
+              inputMode="numeric"
+              autoComplete="tel-national"
+              className="text-brand-ink h-full flex-1 bg-transparent px-4 text-[15px] font-semibold outline-none placeholder:text-[#9a9aa2]"
             />
-          </div>
-          <p className="text-muted-foreground mt-1 text-[11px]">{t('phoneHint')}</p>
+          </label>
+          <button
+            type="button"
+            onClick={sendCode}
+            disabled={submitting}
+            className="bg-primary hover:bg-primary/90 mt-5 flex h-[54px] w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition disabled:opacity-60"
+          >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t('getCode')}
+          </button>
         </div>
-        <Button onClick={sendCode} disabled={submitting} className="w-full">
-          {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {t('sendCode')}
-        </Button>
-      </div>
-    );
-  }
+      ) : (
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => setStage('phone')}
+            className="text-muted-foreground hover:text-brand-ink mb-3 inline-flex items-center gap-1 text-xs"
+          >
+            <ArrowLeft size={12} /> {t('changePhone')}
+          </button>
+          <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('codeLabel')}</div>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="------"
+            inputMode="numeric"
+            maxLength={6}
+            // OTP maydoniga avtomatik fokus — ataylab qilingan UX
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            className="border-brand-ink text-brand-ink focus:ring-primary/20 h-[54px] w-full rounded-[14px] border-2 text-center text-lg font-semibold tracking-[0.5em] outline-none focus:ring-2"
+          />
+          <p className="text-muted-foreground mt-2 text-[11px]">
+            {t('codeSentTo', { phone: fullPhone })}
+          </p>
+          <button
+            type="button"
+            onClick={verify}
+            disabled={submitting}
+            className="bg-primary hover:bg-primary/90 mt-4 flex h-[54px] w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition disabled:opacity-60"
+          >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t('verify')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (resendIn === 0) {
+                setResendIn(60);
+                void sendOtp(fullPhone);
+                toast({ title: t('codeResent'), variant: 'success' });
+              }
+            }}
+            disabled={resendIn > 0}
+            className="text-muted-foreground hover:text-brand-ink mt-3 block w-full text-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {resendIn > 0 ? t('resendIn', { seconds: resendIn }) : t('resend')}
+          </button>
+        </div>
+      )}
 
-  return (
-    <div className="space-y-3 pt-2">
-      <button
-        type="button"
-        onClick={() => setStage('phone')}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs"
-      >
-        <ArrowLeft size={12} /> {t('changePhone')}
-      </button>
-      <div>
-        <Label className="text-xs">{t('codeLabel')}</Label>
-        <Input
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          placeholder="------"
-          inputMode="numeric"
-          maxLength={6}
-          className="text-center text-lg tracking-[0.5em]"
-          // OTP kodi maydoniga avtomatik fokus — ataylab qilingan UX
-          // eslint-disable-next-line jsx-a11y/no-autofocus
-          autoFocus
-        />
-        <p className="text-muted-foreground mt-1 text-[11px]">{t('codeSentTo', { phone })}</p>
+      {/* yoki ajratgich */}
+      <div className="my-[26px] flex items-center gap-3.5">
+        <div className="bg-border h-px flex-1" />
+        <span className="text-[12px] text-[#9a9aa2]">{t('or')}</span>
+        <div className="bg-border h-px flex-1" />
       </div>
-      <Button onClick={verify} disabled={submitting} className="w-full">
-        {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {t('verify')}
-      </Button>
+
+      {/* Telegram outline pill */}
       <button
         type="button"
-        onClick={() => {
-          if (resendIn === 0) {
-            setResendIn(60);
-            toast({ title: t('codeResent'), variant: 'success' });
-          }
-        }}
-        disabled={resendIn > 0}
-        className="text-muted-foreground hover:text-foreground block w-full text-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() =>
+          toast({ title: t('oauthSoon', { provider: t('loginWithTelegram') }), duration: 2000 })
+        }
+        className="border-border text-brand-ink hover:bg-muted flex h-[52px] items-center justify-center gap-2.5 rounded-full border-[1.5px] text-sm font-semibold transition"
       >
-        {resendIn > 0 ? t('resendIn', { seconds: resendIn }) : t('resend')}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#229ED9" aria-hidden>
+          <path d="M21.9 4.3L18.8 19.2c-.2 1-.9 1.3-1.7.8l-4.8-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8L18 6.6c.4-.3-.1-.5-.6-.2L6.7 13.2l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z" />
+        </svg>
+        {t('loginWithTelegram')}
       </button>
+
+      {/* Shartlar izohi */}
+      <p className="mt-[26px] text-center text-[11.5px] leading-[1.6] text-[#9a9aa2]">
+        {t('termsPrefix')}{' '}
+        <Link href="/offer" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
+          {t('offerLink')}
+        </Link>{' '}
+        {t('termsJoin')}{' '}
+        <Link href="/privacy" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
+          {t('privacyLink')}
+        </Link>
+        {t('termsAgreeSuffix')}
+      </p>
     </div>
-  );
-}
-
-function EmailForm() {
-  const router = useRouter();
-  const t = useTranslations('auth');
-  const nextHref = useNextHref();
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [submitting, setSubmitting] = React.useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    const result = await loginWithEmail(email.trim(), password);
-    setSubmitting(false);
-    if (!result.success) {
-      toast({ title: result.error.message, variant: 'destructive' });
-      return;
-    }
-    toast({ title: t('loginSuccess'), variant: 'success' });
-    router.push(nextHref);
-    router.refresh();
-  };
-
-  return (
-    <form onSubmit={submit} className="space-y-3 pt-2">
-      <div>
-        <Label className="text-xs">{t('email')}</Label>
-        <div className="relative">
-          <Mail className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="pl-9"
-            placeholder={t('emailPlaceholder')}
-            autoComplete="email"
-            required
-          />
-        </div>
-      </div>
-      <div>
-        <div className="mb-1 flex items-center justify-between">
-          <Label className="text-xs">{t('password')}</Label>
-          <Link href="/forgot-password" className="text-primary text-[11px] hover:underline">
-            {t('forgotPassword')}
-          </Link>
-        </div>
-        <div className="relative">
-          <Lock className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="pl-9"
-            placeholder={t('passwordPlaceholder')}
-            autoComplete="current-password"
-            required
-          />
-        </div>
-      </div>
-      <Button type="submit" disabled={submitting} className="w-full">
-        {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {t('loginSubmit')}
-      </Button>
-      <div className="bg-secondary/40 text-muted-foreground rounded-md p-2 text-[11px]">
-        <ShieldCheck size={11} className="mr-1 inline text-emerald-600" />
-        {t('passwordSecure')}
-      </div>
-    </form>
-  );
-}
-
-const OAUTH_CFG: Record<
-  'google' | 'telegram' | 'apple',
-  { key: 'loginWithGoogle' | 'loginWithTelegram' | 'loginWithApple'; emoji: string }
-> = {
-  google: { key: 'loginWithGoogle', emoji: '🔵' },
-  telegram: { key: 'loginWithTelegram', emoji: '💬' },
-  apple: { key: 'loginWithApple', emoji: '' },
-};
-
-function OAuthButton({ provider }: { provider: keyof typeof OAUTH_CFG }) {
-  const t = useTranslations('auth');
-  const cfg = OAUTH_CFG[provider];
-  const label = t(cfg.key);
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      className="w-full justify-start gap-3"
-      onClick={() => toast({ title: t('oauthSoon', { provider: label }), duration: 2000 })}
-    >
-      <span className="text-base">{cfg.emoji}</span>
-      <span>{label}</span>
-    </Button>
   );
 }

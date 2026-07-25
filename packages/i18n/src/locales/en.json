@@ -299,6 +299,9 @@
     "removedFromWishlist": "Removed from wishlist",
     "addedToWishlist": "Added to wishlist",
     "addedToCart": "Added to cart",
+    "quickView": "Quick view",
+    "onlyLeft": "Only {count} left!",
+    "notFound": "Product not found",
     "deliveryTomorrow": "Tomorrow",
     "deliveryFast": "Fast delivery — within 24 hours across Tashkent",
     "freeShip": "Free",
@@ -320,7 +323,7 @@
     "helpful": "Helpful ({count})",
     "answer": "Answer",
     "deliveryReturn": "Inspect at the pickup point — return on the spot",
-    "deliveryReturnLegal": "By law you keep the right to return unused goods within 14 days",
+    "deliveryReturnLegal": "Inspect on delivery — return on the spot if it's not right",
     "deliveryAuthentic": "100% authentic product guarantee",
     "trustPopular": "Popular product",
     "trustTopRated": "Top rated",
@@ -331,7 +334,7 @@
     "soldCount": "sold {count}+ times",
     "promoUntil": "offer valid until {date}",
     "deliveryTomorrowFull": "Delivered tomorrow — across Tashkent, {price}",
-    "authenticityReturn": "Authenticity guarantee — free returns within 14 days",
+    "authenticityReturn": "Authenticity guarantee — free return on the spot",
     "installment4x": "Installments — 4 × {amount}, interest-free",
     "visitStore": "Visit store",
     "sellerOrders": "{count} orders",
@@ -343,6 +346,7 @@
   },
   "cart": {
     "title": "Cart",
+    "itemsSummary": "{items} items · {units} pcs",
     "empty": "Cart is empty",
     "emptyHint": "Choose products from the catalog and add to cart",
     "openCatalog": "Open catalog",
@@ -453,10 +457,22 @@
       "secureNote": "Your card details are securely stored on the payment provider's server — we don't see them.",
       "methodTitle": "Payment method",
       "card": "Card",
-      "cardSub": "Uzcard · Humo · Visa",
+      "cardSub": "Card transfer",
       "appConfirm": "Confirm in app",
       "cashShort": "Cash",
-      "onReceive": "On delivery"
+      "onReceive": "On delivery",
+      "cardTransferTitle": "Card payment",
+      "cardTransferHint": "Transfer the amount to the card below, then upload the receipt (screenshot). Your order is processed once an admin confirms it.",
+      "amountToTransfer": "Amount to transfer",
+      "copyCard": "Copy",
+      "copied": "Copied",
+      "uploadReceipt": "Upload receipt",
+      "receiptUploaded": "Receipt uploaded",
+      "replaceReceipt": "Another photo",
+      "receiptRequired": "Please upload the receipt image",
+      "receiptProcessing": "Processing image...",
+      "receiptNoteLabel": "Payment note (optional)",
+      "receiptNotePlaceholder": "e.g. last 4 digits of the card you paid from"
     },
     "review": {
       "title": "Review your order",
@@ -483,7 +499,8 @@
     "errors": {
       "required": "Please fill required fields",
       "network": "Network error",
-      "failed": "Order not created"
+      "failed": "Order not created",
+      "staleItems": "Some items in your cart are outdated and were removed. Please add them again."
     },
     "securePayment": "Secure payment",
     "summaryTitle": "Order · {count} items",
@@ -520,6 +537,7 @@
     "codeInvalid": "Enter a 4–6 digit code",
     "forgotPassword": "Forgot password?",
     "phonePlaceholder": "+998 90 123 45 67",
+    "phonePlaceholderNational": "90 123 45 67",
     "emailPlaceholder": "example@mail.uz",
     "phoneHint": "We'll send a verification code via SMS",
     "codeLabel": "Enter your code",
@@ -577,6 +595,22 @@
   },
   "profile": {
     "title": "Personal information",
+    "subtitle": "Keep your details up to date and your account secure",
+    "infoTitle": "Profile details",
+    "saving": "Saving...",
+    "stats": {
+      "orders": "Orders",
+      "points": "Loyalty points",
+      "reviews": "Reviews",
+      "tier": "Tier"
+    },
+    "fields": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "phone": "Phone",
+      "gender": "Gender"
+    },
     "nav": {
       "personal": "Personal information",
       "orders": "My orders",
@@ -605,7 +639,8 @@
       "title": "Gender",
       "male": "Male",
       "female": "Female",
-      "other": "Other"
+      "other": "Other",
+      "unspecified": "Not specified"
     },
     "birthday": "Date of birth",
     "saveChanges": "Save changes",
@@ -705,6 +740,23 @@
       "etaUntil": "Est. by {time}",
       "trackOnMap": "Track on map",
       "reorder": "Reorder"
+    },
+    "orderDetail": {
+      "back": "Back to orders",
+      "items": "Items",
+      "subtotal": "Items total",
+      "shipping": "Shipping",
+      "discount": "Discount",
+      "total": "Total",
+      "deliveryAddress": "Delivery address",
+      "pickupPoint": "Pickup point",
+      "payment": "Payment",
+      "history": "Status history",
+      "reviewNote": "Receipt received — an admin is reviewing it. Your order is prepared once confirmed.",
+      "cancel": "Cancel order",
+      "cancelConfirm": "Confirm order cancellation?",
+      "cancelled": "Order cancelled",
+      "notFound": "Order not found"
     },
     "premiumCard": {
       "label": "Sellobay Premium",
@@ -824,7 +876,45 @@
       "CANCELLED": "Cancelled",
       "RETURNED": "Returned",
       "REFUNDED": "Refunded"
+    },
+    "paymentReview": "Payment under review",
+    "paymentStatus": {
+      "PENDING": "Payment pending",
+      "AUTHORIZED": "Authorized",
+      "PAID": "Paid",
+      "PARTIALLY_REFUNDED": "Partially refunded",
+      "REFUNDED": "Refunded",
+      "FAILED": "Payment failed",
+      "CANCELLED": "Cancelled"
     }
+  },
+  "tracking": {
+    "title": "Track my order",
+    "subtitle": "Track your delivery status by order number",
+    "notFound": "No order found with this number",
+    "orderNumber": "Order number",
+    "courier": "Courier",
+    "helpTitle": "Need help?",
+    "helpDesc": "Our support team is available 24/7."
+  },
+  "orderSuccess": {
+    "title": "Thank you! Your order has been received",
+    "subtitle": "An operator will contact you shortly to confirm your order.",
+    "orderNumber": "Order number",
+    "goToOrders": "Go to my orders"
+  },
+  "wishlist": {
+    "title": "Wishlist",
+    "savedCount": "{count} items saved",
+    "emptyTitle": "Your wishlist is empty",
+    "emptyDesc": "Tap the heart on a product card to save items you like"
+  },
+  "brand": {
+    "notFound": "Brand not found",
+    "metaDescription": "{name} — all products",
+    "heroSubtitle": "All products by {name}. Original, with warranty and fast delivery.",
+    "productsLabel": "Products",
+    "empty": "No {name} products yet"
   },
   "sell": {
     "title": "Become a seller",
