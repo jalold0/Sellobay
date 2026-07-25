@@ -8,9 +8,11 @@ import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { SellobayMark } from '../brand/sellobay-mark';
-import { sendOtp, verifyOtp } from '@/lib/auth/client';
+import { loginWithEmail, sendOtp, verifyOtp } from '@/lib/auth/client';
 
 type OtpStage = 'phone' | 'code';
+// Kirish usuli — email asosiy (SMS hali yoqilmagan), telefon ikkilamchi.
+type Method = 'email' | 'phone';
 
 function useNextHref(): string {
   const params = useSearchParams();
@@ -23,6 +25,14 @@ function formatNational(digits: string): string {
   const d = digits.slice(0, 9);
   const parts = [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean);
   return parts.join(' ');
+}
+
+// Login muvaffaqiyatli bo'lgach — hard navigatsiya (SPA push emas): httpOnly cookie
+// fetch orqali o'rnatiladi; production build'da router.push eski RSC keshdan (logout
+// paytidagi /login redirect) o'qib foydalanuvchini qaytarib yuborardi. To'liq hujjat
+// so'rovi yangi cookie bilan ketadi va keshni chetlab o'tadi.
+function goAfterAuth(nextHref: string) {
+  window.location.assign(nextHref);
 }
 
 export function LoginFlow() {
@@ -63,10 +73,151 @@ export function LoginFlow() {
 
         {/* O'ng forma paneli */}
         <div className="flex items-center justify-center px-6 py-16 md:p-14">
-          <PhoneOtpForm />
+          <AuthForms />
         </div>
       </div>
     </div>
+  );
+}
+
+function AuthForms() {
+  const t = useTranslations('auth');
+  // SMS hali yoqilmagani uchun email asosiy usul.
+  const [method, setMethod] = React.useState<Method>('email');
+
+  return (
+    <div className="flex w-full max-w-[400px] flex-col">
+      {/* Mobil logo — chap panel yashiringanda */}
+      <div className="mb-8 flex items-center gap-3 md:hidden">
+        <SellobayMark size={40} />
+        <span className="text-brand-ink font-serif text-xl font-bold">Sellobay</span>
+      </div>
+
+      <h1 className="text-brand-ink font-serif text-[30px] font-semibold">{t('welcomeTitle')}</h1>
+
+      {/* Usul tanlagich — Email | Telefon */}
+      <div className="border-border mt-6 flex rounded-full border p-1 text-[13.5px] font-bold">
+        {(['email', 'phone'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMethod(m)}
+            className={`flex-1 rounded-full py-2.5 transition ${
+              method === m
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-muted-foreground hover:text-brand-ink'
+            }`}
+          >
+            {m === 'email' ? t('tabEmail') : t('tabPhone')}
+          </button>
+        ))}
+      </div>
+
+      {method === 'email' ? <EmailForm /> : <PhoneOtpForm />}
+
+      {/* yoki ajratgich */}
+      <div className="my-[26px] flex items-center gap-3.5">
+        <div className="bg-border h-px flex-1" />
+        <span className="text-[12px] text-[#9a9aa2]">{t('or')}</span>
+        <div className="bg-border h-px flex-1" />
+      </div>
+
+      {/* Telegram outline pill */}
+      <button
+        type="button"
+        onClick={() =>
+          toast({ title: t('oauthSoon', { provider: t('loginWithTelegram') }), duration: 2000 })
+        }
+        className="border-border text-brand-ink hover:bg-muted flex h-[52px] items-center justify-center gap-2.5 rounded-full border-[1.5px] text-sm font-semibold transition"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#229ED9" aria-hidden>
+          <path d="M21.9 4.3L18.8 19.2c-.2 1-.9 1.3-1.7.8l-4.8-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8L18 6.6c.4-.3-.1-.5-.6-.2L6.7 13.2l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z" />
+        </svg>
+        {t('loginWithTelegram')}
+      </button>
+
+      {/* Ro'yxatdan o'tish havolasi */}
+      <p className="text-muted-foreground mt-6 text-center text-sm">
+        {t('noAccount')}{' '}
+        <Link href="/register" className="text-primary font-semibold hover:underline">
+          {t('registerLink')}
+        </Link>
+      </p>
+
+      {/* Shartlar izohi */}
+      <p className="mt-5 text-center text-[11.5px] leading-[1.6] text-[#9a9aa2]">
+        {t('termsPrefix')}{' '}
+        <Link href="/offer" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
+          {t('offerLink')}
+        </Link>{' '}
+        {t('termsJoin')}{' '}
+        <Link href="/privacy" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
+          {t('privacyLink')}
+        </Link>
+        {t('termsAgreeSuffix')}
+      </p>
+    </div>
+  );
+}
+
+function EmailForm() {
+  const t = useTranslations('auth');
+  const nextHref = useNextHref();
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    const result = await loginWithEmail(email.trim(), password);
+    setSubmitting(false);
+    if (!result.success) {
+      toast({ title: result.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: t('loginSuccess'), variant: 'success' });
+    goAfterAuth(nextHref);
+  };
+
+  return (
+    <form onSubmit={submit} className="mt-8">
+      <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('email')}</div>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder={t('emailPlaceholder')}
+        autoComplete="email"
+        required
+        className="border-brand-ink text-brand-ink focus:ring-primary/20 h-[54px] w-full rounded-[14px] border-2 px-4 text-[15px] font-semibold outline-none placeholder:text-[#9a9aa2] focus:ring-2"
+      />
+
+      <div className="mb-2 mt-5 flex items-center justify-between">
+        <span className="text-brand-ink text-[12.5px] font-bold">{t('password')}</span>
+        <Link href="/forgot-password" className="text-primary text-[11.5px] font-semibold">
+          {t('forgotPassword')}
+        </Link>
+      </div>
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder={t('passwordPlaceholder')}
+        autoComplete="current-password"
+        required
+        className="border-brand-ink text-brand-ink focus:ring-primary/20 h-[54px] w-full rounded-[14px] border-2 px-4 text-[15px] font-semibold outline-none placeholder:text-[#9a9aa2] focus:ring-2"
+      />
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="bg-primary hover:bg-primary/90 mt-6 flex h-[54px] w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition disabled:opacity-60"
+      >
+        {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+        {t('loginSubmit')}
+      </button>
+    </form>
   );
 }
 
@@ -117,26 +268,15 @@ function PhoneOtpForm() {
       return;
     }
     toast({ title: t('loginSuccess'), variant: 'success' });
-    // Hard navigatsiya (SPA push emas): login httpOnly cookie'ni fetch orqali
-    // o'rnatadi; production build'da router.push eski prefetch/RSC keshdan
-    // (logout paytidagi /login redirect) o'qib, foydalanuvchini login'ga qaytaradi.
-    // To'liq hujjat so'rovi yangi cookie bilan ketadi va keshni chetlab o'tadi.
-    window.location.assign(nextHref);
+    goAfterAuth(nextHref);
   };
 
   return (
-    <div className="flex w-full max-w-[400px] flex-col">
-      {/* Mobil logo — chap panel yashiringanda */}
-      <div className="mb-8 flex items-center gap-3 md:hidden">
-        <SellobayMark size={40} />
-        <span className="text-brand-ink font-serif text-xl font-bold">Sellobay</span>
-      </div>
-
-      <h1 className="text-brand-ink font-serif text-[30px] font-semibold">{t('welcomeTitle')}</h1>
-      <p className="text-muted-foreground mt-2.5 text-sm leading-[1.55]">{t('phoneFirstHint')}</p>
+    <div>
+      <p className="text-muted-foreground mt-4 text-sm leading-[1.55]">{t('phoneFirstHint')}</p>
 
       {stage === 'phone' ? (
-        <div className="mt-8">
+        <div className="mt-6">
           <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('phone')}</div>
           <label className="border-brand-ink focus-within:ring-primary/20 flex h-[54px] items-center overflow-hidden rounded-[14px] border-2 focus-within:ring-2">
             <span className="bg-muted text-brand-ink border-border flex h-full items-center border-r px-4 text-[15px] font-bold">
@@ -162,7 +302,7 @@ function PhoneOtpForm() {
           </button>
         </div>
       ) : (
-        <div className="mt-8">
+        <div className="mt-6">
           <button
             type="button"
             onClick={() => setStage('phone')}
@@ -210,40 +350,6 @@ function PhoneOtpForm() {
           </button>
         </div>
       )}
-
-      {/* yoki ajratgich */}
-      <div className="my-[26px] flex items-center gap-3.5">
-        <div className="bg-border h-px flex-1" />
-        <span className="text-[12px] text-[#9a9aa2]">{t('or')}</span>
-        <div className="bg-border h-px flex-1" />
-      </div>
-
-      {/* Telegram outline pill */}
-      <button
-        type="button"
-        onClick={() =>
-          toast({ title: t('oauthSoon', { provider: t('loginWithTelegram') }), duration: 2000 })
-        }
-        className="border-border text-brand-ink hover:bg-muted flex h-[52px] items-center justify-center gap-2.5 rounded-full border-[1.5px] text-sm font-semibold transition"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#229ED9" aria-hidden>
-          <path d="M21.9 4.3L18.8 19.2c-.2 1-.9 1.3-1.7.8l-4.8-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8L18 6.6c.4-.3-.1-.5-.6-.2L6.7 13.2l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z" />
-        </svg>
-        {t('loginWithTelegram')}
-      </button>
-
-      {/* Shartlar izohi */}
-      <p className="mt-[26px] text-center text-[11.5px] leading-[1.6] text-[#9a9aa2]">
-        {t('termsPrefix')}{' '}
-        <Link href="/offer" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
-          {t('offerLink')}
-        </Link>{' '}
-        {t('termsJoin')}{' '}
-        <Link href="/privacy" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
-          {t('privacyLink')}
-        </Link>
-        {t('termsAgreeSuffix')}
-      </p>
     </div>
   );
 }
