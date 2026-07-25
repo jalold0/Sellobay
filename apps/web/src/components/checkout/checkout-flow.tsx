@@ -37,11 +37,15 @@ import { PaymentSection } from './payment-section';
 import { downscaleToDataUrl } from './receipt-image';
 import { ShippingSection } from './shipping-section';
 
+// Haqiqiy DB mahsuloti = UUID. Mock/demo (p1..p12) yoki eskirgan savat elementlari emas.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function CheckoutFlow() {
   const router = useRouter();
   const t = useTranslations('checkout');
   const items = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
+  const removeItem = useCart((s) => s.removeItem);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
@@ -204,6 +208,15 @@ export function CheckoutFlow() {
     // Karta orqali to'lov — chek majburiy.
     if (payment === 'UZCARD' && !receipt) {
       toast({ title: t('payment.receiptRequired'), variant: 'warning' });
+      return;
+    }
+    // Eskirgan (mock/demo) savat elementlari — productId UUID emas. Bunday element
+    // serverda "Invalid uuid" beradi. Ularni jimgina olib tashlab, foydalanuvchini
+    // ogohlantiramiz (savatni yangilab qaytadan qo'shsin).
+    const staleItems = items.filter((it) => !UUID_RE.test(it.productId));
+    if (staleItems.length > 0) {
+      staleItems.forEach((it) => removeItem(it.id));
+      toast({ title: t('errors.staleItems'), variant: 'warning' });
       return;
     }
     setSubmitting(true);

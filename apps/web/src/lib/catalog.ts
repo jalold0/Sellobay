@@ -18,6 +18,13 @@ import { products as mockProducts, type LocalizedText, type MockProduct } from '
 export const CATALOG_CACHE_TAG = 'products';
 const CATALOG_REVALIDATE_SECONDS = 120;
 
+// Mock/demo mahsulotlar (p1..p12) faqat DEV fallback uchun — ular UUID emas va
+// slug'lari DB'dan farq qiladi. Production'da ularni ko'rsatish checkout'da
+// "Invalid uuid" va mahsulot sahifasida soxta 404 keltiradi. Shuning uchun
+// production'da mock BERILMAYDI: bo'sh DB → bo'sh ro'yxat, DB xatosi → yuqoriga
+// (error boundary retry), soxta ma'lumot emas.
+const ALLOW_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
+
 // ─── DB → MockProduct mapping ────────────────────────────────────
 
 const PICSUM_SEED_RE = /picsum\.photos\/seed\/([^/]+)\//;
@@ -159,15 +166,21 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
       relationLoadStrategy: 'join',
     });
 
-    // Filtersiz so'rov bo'sh qaytsa — DB hali seed qilinmagan, mock ko'rsatamiz
+    // Filtersiz so'rov bo'sh qaytsa — DB hali seed qilinmagan. DEV'da mock ko'rsatamiz,
+    // production'da bo'sh ro'yxat (soxta, sotib bo'lmaydigan mahsulotlar emas).
     if (rows.length === 0 && !category && !brand && !q) {
-      return { items: filterMock(query), source: 'mock' };
+      return ALLOW_MOCK_FALLBACK
+        ? { items: filterMock(query), source: 'mock' }
+        : { items: [], source: 'db' };
     }
 
     return { items: rows.map(toMockProduct), source: 'db' };
   } catch (err) {
-    console.error('[catalog] DB xato, mock fallback:', err);
-    return { items: filterMock(query), source: 'mock' };
+    console.error('[catalog] DB xato:', err);
+    // DEV'da mock fallback qulay; production'da xatoni yuqoriga uzatamiz (error
+    // boundary retry ko'rsatadi) — soxta mock ko'rsatib checkout'ni buzmaymiz.
+    if (ALLOW_MOCK_FALLBACK) return { items: filterMock(query), source: 'mock' };
+    throw err;
   }
 }
 
@@ -201,7 +214,11 @@ export async function fetchProductBySlug(slug: string): Promise<MockProduct | nu
     return row ? toMockProduct(row) : null;
   } catch (err) {
     console.error('[catalog] fetchProductBySlug DB xato:', err);
-    return null;
+    // MUHIM: DB xatosini "topilmadi" (null → 404) ga aylantirmaymiz. Aks holda
+    // transient Neon xatosida real mahsulot uchun ham soxta 404 chiqadi ("bazida").
+    // DEV'da null qaytaramiz (mock fallback ishlasin); production'da xatoni uzatamiz.
+    if (ALLOW_MOCK_FALLBACK) return null;
+    throw err;
   }
 }
 

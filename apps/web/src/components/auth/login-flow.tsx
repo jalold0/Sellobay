@@ -4,7 +4,7 @@ import { toast } from '@ecom/ui';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { SellobayMark } from '../brand/sellobay-mark';
@@ -71,7 +71,6 @@ export function LoginFlow() {
 }
 
 function PhoneOtpForm() {
-  const router = useRouter();
   const t = useTranslations('auth');
   const nextHref = useNextHref();
   const [stage, setStage] = React.useState<OtpStage>('phone');
@@ -118,8 +117,11 @@ function PhoneOtpForm() {
       return;
     }
     toast({ title: t('loginSuccess'), variant: 'success' });
-    router.push(nextHref);
-    router.refresh();
+    // Hard navigatsiya (SPA push emas): login httpOnly cookie'ni fetch orqali
+    // o'rnatadi; production build'da router.push eski prefetch/RSC keshdan
+    // (logout paytidagi /login redirect) o'qib, foydalanuvchini login'ga qaytaradi.
+    // To'liq hujjat so'rovi yangi cookie bilan ketadi va keshni chetlab o'tadi.
+    window.location.assign(nextHref);
   };
 
   return (

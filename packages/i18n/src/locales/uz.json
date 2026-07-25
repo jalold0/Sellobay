@@ -516,7 +516,8 @@
     "errors": {
       "required": "Majburiy maydonlarni to'ldiring",
       "network": "Tarmoq xatosi",
-      "failed": "Buyurtma yaratilmadi"
+      "failed": "Buyurtma yaratilmadi",
+      "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing."
     }
   },
   "auth": {

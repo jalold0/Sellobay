@@ -499,7 +499,8 @@
     "errors": {
       "required": "Please fill required fields",
       "network": "Network error",
-      "failed": "Order not created"
+      "failed": "Order not created",
+      "staleItems": "Some items in your cart are outdated and were removed. Please add them again."
     },
     "securePayment": "Secure payment",
     "summaryTitle": "Order · {count} items",

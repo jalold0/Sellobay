@@ -22,13 +22,23 @@ interface Props {
 export function StickyCartBar({ show, name, imageSrc, price, oldPrice, inStock, onAdd }: Props) {
   const t = useTranslations('product');
 
+  // Ko'ringanda balandligini global CSS-var'ga yozamiz — boshqa pastki fixed
+  // elementlar (ScrollToTop tugmasi) shuning ustiga chiqib, ustma-ust tushmasin.
+  React.useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--sticky-cta-h', show ? '4.5rem' : '0px');
+    return () => {
+      root.style.setProperty('--sticky-cta-h', '0px');
+    };
+  }, [show]);
+
   return (
     <div
       className={`bg-background/95 fixed inset-x-0 bottom-0 z-40 border-t backdrop-blur transition-transform duration-300 ${
         show ? 'translate-y-0' : 'translate-y-full'
       }`}
     >
-      <div className="container flex items-center gap-3 py-2.5">
+      <div className="container flex items-center gap-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         <div className="relative hidden h-12 w-12 shrink-0 overflow-hidden rounded-lg border sm:block">
           <Image src={imageSrc} alt={name} fill sizes="48px" className="object-cover" />
         </div>

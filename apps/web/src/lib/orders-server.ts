@@ -36,7 +36,9 @@ export class OrderError extends Error {
 }
 
 const itemSchema = z.object({
-  productId: z.string().uuid(),
+  // Mock/demo mahsulotlar UUID emas (p1..p12) — bunday eski savat elementi
+  // kelib qolsa, xom "Invalid uuid" emas, tushunarli xabar chiqsin.
+  productId: z.string().uuid('Savatda eskirgan mahsulot bor — sahifani yangilang'),
   quantity: z.number().int().positive().max(999),
   variantId: z.string().uuid().optional().nullable(),
 });
