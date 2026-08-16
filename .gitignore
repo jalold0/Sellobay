@@ -74,3 +74,6 @@ android/app/build/
 
 .vercel
 .env*
+
+# Lokal dizayn/tahlil arxivlari (root'dagi zip bundle'lar)
+/*.zip

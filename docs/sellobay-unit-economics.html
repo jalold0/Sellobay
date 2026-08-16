@@ -1,0 +1,449 @@
+<title>Sellobay — Unit Economics & Path to Profitability</title>
+<style>
+  :root {
+    --paper: #F8F6F6; --card: #FFFFFF; --ink: #1A1416; --muted: #6B5F63;
+    --hair: #E7DFE1; --hair-strong: #D8CCD0;
+    --wine: #7A1F3D; --wine-deep: #4A1224; --wine-soft: #F3E6EB;
+    --good: #1E7A54; --good-soft: #E6F2EC;
+    --watch: #B4650A; --watch-soft: #FAF0E2;
+    --bad: #B3261E; --bad-soft: #FBE9E7;
+    --fixed: #475569; --fixed-soft: #EDF0F4;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .wrap {
+    max-width: 1080px; margin: 0 auto; padding: 40px 24px 72px;
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wine); margin: 0 0 12px; }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 5vw, 46px); line-height: 1.05; letter-spacing: -0.01em; text-wrap: balance; margin: 0 0 14px; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 64ch; margin: 0; }
+  strong, em { font-style: normal; color: var(--wine); font-weight: 600; }
+
+  .context-strip { display: flex; flex-wrap: wrap; gap: 20px 36px; margin: 28px 0 0; padding: 20px 24px; background: var(--wine-deep); color: #F4E9ED; border-radius: 14px; }
+  .context-strip .ci { display: flex; flex-direction: column; gap: 2px; }
+  .context-strip .ci b { font-family: var(--serif); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .context-strip .ci span { font-size: 12.5px; color: #D9C1CA; letter-spacing: 0.02em; }
+
+  section { margin-top: 52px; }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: 25px; letter-spacing: -0.01em; margin: 0 0 6px; }
+  .section-note { color: var(--muted); font-size: 14.5px; margin: 0 0 22px; max-width: 66ch; }
+
+  .reco { margin-top: 40px; background: linear-gradient(158deg, var(--wine) 0%, var(--wine-deep) 100%); color: #F7ECF0; border-radius: 18px; padding: 30px 32px 32px; }
+  .reco .tag { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #E9B8C6; margin: 0 0 10px; }
+  .reco h2 { color: #FFFFFF; font-size: 27px; margin: 0 0 14px; }
+  .reco .why { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 14px 26px; margin-top: 20px; }
+  .reco .why div { font-size: 14px; color: #F0DCE3; padding-left: 16px; position: relative; }
+  .reco .why div::before { content: "→"; position: absolute; left: 0; color: #E9B8C6; }
+  .reco .why b { color: #fff; }
+
+  /* presets */
+  .presets { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .preset { text-align: left; cursor: pointer; background: var(--card); border: 1.5px solid var(--hair-strong); border-radius: 12px; padding: 12px 16px; font-family: var(--sans); flex: 1 1 200px; min-width: 180px; transition: border-color .15s, background .15s; }
+  .preset:hover { border-color: var(--wine); }
+  .preset:focus-visible { outline: 2px solid var(--wine); outline-offset: 2px; }
+  .preset.active { border-color: var(--wine); background: var(--wine-soft); }
+  .preset .pt { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+  .preset .pd { display: block; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+  .panel { background: var(--card); border: 1px solid var(--hair); border-radius: 16px; padding: 26px 26px 28px; box-shadow: 0 6px 22px -18px rgba(74,18,36,0.28); }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 18px 26px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12.5px; font-weight: 600; color: var(--ink); display: flex; justify-content: space-between; gap: 8px; }
+  .field label .unit { color: var(--muted); font-weight: 500; }
+  .field input, .field select { font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; padding: 9px 11px; border: 1px solid var(--hair-strong); border-radius: 9px; background: #FDFCFC; color: var(--ink); width: 100%; }
+  .field select { font-family: var(--sans); cursor: pointer; }
+  .field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--wine); outline-offset: 1px; border-color: var(--wine); }
+  .field .hint { font-size: 11.5px; color: var(--muted); }
+  .field.key input, .field.key select { border-color: var(--wine); background: var(--wine-soft); }
+
+  .btn-reset { font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--wine); background: var(--wine-soft); border: 1px solid transparent; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+  .btn-reset:hover { border-color: var(--wine); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 24px; }
+  .rc { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 18px 20px 20px; }
+  .rc .k { font-size: 12.5px; color: var(--muted); letter-spacing: 0.02em; margin: 0 0 8px; }
+  .rc .v { font-family: var(--serif); font-size: 29px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1; margin: 0; }
+  .rc .sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+  .rc.pos { background: var(--good-soft); border-color: #BFE0CD; } .rc.pos .v { color: var(--good); }
+  .rc.neg { background: var(--bad-soft); border-color: #F1C7C2; } .rc.neg .v { color: var(--bad); }
+
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--hair); border-radius: 14px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  th, td { padding: 13px 16px; text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1.5px solid var(--hair-strong); background: #FBFAFA; }
+  tbody td { border-bottom: 1px solid var(--hair); font-family: var(--sans); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.here { background: var(--wine-soft); }
+  tbody td.lbl { font-weight: 700; }
+  .verdict { font-family: var(--mono); font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 6px; }
+  .verdict.ok { background: var(--good-soft); color: var(--good); }
+  .verdict.no { background: var(--bad-soft); color: var(--bad); }
+  .verdict.mid { background: var(--watch-soft); color: var(--watch); }
+  .pos-num { color: var(--good); font-weight: 700; } .neg-num { color: var(--bad); font-weight: 700; }
+
+  .be { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; background: var(--card); border: 1px solid var(--hair); border-left: 4px solid var(--wine); border-radius: 0 14px 14px 0; padding: 22px 26px; }
+  .be .big { font-family: var(--serif); font-size: 40px; font-weight: 600; color: var(--wine); font-variant-numeric: tabular-nums; line-height: 1; }
+  .be .lbl { font-size: 14px; color: var(--muted); max-width: 46ch; }
+  .be .lbl b { color: var(--ink); }
+
+  .cats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .cat { border: 1px solid var(--hair); border-radius: 14px; padding: 18px 20px 20px; background: var(--card); }
+  .cat .tag { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 12px; }
+  .cat.good .tag { background: var(--good-soft); color: var(--good); }
+  .cat.watch .tag { background: var(--watch-soft); color: var(--watch); }
+  .cat.fixed .tag { background: var(--fixed-soft); color: var(--fixed); }
+  .cat .tag .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .cat.good .tag .dot { background: var(--good); } .cat.watch .tag .dot { background: var(--watch); } .cat.fixed .tag .dot { background: var(--fixed); }
+  .cat p.desc { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
+  .cat ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; }
+  .cat li { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; border-top: 1px solid var(--hair); padding-top: 7px; }
+  .cat li:first-child { border-top: none; padding-top: 0; }
+  .cat li .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  .callout { border-left: 3px solid var(--watch); background: var(--watch-soft); border-radius: 0 12px 12px 0; padding: 18px 22px; }
+  .callout h3 { margin: 0 0 8px; font-size: 15px; }
+  .callout p { margin: 0 0 10px; font-size: 14px; color: #5a4632; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-size: 12.5px; background: #fff; border: 1px solid #E7D3B8; color: #7a5a2c; padding: 4px 10px; border-radius: 999px; }
+
+  .takes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .take { background: var(--card); border: 1px solid var(--hair); border-radius: 14px; padding: 18px 20px; }
+  .take .n { font-family: var(--serif); font-size: 15px; font-weight: 600; color: var(--wine); margin: 0 0 6px; }
+  .take p { margin: 0; font-size: 14px; } .take p b { color: var(--wine-deep); }
+
+  footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--hair); font-size: 12.5px; color: var(--muted); }
+  footer a { color: var(--wine); text-decoration: none; } footer a:hover { text-decoration: underline; }
+  footer .src { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; }
+
+  @media (max-width: 560px) { .wrap { padding: 28px 16px 56px; } .rc .v { font-size: 25px; } .be .big { font-size: 32px; } }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Sellobay · Unit Economics → Foydaga chiqish yo'li</p>
+  <h1>Xitoydan 1P bilan boshlash → marketplace'ga o'sish</h1>
+  <p class="lede">Boshlang'ich reja: <strong>o'zingiz birinchi sotuvchi</strong> — Xitoydan to'g'ridan-to'g'ri sotasiz (1P), butun chakana marjani olasiz. Bu supply muammosini hal qiladi va break-even'ni keskin pasaytiradi. Keyin 3-tomon sotuvchilar (3P) qo'shilib masshtablanadi. Preset tugmalar bilan har rejimni sinang.</p>
+
+  <div class="context-strip">
+    <div class="ci"><b id="cx-be">—</b><span>Break-even (joriy rejim)</span></div>
+    <div class="ci"><b id="cx-margin">—</b><span>Marja / buyurtma (CAC'dan keyin)</span></div>
+    <div class="ci"><b>~55%</b><span>1P mahsulot marjasi (Xitoy)</span></div>
+    <div class="ci"><b>~$700M</b><span>O'zbekiston e-com bozori</span></div>
+  </div>
+
+  <div class="reco">
+    <p class="tag">Tavsiya etilgan strategiya</p>
+    <h2>1P bilan bootstrap → traction → 3P bilan masshtab</h2>
+    <p style="margin:0;color:#F0DCE3;max-width:72ch;font-size:15px;">2 kishilik jamoa (siz + 1 yordamchi), o'zingiz Xitoydan sotasiz. Yetkazishni <b style="color:#fff">xaridor</b> to'laydi. Bu bosqichda break-even <b style="color:#fff">~100 buyurtma/oy</b> atrofida — real maqsad. Traction'ni ko'rsatib, keyin investitsiya bilan 3P sotuvchilar va jamoani kengaytirasiz.</p>
+    <div class="why">
+      <div><b>1P = to'liq marja.</b> Komissiya (~10%) emas, chakana marja (~55%) olasiz → buyurtmaga marja ~10× katta.</div>
+      <div><b>Supply muammosi yo'q.</b> O'zingiz sotuvchisiz → 1-kundan mahsulot bor, "tovuq-tuxum" muammosi hal.</div>
+      <div><b>Kapital-yengil jamoa.</b> 2 kishi → past fiks burn → past break-even.</div>
+      <div><b>Keyin 3P.</b> Traction'dan keyin sotuvchilar qo'shiladi → zaxira riskisiz masshtab (Amazon/Uzum yo'li).</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>1 · Stsenariy tanlang</h2>
+    <p class="section-note">Preset tugma bosing yoki taxminlarni qo'lda o'zgartiring. "Rejim" — 1P (o'zingiz sotasiz) yoki 3P (marketplace komissiyasi).</p>
+    <div class="presets" id="presets"></div>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <strong style="font-size:14px;">Taxminlar</strong>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">1P rejimda "Xitoy tannarxi", 3P rejimda "komissiya" ishlatiladi</div>
+        </div>
+        <button class="btn-reset" id="reset" type="button">↺ Standart</button>
+      </div>
+      <div class="grid" id="inputs"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · Joriy stsenariy — oylik natija</h2>
+    <p class="section-note" id="res-note"></p>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section>
+    <h2>3 · Foydaga chiqish nuqtasi (break-even)</h2>
+    <div class="be">
+      <div class="big" id="beBig">—</div>
+      <div class="lbl" id="beLbl"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4 · O'sish stsenariylari</h2>
+    <p class="section-note">Bir xil taxminlar, turli hajm. Sof foyda/zarar hajm bilan qanday o'zgarishini ko'rsatadi.</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr>
+          <th>Buyurtma / oy</th><th id="th-rev">Daromad</th><th>O'zgaruvchan</th><th>CAC</th><th>Fiks</th><th>Sof foyda / zarar</th>
+        </tr></thead>
+        <tbody id="scenarios"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>5 · Yetkazishni kim to'laydi</h2>
+    <p class="section-note">Bitta buyurtma bo'yicha platforma marjasi. Platforma yetkazishni qoplasa marja keskin tushadi.</p>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Model</th><th>Platforma marjasi / buyurtma</th><th>Baho</th></tr></thead>
+        <tbody id="compare"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>6 · Xarajat tabiati (oylik so'm)</h2>
+    <div class="cats">
+      <div class="cat good"><span class="tag"><span class="dot"></span>Savdoga bog'liq</span><p class="desc">Faqat sotganda to'lanadi.</p><ul id="cat-good"></ul></div>
+      <div class="cat watch"><span class="tag"><span class="dot"></span>O'sish investitsiyasi</span><p class="desc">Mijoz jalb + yetkazish (agar platforma).</p><ul id="cat-watch"></ul></div>
+      <div class="cat fixed"><span class="tag"><span class="dot"></span>Fiks</span><p class="desc">Hajmdan mustaqil.</p><ul id="cat-fixed"></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>7 · Model nimani hisobga OLMAYDI</h2>
+    <div class="callout">
+      <h3>1P rejimda diqqat qiling</h3>
+      <p>1P (o'zingiz sotish) uchun <b>aylanma kapital</b> kerak — zaxira uchun Xitoyга oldindan to'laysiz, pul mahsulotда "muzlaydi". Bu balans hisobi (per-buyurtma emas). Quyidagilar ham modeldan tashqarida:</p>
+      <div class="chips">
+        <span class="chip">Aylanma kapital / zaxira riski</span>
+        <span class="chip">Qaytarish / brak</span>
+        <span class="chip">Bojxona / import soliq</span>
+        <span class="chip">Qadoqlash</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>8 · Investor uchun xulosalar</h2>
+    <div class="takes">
+      <div class="take"><p class="n">1P bootstrap = past break-even</p><p>O'zingiz Xitoydan sotib to'liq marjani olasiz → <b>~100 buyurtma/oy</b> da foyda. Real, isbotlanadigan maqsad.</p></div>
+      <div class="take"><p class="n">Supply muammosini yechadi</p><p>1-kundan mahsulot bor. "Tovuq-tuxum" (sotuvchi vs xaridor) <b>muammosi yo'q.</b></p></div>
+      <div class="take"><p class="n">Kapital-yengil masshtab</p><p>Traction'dan keyin 3P sotuvchilar → <b>zaxira riskisiz</b> o'sish. Investitsiya CAC + jamoaga.</p></div>
+      <div class="take"><p class="n">Differensiatorlar iqtisodni kuchaytiradi</p><p><b>Sello Coins</b> → LTV↑ · <b>Group Buy / Wishlist</b> → CAC↓. Feature'lar unit-ekonomikani yaxshilaydi.</p></div>
+      <div class="take"><p class="n">Katta o'suvchi bozor</p><p>$700M, ~45% CAGR. Kirish uchun vaqt qulay.</p></div>
+      <div class="take"><p class="n">FX + aylanma kapital riski</p><p>Xitoy xaridi valyutada; zaxira uchun kapital kerak — investitsiya shu yerga.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Taxminlarga asoslangan tahminiy model — investor muhokamasi uchun boshlang'ich, auditorlik hisobi emas. Narx/FX 2026-yil o'rtasiga ko'ra.</div>
+    <div class="src">
+      <span>Manbalar:</span>
+      <a href="https://uzneo.uz/en/blog/payme-click-uzum-podklyuchit-oplatu" target="_blank" rel="noopener">Click/Payme</a>
+      <a href="https://101digital.uz/en/blog/how-to-sell-on-uzum-market-2026/" target="_blank" rel="noopener">Uzum take-rate</a>
+      <a href="https://developers.cloudflare.com/r2/pricing/" target="_blank" rel="noopener">Cloudflare R2</a>
+      <a href="https://neon.com/pricing" target="_blank" rel="noopener">Neon</a>
+      <a href="https://eskiz.uz/uz/sms" target="_blank" rel="noopener">Eskiz SMS</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+  "use strict";
+
+  var DEFS = [
+    { key: "mode",        label: "Rejim",                  unit: "", def: "1p", cls: "key", select: [["1p","1P — o'zingiz sotasiz (Xitoy)"],["3p","3P — marketplace komissiya"]] },
+    { key: "orders",      label: "Buyurtma / oy",          unit: "dona", def: 300,     hint: "Joriy hajm" },
+    { key: "aov",         label: "O'rtacha savat (AOV)",   unit: "so'm", def: 250000,  hint: "Sotuv narxi" },
+    { key: "cogsPct",     label: "Xitoy tannarxi (COGS)",  unit: "% AOV", def: 45, cls: "key", hint: "1P: yetkazib kelingan tannarx" },
+    { key: "take",        label: "Komissiya (3P)",         unit: "%",    def: 10,      hint: "3P rejimda" },
+    { key: "payer",       label: "Yetkazishni kim to'laydi", unit: "", def: "buyer", select: [["buyer","Xaridor (tavsiya)"],["seller","Sotuvchi"],["platform","Platforma"]] },
+    { key: "delivery",    label: "Yetkazish narxi",        unit: "so'm", def: 25000,   hint: "Toshkent kuryer" },
+    { key: "onlineShare", label: "Online to'lov ulushi",   unit: "%",    def: 40,      hint: "Qolgani COD" },
+    { key: "payFee",      label: "To'lov komissiyasi",     unit: "%",    def: 1.5,     hint: "Click/Payme" },
+    { key: "smsPer",      label: "SMS / buyurtma",         unit: "dona", def: 2,       hint: "" },
+    { key: "smsCost",     label: "SMS narxi",              unit: "so'm", def: 95,      hint: "Eskiz" },
+    { key: "cac",         label: "Mijoz jalb narxi (CAC)", unit: "so'm", def: 30000,   hint: "1 yangi mijoz" },
+    { key: "ltvOrders",   label: "Buyurtma / mijoz (umr)", unit: "dona", def: 5,       hint: "Takroriy xarid" },
+    { key: "opex",        label: "Fiks operatsiya",        unit: "mln so'm/oy", def: 10, cls: "key", hint: "2 kishi: siz + yordamchi" },
+    { key: "computeK",    label: "Compute / 1000 buyurtma",unit: "$",    def: 4,       hint: "Vercel+Neon" },
+    { key: "vercelSeat",  label: "Vercel Pro",             unit: "$/oy", def: 20,      hint: "" },
+    { key: "fx",          label: "Kurs (so'm / $)",        unit: "so'm", def: 12700,   hint: "2026 o'rtasi" }
+  ];
+
+  var PRESETS = [
+    { id: "bootstrap", title: "Bootstrap · 1P Xitoy", desc: "Hozirgi reja: 2 kishi, o'zingiz sotasiz",
+      vals: { mode: "1p", orders: 300, cogsPct: 45, opex: 10, cac: 30000, ltvOrders: 5, payer: "buyer" } },
+    { id: "lean3p", title: "Lean marketplace · 3P", desc: "Sotuvchilar qo'shildi, jamoa yengil",
+      vals: { mode: "3p", orders: 1500, take: 10, opex: 15, cac: 30000, ltvOrders: 5, payer: "buyer" } },
+    { id: "scale", title: "O'sish · jamoa + 3P", desc: "Investitsiyadan keyin, maoshli jamoa",
+      vals: { mode: "3p", orders: 5000, take: 10, opex: 40, cac: 50000, ltvOrders: 4, payer: "buyer" } }
+  ];
+
+  var state = {};
+  DEFS.forEach(function (d) { state[d.key] = d.def; });
+
+  // preset buttons
+  var presetsEl = document.getElementById("presets");
+  PRESETS.forEach(function (p) {
+    var b = document.createElement("button");
+    b.className = "preset"; b.type = "button"; b.dataset.id = p.id;
+    b.innerHTML = '<span class="pt">' + p.title + '</span><span class="pd">' + p.desc + '</span>';
+    b.addEventListener("click", function () { applyPreset(p); });
+    presetsEl.appendChild(b);
+  });
+  function applyPreset(p) {
+    Object.keys(p.vals).forEach(function (k) {
+      state[k] = p.vals[k];
+      var el = document.getElementById("in-" + k);
+      if (el) el.value = p.vals[k];
+    });
+    Array.prototype.forEach.call(presetsEl.children, function (c) {
+      c.className = "preset" + (c.dataset.id === p.id ? " active" : "");
+    });
+    render();
+  }
+
+  var inputsEl = document.getElementById("inputs");
+  DEFS.forEach(function (d) {
+    var f = document.createElement("div");
+    f.className = "field" + (d.cls ? " " + d.cls : "");
+    var control;
+    if (d.select) {
+      control = '<select id="in-' + d.key + '">' + d.select.map(function (o) {
+        return '<option value="' + o[0] + '"' + (o[0] === d.def ? " selected" : "") + '>' + o[1] + '</option>';
+      }).join("") + '</select>';
+    } else {
+      control = '<input type="number" step="any" min="0" id="in-' + d.key + '" value="' + d.def + '">';
+    }
+    f.innerHTML = '<label>' + d.label + (d.unit ? ' <span class="unit">' + d.unit + '</span>' : '') + '</label>' + control + (d.hint ? '<span class="hint">' + d.hint + '</span>' : '');
+    inputsEl.appendChild(f);
+    var el = f.querySelector(d.select ? "select" : "input");
+    el.addEventListener(d.select ? "change" : "input", function (e) {
+      if (d.select) state[d.key] = e.target.value;
+      else { var v = parseFloat(e.target.value); state[d.key] = isNaN(v) ? 0 : v; }
+      clearPresetActive();
+      render();
+    });
+  });
+  function clearPresetActive() { Array.prototype.forEach.call(presetsEl.children, function (c) { c.className = "preset"; }); }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    DEFS.forEach(function (d) { state[d.key] = d.def; document.getElementById("in-" + d.key).value = d.def; });
+    clearPresetActive();
+    render();
+  });
+
+  function perOrder(s) {
+    var fx = s.fx > 0 ? s.fx : 1;
+    var commission = s.aov * s.take / 100;
+    var cogsPer = s.mode === "1p" ? s.aov * s.cogsPct / 100 : 0;
+    var revPer = s.mode === "1p" ? s.aov : commission;
+    var payPer = s.aov * (s.onlineShare / 100) * (s.payFee / 100);
+    var smsP = s.smsPer * s.smsCost;
+    var computeP = (s.computeK / 1000) * fx;
+    var cacP = s.ltvOrders > 0 ? s.cac / s.ltvOrders : 0;
+    return { fx: fx, commission: commission, cogsPer: cogsPer, revPer: revPer, payPer: payPer, smsP: smsP, computeP: computeP, cacP: cacP };
+  }
+
+  function compute(orders, s) {
+    var po = perOrder(s);
+    var platDelivPer = (s.payer === "platform") ? s.delivery : 0;
+    var revSom = orders * po.revPer;
+    var cogsSom = orders * po.cogsPer;
+    var paySom = orders * po.payPer;
+    var smsSom = orders * po.smsP;
+    var computeSom = orders * po.computeP;
+    var storageGB = Math.ceil(orders / 40) * 20 * 4 * 0.3 / 1024;
+    var storageSom = Math.max(0, storageGB - 10) * 0.015 * po.fx;
+    var platDelivSom = orders * platDelivPer;
+    var cacSom = orders * po.cacP;
+    var fixedInfraSom = (s.vercelSeat + 1) * po.fx;
+    var opexSom = s.opex * 1e6;
+    var variableSom = cogsSom + paySom + smsSom + computeSom + storageSom + platDelivSom;
+    var grossSom = revSom - variableSom;
+    var netSom = grossSom - cacSom - opexSom - fixedInfraSom;
+    var mPer = po.revPer - po.cogsPer - po.payPer - po.smsP - po.computeP - platDelivPer - po.cacP;
+    var fixedSom = opexSom + fixedInfraSom;
+    var beOrders = mPer > 0 ? Math.ceil(fixedSom / mPer) : Infinity;
+    return { orders: orders, revSom: revSom, revUsd: revSom / po.fx, cogsSom: cogsSom, paySom: paySom, smsSom: smsSom,
+      computeSom: computeSom, storageSom: storageSom, platDelivSom: platDelivSom, cacSom: cacSom, opexSom: opexSom,
+      fixedInfraSom: fixedInfraSom, variableSom: variableSom, grossSom: grossSom, netSom: netSom, netUsd: netSom / po.fx,
+      mPer: mPer, beOrders: beOrders };
+  }
+
+  function platMargin(s, payer) {
+    var po = perOrder(s);
+    var deliv = (payer === "platform") ? s.delivery : 0;
+    return po.revPer - po.cogsPer - po.payPer - po.smsP - po.computeP - deliv;
+  }
+
+  function usd(n) { var neg = n < 0; n = Math.abs(n); var out = n >= 1000 ? "$" + Math.round(n).toLocaleString("en-US") : (n >= 100 ? "$" + n.toFixed(0) : "$" + n.toFixed(n < 10 ? 2 : 1)); return (neg ? "−" : "") + out; }
+  function somShort(n) { var neg = n < 0; n = Math.abs(n); var out; if (n >= 1e9) out = (n / 1e9).toFixed(2) + " mlrd"; else if (n >= 1e6) out = (n / 1e6).toFixed(1) + " mln"; else if (n >= 1e3) out = Math.round(n / 1e3) + " ming"; else out = Math.round(n).toString(); return (neg ? "−" : "") + out + " so'm"; }
+  function somExact(n) { var neg = n < 0; return (neg ? "−" : "") + Math.round(Math.abs(n)).toLocaleString("ru-RU") + " so'm"; }
+
+  function render() {
+    var s = state;
+    var is1p = s.mode === "1p";
+    var r = compute(s.orders, s);
+
+    document.getElementById("cx-be").textContent = r.beOrders === Infinity ? "∞" : r.beOrders.toLocaleString("en-US") + "/oy";
+    document.getElementById("cx-margin").textContent = somExact(r.mPer);
+    document.getElementById("th-rev").textContent = is1p ? "Sotuv tushumi" : "Komissiya";
+    document.getElementById("res-note").textContent = is1p
+      ? "1P rejim: siz Xitoydan sotasiz. Daromad = to'liq sotuv narxi; Xitoy tannarxi (COGS) o'zgaruvchan xarajatда."
+      : "3P rejim: marketplace. Daromad = faqat komissiya; mahsulot tannarxi sotuvchida.";
+
+    var netCls = r.netSom >= 0 ? "pos" : "neg";
+    document.getElementById("cards").innerHTML =
+      card(is1p ? "Sotuv tushumi (1P)" : "Komissiya daromadi (3P)", somShort(r.revSom), usd(r.revUsd)) +
+      card("O'zgaruvchan xarajat", somShort(r.variableSom), is1p ? "COGS ichida" : "yengil") +
+      card("Mijoz jalb (CAC)", somShort(r.cacSom), "CAC/buyurtma " + somShort(s.ltvOrders > 0 ? s.cac / s.ltvOrders : 0)) +
+      card("Fiks (jamoa+infra)", somShort(r.opexSom + r.fixedInfraSom), "hajmdan mustaqil") +
+      cardCls("Sof foyda / zarar (oylik)", somShort(r.netSom), usd(r.netUsd) + (r.netSom >= 0 ? " foyda" : " zarar"), netCls);
+
+    var beBig = document.getElementById("beBig"), beLbl = document.getElementById("beLbl");
+    if (r.beOrders === Infinity) {
+      beBig.textContent = "∞"; beBig.style.color = "var(--bad)";
+      beLbl.innerHTML = "Buyurtmaga marja <b>manfiy</b> (" + somExact(r.mPer) + "). Yetkazish to'lovchisini, komissiyani yoki Xitoy tannarxini o'zgartiring.";
+    } else {
+      beBig.textContent = r.beOrders.toLocaleString("en-US"); beBig.style.color = "var(--wine)";
+      var status = s.orders >= r.beOrders
+        ? "Joriy hajm (" + Math.round(s.orders).toLocaleString("en-US") + ") <b style='color:var(--good)'>foydada</b> ✓"
+        : "Joriy hajm (" + Math.round(s.orders).toLocaleString("en-US") + ") hali <b style='color:var(--bad)'>zararda</b>.";
+      beLbl.innerHTML = "buyurtma / oy kerak (marja " + somExact(r.mPer) + "/buyurtma, CAC'dan keyin). " + status;
+    }
+
+    var goodRows = row("To'lov komissiyasi", somShort(r.paySom)) + row("SMS", somShort(r.smsSom));
+    if (is1p) goodRows = row("Xitoy tannarxi (COGS)", somShort(r.cogsSom)) + goodRows;
+    document.getElementById("cat-good").innerHTML = goodRows;
+    document.getElementById("cat-watch").innerHTML = row("Mijoz jalb (CAC)", somShort(r.cacSom)) + row("Yetkazish" + (s.payer === "platform" ? " (platforma)" : " (o'tkazma)"), somShort(r.platDelivSom));
+    document.getElementById("cat-fixed").innerHTML = row("Jamoa / operatsiya", somShort(r.opexSom)) + row("Infra", somShort(r.computeSom + r.fixedInfraSom + r.storageSom));
+
+    var tiers = [100, 300, 1000, 3000, 10000];
+    document.getElementById("scenarios").innerHTML = tiers.map(function (o) {
+      var x = compute(o, s);
+      var here = (o === Math.round(s.orders)) ? ' class="here"' : "";
+      return "<tr" + here + '><td class="lbl" style="font-family:var(--mono)">' + o.toLocaleString("en-US") + "</td>" +
+        "<td>" + somShort(x.revSom) + "</td><td>" + somShort(x.variableSom) + "</td><td>" + somShort(x.cacSom) + "</td>" +
+        "<td>" + somShort(x.opexSom + x.fixedInfraSom) + '</td><td class="' + (x.netSom >= 0 ? "pos-num" : "neg-num") + '">' + somShort(x.netSom) + "</td></tr>";
+    }).join("");
+
+    var payers = [["buyer", "Xaridor to'laydi"], ["seller", "Sotuvchi to'laydi"], ["platform", "Platforma to'laydi"]];
+    document.getElementById("compare").innerHTML = payers.map(function (p) {
+      var m = platMargin(s, p[0]);
+      var here = (p[0] === s.payer) ? ' class="here"' : "";
+      var verdict = p[0] === "platform" ? (m < 0 ? '<span class="verdict no">Zarar</span>' : '<span class="verdict mid">Zaif</span>') : '<span class="verdict ok">Sog\'lom</span>';
+      return "<tr" + here + '><td class="lbl">' + p[1] + '</td><td class="' + (m < 0 ? "neg-num" : "pos-num") + '">' + somExact(m) + "</td><td>" + verdict + "</td></tr>";
+    }).join("");
+  }
+
+  function card(k, v, sub) { return '<div class="rc"><p class="k">' + k + '</p><p class="v">' + v + '</p><p class="sub">' + sub + "</p></div>"; }
+  function cardCls(k, v, sub, cls) { return '<div class="rc ' + cls + '"><p class="k">' + k + '</p><p class="v">' + v + '</p><p class="sub">' + sub + "</p></div>"; }
+  function row(label, amt) { return "<li><span>" + label + '</span><span class="amt">' + amt + "</span></li>"; }
+
+  render();
+</script>
