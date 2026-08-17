@@ -987,5 +987,73 @@
     "descFreeShip": "Bepul yetkazib berish",
     "minOrder": "{amount} so'mdan buyurtmaga",
     "minOrderShort": "{amount} so'mdan"
+  },
+  "global": {
+    "metaTitle": "Global — Xitoydan buyurtma | Sellobay",
+    "metaDescription": "Taobao, Tmall yoki 1688 havolasini yuboring — narxni hisoblab beramiz va Xitoydan olib kelamiz.",
+    "badge": "Sellobay Global",
+    "title": "Xitoydagi istalgan tovarni havola orqali buyurtma qiling",
+    "subtitle": "Taobao, Tmall, 1688 yoki Weidian havolasini tashlang. Biz yakuniy narxni — yetkazish, bojxona va barcha xarajatlar bilan — hisoblab beramiz.",
+    "step1Title": "Havolani yuboring",
+    "step1Desc": "Tovar sahifasining havolasini nusxalab, shu yerga tashlang.",
+    "step2Title": "Narxni oling",
+    "step2Desc": "Operatorimiz og‘irlik va yukni hisoblab, yakuniy narxni 24 soat ichida taklif qiladi.",
+    "step3Title": "To‘lang va kuting",
+    "step3Desc": "Taklifni qabul qilsangiz, biz Xitoydan zakaz qilamiz va sizga yetkazamiz.",
+    "mode": {
+      "AUTO": "Avto",
+      "AUTOHint": "Arzon · 15-17 kun",
+      "AVIA": "Avia",
+      "AVIAHint": "Tez · 5-7 kun"
+    },
+    "status": {
+      "NEW": "Yangi",
+      "IN_REVIEW": "Tekshirilmoqda",
+      "QUOTED": "Narx taklif qilindi",
+      "ACCEPTED": "Qabul qilindi",
+      "REJECTED": "Rad etildi",
+      "UNAVAILABLE": "Tovar yo‘q",
+      "ORDERED": "Buyurtma berildi",
+      "CANCELLED": "Bekor qilindi",
+      "EXPIRED": "Muddati tugadi"
+    },
+    "form": {
+      "title": "Yangi so‘rov",
+      "urlLabel": "Tovar havolasi",
+      "urlPlaceholder": "https://item.taobao.com/item.htm?id=...",
+      "urlHint": "Taobao, Tmall, 1688 va Weidian havolalari qabul qilinadi.",
+      "shortLinkNotice": "Qisqa havola — tovarni operator ochib aniqlaydi, bu biroz ko‘proq vaqt oladi.",
+      "qtyLabel": "Soni",
+      "modeLabel": "Yetkazish usuli",
+      "variantLabel": "Rang / o‘lcham (ixtiyoriy)",
+      "variantPlaceholder": "Masalan: qora, 42-o‘lcham",
+      "noteLabel": "Izoh (ixtiyoriy)",
+      "notePlaceholder": "Qo‘shimcha talab yoki savolingiz",
+      "submit": "Narx so‘rash",
+      "createdNotice": "So‘rovingiz qabul qilindi — narxni tayyorlab, xabar beramiz.",
+      "duplicateNotice": "Bu tovar bo‘yicha ochiq so‘rovingiz allaqachon bor.",
+      "error": {
+        "invalidUrl": "Havola noto‘g‘ri — to‘liq manzilni nusxalab qo‘ying.",
+        "unsupportedHost": "Hozircha faqat Taobao, Tmall, 1688 va Weidian havolalari qabul qilinadi.",
+        "noItemId": "Bu havolada tovar topilmadi — mahsulot sahifasining havolasini yuboring.",
+        "generic": "So‘rovni yuborib bo‘lmadi. Birozdan keyin urinib ko‘ring.",
+        "network": "Aloqa uzildi. Internetni tekshirib, qayta urinib ko‘ring."
+      }
+    },
+    "list": {
+      "title": "Mening so‘rovlarim",
+      "loading": "Yuklanmoqda...",
+      "emptyTitle": "Hali so‘rov yo‘q",
+      "emptyDesc": "Yuqoridagi formaga Xitoy do‘konidan havola tashlang — narxini hisoblab beramiz.",
+      "qty": "{qty} dona",
+      "perUnit": "donasi {price}",
+      "day": "kun",
+      "accept": "Qabul qilaman",
+      "reject": "Rad etaman",
+      "expiresIn": "Taklif {hours} soatda tugaydi",
+      "acceptedNotice": "Taklif qabul qilindi — to‘lov uchun tez orada bog‘lanamiz.",
+      "error": "Amalni bajarib bo‘lmadi. Qayta urinib ko‘ring.",
+      "loginRequired": "So‘rovlaringizni ko‘rish uchun tizimga kiring."
+    }
   }
 }

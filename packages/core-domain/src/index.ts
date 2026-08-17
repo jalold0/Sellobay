@@ -2,5 +2,6 @@
 // Web (apps/web) va mobil (apps/mobile) UCHUN yagona haqiqat manbai.
 export * from './pricing.ts';
 export * from './global-pricing.ts';
+export * from './sourcing-link.ts';
 export * from './loyalty.ts';
 export * from './zone.ts';
