@@ -73,7 +73,11 @@ describe('priceGlobalItem', () => {
       roundToUzs: 0,
     };
     // tovar: 70 CNY / 7 = 10 USD; yuk: 1 kg × 6.0 = 6 USD → 16 USD × 12 000 = 192 000
-    const r = priceGlobalItem({ ...baseItem, priceCny: 70, weightKg: 1 }, cfg);
+    // og'irlik o'lchangan deb belgilanadi — zaxira aralashmasin
+    const r = priceGlobalItem(
+      { ...baseItem, priceCny: 70, weightKg: 1, weightIsEstimated: false },
+      cfg,
+    );
     expect(r.costs.goodsUsd).toBe(10);
     expect(r.costs.freightUsd).toBe(6);
     expect(r.totalUzs).toBe(192_000);
@@ -91,7 +95,10 @@ describe('priceGlobalItem', () => {
       paymentFeePct: 0.02,
       roundToUzs: 0,
     };
-    const r = priceGlobalItem({ ...baseItem, priceCny: 70, weightKg: 1 }, cfg);
+    const r = priceGlobalItem(
+      { ...baseItem, priceCny: 70, weightKg: 1, weightIsEstimated: false },
+      cfg,
+    );
     // 192 000 / 0.98 = 195 918.36… (butun so‘mgacha yuqoriga yaxlitlanadi)
     expect(r.totalUzs).toBe(Math.ceil(192_000 / 0.98));
     // komissiya ushlangach qo‘limizda tannarx qoladi (yaxlitlash foydamizga, 1 so‘mdan kam)
@@ -146,6 +153,64 @@ describe('priceGlobalItem', () => {
   it('boj 0 bo‘lsa bojxona qiymati ham 0', () => {
     const r = priceGlobalItem(baseItem, { ...DEFAULT_GLOBAL_CONFIG, customsPct: 0 });
     expect(r.costs.customsUsd).toBe(0);
+  });
+});
+
+describe('priceGlobalItem — og‘irlik zaxirasi', () => {
+  it('taxminiy og‘irlikda zaxira qo‘shiladi, o‘lchanganida qo‘shilmaydi', () => {
+    const estimated = priceGlobalItem({ ...baseItem, weightKg: 2, weightIsEstimated: true });
+    const measured = priceGlobalItem({ ...baseItem, weightKg: 2, weightIsEstimated: false });
+    expect(measured.chargeableKg).toBe(2);
+    // 2 kg + 10% = 2.2 → kargo qadamiga yaxlitlanib 2.5
+    expect(estimated.chargeableKg).toBe(2.5);
+    expect(estimated.totalUzs).toBeGreaterThan(measured.totalUzs);
+  });
+
+  it('standart — og‘irlik taxminiy deb qabul qilinadi (ehtiyotkorlik tomonga)', () => {
+    const r = priceGlobalItem({ ...baseItem, weightKg: 2 });
+    expect(r.weightIsEstimated).toBe(true);
+    expect(r.chargeableKg).toBeGreaterThan(r.baseChargeableKg);
+  });
+
+  it('baseChargeableKg zaxirasiz qiymatni saqlaydi', () => {
+    const r = priceGlobalItem({ ...baseItem, weightKg: 2, weightIsEstimated: true });
+    expect(r.baseChargeableKg).toBe(2);
+  });
+
+  it('zaxira 0 bo‘lsa taxminiy og‘irlik ham oshmaydi', () => {
+    const r = priceGlobalItem(
+      { ...baseItem, weightKg: 2, weightIsEstimated: true },
+      { ...DEFAULT_GLOBAL_CONFIG, weightRiskPct: 0 },
+    );
+    expect(r.chargeableKg).toBe(2);
+  });
+});
+
+describe('chargeableKgFor — kargo yaxlitlashi va zaxira tartibi', () => {
+  it('og‘irlik kargo qadamiga yuqoriga yaxlitlanadi', () => {
+    // 1.2 kg → 1.5 kg
+    expect(chargeableKgFor({ ...baseItem, weightKg: 1.2 }, FREIGHT.AUTO)).toBe(1.5);
+    // 0.35 kg → minimal 0.5
+    expect(chargeableKgFor({ ...baseItem, weightKg: 0.35 }, FREIGHT.AUTO)).toBe(0.5);
+  });
+
+  it('yengil tovarda zaxira minimal og‘irlik ichida yutiladi (1 kg ga sakramaydi)', () => {
+    // 0.35 × 1.1 = 0.385 → minimal 0.5 → 0.5. Zaxira minimaldan KEYIN qo'llanganda 1 kg bo'lardi.
+    expect(chargeableKgFor({ ...baseItem, weightKg: 0.35 }, FREIGHT.AUTO, 0.1)).toBe(0.5);
+  });
+
+  it('minimaldan yuqorida zaxira haqiqatan ta‘sir qiladi', () => {
+    // 1.3 × 1.1 = 1.43 → 1.5
+    expect(chargeableKgFor({ ...baseItem, weightKg: 1.3 }, FREIGHT.AUTO, 0.1)).toBe(1.5);
+    // zaxirasiz: 1.3 → 1.5 ham bo'ladi, shuning uchun kattaroq misol:
+    expect(chargeableKgFor({ ...baseItem, weightKg: 2.4 }, FREIGHT.AUTO)).toBe(2.5);
+    expect(chargeableKgFor({ ...baseItem, weightKg: 2.4 }, FREIGHT.AUTO, 0.1)).toBe(3);
+  });
+
+  it('o‘lchangan og‘irlikda zaxira qo‘llanmaydi', () => {
+    expect(
+      chargeableKgFor({ ...baseItem, weightKg: 2.4, weightIsEstimated: false }, FREIGHT.AUTO, 0.1),
+    ).toBe(2.5);
   });
 });
 

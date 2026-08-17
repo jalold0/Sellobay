@@ -20,6 +20,8 @@ export interface FreightTariff {
   seriesMinQty?: number;
   /** Hisob-kitobga olinadigan minimal og'irlik (kg) — kargo yaxlitlashi. */
   minChargeableKg: number;
+  /** Kargo og'irlikni shu qadamgacha YUQORIGA yaxlitlaydi (kg). */
+  roundStepKg: number;
   /** Hajmiy og'irlik bo'luvchisi: (uz×en×bal sm) / divisor = kg. */
   volumetricDivisor: number;
   /** Yetkazish muddati (kun): [min, max] — mijozga ko'rsatiladi. */
@@ -36,6 +38,7 @@ export const FREIGHT: Record<FreightMode, FreightTariff> = {
     seriesUsdPerKg: 5.8, // kelishuv bilan tushirish imkoni bor
     seriesMinQty: 10, // ⚠️ TASDIQLASH KERAK — kargo bilan aniqlanmagan
     minChargeableKg: 0.5,
+    roundStepKg: 0.5,
     volumetricDivisor: 6000, // ⚠️ TASDIQLASH KERAK — kargo qaysi bo'luvchini ishlatadi
     leadTimeDays: [15, 17],
   },
@@ -44,6 +47,7 @@ export const FREIGHT: Record<FreightMode, FreightTariff> = {
     seriesUsdPerKg: 11.9, // ⚠️ ANIQLASHTIRISH — seriya narxi donadan QIMMAT ko'rinyapti
     seriesMinQty: 10, // ⚠️ TASDIQLASH KERAK
     minChargeableKg: 0.5,
+    roundStepKg: 0.5,
     volumetricDivisor: 6000, // ⚠️ TASDIQLASH KERAK
     leadTimeDays: [5, 7],
   },
@@ -66,6 +70,11 @@ export interface GlobalPricingConfig {
   marginPct: number;
   /** Yakuniy narx shu qadamgacha YUQORIGA yaxlitlanadi (so'm). */
   roundToUzs: number;
+  /**
+   * Og'irlik zaxirasi — FAQAT og'irlik taxmin qilinganda qo'llanadi (0.1 = 10%).
+   * Kargo tortgan haqiqiy og'irlikda 0 bo'ladi. Qarang: global-weight.ts.
+   */
+  weightRiskPct: number;
 }
 
 /** Konservativ standart — har bir raqam alohida sozlanadi. */
@@ -78,6 +87,7 @@ export const DEFAULT_GLOBAL_CONFIG: GlobalPricingConfig = {
   paymentFeePct: 0.015,
   marginPct: 0.25,
   roundToUzs: 1_000,
+  weightRiskPct: 0.1,
 };
 
 export interface GlobalItemInput {
@@ -92,6 +102,11 @@ export interface GlobalItemInput {
   /** Xitoy ichki dostavkasi (sotuvchidan skladgacha), CNY — butun pozitsiya uchun. */
   chinaDomesticCny?: number;
   mode: FreightMode;
+  /**
+   * Og'irlik TAXMIN qilinganmi (kargo hali tortmagan)? Shunda `weightRiskPct`
+   * zaxirasi qo'llanadi. Standart: true — ehtiyotkorlik tomonga.
+   */
+  weightIsEstimated?: boolean;
 }
 
 export interface GlobalPriceBreakdown {
@@ -101,8 +116,12 @@ export interface GlobalPriceBreakdown {
   unitUzs: number;
   /** Yetkazish muddati (kun). */
   leadTimeDays: readonly [number, number];
-  /** Yuk hisob-kitobiga olingan og'irlik (kg). */
+  /** Yuk hisob-kitobiga olingan og'irlik (kg) — zaxira qo'shilgan holda. */
   chargeableKg: number;
+  /** Zaxirasiz, sof hisoblangan og'irlik (kg) — admin panelda solishtirish uchun. */
+  baseChargeableKg: number;
+  /** Og'irlik taxminiymi (zaxira qo'llanganmi). */
+  weightIsEstimated: boolean;
   /** Qo'llanilgan kg tarifi (USD) — seriya yoki dona. */
   appliedUsdPerKg: number;
   /** Shaffoflik uchun — admin panelda ko'rsatiladi, mijozga emas. */
@@ -124,16 +143,36 @@ export function volumetricKg(dims: { l: number; w: number; h: number }, divisor:
   return (dims.l * dims.w * dims.h) / divisor;
 }
 
+/** Yuqoriga yaxlitlash (kg). step <= 0 bo'lsa yaxlitlanmaydi. */
+function roundUpKgTo(kg: number, step: number): number {
+  if (step <= 0) return kg;
+  const steps = Math.ceil(Number((kg / step).toFixed(6)));
+  return Number((steps * step).toFixed(3));
+}
+
 /**
- * Yuk uchun hisoblanadigan og'irlik: aniq og'irlik, hajmiy og'irlik va
- * kargoning minimalidan ENG KATTASI. Butun pozitsiya (qty ta dona) uchun.
+ * Yuk uchun hisoblanadigan og'irlik (butun pozitsiya uchun).
+ *
+ * TARTIB MUHIM: avval xom og'irlik (aniq yoki hajmiy — qaysi kattasi), keyin
+ * TAXMIN zaxirasi, eng oxirida kargo qoidalari (minimal og'irlik va yaxlitlash).
+ * Aks holda 0.35 kg lik futbolka minimal 0.5 ga ko'tarilib, ustiga zaxira tushib,
+ * 1 kg ga sakraydi — ya'ni yuk narxi ikki barobar bo'ladi.
  */
-export function chargeableKgFor(item: GlobalItemInput, tariff: FreightTariff): number {
+export function chargeableKgFor(
+  item: GlobalItemInput,
+  tariff: FreightTariff,
+  weightRiskPct = 0,
+): number {
   const actual = item.weightKg * item.qty;
   const volumetric = item.dimsCm
     ? volumetricKg(item.dimsCm, tariff.volumetricDivisor) * item.qty
     : 0;
-  return Math.max(actual, volumetric, tariff.minChargeableKg);
+  const raw = Math.max(actual, volumetric);
+
+  const isEstimated = item.weightIsEstimated ?? true;
+  const buffered = isEstimated ? raw * (1 + Math.max(0, weightRiskPct)) : raw;
+
+  return roundUpKgTo(Math.max(buffered, tariff.minChargeableKg), tariff.roundStepKg);
 }
 
 /** Dona yoki seriya tarifi — qty bo'yicha. */
@@ -167,8 +206,11 @@ export function priceGlobalItem(
   const goodsUsd = (item.priceCny * item.qty) / config.cnyPerUsd;
   const chinaDomesticUsd = (item.chinaDomesticCny ?? 0) / config.cnyPerUsd;
 
-  // 2) Xalqaro yuk
-  const chargeableKg = chargeableKgFor(item, tariff);
+  // 2) Xalqaro yuk. Og'irlik taxminiy bo'lsa zaxira qo'shiladi — kam baholangan
+  //    og'irlik to'g'ridan-to'g'ri zarar, ortiqcha baholangani esa marja ichida qoladi.
+  const isEstimated = item.weightIsEstimated ?? true;
+  const baseKg = chargeableKgFor(item, tariff, 0);
+  const chargeableKg = chargeableKgFor(item, tariff, config.weightRiskPct);
   const appliedUsdPerKg = ratePerKgFor(item.qty, tariff);
   const freightUsd = chargeableKg * appliedUsdPerKg;
 
@@ -203,6 +245,8 @@ export function priceGlobalItem(
     unitUzs: item.qty > 0 ? totalUzs / item.qty : totalUzs,
     leadTimeDays: tariff.leadTimeDays,
     chargeableKg,
+    baseChargeableKg: baseKg,
+    weightIsEstimated: isEstimated,
     appliedUsdPerKg,
     costs: {
       goodsUsd,
