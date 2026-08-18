@@ -131,6 +131,8 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       basePrice: true,
       taxRate: true,
       sellerId: true,
+      // Global (Xitoy) tovarmi? Bo'lsa — zaxira talab qilinmaydi, buyurtma asosida olinadi.
+      globalSource: { select: { id: true, defaultFreightMode: true } },
       // Ombor — varyant + inventar (MVP: bitta ombor, bitta inventar qatori/varyant)
       variants: {
         orderBy: { position: 'asc' },
@@ -155,8 +157,33 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   let subtotal = new Prisma.Decimal(0);
   const orderItemsData: Prisma.OrderItemUncheckedCreateWithoutOrderInput[] = [];
   const stockLines: StockLine[] = [];
+  // Global (Xitoy) pozitsiyalari — operator zayavkasi uchun jami summa va yuk turi
+  let globalTotal = new Prisma.Decimal(0);
+  let globalFreightMode: 'AUTO' | 'AVIA' | null = null;
   for (const it of input.items) {
     const p = productById.get(it.productId)!;
+
+    // GLOBAL TOVAR: omborimizda yo'q — mijoz to'lagach Xitoydan sotib olinadi.
+    // Shuning uchun varyant/inventar tekshiruvi va zaxira kamaytirish o'tkazib yuboriladi.
+    if (p.globalSource) {
+      const unitPriceG = p.basePrice;
+      const totalPriceG = unitPriceG.mul(it.quantity);
+      subtotal = subtotal.add(totalPriceG);
+      globalTotal = globalTotal.add(totalPriceG);
+      globalFreightMode ??= p.globalSource.defaultFreightMode;
+      orderItemsData.push({
+        productId: p.id,
+        variantId: null,
+        sellerId: p.sellerId ?? null,
+        sku: p.sku,
+        nameSnapshot: p.name as Prisma.InputJsonValue,
+        quantity: it.quantity,
+        unitPrice: unitPriceG,
+        taxRate: p.taxRate,
+        totalPrice: totalPriceG,
+      });
+      continue;
+    }
 
     // Varyantni aniqlash
     const variant = it.variantId
@@ -316,6 +343,19 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
           placedAt: true,
         },
       });
+
+      // 5b″. Global pozitsiya bo'lsa — operator zayavkasi (GlobalFulfillment) ochiladi.
+      //      Order bilan bitta tranzaksiyada: to'langan buyurtma navbatsiz qolmaydi.
+      if (globalTotal.gt(0)) {
+        await tx.globalFulfillment.create({
+          data: {
+            orderId: created.id,
+            paidTotal: globalTotal,
+            freightMode: globalFreightMode ?? 'AUTO',
+            status: 'NEW',
+          },
+        });
+      }
 
       // 5b′. Ombor — zaxirani ATOMIK kamaytirish (+ DISPATCH StockMovement).
       //      Yetmasa InsufficientStockError tashlanadi → butun tx rollback
