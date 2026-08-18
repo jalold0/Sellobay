@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ecom/auth": "workspace:*",
+    "@ecom/core-domain": "workspace:*",
     "@ecom/database": "workspace:*",
     "@ecom/types": "workspace:*",
     "@ecom/ui": "workspace:*",

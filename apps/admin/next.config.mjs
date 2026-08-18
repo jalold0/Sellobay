@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   eslint: { ignoreDuringBuilds: true },
-  transpilePackages: ['@ecom/ui', '@ecom/utils', '@ecom/types'],
+  transpilePackages: ['@ecom/core-domain', '@ecom/ui', '@ecom/utils', '@ecom/types'],
   experimental: {
     serverComponentsExternalPackages: ['@node-rs/argon2', '@prisma/client', 'prisma'],
   },
