@@ -1,10 +1,10 @@
 'use client';
 
 import { EmptyState, Skeleton, cn } from '@ecom/ui';
-import { Package } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Globe, Package } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { formatDate as fmtDate, formatMoney } from '../../../../lib/format';
@@ -33,6 +33,7 @@ interface OrderRow {
   id: string;
   number: string;
   status: OrderStatus;
+  scope?: 'LOCAL' | 'GLOBAL';
   grandTotal: string;
   placedAt: string;
   paidAt: string | null;
@@ -114,6 +115,13 @@ export default function MyOrdersPage() {
     );
   };
 
+  // Global (Xitoydan) buyurtma belgisi — lokal buyurtmadan ajratib tursin
+  const GlobalChip = () => (
+    <span className="bg-crimson-chip text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.04em]">
+      <Globe size={10} /> Global
+    </span>
+  );
+
   // Karta orqali to'lov cheki tekshirilayotganini ko'rsatuvchi belgi
   const ReviewChip = () => (
     <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.04em] text-amber-700">
@@ -136,6 +144,7 @@ export default function MyOrdersPage() {
             <div className="flex items-center gap-3">
               <span className="text-brand-ink text-[15px] font-extrabold">№ {order.number}</span>
               <StatusChip status={order.status} />
+              {order.scope === 'GLOBAL' ? <GlobalChip /> : null}
               {order.paymentReview ? <ReviewChip /> : null}
             </div>
             <MetaLine order={order} />
@@ -233,6 +242,7 @@ export default function MyOrdersPage() {
           <div className="flex items-center gap-3">
             <span className="text-brand-ink text-[14.5px] font-extrabold">№ {order.number}</span>
             <StatusChip status={order.status} />
+            {order.scope === 'GLOBAL' ? <GlobalChip /> : null}
             {order.paymentReview ? <ReviewChip /> : null}
           </div>
           <MetaLine order={order} />

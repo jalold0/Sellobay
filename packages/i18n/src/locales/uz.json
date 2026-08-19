@@ -1054,6 +1054,29 @@
       "acceptedNotice": "Taklif qabul qilindi — to‘lov uchun tez orada bog‘lanamiz.",
       "error": "Amalni bajarib bo‘lmadi. Qayta urinib ko‘ring.",
       "loginRequired": "So‘rovlaringizni ko‘rish uchun tizimga kiring."
+    },
+    "tracker": {
+      "auto": "Avto kargo",
+      "avia": "Avia kargo",
+      "leadTime": "Taxminan {min}-{max} kun",
+      "track": "Trek raqam",
+      "cancelled": "Bu global buyurtma bekor qilindi. Pul qaytarilishi bo‘yicha siz bilan bog‘lanamiz.",
+      "priceChanged": "Xitoyda narx o‘zgardi — operatorimiz siz bilan bog‘lanadi.",
+      "priceChangedWithAmount": "Xitoyda narx o‘zgardi. Buyurtmani davom ettirish uchun qo‘shimcha {amount} kerak — operatorimiz siz bilan bog‘lanadi.",
+      "stage": {
+        "CHECKING": "Tekshirilmoqda",
+        "CONFIRMED": "Tasdiqlandi",
+        "PURCHASED": "Xitoyda sotib olindi",
+        "IN_CARGO": "Yo‘lda",
+        "DELIVERED": "Yetkazildi"
+      },
+      "hint": {
+        "CHECKING": "Tovar mavjudligi va narxini tekshiryapmiz",
+        "CONFIRMED": "Xitoydagi sotuvchiga zakaz bermoqdamiz",
+        "PURCHASED": "Tovar Xitoydagi omborimizga yig‘ilmoqda",
+        "IN_CARGO": "Kargo sizning manzilingizga olib kelmoqda",
+        "DELIVERED": "Buyurtma yopildi"
+      }
     }
   }
 }

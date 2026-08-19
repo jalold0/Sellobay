@@ -13,6 +13,7 @@ import { Prisma } from '@ecom/database';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
 import {
   deductStockForOrder,
   InsufficientStockError,
@@ -532,6 +533,8 @@ export async function listUserOrders(userId: string) {
         take: 1,
         select: { provider: true, status: true },
       },
+      // Global (Xitoy) buyurtma bo'lsa — mijozga ko'rsatiladigan bosqich va trek raqam
+      globalFulfillment: { select: globalFulfillmentSelect },
     },
   });
 
@@ -552,8 +555,9 @@ export async function listUserOrders(userId: string) {
         o.payments[0]?.provider === 'UZCARD' &&
         o.payments[0]?.status === 'PENDING' &&
         o.status !== 'CANCELLED',
-      // Hozircha barcha buyurtmalar lokal (UZ). Global (chegaralararo) keyingi bosqichda.
-      scope: 'LOCAL' as const,
+      // Buyurtmada global (Xitoy) pozitsiya bo'lsa — GlobalFulfillment yozuvi bor
+      scope: o.globalFulfillment ? ('GLOBAL' as const) : ('LOCAL' as const),
+      global: o.globalFulfillment ? toCustomerGlobalView(o.globalFulfillment) : null,
       shippingAddress: o.shippingAddress
         ? {
             recipientName: o.shippingAddress.recipientName,

@@ -2,11 +2,15 @@
 
 import { Skeleton, cn, toast } from '@ecom/ui';
 import { ArrowLeft, Check, CircleDot, MapPin, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import {
+  GlobalOrderTracker,
+  type CustomerGlobalView,
+} from '../../../../../components/global/global-order-tracker';
 import { formatDate as fmtDate, formatMoney } from '../../../../../lib/format';
 
 type OrderStatus =
@@ -26,6 +30,8 @@ interface OrderDetail {
   id: string;
   number: string;
   status: OrderStatus;
+  scope?: 'LOCAL' | 'GLOBAL';
+  global?: CustomerGlobalView | null;
   paymentProvider: string | null;
   paymentStatus: string | null;
   paymentReview: boolean;
@@ -222,6 +228,13 @@ export default function OrderDetailPage() {
         {order.paymentReview ? (
           <div className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
             {t('reviewNote')}
+          </div>
+        ) : null}
+
+        {/* Global (Xitoy) buyurtma — o'z kuzatuv chizig'i */}
+        {order.global ? (
+          <div className="mt-6">
+            <GlobalOrderTracker view={order.global} />
           </div>
         ) : null}
 
