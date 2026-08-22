@@ -1,5 +1,6 @@
 'use client';
 
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@ecom/core-domain';
 import { Button, EmptyState, Input, Separator, toast } from '@ecom/ui';
 import {
   ArrowRight,
@@ -11,12 +12,10 @@ import {
   Trash2,
   Truck,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
-
-import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@ecom/core-domain';
 
 import { formatMoney } from '../../lib/format';
 import { productImage } from '../../lib/mock-data';
@@ -36,6 +35,17 @@ export function CartView() {
   const [appliedPromo, setAppliedPromo] = React.useState<{ code: string; discount: number } | null>(
     null,
   );
+
+  // LOKAL va GLOBAL tovar alohida buyurtma qilinadi (turli muddat va yetkazish),
+  // shuning uchun savat ikki guruhga bo'linadi va har biri o'z checkout'iga boradi.
+  const localItems = items.filter((i) => !i.isGlobal);
+  const globalItems = items.filter((i) => i.isGlobal);
+  const mixed = localItems.length > 0 && globalItems.length > 0;
+  const sumOf = (list: typeof items) => list.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const GROUPS = [
+    { key: 'LOCAL' as const, list: localItems },
+    { key: 'GLOBAL' as const, list: globalItems },
+  ];
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const discount = appliedPromo?.discount ?? 0;
@@ -103,19 +113,37 @@ export function CartView() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <ul className="space-y-3">
-          {items.map((item) => (
-            <CartItemRow
-              key={item.id}
-              item={item}
-              onRemove={() => {
-                removeItem(item.id);
-                toast({ title: t('itemRemoved'), description: item.name, duration: 1500 });
-              }}
-              onQty={(q) => updateQuantity(item.id, q)}
-            />
-          ))}
-        </ul>
+        <div className="space-y-6">
+          {GROUPS.map(({ key, list }) =>
+            list.length === 0 ? null : (
+              <section key={key} className="space-y-3">
+                {mixed && (
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h2 className="text-sm font-semibold">
+                      {key === 'GLOBAL' ? t('groupGlobal') : t('groupLocal')}
+                    </h2>
+                    <span className="text-muted-foreground text-xs">
+                      {formatMoney(sumOf(list))}
+                    </span>
+                  </div>
+                )}
+                <ul className="space-y-3">
+                  {list.map((item) => (
+                    <CartItemRow
+                      key={item.id}
+                      item={item}
+                      onRemove={() => {
+                        removeItem(item.id);
+                        toast({ title: t('itemRemoved'), description: item.name, duration: 1500 });
+                      }}
+                      onQty={(q) => updateQuantity(item.id, q)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ),
+          )}
+        </div>
 
         <aside className="lg:sticky lg:top-32 lg:self-start">
           <div className="bg-card space-y-4 rounded-xl border p-5">
@@ -182,11 +210,31 @@ export function CartView() {
               )}
             </div>
 
-            <Button asChild size="lg" className="w-full rounded-full">
-              <Link href="/checkout">
-                {t('checkout')} <ArrowRight size={16} className="ml-1" />
-              </Link>
-            </Button>
+            {mixed ? (
+              <div className="space-y-2">
+                <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                  {t('mixedNote')}
+                </p>
+                <Button asChild size="lg" className="w-full rounded-full">
+                  <Link href="/checkout?scope=LOCAL">
+                    {t('checkoutLocal', { amount: formatMoney(sumOf(localItems)) })}
+                    <ArrowRight size={16} className="ml-1" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="w-full rounded-full">
+                  <Link href="/checkout?scope=GLOBAL">
+                    {t('checkoutGlobal', { amount: formatMoney(sumOf(globalItems)) })}
+                    <ArrowRight size={16} className="ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <Button asChild size="lg" className="w-full rounded-full">
+                <Link href="/checkout">
+                  {t('checkout')} <ArrowRight size={16} className="ml-1" />
+                </Link>
+              </Button>
+            )}
 
             <div className="text-muted-foreground flex items-center gap-2 text-xs">
               <ShieldCheck size={14} className="text-emerald-600" />

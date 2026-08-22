@@ -48,6 +48,8 @@ interface DbProductRow {
   variants: { inventory: { quantityOnHand: number }[] }[];
   // Sotuvchi — verified chip uchun (null = platform-rasmiy mahsulot)
   seller: { status: string } | null;
+  // Global (Xitoy) manbasi bor bo'lsa — bu global tovar
+  globalSource: { id: string } | null;
 }
 
 function deriveBadge(p: DbProductRow): MockProduct['badge'] {
@@ -84,6 +86,7 @@ function toMockProduct(p: DbProductRow): MockProduct {
     inStock: stock > 0,
     // Verified: seller yo'q (platform-rasmiy) yoki seller ACTIVE holatda
     sellerVerified: !p.seller || p.seller.status === 'ACTIVE',
+    isGlobal: p.globalSource !== null,
   };
 }
 
@@ -104,6 +107,7 @@ const PRODUCT_SELECT = {
   categories: { select: { category: { select: { slug: true } } }, take: 1 },
   variants: { select: { inventory: { select: { quantityOnHand: true } } } },
   seller: { select: { status: true } },
+  globalSource: { select: { id: true } },
 } as const;
 
 // ─── Public API ──────────────────────────────────────────────────

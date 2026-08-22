@@ -384,7 +384,12 @@
     "color": "Rang",
     "size": "O'lcham",
     "increase": "Oshirish",
-    "decrease": "Kamaytirish"
+    "decrease": "Kamaytirish",
+    "groupLocal": "Sellobay tovarlari",
+    "groupGlobal": "Global (Xitoydan)",
+    "mixedNote": "Global tovarlar 15-17 kunda kargo bilan keladi, shuning uchun ular alohida buyurtma qilinadi. Ikkalasini ham buyurtma qilsangiz bo‘ladi.",
+    "checkoutLocal": "Sellobay tovarlarini buyurtma qilish · {amount}",
+    "checkoutGlobal": "Global tovarlarni buyurtma qilish · {amount}"
   },
   "checkout": {
     "title": "Buyurtmani rasmiylashtirish",
@@ -446,7 +451,8 @@
       "freeBepul": "Bepul",
       "expressRow": "Express — bugun, 3 soat ichida",
       "expressChip": "TEZKOR",
-      "expressTashkent": "Faqat Toshkent shahri bo'ylab"
+      "expressTashkent": "Faqat Toshkent shahri bo'ylab",
+      "globalNote": "Bu buyurtma Xitoydan kargo bilan keladi va to‘g‘ridan-to‘g‘ri sizning manzilingizga yetkaziladi. Yetkazish narxi tovar narxiga kirgan."
     },
     "payment": {
       "title": "To'lov usulini tanlang",

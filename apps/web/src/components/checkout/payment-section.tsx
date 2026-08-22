@@ -7,6 +7,7 @@ import { Banknote, CheckCircle2, CreditCard, Loader2, ShieldCheck, Smartphone } 
 import { useTranslations } from 'next-intl';
 
 import { formatMoney } from '../../lib/format';
+
 import type { PaymentCardDTO, PaymentProvider } from './checkout-types';
 
 // 1d — 4 ta to'lov plitkasi (Karta / Payme / Click / Naqd)

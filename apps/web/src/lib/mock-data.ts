@@ -38,6 +38,12 @@ export interface MockProduct {
   /** Sotuvchi tasdiqlangan (ACTIVE) yoki platform-rasmiy mahsulot. `false` bo'lsa "Tasdiqlangan"
    *  chip ko'rsatilmaydi. Aniqlanmagan (mock demo) = rasmiy deb hisoblanadi. */
   sellerVerified?: boolean;
+  /**
+   * Global (Xitoydan) tovarmi. Savatni guruhlash va yetkazish muddatini ko'rsatish uchun.
+   * Bu FAQAT UI ishorasi — buyurtma yaratishda haqiqat serverda tekshiriladi
+   * (`orders-server` MIXED_CART), shuning uchun eskirgan qiymat buzuq buyurtma yaratmaydi.
+   */
+  isGlobal?: boolean;
 }
 
 export const categories: MockCategory[] = [

@@ -377,7 +377,12 @@
     "color": "Color",
     "size": "Size",
     "increase": "Increase",
-    "decrease": "Decrease"
+    "decrease": "Decrease",
+    "groupLocal": "Sellobay items",
+    "groupGlobal": "Global (from China)",
+    "mixedNote": "Global items arrive by cargo in 15-17 days, so they are ordered separately. You can place both orders.",
+    "checkoutLocal": "Order Sellobay items · {amount}",
+    "checkoutGlobal": "Order global items · {amount}"
   },
   "checkout": {
     "title": "Checkout",
@@ -438,7 +443,8 @@
       "freeBepul": "Free",
       "expressRow": "Express — today, within 3 hours",
       "expressChip": "FAST",
-      "expressTashkent": "Tashkent city only"
+      "expressTashkent": "Tashkent city only",
+      "globalNote": "This order arrives by cargo from China and is delivered straight to your address. Delivery is already included in the price."
     },
     "payment": {
       "title": "Choose payment method",

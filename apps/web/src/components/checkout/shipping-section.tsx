@@ -8,10 +8,18 @@ import { MapPin } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 import { formatMoney } from '../../lib/format';
-import type { DeliveryType, HomeSpeed, PickupPointDTO } from './checkout-types';
+
 import { DeliveryRow } from './checkout-ui';
 
+import type { DeliveryType, HomeSpeed, PickupPointDTO } from './checkout-types';
+
 interface Props {
+  /**
+   * GLOBAL buyurtma: kargo tovarni Xitoydan to'g'ridan-to'g'ri mijoz manziliga olib
+   * boradi. Yetkazish usuli tanlovi ko'rsatilmaydi — "Express 50 000" kabi variant
+   * bajarilmaydigan va'da bo'lardi (tovar baribir 15-17 kunda keladi).
+   */
+  isGlobalOrder?: boolean;
   deliveryType: DeliveryType;
   homeSpeed: HomeSpeed;
   subtotal: number;
@@ -24,6 +32,7 @@ interface Props {
 }
 
 export function ShippingSection({
+  isGlobalOrder = false,
   deliveryType,
   homeSpeed,
   subtotal,
@@ -39,6 +48,19 @@ export function ShippingSection({
 
   const pickName = (n: PickupPointDTO['name']) =>
     typeof n === 'string' ? n : (n[locale] ?? n.uz ?? Object.values(n)[0] ?? '');
+
+  if (isGlobalOrder) {
+    return (
+      <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">
+        <h2 className="text-brand-ink mb-[18px] font-serif text-xl font-semibold">
+          {t('shipping.methodTitle')}
+        </h2>
+        <p className="text-brand-ink-soft bg-paper rounded-xl px-4 py-3 text-sm">
+          {t('shipping.globalNote')}
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">

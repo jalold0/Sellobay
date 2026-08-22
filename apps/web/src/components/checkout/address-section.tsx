@@ -6,8 +6,9 @@
 import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import type { AddressForm } from './checkout-types';
 import { TextField } from './checkout-ui';
+
+import type { AddressForm } from './checkout-types';
 
 interface Props {
   address: AddressForm;

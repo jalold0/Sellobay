@@ -18,9 +18,9 @@ import {
   Truck,
   Undo2,
 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { formatMoney, discountPercent } from '../../lib/format';
@@ -28,6 +28,7 @@ import { type Locale, pickLocale, productImage } from '../../lib/mock-data';
 import { type ProductFullDetail } from '../../lib/product-details';
 import { useCart } from '../../store/cart';
 import { useWishlist } from '../../store/wishlist';
+
 import { ProductGallery } from './product-gallery';
 import { ProductTabs } from './product-tabs';
 import { StickyCartBar } from './sticky-cart-bar';
@@ -88,6 +89,7 @@ export function ProductDetail({ detail, locale }: Props) {
       oldPrice: product.oldPrice,
       currency: product.currency,
       quantity,
+      isGlobal: product.isGlobal,
       color: selectedColor?.label,
       size: selectedSize?.label,
     });
