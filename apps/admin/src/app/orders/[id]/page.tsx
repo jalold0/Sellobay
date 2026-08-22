@@ -421,7 +421,9 @@ export default function OrderDetailPage() {
       </div>
 
       {zoom && order.manualCard ? (
-        <div
+        <button
+          type="button"
+          aria-label="Chekni yopish"
           className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
           onClick={() => setZoom(false)}
         >
@@ -431,7 +433,7 @@ export default function OrderDetailPage() {
             alt="chek"
             className="max-h-[90vh] max-w-full rounded-lg object-contain"
           />
-        </div>
+        </button>
       ) : null}
     </div>
   );

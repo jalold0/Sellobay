@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GLOBAL_CONFIG, FREIGHT } from './global-pricing.ts';
-import { DEFAULT_VARIANCE_THRESHOLDS } from './global-variance.ts';
 import { DEFAULT_WEIGHT_GUARANTEE_PCT, resolveGlobalSettings } from './global-settings.ts';
+import { DEFAULT_VARIANCE_THRESHOLDS } from './global-variance.ts';
 import { CATEGORY_WEIGHT_KG } from './global-weight.ts';
 
 describe('resolveGlobalSettings — standart holat', () => {
