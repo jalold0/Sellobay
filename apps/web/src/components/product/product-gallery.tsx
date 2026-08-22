@@ -4,8 +4,8 @@
 // activeImageIdx faqat shu yerda ishlatilgani uchun lokal holat.
 import { Badge } from '@ecom/ui';
 import { Heart } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { productImage } from '../../lib/mock-data';

@@ -3,8 +3,8 @@
 // Sticky add-to-cart bar — asosiy CTA ekrandan chiqsa pastda paydo bo'ladi.
 import { Button } from '@ecom/ui';
 import { ShoppingCart } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { formatMoney } from '../../lib/format';

@@ -25,6 +25,12 @@ export interface CartItem {
   size?: string;
   // Inventory snapshot
   maxQuantity?: number;
+  /**
+   * Global (Xitoydan) tovarmi. Savatni guruhlash uchun — lokal va global tovar
+   * alohida buyurtma qilinadi (turli muddat va yetkazish). UI ishorasi; haqiqat
+   * serverda (`orders-server` MIXED_CART).
+   */
+  isGlobal?: boolean;
 }
 
 interface CartState {

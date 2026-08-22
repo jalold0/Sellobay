@@ -234,6 +234,9 @@ model User {
   pushTokens      PushToken[]
   refreshTokens   RefreshToken[]
   otpCodes        OtpCode[]
+  sourcingRequests SourcingRequest[] @relation("SourcingRequester")
+  sourcingQuotes   SourcingRequest[] @relation("SourcingQuotedBy")
+  globalFulfillments GlobalFulfillment[] @relation("GlobalOperator")
 
   @@index([phone])
   @@index([email])
@@ -464,6 +467,7 @@ model Product {
   cartItems       CartItem[]
   orderItems      OrderItem[]
   wishlistItems   WishlistItem[]
+  globalSource    GlobalSource?
 
   @@index([sellerId])
   @@index([brandId])
@@ -693,6 +697,8 @@ model Order {
   statusHistory   OrderStatusHistory[]
   reviews         Review[]
   invoices        Invoice[]
+  sourcingRequests SourcingRequest[]
+  globalFulfillment GlobalFulfillment?
 
   @@index([userId])
   @@index([status])
@@ -1130,4 +1136,213 @@ model AuditLog {
   @@index([userId])
   @@index([resource, resourceId])
   @@index([createdAt])
+}
+
+// ===================================================================
+// GLOBAL SOURCING (Xitoy) — "Havola orqali buyurtma"
+// Mijoz Taobao/Tmall/1688 havolasini yuboradi → operator narx taklif qiladi →
+// mijoz qabul qiladi → oddiy Order'ga aylanadi.
+// Narx @ecom/core-domain/global-pricing da hisoblanadi (bitta haqiqat manbai).
+// ===================================================================
+
+enum SourcingPlatform {
+  TAOBAO
+  TMALL
+  ALIBABA_1688
+  WEIDIAN
+  OTHER
+}
+
+enum FreightMode {
+  AUTO // avtomobil kargo — arzon, 15-17 kun
+  AVIA // avia kargo — qimmat, 5-7 kun
+}
+
+enum SourcingStatus {
+  NEW         // mijoz yubordi, operator hali ko'rmagan
+  IN_REVIEW   // operator tekshiryapti (havola ochilyapti, og'irlik aniqlanyapti)
+  QUOTED      // narx taklif qilindi, mijoz javobini kutyapmiz
+  ACCEPTED    // mijoz taklifni qabul qildi — to'lovga tayyor
+  REJECTED    // mijoz rad etdi
+  UNAVAILABLE // tovar topilmadi / sotuvda yo'q / taqiqlangan toifa
+  ORDERED     // Order'ga aylandi (to'landi va Xitoyga zakaz berildi)
+  CANCELLED   // mijoz yoki operator bekor qildi
+  EXPIRED     // taklif muddati o'tdi
+}
+
+model SourcingRequest {
+  id            String           @id @default(uuid()) @db.Uuid
+  number        String           @unique // SRQ-2026-00001234
+  userId        String           @db.Uuid
+  status        SourcingStatus   @default(NEW)
+
+  // --- Mijoz yuborgan ma'lumot ---
+  sourceUrl     String // mijoz kiritgan xom havola (audit uchun asl holida saqlanadi)
+  normalizedUrl String // tracking'siz kanonik havola
+  platform      SourcingPlatform @default(OTHER)
+  externalItemId String? // qisqa havolada null — operator aniqlaydi
+  needsResolve  Boolean          @default(false)
+  qty           Int              @default(1)
+  freightMode   FreightMode      @default(AUTO)
+  variantNote   String? // "qora rang, 42 o'lcham"
+  customerNote  String?
+
+  // --- Operator taklifi ---
+  quotedPriceCny    Decimal?  @db.Decimal(12, 2) // Taobao'dagi dona narxi
+  quotedWeightKg    Decimal?  @db.Decimal(8, 3)  // hisoblangan (chargeable) og'irlik
+  quotedTotal       Decimal?  @db.Decimal(14, 2) // mijoz to'laydigan yakuniy summa (so'm)
+  quotedUnit        Decimal?  @db.Decimal(14, 2) // dona narxi (so'm)
+  quotedBreakdown   Json? // to'liq hisob-kitob — audit va admin paneli uchun
+  leadTimeMinDays   Int?
+  leadTimeMaxDays   Int?
+  quoteExpiresAt    DateTime?
+  quotedAt          DateTime?
+  quotedById        String?   @db.Uuid
+  operatorNote      String? // rad etish sababi / mijozga izoh
+
+  // --- Natija ---
+  respondedAt DateTime? // mijoz qabul/rad etgan vaqt
+  orderId     String?   @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User  @relation("SourcingRequester", fields: [userId], references: [id], onDelete: Cascade)
+  quotedBy User? @relation("SourcingQuotedBy", fields: [quotedById], references: [id], onDelete: SetNull)
+  order    Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([platform, externalItemId])
+}
+
+// ===================================================================
+// GLOBAL KATALOG (Xitoy manbasi)
+// Alohida "GlobalProduct" YARATILMADI — mavjud `Product` ishlatiladi, unga
+// Xitoyga oid ma'lumot 1-1 `GlobalSource` yozuvi sifatida ulanadi.
+// Sabab: katalog, savat, checkout, wishlist, sharh va qidiruv shu tariqa
+// hech qanday o'zgarishsiz global tovarlar bilan ham ishlaydi.
+// `product.globalSource != null` => bu global tovar.
+// ===================================================================
+
+enum WeightCategory {
+  TSHIRT
+  OUTERWEAR
+  SHOES
+  BAG
+  ACCESSORY
+  SMALL_ELECTRONICS
+  COSMETICS
+  TOY
+  HOME
+  OTHER
+}
+
+model GlobalSource {
+  id        String           @id @default(uuid()) @db.Uuid
+  productId String           @unique @db.Uuid
+  platform  SourcingPlatform @default(TAOBAO)
+
+  sourceUrl      String
+  normalizedUrl  String
+  externalItemId String?
+
+  // --- Xitoydagi narx ---
+  priceCny         Decimal   @db.Decimal(12, 2) // katalog narxi shu asosda hisoblangan
+  chinaDomesticCny Decimal?  @db.Decimal(12, 2)
+  lastSeenPriceCny Decimal?  @db.Decimal(12, 2) // oxirgi tekshiruvda ko'rilgan narx
+  priceCheckedAt   DateTime?
+
+  // --- Og'irlik: taxmin -> o'lchov ---
+  // estimatedWeightKg katalogda narx hisoblash uchun ishlatiladi.
+  // actualWeightKg kargo omborida tortilgandan keyin yoziladi va keyingi
+  // hisoblarda taxminning o'rnini egallaydi (@ecom/core-domain/global-weight).
+  weightCategory    WeightCategory @default(OTHER)
+  manualWeightKg    Decimal?       @db.Decimal(8, 3) // operator kiritgani
+  estimatedWeightKg Decimal        @db.Decimal(8, 3)
+  actualWeightKg    Decimal?       @db.Decimal(8, 3) // kargo tortgani (oxirgi)
+  weightSamples     Int            @default(0) // nechta o'lchov to'plandi
+
+  lengthCm Decimal? @db.Decimal(7, 1)
+  widthCm  Decimal? @db.Decimal(7, 1)
+  heightCm Decimal? @db.Decimal(7, 1)
+
+  defaultFreightMode FreightMode @default(AUTO)
+  /// Shu tovar uchun maxsus marja (0.25 = 25%). Bo'sh bo'lsa — standart konfig.
+  marginPct      Decimal? @db.Decimal(6, 4)
+  priceBreakdown Json? // narx qaysi kurs/tarif/marja bilan chiqqani — audit
+  pricedAt       DateTime?
+
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([platform, externalItemId])
+  @@index([isAvailable])
+  @@index([priceCheckedAt])
+}
+
+enum GlobalFulfillmentStatus {
+  NEW            // zayavka tushdi, operator ko'rmagan
+  PRICE_CHECK    // operator jonli narxni tekshiryapti
+  PRICE_CHANGED  // farq katta — mijoz javobi kutilyapti
+  CONFIRMED      // narx maqul, zakazga tayyor
+  PURCHASED      // platformadan sotib olindi
+  IN_CARGO       // trek raqam bor, kargo saytiga kiritilgan
+  DELIVERED      // mijoz oldi
+  CANCELLED
+  REFUNDED
+}
+
+/// Global buyurtmaning operator tomoni ("zayavka"). Order bilan 1-1.
+model GlobalFulfillment {
+  id      String                  @id @default(uuid()) @db.Uuid
+  orderId String                  @unique @db.Uuid
+  status  GlobalFulfillmentStatus @default(NEW)
+
+  freightMode FreightMode @default(AUTO)
+  /// Mijoz to'lagan summa (global pozitsiyalar bo'yicha) — solishtirish bazasi
+  paidTotal Decimal @db.Decimal(14, 2)
+
+  // --- Narx tekshiruvi (core-domain/global-variance) ---
+  verifiedPriceCny Decimal?  @db.Decimal(12, 2)
+  verifiedTotal    Decimal?  @db.Decimal(14, 2)
+  varianceDecision String? // AUTO_CONFIRM | ASK_CUSTOMER | CANCEL_SUGGESTED
+  absorbedTotal    Decimal?  @db.Decimal(14, 2) // biz zimmamizga olgan farq
+  extraChargeTotal Decimal?  @db.Decimal(14, 2) // mijozdan so'ralgan qo'shimcha
+  verifiedAt       DateTime?
+
+  // --- Xarid va yetkazish ---
+  purchaseRef       String? // platformadagi zakaz raqami
+  actualWeightKg    Decimal?  @db.Decimal(8, 3) // kargo tortgani
+  trackNumber       String?
+  cargoRegisteredAt DateTime? // trek + manzil kargo saytiga kiritilgan vaqt
+  purchasedAt       DateTime?
+  deliveredAt       DateTime?
+
+  operatorId   String? @db.Uuid
+  operatorNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  operator User? @relation("GlobalOperator", fields: [operatorId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([trackNumber])
+}
+
+/// Global sozlamalar — kargo tariflari, kurs, marja, chetlanish chegaralari.
+/// Bitta qatorli jadval (id = "default"). Faqat STANDARTDAN FARQLAR saqlanadi:
+/// qolgani @ecom/core-domain dagi standart qiymatlar (resolveGlobalSettings birlashtiradi).
+/// Shu sabab kargo tarifi o'zgarganda kod deploy qilinmaydi — admin panelidan tahrirlanadi.
+model GlobalSetting {
+  id          String   @id @default("default")
+  config      Json
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 }

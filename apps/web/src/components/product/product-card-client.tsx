@@ -1,9 +1,9 @@
 'use client';
 
 import { ProductCard, toast, type ProductCardProps } from '@ecom/ui';
-import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { type MockProduct, pickLocale, productImage } from '../../lib/mock-data';
@@ -60,6 +60,7 @@ export function ProductCardClient({ product, locale, className, stockLeft }: Pro
       oldPrice: product.oldPrice,
       currency: product.currency,
       quantity: 1,
+      isGlobal: product.isGlobal,
     });
     toast({ title: t('addedToCart'), description: name, variant: 'success', duration: 2500 });
   }, [addItem, name, product, t]);

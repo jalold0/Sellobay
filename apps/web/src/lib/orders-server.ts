@@ -13,6 +13,8 @@ import { Prisma } from '@ecom/database';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
+import { getGlobalSettings } from '@/lib/global-settings';
 import {
   deductStockForOrder,
   InsufficientStockError,
@@ -131,6 +133,8 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       basePrice: true,
       taxRate: true,
       sellerId: true,
+      // Global (Xitoy) tovarmi? Bo'lsa — zaxira talab qilinmaydi, buyurtma asosida olinadi.
+      globalSource: { select: { id: true, defaultFreightMode: true } },
       // Ombor — varyant + inventar (MVP: bitta ombor, bitta inventar qatori/varyant)
       variants: {
         orderBy: { position: 'asc' },
@@ -155,8 +159,33 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   let subtotal = new Prisma.Decimal(0);
   const orderItemsData: Prisma.OrderItemUncheckedCreateWithoutOrderInput[] = [];
   const stockLines: StockLine[] = [];
+  // Global (Xitoy) pozitsiyalari — operator zayavkasi uchun jami summa va yuk turi
+  let globalTotal = new Prisma.Decimal(0);
+  let globalFreightMode: 'AUTO' | 'AVIA' | null = null;
   for (const it of input.items) {
     const p = productById.get(it.productId)!;
+
+    // GLOBAL TOVAR: omborimizda yo'q — mijoz to'lagach Xitoydan sotib olinadi.
+    // Shuning uchun varyant/inventar tekshiruvi va zaxira kamaytirish o'tkazib yuboriladi.
+    if (p.globalSource) {
+      const unitPriceG = p.basePrice;
+      const totalPriceG = unitPriceG.mul(it.quantity);
+      subtotal = subtotal.add(totalPriceG);
+      globalTotal = globalTotal.add(totalPriceG);
+      globalFreightMode ??= p.globalSource.defaultFreightMode;
+      orderItemsData.push({
+        productId: p.id,
+        variantId: null,
+        sellerId: p.sellerId ?? null,
+        sku: p.sku,
+        nameSnapshot: p.name as Prisma.InputJsonValue,
+        quantity: it.quantity,
+        unitPrice: unitPriceG,
+        taxRate: p.taxRate,
+        totalPrice: totalPriceG,
+      });
+      continue;
+    }
 
     // Varyantni aniqlash
     const variant = it.variantId
@@ -205,13 +234,32 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
     });
   }
 
-  // 3. Yetkazib berish narxi
+  // 2b. LOKAL va GLOBAL tovarni bitta buyurtmada aralashtirmaymiz.
+  //     Sabab: lokal tovar 1-2 kunda kuryer bilan, global tovar 15-17 kunda kargo
+  //     bilan keladi — bitta buyurtmada ikki xil muddat, ikki xil yetkazish va ikki
+  //     xil holat chizig'i bo'lishi mumkin emas. Mijozga tushunarli xabar beramiz.
+  const localTotal = subtotal.sub(globalTotal);
+  if (globalTotal.gt(0) && localTotal.gt(0)) {
+    throw new OrderError(
+      400,
+      'MIXED_CART',
+      "Global (Xitoydan) va oddiy tovarlar bitta buyurtmada bo'lishi mumkin emas — ularni alohida buyurtma qiling",
+    );
+  }
+  const isGlobalOrder = globalTotal.gt(0);
+
+  // 3. Yetkazib berish narxi.
+  //    GLOBAL buyurtmada lokal yetkazish yig'ilmaydi: kargo tovarni to'g'ridan-to'g'ri
+  //    mijoz manziliga olib boradi va bu xarajat allaqachon tovar narxi ichida.
   let shippingTotal = new Prisma.Decimal(0);
-  if (input.deliveryMethod === 'EXPRESS') {
-    shippingTotal = new Prisma.Decimal(EXPRESS_FEE);
-  } else if (input.deliveryMethod === 'HOME_DELIVERY') {
-    if (subtotal.lt(FREE_SHIPPING_THRESHOLD)) {
-      shippingTotal = new Prisma.Decimal(SHIPPING_FEE);
+  if (!isGlobalOrder) {
+    if (input.deliveryMethod === 'EXPRESS') {
+      shippingTotal = new Prisma.Decimal(EXPRESS_FEE);
+    } else if (input.deliveryMethod === 'HOME_DELIVERY') {
+      // Bepul yetkazish chegarasi FAQAT lokal summadan hisoblanadi
+      if (localTotal.lt(FREE_SHIPPING_THRESHOLD)) {
+        shippingTotal = new Prisma.Decimal(SHIPPING_FEE);
+      }
     }
   }
   const baseTotal = subtotal.add(shippingTotal); // chegirmagacha
@@ -316,6 +364,19 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
           placedAt: true,
         },
       });
+
+      // 5b″. Global pozitsiya bo'lsa — operator zayavkasi (GlobalFulfillment) ochiladi.
+      //      Order bilan bitta tranzaksiyada: to'langan buyurtma navbatsiz qolmaydi.
+      if (globalTotal.gt(0)) {
+        await tx.globalFulfillment.create({
+          data: {
+            orderId: created.id,
+            paidTotal: globalTotal,
+            freightMode: globalFreightMode ?? 'AUTO',
+            status: 'NEW',
+          },
+        });
+      }
 
       // 5b′. Ombor — zaxirani ATOMIK kamaytirish (+ DISPATCH StockMovement).
       //      Yetmasa InsufficientStockError tashlanadi → butun tx rollback
@@ -492,8 +553,13 @@ export async function listUserOrders(userId: string) {
         take: 1,
         select: { provider: true, status: true },
       },
+      // Global (Xitoy) buyurtma bo'lsa — mijozga ko'rsatiladigan bosqich va trek raqam
+      globalFulfillment: { select: globalFulfillmentSelect },
     },
   });
+
+  // Global buyurtma bo'lsa muddatni sozlamalardan olamiz (bir marta, ro'yxat uchun)
+  const settings = orders.some((o) => o.globalFulfillment) ? await getGlobalSettings() : null;
 
   return {
     items: orders.map((o) => ({
@@ -512,8 +578,11 @@ export async function listUserOrders(userId: string) {
         o.payments[0]?.provider === 'UZCARD' &&
         o.payments[0]?.status === 'PENDING' &&
         o.status !== 'CANCELLED',
-      // Hozircha barcha buyurtmalar lokal (UZ). Global (chegaralararo) keyingi bosqichda.
-      scope: 'LOCAL' as const,
+      // Buyurtmada global (Xitoy) pozitsiya bo'lsa — GlobalFulfillment yozuvi bor
+      scope: o.globalFulfillment ? ('GLOBAL' as const) : ('LOCAL' as const),
+      global: o.globalFulfillment
+        ? toCustomerGlobalView(o.globalFulfillment, settings?.freight)
+        : null,
       shippingAddress: o.shippingAddress
         ? {
             recipientName: o.shippingAddress.recipientName,

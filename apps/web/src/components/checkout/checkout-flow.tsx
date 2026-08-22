@@ -4,25 +4,31 @@
 // UI bo'limlari alohida komponentlarda (address/shipping/payment/summary).
 // Split 2026-07-17: 943 qatorlik god-file'dan ajratildi, logika o'zgarmagan.
 
-import { toast } from '@ecom/ui';
-import { Package, ShieldCheck } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import * as React from 'react';
-
 import {
   SHIPPING_FEE,
   EXPRESS_FEE,
   FREE_SHIPPING_THRESHOLD,
   looksLikeTashkentCityText,
 } from '@ecom/core-domain';
+import { toast } from '@ecom/ui';
+import { Package, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import * as React from 'react';
 
 import { COIN_VALUE_SOM } from '../../lib/loyalty';
 import { isOnlineProvider } from '../../lib/payments';
 import { useCart } from '../../store/cart';
+
 import { AddressSection } from './address-section';
+import { Step } from './checkout-ui';
+import { OrderSummary } from './order-summary';
+import { PaymentSection } from './payment-section';
+import { downscaleToDataUrl } from './receipt-image';
+import { ShippingSection } from './shipping-section';
+
 import type {
   AddressForm,
   DeliveryType,
@@ -31,21 +37,27 @@ import type {
   PaymentProvider,
   PickupPointDTO,
 } from './checkout-types';
-import { Step } from './checkout-ui';
-import { OrderSummary } from './order-summary';
-import { PaymentSection } from './payment-section';
-import { downscaleToDataUrl } from './receipt-image';
-import { ShippingSection } from './shipping-section';
 
 // Haqiqiy DB mahsuloti = UUID. Mock/demo (p1..p12) yoki eskirgan savat elementlari emas.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function CheckoutFlow() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = useTranslations('checkout');
-  const items = useCart((s) => s.items);
+  const allItems = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const removeItem = useCart((s) => s.removeItem);
+
+  // Savatda lokal va global tovar bo'lsa, ular ALOHIDA buyurtma qilinadi
+  // (turli muddat va yetkazish). Savat sahifasi qaysi guruh checkout qilinayotganini
+  // `?scope=` bilan aytadi; berilmasa hammasi olinadi (aralash bo'lmagan holat).
+  const scope = (searchParams.get('scope') ?? '').toUpperCase();
+  const items = React.useMemo(() => {
+    if (scope === 'GLOBAL') return allItems.filter((i) => i.isGlobal);
+    if (scope === 'LOCAL') return allItems.filter((i) => !i.isGlobal);
+    return allItems;
+  }, [allItems, scope]);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
@@ -152,8 +164,13 @@ export function CheckoutFlow() {
     !looksLikeTashkentCityText(address.region, address.city);
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-  const shippingFee =
-    deliveryMethod === 'PICKUP_POINT'
+  // GLOBAL buyurtmada lokal yetkazish narxi YO'Q: kargo tovarni to'g'ridan-to'g'ri
+  // mijoz manziliga olib boradi va bu xarajat tovar narxi ichida. Server ham
+  // shunday hisoblaydi (`orders-server`) — ko'rsatilgan summa olinadigan summaga teng bo'lsin.
+  const isGlobalOrder = items.length > 0 && items.every((i) => i.isGlobal);
+  const shippingFee = isGlobalOrder
+    ? 0
+    : deliveryMethod === 'PICKUP_POINT'
       ? 0
       : deliveryMethod === 'EXPRESS'
         ? EXPRESS_FEE
@@ -276,7 +293,12 @@ export function CheckoutFlow() {
 
     const orderNumber = result.data.order.number;
     const orderId = result.data.order.id;
-    clear();
+    // Faqat shu guruh buyurtma qilindi — boshqa guruh savatda qolishi kerak
+    if (scope === 'GLOBAL' || scope === 'LOCAL') {
+      items.forEach((it) => removeItem(it.id));
+    } else {
+      clear();
+    }
 
     if (isOnlineProvider(payment)) {
       try {
@@ -349,6 +371,7 @@ export function CheckoutFlow() {
           />
 
           <ShippingSection
+            isGlobalOrder={isGlobalOrder}
             deliveryType={deliveryType}
             homeSpeed={homeSpeed}
             subtotal={subtotal}

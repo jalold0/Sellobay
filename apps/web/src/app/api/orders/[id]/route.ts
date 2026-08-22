@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
+import { getGlobalSettings } from '@/lib/global-settings';
 import { COIN_VALUE_SOM, coinsForOrder } from '@/lib/loyalty';
 import { shippingFor, type DeliveryMethod } from '@/lib/orders-pricing';
 
@@ -87,6 +89,8 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
     take: 1,
     select: { provider: true, status: true },
   },
+  // Global (Xitoy) buyurtma bosqichi — mijozga ko'rsatiladigan qism
+  globalFulfillment: { select: globalFulfillmentSelect },
 });
 
 type OrderRow = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
@@ -105,7 +109,7 @@ function isReturnable(
   return Date.now() - ref.getTime() <= RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 }
 
-function serialize(o: OrderRow) {
+function serialize(o: OrderRow, tariffs?: Parameters<typeof toCustomerGlobalView>[1]) {
   const pay = o.payments[0];
   return {
     id: o.id,
@@ -131,7 +135,8 @@ function serialize(o: OrderRow) {
     editable: o.status === 'PENDING',
     returnable: isReturnable(o.status, o.deliveredAt, o.placedAt),
     returnWindowDays: RETURN_WINDOW_DAYS,
-    scope: 'LOCAL' as const,
+    scope: o.globalFulfillment ? ('GLOBAL' as const) : ('LOCAL' as const),
+    global: o.globalFulfillment ? toCustomerGlobalView(o.globalFulfillment, tariffs) : null,
     shippingAddress: o.shippingAddress,
     pickupPoint: o.pickupPoint
       ? {
@@ -165,7 +170,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!order) return apiError(404, 'NOT_FOUND', 'Buyurtma topilmadi');
   if (order.userId !== user.id) return apiError(403, 'FORBIDDEN', "Ruxsat yo'q");
 
-  return apiOk({ order: serialize(order) });
+  const settings = order.globalFulfillment ? await getGlobalSettings() : null;
+  return apiOk({ order: serialize(order, settings?.freight) });
 }
 
 const patchSchema = z.object({
@@ -328,5 +334,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return reloaded!;
   });
 
-  return apiOk({ order: serialize(updated) });
+  const settings2 = updated.globalFulfillment ? await getGlobalSettings() : null;
+  return apiOk({ order: serialize(updated, settings2?.freight) });
 }

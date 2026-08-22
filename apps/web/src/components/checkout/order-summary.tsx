@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { formatMoney } from '../../lib/format';
 import { COIN_VALUE_SOM, coinsForOrder } from '../../lib/loyalty';
 import { productImage } from '../../lib/mock-data';
+
 import type { CartItem } from '../../store/cart';
 
 interface Props {

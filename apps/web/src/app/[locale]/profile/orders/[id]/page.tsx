@@ -2,11 +2,15 @@
 
 import { Skeleton, cn, toast } from '@ecom/ui';
 import { ArrowLeft, Check, CircleDot, MapPin, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import {
+  GlobalOrderTracker,
+  type CustomerGlobalView,
+} from '../../../../../components/global/global-order-tracker';
 import { formatDate as fmtDate, formatMoney } from '../../../../../lib/format';
 
 type OrderStatus =
@@ -26,6 +30,8 @@ interface OrderDetail {
   id: string;
   number: string;
   status: OrderStatus;
+  scope?: 'LOCAL' | 'GLOBAL';
+  global?: CustomerGlobalView | null;
   paymentProvider: string | null;
   paymentStatus: string | null;
   paymentReview: boolean;
@@ -225,8 +231,16 @@ export default function OrderDetailPage() {
           </div>
         ) : null}
 
-        {/* Timeline (faqat faol buyurtma uchun — yakunlanganlarda ko'rsatilmaydi) */}
-        {!isClosed ? (
+        {/* Global (Xitoy) buyurtma — o'z kuzatuv chizig'i */}
+        {order.global ? (
+          <div className="mt-6">
+            <GlobalOrderTracker view={order.global} />
+          </div>
+        ) : null}
+
+        {/* Lokal timeline — GLOBAL buyurtmada ko'rsatilmaydi: u kargo bosqichlari
+            bilan yurmaydi va mijozni chalg'itadi (yuqorida global kuzatuv bor). */}
+        {!isClosed && !order.global ? (
           <div className="mt-6 flex items-center">
             {TIMELINE_STEPS.map((step, i) => {
               const done = i <= current;

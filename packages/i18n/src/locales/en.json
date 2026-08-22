@@ -377,7 +377,12 @@
     "color": "Color",
     "size": "Size",
     "increase": "Increase",
-    "decrease": "Decrease"
+    "decrease": "Decrease",
+    "groupLocal": "Sellobay items",
+    "groupGlobal": "Global (from China)",
+    "mixedNote": "Global items arrive by cargo in 15-17 days, so they are ordered separately. You can place both orders.",
+    "checkoutLocal": "Order Sellobay items · {amount}",
+    "checkoutGlobal": "Order global items · {amount}"
   },
   "checkout": {
     "title": "Checkout",
@@ -438,7 +443,8 @@
       "freeBepul": "Free",
       "expressRow": "Express — today, within 3 hours",
       "expressChip": "FAST",
-      "expressTashkent": "Tashkent city only"
+      "expressTashkent": "Tashkent city only",
+      "globalNote": "This order arrives by cargo from China and is delivered straight to your address. Delivery is already included in the price."
     },
     "payment": {
       "title": "Choose payment method",
@@ -987,5 +993,103 @@
     "help": "Help",
     "trackOrder": "Track order",
     "premium": "Sellobay Premium"
+  },
+  "global": {
+    "metaTitle": "Global — order from China | Sellobay",
+    "metaDescription": "Send a Taobao, Tmall or 1688 link — we calculate the final price and bring it from China.",
+    "badge": "Sellobay Global",
+    "title": "Order any product from China by link",
+    "subtitle": "Paste a Taobao, Tmall, 1688 or Weidian link. We calculate the final price — shipping, customs and every cost included.",
+    "step1Title": "Send the link",
+    "step1Desc": "Copy the product page link and paste it here.",
+    "step2Title": "Get the price",
+    "step2Desc": "Our operator calculates weight and freight, then quotes a final price within 24 hours.",
+    "step3Title": "Pay and wait",
+    "step3Desc": "Accept the quote and we order it in China and deliver it to you.",
+    "mode": {
+      "AUTO": "Ground",
+      "AUTOHint": "Cheaper · 15-17 days",
+      "AVIA": "Air",
+      "AVIAHint": "Fast · 5-7 days"
+    },
+    "status": {
+      "NEW": "New",
+      "IN_REVIEW": "In review",
+      "QUOTED": "Quoted",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "UNAVAILABLE": "Unavailable",
+      "ORDERED": "Ordered",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "form": {
+      "title": "New request",
+      "urlLabel": "Product link",
+      "urlPlaceholder": "https://item.taobao.com/item.htm?id=...",
+      "urlHint": "Taobao, Tmall, 1688 and Weidian links are accepted.",
+      "shortLinkNotice": "Short link — an operator will open it manually, which takes a little longer.",
+      "qtyLabel": "Quantity",
+      "modeLabel": "Shipping method",
+      "variantLabel": "Colour / size (optional)",
+      "variantPlaceholder": "e.g. black, size 42",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "Any extra requirement or question",
+      "submit": "Request a price",
+      "createdNotice": "Request received — we will prepare the price and let you know.",
+      "duplicateNotice": "You already have an open request for this product.",
+      "error": {
+        "invalidUrl": "Invalid link — copy the full address.",
+        "unsupportedHost": "Only Taobao, Tmall, 1688 and Weidian links are accepted for now.",
+        "noItemId": "No product found in this link — send the product page link.",
+        "generic": "Could not send the request. Please try again later.",
+        "network": "Connection lost. Check your internet and try again."
+      }
+    },
+    "list": {
+      "title": "My requests",
+      "loading": "Loading...",
+      "emptyTitle": "No requests yet",
+      "emptyDesc": "Paste a link from a Chinese store into the form above — we will price it.",
+      "qty": "{qty} pcs",
+      "perUnit": "{price} per item",
+      "day": "days",
+      "accept": "Accept",
+      "reject": "Reject",
+      "expiresIn": "Quote expires in {hours} h",
+      "acceptedNotice": "Quote accepted — we will contact you for payment shortly.",
+      "error": "Could not complete the action. Please try again.",
+      "loginRequired": "Sign in to see your requests."
+    },
+    "tracker": {
+      "auto": "Ground cargo",
+      "avia": "Air cargo",
+      "leadTime": "About {min}-{max} days",
+      "track": "Tracking number",
+      "cancelled": "This global order was cancelled. We will contact you about the refund.",
+      "priceChanged": "The price in China changed — our operator will contact you.",
+      "priceChangedWithAmount": "The price in China changed. An extra {amount} is needed to continue — our operator will contact you.",
+      "stage": {
+        "CHECKING": "Checking",
+        "CONFIRMED": "Confirmed",
+        "PURCHASED": "Purchased in China",
+        "IN_CARGO": "In transit",
+        "DELIVERED": "Delivered"
+      },
+      "hint": {
+        "CHECKING": "We are verifying availability and price",
+        "CONFIRMED": "Placing the order with the seller in China",
+        "PURCHASED": "The item is being consolidated at our China warehouse",
+        "IN_CARGO": "Cargo is bringing it to your address",
+        "DELIVERED": "Order closed"
+      }
+    },
+    "catalog": {
+      "title": "Global catalogue",
+      "count": "{count} products",
+      "note": "Prices include shipping, customs and every cost. Delivery 15-17 days (ground) or 5-7 days (air).",
+      "emptyTitle": "Catalogue is being filled",
+      "emptyDesc": "No global products yet. Paste a link to the item you want in the form below — we will price it."
+    }
   }
 }
