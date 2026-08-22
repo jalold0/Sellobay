@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const user = await getCurrentUser();
   try {
-    return apiOk(previewGlobalPrice(parsed.data, user));
+    return apiOk(await previewGlobalPrice(parsed.data, user));
   } catch (e) {
     if (e instanceof GlobalCatalogError) return apiError(e.status, e.code, e.message);
     throw e;

@@ -5,5 +5,6 @@ export * from './global-pricing.ts';
 export * from './sourcing-link.ts';
 export * from './global-weight.ts';
 export * from './global-variance.ts';
+export * from './global-settings.ts';
 export * from './loyalty.ts';
 export * from './zone.ts';

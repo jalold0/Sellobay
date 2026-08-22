@@ -79,7 +79,11 @@ export interface WeightEstimateInput {
 /**
  * Bitta pozitsiya uchun og'irlik manbasi: o'lchangan → qo'lda kiritilgan → kategoriya standarti.
  */
-export function estimateWeightKg(input: WeightEstimateInput): WeightEstimate {
+export function estimateWeightKg(
+  input: WeightEstimateInput,
+  /** Kategoriya jadvali bazadagi sozlamalardan kelishi mumkin. */
+  table: Record<WeightCategory, number> = CATEGORY_WEIGHT_KG,
+): WeightEstimate {
   const qty = Math.max(1, input.qty);
 
   if (input.actualWeightKg && input.actualWeightKg > 0) {
@@ -90,7 +94,7 @@ export function estimateWeightKg(input: WeightEstimateInput): WeightEstimate {
     return { kg: input.manualWeightKg * qty, isEstimated: true, source: 'MANUAL' };
   }
 
-  const perUnit = CATEGORY_WEIGHT_KG[input.category] ?? CATEGORY_WEIGHT_KG.OTHER;
+  const perUnit = table[input.category] ?? table.OTHER ?? CATEGORY_WEIGHT_KG.OTHER;
   return { kg: perUnit * qty, isEstimated: true, source: 'CATEGORY' };
 }
 

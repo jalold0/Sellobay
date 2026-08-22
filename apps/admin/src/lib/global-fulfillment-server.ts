@@ -8,12 +8,14 @@
 //   → operator platformadan sotib oladi (PURCHASED) → trek raqam kargo saytiga (IN_CARGO)
 //   → mijoz oldi (DELIVERED).
 
-import { evaluateVariance, DEFAULT_VARIANCE_THRESHOLDS } from '@ecom/core-domain';
+import { evaluateVariance } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { computeGlobalPrice } from '@/lib/global-catalog-server';
+import { notifyGlobalCustomer } from '@/lib/global-notify';
+import { getGlobalSettings } from '@/lib/global-settings-server';
 
 export class GlobalFulfillmentError extends Error {
   constructor(
@@ -75,6 +77,7 @@ async function loadFulfillment(id: string) {
         select: {
           id: true,
           number: true,
+          userId: true,
           status: true,
           grandTotal: true,
           placedAt: true,
@@ -219,7 +222,9 @@ export async function verifyFulfillmentPrice(
     throw new GlobalFulfillmentError(422, 'NO_GLOBAL_ITEMS', 'Buyurtmada global tovar yo‘q');
   }
 
-  // Har bir global pozitsiyani hozirgi ma'lumot bilan qayta narxlaymiz
+  // Har bir global pozitsiyani hozirgi ma'lumot bilan qayta narxlaymiz.
+  // Tariflar/kurs/chegaralar bazadagi sozlamalardan (admin panelidan boshqariladi).
+  const settings = await getGlobalSettings();
   let actualTotal = 0;
   for (const item of items) {
     const gs = item.product.globalSource!;
@@ -229,21 +234,24 @@ export async function verifyFulfillmentPrice(
         ? { l: Number(gs.lengthCm), w: Number(gs.widthCm), h: Number(gs.heightCm) }
         : undefined;
 
-    const priced = computeGlobalPrice({
-      priceCny,
-      chinaDomesticCny: gs.chinaDomesticCny === null ? undefined : Number(gs.chinaDomesticCny),
-      weightCategory: gs.weightCategory,
-      manualWeightKg: gs.manualWeightKg === null ? undefined : Number(gs.manualWeightKg),
-      actualWeightKg: gs.actualWeightKg === null ? null : Number(gs.actualWeightKg),
-      dimsCm: dims,
-      freightMode: row.freightMode,
-      marginPct: gs.marginPct === null ? undefined : Number(gs.marginPct),
-    });
+    const priced = computeGlobalPrice(
+      {
+        priceCny,
+        chinaDomesticCny: gs.chinaDomesticCny === null ? undefined : Number(gs.chinaDomesticCny),
+        weightCategory: gs.weightCategory,
+        manualWeightKg: gs.manualWeightKg === null ? undefined : Number(gs.manualWeightKg),
+        actualWeightKg: gs.actualWeightKg === null ? null : Number(gs.actualWeightKg),
+        dimsCm: dims,
+        freightMode: row.freightMode,
+        marginPct: gs.marginPct === null ? undefined : Number(gs.marginPct),
+      },
+      settings,
+    );
     actualTotal += priced.breakdown.totalUzs * item.quantity;
   }
 
   const paid = Number(row.paidTotal);
-  const variance = evaluateVariance(paid, actualTotal, DEFAULT_VARIANCE_THRESHOLDS);
+  const variance = evaluateVariance(paid, actualTotal, settings.variance);
 
   const nextStatus = variance.decision === 'AUTO_CONFIRM' ? 'CONFIRMED' : 'PRICE_CHANGED';
 
@@ -262,6 +270,15 @@ export async function verifyFulfillmentPrice(
       ...(input.note ? { operatorNote: input.note } : {}),
     },
     select: { id: true },
+  });
+
+  await notifyGlobalCustomer(prisma, {
+    userId: row.order.userId,
+    orderNumber: row.order.number,
+    event:
+      nextStatus === 'CONFIRMED'
+        ? { kind: 'CONFIRMED' }
+        : { kind: 'PRICE_CHANGED', extraChargeUzs: variance.extraChargeUzs },
   });
 
   return {
@@ -292,7 +309,7 @@ export async function markPurchased(
     throw new GlobalFulfillmentError(409, 'NOT_CONFIRMED', 'Avval narxni tekshirib tasdiqlang');
   }
 
-  await prisma.globalFulfillment.update({
+  const updated = await prisma.globalFulfillment.update({
     where: { id },
     data: {
       status: 'PURCHASED',
@@ -301,6 +318,13 @@ export async function markPurchased(
       operatorId: user.id,
       ...(input.note ? { operatorNote: input.note } : {}),
     },
+    select: { order: { select: { userId: true, number: true } } },
+  });
+
+  await notifyGlobalCustomer(prisma, {
+    userId: updated.order.userId,
+    orderNumber: updated.order.number,
+    event: { kind: 'PURCHASED' },
   });
   return getFulfillment(id, user);
 }
@@ -354,6 +378,12 @@ export async function registerTracking(
     }
   });
 
+  await notifyGlobalCustomer(prisma, {
+    userId: row.order.userId,
+    orderNumber: row.order.number,
+    event: { kind: 'IN_CARGO', trackNumber: input.trackNumber.trim() },
+  });
+
   return getFulfillment(id, user);
 }
 
@@ -378,7 +408,7 @@ export async function setFulfillmentStatus(
     );
   }
 
-  await prisma.globalFulfillment.update({
+  const updated = await prisma.globalFulfillment.update({
     where: { id },
     data: {
       status: input.status,
@@ -386,6 +416,15 @@ export async function setFulfillmentStatus(
       ...(input.status === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
       ...(input.note ? { operatorNote: input.note } : {}),
     },
+    select: { order: { select: { userId: true, number: true } } },
   });
+
+  if (input.status === 'DELIVERED' || input.status === 'CANCELLED' || input.status === 'REFUNDED') {
+    await notifyGlobalCustomer(prisma, {
+      userId: updated.order.userId,
+      orderNumber: updated.order.number,
+      event: input.status === 'DELIVERED' ? { kind: 'DELIVERED' } : { kind: 'CANCELLED' },
+    });
+  }
   return getFulfillment(id, user);
 }

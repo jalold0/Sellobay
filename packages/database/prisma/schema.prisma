@@ -1334,3 +1334,15 @@ model GlobalFulfillment {
   @@index([status, createdAt])
   @@index([trackNumber])
 }
+
+/// Global sozlamalar — kargo tariflari, kurs, marja, chetlanish chegaralari.
+/// Bitta qatorli jadval (id = "default"). Faqat STANDARTDAN FARQLAR saqlanadi:
+/// qolgani @ecom/core-domain dagi standart qiymatlar (resolveGlobalSettings birlashtiradi).
+/// Shu sabab kargo tarifi o'zgarganda kod deploy qilinmaydi — admin panelidan tahrirlanadi.
+model GlobalSetting {
+  id          String   @id @default("default")
+  config      Json
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+}

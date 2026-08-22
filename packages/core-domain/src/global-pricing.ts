@@ -199,8 +199,10 @@ function roundUpTo(value: number, step: number): number {
 export function priceGlobalItem(
   item: GlobalItemInput,
   config: GlobalPricingConfig = DEFAULT_GLOBAL_CONFIG,
+  /** Tariflar bazadagi sozlamalardan kelishi mumkin (qarang: global-settings.ts). */
+  tariffs: Record<FreightMode, FreightTariff> = FREIGHT,
 ): GlobalPriceBreakdown {
-  const tariff = FREIGHT[item.mode];
+  const tariff = tariffs[item.mode];
 
   // 1) Tovar tannarxi
   const goodsUsd = (item.priceCny * item.qty) / config.cnyPerUsd;
@@ -268,9 +270,10 @@ export function priceGlobalItem(
 export function priceGlobalItemAllModes(
   item: Omit<GlobalItemInput, 'mode'>,
   config: GlobalPricingConfig = DEFAULT_GLOBAL_CONFIG,
+  tariffs: Record<FreightMode, FreightTariff> = FREIGHT,
 ): Record<FreightMode, GlobalPriceBreakdown> {
   return {
-    AUTO: priceGlobalItem({ ...item, mode: 'AUTO' }, config),
-    AVIA: priceGlobalItem({ ...item, mode: 'AVIA' }, config),
+    AUTO: priceGlobalItem({ ...item, mode: 'AUTO' }, config, tariffs),
+    AVIA: priceGlobalItem({ ...item, mode: 'AVIA' }, config, tariffs),
   };
 }

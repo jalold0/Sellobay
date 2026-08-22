@@ -14,6 +14,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
+import { getGlobalSettings } from '@/lib/global-settings';
 import {
   deductStockForOrder,
   InsufficientStockError,
@@ -538,6 +539,9 @@ export async function listUserOrders(userId: string) {
     },
   });
 
+  // Global buyurtma bo'lsa muddatni sozlamalardan olamiz (bir marta, ro'yxat uchun)
+  const settings = orders.some((o) => o.globalFulfillment) ? await getGlobalSettings() : null;
+
   return {
     items: orders.map((o) => ({
       id: o.id,
@@ -557,7 +561,9 @@ export async function listUserOrders(userId: string) {
         o.status !== 'CANCELLED',
       // Buyurtmada global (Xitoy) pozitsiya bo'lsa — GlobalFulfillment yozuvi bor
       scope: o.globalFulfillment ? ('GLOBAL' as const) : ('LOCAL' as const),
-      global: o.globalFulfillment ? toCustomerGlobalView(o.globalFulfillment) : null,
+      global: o.globalFulfillment
+        ? toCustomerGlobalView(o.globalFulfillment, settings?.freight)
+        : null,
       shippingAddress: o.shippingAddress
         ? {
             recipientName: o.shippingAddress.recipientName,

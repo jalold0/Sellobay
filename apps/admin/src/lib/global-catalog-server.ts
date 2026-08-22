@@ -9,13 +9,14 @@
 // Bu yerda formula TAKRORLANMAYDI.
 
 import {
-  DEFAULT_GLOBAL_CONFIG,
   estimateWeightKg,
   parseSourcingLink,
   priceGlobalItem,
+  resolveGlobalSettings,
   weightGuaranteeCeilingKg,
   type GlobalPriceBreakdown,
   type GlobalPricingConfig,
+  type ResolvedGlobalSettings,
   type WeightCategory,
 } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
@@ -23,6 +24,7 @@ import { slugify } from '@ecom/utils';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import { getGlobalSettings } from '@/lib/global-settings-server';
 
 export class GlobalCatalogError extends Error {
   constructor(
@@ -132,17 +134,22 @@ export interface GlobalPriceComputation {
  */
 export function computeGlobalPrice(
   input: PreviewGlobalPriceInput & { actualWeightKg?: number | null },
-  baseConfig: GlobalPricingConfig = DEFAULT_GLOBAL_CONFIG,
+  settings: ResolvedGlobalSettings = resolveGlobalSettings(null),
 ): GlobalPriceComputation {
-  const weight = estimateWeightKg({
-    category: input.weightCategory as WeightCategory,
-    qty: 1,
-    actualWeightKg: input.actualWeightKg ?? null,
-    manualWeightKg: input.manualWeightKg ?? null,
-  });
+  const weight = estimateWeightKg(
+    {
+      category: input.weightCategory as WeightCategory,
+      qty: 1,
+      actualWeightKg: input.actualWeightKg ?? null,
+      manualWeightKg: input.manualWeightKg ?? null,
+    },
+    settings.categoryWeightKg,
+  );
 
   const config: GlobalPricingConfig =
-    input.marginPct === undefined ? baseConfig : { ...baseConfig, marginPct: input.marginPct };
+    input.marginPct === undefined
+      ? settings.pricing
+      : { ...settings.pricing, marginPct: input.marginPct };
 
   const breakdown = priceGlobalItem(
     {
@@ -155,6 +162,7 @@ export function computeGlobalPrice(
       weightIsEstimated: weight.isEstimated,
     },
     config,
+    settings.freight,
   );
 
   return {
@@ -163,15 +171,15 @@ export function computeGlobalPrice(
     guaranteeCeilingKg: weightGuaranteeCeilingKg(
       breakdown.chargeableKg,
       breakdown.weightIsEstimated,
-      WEIGHT_GUARANTEE_PCT,
+      settings.weightGuaranteePct,
     ),
     config,
   };
 }
 
-export function previewGlobalPrice(input: PreviewGlobalPriceInput, user: Operator) {
+export async function previewGlobalPrice(input: PreviewGlobalPriceInput, user: Operator) {
   assertOperator(user);
-  const c = computeGlobalPrice(input);
+  const c = computeGlobalPrice(input, await getGlobalSettings());
   return {
     totalUzs: c.breakdown.totalUzs,
     chargeableKg: c.breakdown.chargeableKg,
@@ -234,7 +242,7 @@ export async function importGlobalProduct(input: ImportGlobalProductInput, user:
     );
   }
 
-  const priced = computeGlobalPrice(input);
+  const priced = computeGlobalPrice(input, await getGlobalSettings());
   const slug = await uniqueSlug(slugify(input.name.uz));
 
   const created = await prisma.$transaction(async (tx) => {
@@ -410,18 +418,21 @@ export async function repriceGlobalProduct(
       ? { l: Number(source.lengthCm), w: Number(source.widthCm), h: Number(source.heightCm) }
       : undefined;
 
-  const priced = computeGlobalPrice({
-    priceCny,
-    chinaDomesticCny:
-      source.chinaDomesticCny === null ? undefined : Number(source.chinaDomesticCny),
-    weightCategory: (input.weightCategory ?? source.weightCategory) as WeightCategory,
-    manualWeightKg: source.manualWeightKg === null ? undefined : Number(source.manualWeightKg),
-    actualWeightKg,
-    dimsCm: dims,
-    freightMode: input.freightMode ?? source.defaultFreightMode,
-    marginPct:
-      input.marginPct ?? (source.marginPct === null ? undefined : Number(source.marginPct)),
-  });
+  const priced = computeGlobalPrice(
+    {
+      priceCny,
+      chinaDomesticCny:
+        source.chinaDomesticCny === null ? undefined : Number(source.chinaDomesticCny),
+      weightCategory: (input.weightCategory ?? source.weightCategory) as WeightCategory,
+      manualWeightKg: source.manualWeightKg === null ? undefined : Number(source.manualWeightKg),
+      actualWeightKg,
+      dimsCm: dims,
+      freightMode: input.freightMode ?? source.defaultFreightMode,
+      marginPct:
+        input.marginPct ?? (source.marginPct === null ? undefined : Number(source.marginPct)),
+    },
+    await getGlobalSettings(),
+  );
 
   const previousUzs = Number(source.product.basePrice);
 

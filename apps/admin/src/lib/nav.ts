@@ -50,6 +50,7 @@ export const adminNav: NavItem[] = [
     badgeKey: 'pendingPayments',
   },
   { href: '/orders/global', label: 'Global zayavkalar', icon: Globe, group: 'Savdo' },
+  { href: '/settings/global', label: 'Global sozlamalar', icon: Globe, group: 'Tizim' },
   { href: '/products', label: 'Mahsulotlar', icon: Package, group: 'Katalog' },
   { href: '/products/global', label: 'Global import', icon: Globe, group: 'Katalog' },
   { href: '/categories', label: 'Kategoriyalar', icon: FolderTree, group: 'Katalog' },

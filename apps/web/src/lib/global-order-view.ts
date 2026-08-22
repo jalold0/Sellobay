@@ -4,7 +4,7 @@
 // mijozga CHIQMAYDI. Mijozga faqat: qaysi bosqichda, qancha kutadi, trek raqami,
 // va agar narx oshgan bo'lsa — qancha qo'shimcha so'ralayotgani.
 
-import { FREIGHT, type FreightMode } from '@ecom/core-domain';
+import { FREIGHT, type FreightMode, type FreightTariff } from '@ecom/core-domain';
 
 /** Mijozga ko'rsatiladigan bosqichlar (ichki statuslar shularga yig'iladi). */
 export type GlobalStage =
@@ -64,7 +64,11 @@ export interface CustomerGlobalView {
   deliveredAt: string | null;
 }
 
-export function toCustomerGlobalView(f: GlobalFulfillmentRow): CustomerGlobalView {
+export function toCustomerGlobalView(
+  f: GlobalFulfillmentRow,
+  /** Muddat bazadagi sozlamalardan kelishi mumkin (admin panelidan boshqariladi). */
+  tariffs: Record<FreightMode, FreightTariff> = FREIGHT,
+): CustomerGlobalView {
   const stage = STATUS_TO_STAGE[f.status] ?? 'CHECKING';
   const mode = (f.freightMode === 'AVIA' ? 'AVIA' : 'AUTO') as FreightMode;
   const extra = f.extraChargeTotal === null ? null : Number(f.extraChargeTotal.toString());
@@ -73,7 +77,7 @@ export function toCustomerGlobalView(f: GlobalFulfillmentRow): CustomerGlobalVie
     stage,
     stageIndex: GLOBAL_TIMELINE.indexOf(stage),
     freightMode: mode,
-    leadTimeDays: FREIGHT[mode].leadTimeDays,
+    leadTimeDays: tariffs[mode].leadTimeDays,
     // Trek raqam faqat kargoga topshirilgach ko'rsatiladi
     trackNumber: f.status === 'IN_CARGO' || f.status === 'DELIVERED' ? f.trackNumber : null,
     needsDecision: stage === 'PRICE_CHANGED',
