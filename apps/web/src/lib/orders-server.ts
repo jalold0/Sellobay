@@ -234,13 +234,32 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
     });
   }
 
-  // 3. Yetkazib berish narxi
+  // 2b. LOKAL va GLOBAL tovarni bitta buyurtmada aralashtirmaymiz.
+  //     Sabab: lokal tovar 1-2 kunda kuryer bilan, global tovar 15-17 kunda kargo
+  //     bilan keladi — bitta buyurtmada ikki xil muddat, ikki xil yetkazish va ikki
+  //     xil holat chizig'i bo'lishi mumkin emas. Mijozga tushunarli xabar beramiz.
+  const localTotal = subtotal.sub(globalTotal);
+  if (globalTotal.gt(0) && localTotal.gt(0)) {
+    throw new OrderError(
+      400,
+      'MIXED_CART',
+      "Global (Xitoydan) va oddiy tovarlar bitta buyurtmada bo'lishi mumkin emas — ularni alohida buyurtma qiling",
+    );
+  }
+  const isGlobalOrder = globalTotal.gt(0);
+
+  // 3. Yetkazib berish narxi.
+  //    GLOBAL buyurtmada lokal yetkazish yig'ilmaydi: kargo tovarni to'g'ridan-to'g'ri
+  //    mijoz manziliga olib boradi va bu xarajat allaqachon tovar narxi ichida.
   let shippingTotal = new Prisma.Decimal(0);
-  if (input.deliveryMethod === 'EXPRESS') {
-    shippingTotal = new Prisma.Decimal(EXPRESS_FEE);
-  } else if (input.deliveryMethod === 'HOME_DELIVERY') {
-    if (subtotal.lt(FREE_SHIPPING_THRESHOLD)) {
-      shippingTotal = new Prisma.Decimal(SHIPPING_FEE);
+  if (!isGlobalOrder) {
+    if (input.deliveryMethod === 'EXPRESS') {
+      shippingTotal = new Prisma.Decimal(EXPRESS_FEE);
+    } else if (input.deliveryMethod === 'HOME_DELIVERY') {
+      // Bepul yetkazish chegarasi FAQAT lokal summadan hisoblanadi
+      if (localTotal.lt(FREE_SHIPPING_THRESHOLD)) {
+        shippingTotal = new Prisma.Decimal(SHIPPING_FEE);
+      }
     }
   }
   const baseTotal = subtotal.add(shippingTotal); // chegirmagacha

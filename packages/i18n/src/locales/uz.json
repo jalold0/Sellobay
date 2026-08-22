@@ -1077,6 +1077,13 @@
         "IN_CARGO": "Kargo sizning manzilingizga olib kelmoqda",
         "DELIVERED": "Buyurtma yopildi"
       }
+    },
+    "catalog": {
+      "title": "Global katalog",
+      "count": "{count} ta tovar",
+      "note": "Narxlar yetkazish, bojxona va barcha xarajatlar bilan ko‘rsatilgan. Yetkazish 15-17 kun (avto) yoki 5-7 kun (avia).",
+      "emptyTitle": "Katalog to‘ldirilmoqda",
+      "emptyDesc": "Hozircha global tovar yo‘q. Kerakli tovar havolasini pastdagi formaga tashlang — narxini hisoblab beramiz."
     }
   }
 }

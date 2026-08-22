@@ -1077,6 +1077,13 @@
         "IN_CARGO": "Cargo is bringing it to your address",
         "DELIVERED": "Order closed"
       }
+    },
+    "catalog": {
+      "title": "Global catalogue",
+      "count": "{count} products",
+      "note": "Prices include shipping, customs and every cost. Delivery 15-17 days (ground) or 5-7 days (air).",
+      "emptyTitle": "Catalogue is being filled",
+      "emptyDesc": "No global products yet. Paste a link to the item you want in the form below — we will price it."
     }
   }
 }

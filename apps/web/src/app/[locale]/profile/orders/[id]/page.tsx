@@ -238,8 +238,9 @@ export default function OrderDetailPage() {
           </div>
         ) : null}
 
-        {/* Timeline (faqat faol buyurtma uchun — yakunlanganlarda ko'rsatilmaydi) */}
-        {!isClosed ? (
+        {/* Lokal timeline — GLOBAL buyurtmada ko'rsatilmaydi: u kargo bosqichlari
+            bilan yurmaydi va mijozni chalg'itadi (yuqorida global kuzatuv bor). */}
+        {!isClosed && !order.global ? (
           <div className="mt-6 flex items-center">
             {TIMELINE_STEPS.map((step, i) => {
               const done = i <= current;

@@ -3,6 +3,7 @@
 
 import { getTranslations } from 'next-intl/server';
 
+import { GlobalCatalogSection } from '../../../components/global/global-catalog-section';
 import { SourcingShell } from '../../../components/global/sourcing-shell';
 
 import type { Metadata } from 'next';
@@ -13,5 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function GlobalSourcingPage() {
-  return <SourcingShell />;
+  return (
+    <div className="space-y-8">
+      {/* Katalog — mijoz asosan shu yerdan buyurtma qiladi */}
+      <GlobalCatalogSection />
+      {/* Havola orqali buyurtma — katalogda yo'q tovar uchun zaxira yo'l */}
+      <SourcingShell />
+    </div>
+  );
 }

@@ -108,12 +108,29 @@ const PRODUCT_SELECT = {
 
 // ─── Public API ──────────────────────────────────────────────────
 
+/**
+ * Katalog qamrovi. LOKAL va GLOBAL tovarlar bitta `Product` jadvalida yashaydi
+ * (`globalSource` yozuvi bor/yo'qligi bilan farqlanadi), shuning uchun HAR BIR
+ * ro'yxat so'rovi qamrovni aniq belgilashi kerak — aks holda 15-17 kunlik Xitoy
+ * tovari 1-2 kunlik lokal tovarlar orasiga tushib qoladi.
+ */
+export type CatalogScope = 'LOCAL' | 'GLOBAL' | 'ALL';
+
 export interface CatalogQuery {
   category?: string; // category slug
   brand?: string; // brand slug
   q?: string; // qidiruv matni
   sort?: string; // popularity | price-asc | price-desc | rating | newest
   limit?: number;
+  /** Standart LOCAL — global tovar tasodifan lokal katalogga chiqmasin. */
+  scope?: CatalogScope;
+}
+
+/** Qamrovni Prisma `where` shartiga aylantiradi. */
+export function scopeWhere(scope: CatalogScope = 'LOCAL'): Record<string, unknown> {
+  if (scope === 'GLOBAL') return { globalSource: { isNot: null } };
+  if (scope === 'ALL') return {};
+  return { globalSource: { is: null } };
 }
 
 /** DB'dan o'qish — kesh ichida ishlaydi (chaqiruvchi to'g'ridan-to'g'ri chaqirmaydi). */
@@ -121,10 +138,14 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
   items: MockProduct[];
   source: 'db' | 'mock';
 }> {
-  const { category, brand, q, sort, limit = 48 } = query;
+  const { category, brand, q, sort, limit = 48, scope = 'LOCAL' } = query;
 
   try {
-    const where: Record<string, unknown> = { status: 'ACTIVE', deletedAt: null };
+    const where: Record<string, unknown> = {
+      status: 'ACTIVE',
+      deletedAt: null,
+      ...scopeWhere(scope),
+    };
     if (brand) where.brand = { slug: brand };
     if (category) where.categories = { some: { category: { slug: category } } };
     if (q) {
@@ -168,7 +189,7 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
 
     // Filtersiz so'rov bo'sh qaytsa — DB hali seed qilinmagan. DEV'da mock ko'rsatamiz,
     // production'da bo'sh ro'yxat (soxta, sotib bo'lmaydigan mahsulotlar emas).
-    if (rows.length === 0 && !category && !brand && !q) {
+    if (rows.length === 0 && !category && !brand && !q && scope !== 'GLOBAL') {
       return ALLOW_MOCK_FALLBACK
         ? { items: filterMock(query), source: 'mock' }
         : { items: [], source: 'db' };
