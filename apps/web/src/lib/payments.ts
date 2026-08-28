@@ -22,6 +22,18 @@ export function isOnlineProvider(p: PaymentProvider): boolean {
   return ONLINE_PROVIDERS.includes(p);
 }
 
+/**
+ * Oldindan to'lanadigan usullar — pul tovar yetkazilgunga QADAR keladi.
+ * Naqd (CASH_ON_DELIVERY) bundan mustasno: pul faqat eshik oldida olinadi.
+ *
+ * Global (Xitoydan) buyurtmalar uchun MAJBURIY: tovar 15-17 kun yo'lda bo'ladi va
+ * biz uni mijoz puli bilan sotib olamiz — naqd bo'lsa rad etilgan buyurtma to'g'ridan-to'g'ri
+ * zarar bo'ladi.
+ */
+export function isPrepaidProvider(p: PaymentProvider): boolean {
+  return p !== 'CASH_ON_DELIVERY';
+}
+
 function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
 }

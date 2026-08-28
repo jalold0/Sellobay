@@ -99,11 +99,12 @@ export function CheckoutFlow() {
     [receiptPreview],
   );
   const [paymentNote, setPaymentNote] = React.useState('');
+
   const [copiedCard, setCopiedCard] = React.useState<string | null>(null);
 
-  // Platforma kartalari sozlanmagan bo'lsa (MANUAL_PAYMENT_CARDS yo'q) bu usul
-  // ishlamaydi: server buyurtmani rad etadi. Shuning uchun ro'yxat bo'sh kelsa
-  // boshqa usulga o'tamiz — foydalanuvchi 503 xatoga urilib qolmasin.
+  // Hozir ishlaydigan to'lov usullari serverdan keladi (`/api/payment-cards` → `providers`).
+  // Kalitsiz Click/Payme yoki kartasiz UZCARD taklif qilinmaydi — server ularni rad etadi.
+  const [providers, setProviders] = React.useState<PaymentProvider[]>([]);
   const [cardsChecked, setCardsChecked] = React.useState(false);
 
   // Takroriy yuborishdan himoya: kalit bir marta hosil qilinadi va shu
@@ -119,11 +120,11 @@ export function CheckoutFlow() {
       .then((res) => {
         if (!active) return;
         const list = res?.success && res.data ? (res.data.cards as PaymentCardDTO[]) : [];
+        const ready =
+          res?.success && res.data ? ((res.data.providers ?? []) as PaymentProvider[]) : [];
         setCards(list);
+        setProviders(ready);
         setCardsChecked(true);
-        if (list.length === 0) {
-          setPayment((current) => (current === 'UZCARD' ? 'CLICK' : current));
-        }
       })
       .catch(() => {
         if (active) setCardsChecked(true);
@@ -211,6 +212,21 @@ export function CheckoutFlow() {
   // mijoz manziliga olib boradi va bu xarajat tovar narxi ichida. Server ham
   // shunday hisoblaydi (`orders-server`) — ko'rsatilgan summa olinadigan summaga teng bo'lsin.
   const isGlobalOrder = items.length > 0 && items.every((i) => i.isGlobal);
+  // Taklif qilinadigan usullar: karta (platforma kartasi bo'lsa) + serverdagi ishlaydigan
+  // provayderlar. Global buyurtmada naqd yo'q (server: GLOBAL_PREPAID_ONLY).
+  const availablePayments = React.useMemo<PaymentProvider[]>(() => {
+    const list: PaymentProvider[] = [];
+    if (cards.length > 0) list.push('UZCARD');
+    list.push(...providers);
+    return isGlobalOrder ? list.filter((p) => p !== 'CASH_ON_DELIVERY') : list;
+  }, [cards, providers, isGlobalOrder]);
+  // Tanlangan usul taklif qilinmaydigan bo'lsa (masalan global buyurtmada naqd yoki kalitsiz
+  // Click), birinchi ishlaydiganiga jimgina o'tamiz — aks holda "Buyurtma berish" bosilganda
+  // serverdan xato kelardi va mijoz sababini tushunmasdi.
+  React.useEffect(() => {
+    if (!cardsChecked || availablePayments.length === 0) return;
+    if (!availablePayments.includes(payment)) setPayment(availablePayments[0]!);
+  }, [cardsChecked, availablePayments, payment]);
   const shippingFee = isGlobalOrder
     ? 0
     : deliveryMethod === 'PICKUP_POINT'
@@ -487,6 +503,8 @@ export function CheckoutFlow() {
           />
 
           <PaymentSection
+            isGlobalOrder={isGlobalOrder}
+            available={availablePayments}
             payment={payment}
             onSelectPayment={setPayment}
             total={total}

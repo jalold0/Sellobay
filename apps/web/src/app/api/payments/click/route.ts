@@ -10,9 +10,10 @@ import { createHash, timingSafeEqual } from 'crypto';
 
 import { NextResponse } from 'next/server';
 
+import { Prisma } from '@ecom/database';
+
 import { prisma } from '@/lib/db';
 
-import type { Prisma } from '@ecom/database';
 import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -134,9 +135,14 @@ export async function POST(req: NextRequest) {
     return reply({ error: ERR_INCORRECT_AMOUNT, error_note: 'Incorrect amount' });
   }
 
+  // To'lov faqat hali to'lanmagan, jarayonga kirmagan buyurtmaga qabul qilinadi. Ilgari faqat
+  // `PAID` tekshirilardi: jo'natilgan/yetkazilgan buyurtmaga kelgan Complete uni qayta PAID'ga
+  // tushirib, ikkinchi to'lov yozuvini ochardi (audit Y8).
+  const payable = order.status === 'PENDING' || order.status === 'CONFIRMED';
+
   // 6) Prepare (action=0) — to'lovga tayyorlik
   if (action === '0') {
-    if (order.status === 'PAID') {
+    if (!payable) {
       return reply({ error: ERR_ALREADY_PAID, error_note: 'Already paid' });
     }
     return reply({
@@ -149,37 +155,54 @@ export async function POST(req: NextRequest) {
   }
 
   // 7) Complete (action=1) — to'lovni tasdiqlash
-  if (order.status === 'PAID') {
+  if (!payable) {
     return reply({ error: ERR_ALREADY_PAID, error_note: 'Already paid' });
   }
   const paidAt = new Date();
-  // Atomik: Payment yozuvi + Order statusi (status+paidAt)
-  await prisma.$transaction([
-    prisma.payment.create({
-      data: {
-        orderId: order.id,
-        provider: 'CLICK',
-        status: 'PAID',
-        amount: order.grandTotal,
-        currency: 'UZS',
-        externalId: clickTransId,
-        paidAt,
-        rawPayload,
-      },
-    }),
-    prisma.order.update({
-      where: { id: order.id },
-      data: {
-        status: 'PAID',
-        paidAt,
-        // Moliyaviy hisobot uchun: qancha pul haqiqatda tushgani. Buni
-        // yozmasak, onlayn to'langan buyurtmalarda paidTotal 0 bo'lib qoladi
-        // (admin qo'lda tasdiqlash va COD oqimlari esa uni to'ldiradi).
-        paidTotal: order.grandTotal,
-        statusHistory: { create: { status: 'PAID', comment: 'Click to‘lovi tasdiqlandi' } },
-      },
-    }),
-  ]);
+  // Atomik: buyurtma FAQAT hali to'lanmagan holatdan PAID'ga o'tadi (tekshiruv va yozuv orasida
+  // boshqa jarayon o'zgartirgan bo'lsa — 0 qator), keyin Payment yozuvi.
+  let completed: boolean;
+  try {
+    completed = await prisma.$transaction(async (tx) => {
+      const moved = await tx.order.updateMany({
+        where: { id: order.id, status: { in: ['PENDING', 'CONFIRMED'] }, paidAt: null },
+        data: {
+          status: 'PAID',
+          paidAt,
+          // Moliyaviy hisobot uchun: qancha pul haqiqatda tushgani. Buni
+          // yozmasak, onlayn to'langan buyurtmalarda paidTotal 0 bo'lib qoladi
+          // (admin qo'lda tasdiqlash va COD oqimlari esa uni to'ldiradi).
+          paidTotal: order.grandTotal,
+        },
+      });
+      if (moved.count === 0) return false;
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          provider: 'CLICK',
+          status: 'PAID',
+          amount: order.grandTotal,
+          currency: 'UZS',
+          externalId: clickTransId,
+          paidAt,
+          rawPayload,
+        },
+      });
+      await tx.orderStatusHistory.create({
+        data: { orderId: order.id, status: 'PAID', comment: 'Click to‘lovi tasdiqlandi' },
+      });
+      return true;
+    });
+  } catch (e) {
+    // Shu click_trans_id allaqachon yozilgan (Click qayta yubordi) — 500 emas, "to'langan".
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      return reply({ error: ERR_ALREADY_PAID, error_note: 'Already paid' });
+    }
+    throw e;
+  }
+  if (!completed) {
+    return reply({ error: ERR_ALREADY_PAID, error_note: 'Already paid' });
+  }
   return reply({
     click_trans_id: clickTransId,
     merchant_trans_id: merchantTransId,
