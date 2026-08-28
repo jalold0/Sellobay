@@ -23,7 +23,7 @@ import {
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
 import { MANUAL_CARD_PROVIDER, validateReceiptDataUrl } from '@/lib/manual-payment';
-import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
+import { isOnlineProvider, isPrepaidProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
 export class OrderError extends Error {
@@ -247,6 +247,19 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
     );
   }
   const isGlobalOrder = globalTotal.gt(0);
+
+  // GLOBAL buyurtma FAQAT OLDINDAN TO'LANADI.
+  // Naqd (yetkazishda to'lash) mumkin emas: biz mijoz to'lagach Xitoydan sotib olamiz va
+  // tovar 15-17 kun yo'lda bo'ladi. Naqd bo'lsa mijoz eshik oldida rad etishi mumkin —
+  // pul allaqachon sarflangan, tovar esa qaytarib bo'lmaydigan joyda. Butun biznes
+  // modeli oldindan to'lovga qurilgan (qarang: docs/PR-global-sourcing.md).
+  if (isGlobalOrder && !isPrepaidProvider(input.paymentProvider as PaymentProvider)) {
+    throw new OrderError(
+      400,
+      'GLOBAL_PREPAID_ONLY',
+      "Global (Xitoydan) buyurtma faqat oldindan to'lov bilan rasmiylashtiriladi — naqd to'lov mumkin emas",
+    );
+  }
 
   // 3. Yetkazib berish narxi.
   //    GLOBAL buyurtmada lokal yetkazish yig'ilmaydi: kargo tovarni to'g'ridan-to'g'ri

@@ -79,7 +79,13 @@ export function FulfillmentCard({
         </div>
         <div className="text-right">
           <div className="text-lg font-medium">{uzs(item.paidTotal)}</div>
-          <div className="text-muted-foreground text-xs">mijoz to‘lagan</div>
+          <div
+            className={
+              item.order.paid ? 'text-xs text-emerald-700' : 'text-xs font-medium text-amber-700'
+            }
+          >
+            {item.order.paid ? 'to‘langan' : 'to‘lov kutilmoqda'}
+          </div>
         </div>
       </div>
 
@@ -173,23 +179,30 @@ export function FulfillmentCard({
           </>
         )}
 
-        {item.status === 'CONFIRMED' && (
-          <>
-            <Input
-              value={purchaseRef}
-              onChange={(e) => setPurchaseRef(e.target.value)}
-              placeholder="Platformadagi zakaz raqami"
-              className="h-9 max-w-[280px]"
-            />
-            <Button
-              size="sm"
-              disabled={busy || !purchaseRef.trim()}
-              onClick={() => send({ action: 'PURCHASE', purchaseRef: purchaseRef.trim() })}
-            >
-              {spinner}Sotib olindi
-            </Button>
-          </>
-        )}
+        {item.status === 'CONFIRMED' &&
+          (item.order.paid ? (
+            <>
+              <Input
+                value={purchaseRef}
+                onChange={(e) => setPurchaseRef(e.target.value)}
+                placeholder="Platformadagi zakaz raqami"
+                className="h-9 max-w-[280px]"
+              />
+              <Button
+                size="sm"
+                disabled={busy || !purchaseRef.trim()}
+                onClick={() => send({ action: 'PURCHASE', purchaseRef: purchaseRef.trim() })}
+              >
+                {spinner}Sotib olindi
+              </Button>
+            </>
+          ) : (
+            // Pul kelmaguncha sotib olish tugmasi ko'rsatilmaydi — server ham rad etadi
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              To‘lov tasdiqlanmagan. Pul kelgach (karta cheki tasdiqlansa yoki onlayn to‘lov o‘tsa)
+              sotib olish tugmasi paydo bo‘ladi.
+            </p>
+          ))}
 
         {(item.status === 'PURCHASED' || item.status === 'IN_CARGO') && (
           <>

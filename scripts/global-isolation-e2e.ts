@@ -27,6 +27,10 @@ async function api(base: string, path: string, jar: Jar, init: RequestInit = {})
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
+/** 1x1 shaffof PNG — karta cheki (global buyurtma oldindan to'lanadi). */
+const FAKE_RECEIPT =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
 const ok = (c: boolean, msg: string) => console.log(`${c ? '  OK  ' : ' XATO '} ${msg}`);
 const uzs = (n: number) => new Intl.NumberFormat('ru-RU').format(Math.round(n));
 
@@ -117,7 +121,8 @@ async function main() {
       city: 'Toshkent',
       street: 'Test kocha 4',
       deliveryMethod: 'HOME_DELIVERY',
-      paymentProvider: 'CASH_ON_DELIVERY',
+      paymentProvider: 'UZCARD',
+      paymentReceipt: FAKE_RECEIPT,
     }),
   });
   ok(mixed.status === 400, `status ${mixed.status} — ${mixed.body?.error?.code}`);
@@ -134,7 +139,8 @@ async function main() {
       city: 'Toshkent',
       street: 'Test kocha 4',
       deliveryMethod: 'HOME_DELIVERY',
-      paymentProvider: 'CASH_ON_DELIVERY',
+      paymentProvider: 'UZCARD',
+      paymentReceipt: FAKE_RECEIPT,
     }),
   });
   ok(globalOrder.status === 200, `status ${globalOrder.status}`);

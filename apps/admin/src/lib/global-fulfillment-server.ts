@@ -79,6 +79,7 @@ async function loadFulfillment(id: string) {
           number: true,
           userId: true,
           status: true,
+          paidAt: true,
           grandTotal: true,
           placedAt: true,
           user: { select: { firstName: true, lastName: true, phone: true } },
@@ -152,6 +153,8 @@ function toView(row: Row) {
       id: row.order.id,
       number: row.order.number,
       status: row.order.status,
+      paid: row.order.paidAt !== null,
+      paidAt: row.order.paidAt?.toISOString() ?? null,
       grandTotal: Number(row.order.grandTotal),
       placedAt: row.order.placedAt.toISOString(),
       customer:
@@ -302,11 +305,23 @@ export async function markPurchased(
   assertOperator(user);
   const row = await prisma.globalFulfillment.findUnique({
     where: { id },
-    select: { status: true },
+    select: { status: true, order: { select: { paidAt: true } } },
   });
   if (!row) throw new GlobalFulfillmentError(404, 'NOT_FOUND', 'Zayavka topilmadi');
   if (row.status !== 'CONFIRMED') {
     throw new GlobalFulfillmentError(409, 'NOT_CONFIRMED', 'Avval narxni tekshirib tasdiqlang');
+  }
+
+  // PUL QO'LGA KELMAGUNCHA XITOYDAN SOTIB OLINMAYDI.
+  // Naqd to'lov global buyurtmada taqiqlangan, lekin karta cheki admin tasdig'ini,
+  // onlayn to'lov esa webhook'ni kutadi — ikkalasida ham `paidAt` faqat pul kelgach
+  // qo'yiladi. Bu tekshiruvsiz operator to'lanmagan buyurtmaga o'z pulini sarflaydi.
+  if (row.order.paidAt === null) {
+    throw new GlobalFulfillmentError(
+      409,
+      'NOT_PAID',
+      "To'lov hali tasdiqlanmagan — pul kelmaguncha Xitoydan sotib olmang",
+    );
   }
 
   const updated = await prisma.globalFulfillment.update({

@@ -81,6 +81,7 @@ export function CheckoutFlow() {
   const [receipt, setReceipt] = React.useState('');
   const [receiptBusy, setReceiptBusy] = React.useState(false);
   const [paymentNote, setPaymentNote] = React.useState('');
+
   const [copiedCard, setCopiedCard] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -168,6 +169,12 @@ export function CheckoutFlow() {
   // mijoz manziliga olib boradi va bu xarajat tovar narxi ichida. Server ham
   // shunday hisoblaydi (`orders-server`) — ko'rsatilgan summa olinadigan summaga teng bo'lsin.
   const isGlobalOrder = items.length > 0 && items.every((i) => i.isGlobal);
+  // Global buyurtmada naqd to'lov mumkin emas. Mijoz avval naqdni tanlab qo'ygan bo'lsa,
+  // uni jimgina karta to'loviga o'tkazamiz — aks holda "Buyurtma berish" bosilganda
+  // serverdan GLOBAL_PREPAID_ONLY xatosi kelardi va mijoz sababini tushunmasdi.
+  React.useEffect(() => {
+    if (isGlobalOrder && payment === 'CASH_ON_DELIVERY') setPayment('UZCARD');
+  }, [isGlobalOrder, payment]);
   const shippingFee = isGlobalOrder
     ? 0
     : deliveryMethod === 'PICKUP_POINT'
@@ -387,6 +394,7 @@ export function CheckoutFlow() {
           />
 
           <PaymentSection
+            isGlobalOrder={isGlobalOrder}
             payment={payment}
             onSelectPayment={setPayment}
             total={total}

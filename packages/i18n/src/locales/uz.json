@@ -486,7 +486,8 @@
       "receiptRequired": "Chek (kvitansiya) rasmini yuklang",
       "receiptProcessing": "Rasm tayyorlanmoqda...",
       "receiptNoteLabel": "To'lov izohi (ixtiyoriy)",
-      "receiptNotePlaceholder": "Masalan: to'lagan karta oxirgi 4 raqami"
+      "receiptNotePlaceholder": "Masalan: to'lagan karta oxirgi 4 raqami",
+      "globalPrepaidNote": "Global buyurtma oldindan to‘lanadi — tovarni Xitoydan siz to‘lagach sotib olamiz. Naqd to‘lov mavjud emas."
     },
     "review": {
       "title": "Buyurtmangizni tekshiring",

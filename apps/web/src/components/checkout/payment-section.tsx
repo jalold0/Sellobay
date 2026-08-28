@@ -24,6 +24,12 @@ const PAYMENT_TILES: {
 ];
 
 interface Props {
+  /**
+   * GLOBAL buyurtma: naqd to'lov KO'RSATILMAYDI. Tovar mijoz puli bilan Xitoydan
+   * sotib olinadi va 15-17 kun yo'lda bo'ladi — eshik oldida rad etilsa zarar bizniki.
+   * Server ham rad etadi (`GLOBAL_PREPAID_ONLY`), bu faqat UI tarafi.
+   */
+  isGlobalOrder?: boolean;
   payment: PaymentProvider;
   onSelectPayment: (p: PaymentProvider) => void;
   total: number;
@@ -38,6 +44,7 @@ interface Props {
 }
 
 export function PaymentSection({
+  isGlobalOrder = false,
   payment,
   onSelectPayment,
   total,
@@ -52,13 +59,22 @@ export function PaymentSection({
 }: Props) {
   const t = useTranslations('checkout');
 
+  const tiles = isGlobalOrder
+    ? PAYMENT_TILES.filter((tile) => tile.id !== 'CASH_ON_DELIVERY')
+    : PAYMENT_TILES;
+
   return (
     <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">
       <h2 className="text-brand-ink mb-[18px] font-serif text-xl font-semibold">
         {t('payment.methodTitle')}
       </h2>
+      {isGlobalOrder && (
+        <p className="bg-paper text-brand-ink-soft mb-4 rounded-xl px-4 py-3 text-sm">
+          {t('payment.globalPrepaidNote')}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {PAYMENT_TILES.map((tile) => {
+        {tiles.map((tile) => {
           const active = payment === tile.id;
           return (
             <button

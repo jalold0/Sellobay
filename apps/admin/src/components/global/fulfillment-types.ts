@@ -63,6 +63,9 @@ export interface FulfillmentView {
     id: string;
     number: string;
     status: string;
+    /** Pul haqiqatan kelganmi (Order.paidAt). Sotib olish shu shartga bog'liq. */
+    paid: boolean;
+    paidAt: string | null;
     grandTotal: number;
     placedAt: string;
     customer: string | null;

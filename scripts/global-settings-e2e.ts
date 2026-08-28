@@ -27,6 +27,10 @@ async function api(base: string, path: string, jar: Jar, init: RequestInit = {})
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
+/** 1x1 shaffof PNG — karta cheki (global buyurtma oldindan to'lanadi). */
+const FAKE_RECEIPT =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
 const ok = (c: boolean, msg: string) => console.log(`${c ? '  OK  ' : ' XATO '} ${msg}`);
 const uzs = (n: number) => new Intl.NumberFormat('ru-RU').format(Math.round(n));
 
@@ -138,7 +142,8 @@ async function main() {
       city: 'Toshkent',
       street: 'Test kocha 3',
       deliveryMethod: 'HOME_DELIVERY',
-      paymentProvider: 'CASH_ON_DELIVERY',
+      paymentProvider: 'UZCARD',
+      paymentReceipt: FAKE_RECEIPT,
     }),
   });
   const orderNumber = order.body?.data?.order?.number;
@@ -166,6 +171,13 @@ async function main() {
     method: 'PATCH',
     body: JSON.stringify({ action: 'VERIFY' }),
   });
+  // Global buyurtmada operator PUL KELGACH sotib oladi (NOT_PAID himoyasi).
+  // Admin karta chekini tasdiqlaganda aynan shu ikki maydon qo'yiladi.
+  await prisma.order.update({
+    where: { id: order.body?.data?.order?.id },
+    data: { status: 'PAID', paidAt: new Date() },
+  });
+
   await api(ADMIN, `/api/global/fulfillment/${z.id}`, admin, {
     method: 'PATCH',
     body: JSON.stringify({ action: 'PURCHASE', purchaseRef: 'REF-N-1' }),

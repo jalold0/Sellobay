@@ -478,7 +478,8 @@
       "receiptRequired": "Please upload the receipt image",
       "receiptProcessing": "Processing image...",
       "receiptNoteLabel": "Payment note (optional)",
-      "receiptNotePlaceholder": "e.g. last 4 digits of the card you paid from"
+      "receiptNotePlaceholder": "e.g. last 4 digits of the card you paid from",
+      "globalPrepaidNote": "Global orders are prepaid — we buy the item in China after your payment. Cash on delivery is not available."
     },
     "review": {
       "title": "Review your order",
