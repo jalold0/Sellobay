@@ -26,6 +26,11 @@ lint-typecheck-build:
   image: node:20-bookworm-slim
   # GitHub'dagi `concurrency: cancel-in-progress` ekvivalenti
   interruptible: true
+  # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags)
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
   cache:
     key:
       files:
@@ -64,7 +69,10 @@ docker-build-push:
     matrix:
       - APP: [web, admin, seller, telegram-mini-app, telegram-bot]
   variables:
+    DOCKER_HOST: tcp://docker:2376
     DOCKER_TLS_CERTDIR: '/certs'
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: '$DOCKER_TLS_CERTDIR/client'
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
   script:
