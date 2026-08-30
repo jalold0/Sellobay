@@ -41,7 +41,6 @@ src/
 │   └── status/              # Domain badge'lari
 ├── lib/
 │   ├── config.ts            # env va konstantalar
-│   ├── api-client.ts        # Auth-aware fetch wrapper (token refresh bilan)
 │   ├── auth.ts              # JWT decode + RBAC
 │   ├── format.ts            # Money/date/relative
 │   ├── nav.ts               # Markazlashtirilgan navigatsiya
