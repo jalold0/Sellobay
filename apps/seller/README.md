@@ -20,6 +20,6 @@ pnpm --filter @ecom/seller dev
 - `/login` — Login
 
 Admin panel arxitekturasiga to'liq mos, faqat sotuvchining shaxsiy ko'rinishi.
-Foundationi shu xil: `@ecom/ui` + `lib/api-client.ts` + `providers/`.
+Foundationi shu xil: `@ecom/ui` + `lib/auth/` (cookie sessiya) + `providers/`.
 
 Yangi bo'lim qo'shish: `src/lib/nav.ts` ga `NavItem` qo'shib, `src/app/<bolim>/page.tsx` yaratish kifoya.

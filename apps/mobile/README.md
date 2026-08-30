@@ -61,8 +61,8 @@ src/
 │   └── toast.ts              # Imperative toast() API
 └── ui/                       # Reusable komponentlar
     ├── button.tsx, input.tsx, badge.tsx, skeleton.tsx
-    ├── empty-state.tsx, header.tsx, section-header.tsx
-    ├── category-chip.tsx, product-card.tsx
+    ├── empty-state.tsx, header.tsx, product-card.tsx
+    ├── product-rail.tsx, category-grid.tsx, hero-banner.tsx
     └── toaster.tsx
 ```
 

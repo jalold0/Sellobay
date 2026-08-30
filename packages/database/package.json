@@ -21,7 +21,8 @@
     "format": "prisma format",
     "validate": "prisma validate",
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:test-accounts": "tsx prisma/seed-test-accounts.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0"
