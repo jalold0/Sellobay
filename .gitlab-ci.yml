@@ -1,0 +1,83 @@
+# GitLab CI — .github/workflows/ci.yml va docker.yml ekvivalenti.
+# Eslatma: sayt Vercel'da deploy bo'ladi, shu sababli bu yerda deploy job yo'q.
+
+stages:
+  - verify
+  - docker
+
+# GitHub'dagi `on: push [main, develop]` + `on: pull_request` ekvivalenti.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+
+variables:
+  # Prisma client generatsiyasi va Next build vaqtidagi schema validatsiyasi uchun
+  # placeholder (CI'da haqiqiy DB'ga ulanilmaydi)
+  DATABASE_URL: 'postgresql://user:pass@localhost:5432/db'
+  PNPM_STORE: '$CI_PROJECT_DIR/.pnpm-store'
+  TURBO_TELEMETRY_DISABLED: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
+
+lint-typecheck-build:
+  stage: verify
+  image: node:20-bookworm-slim
+  # GitHub'dagi `concurrency: cancel-in-progress` ekvivalenti
+  interruptible: true
+  # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags)
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@9.15.9 --activate
+    - pnpm config set store-dir "$PNPM_STORE"
+    - pnpm install --frozen-lockfile
+  script:
+    # Prisma client typecheck va build uchun kerak (DB'ga ulanmaydi)
+    - pnpm db:generate
+    - pnpm lint
+    - pnpm typecheck
+    # Unit-testlar (hozircha @ecom/core-domain — sof domen qatlami)
+    - pnpm turbo run test --filter=@ecom/core-domain
+    # Vercel'da deploy bo'ladigan Next.js app'lari
+    - pnpm turbo run build --filter=@ecom/web --filter=@ecom/admin --filter=@ecom/seller
+
+# Docker image'lar faqat versiya tegida yoki qo'lda (CI/CD > Pipelines > Run pipeline)
+# quriladi — har push'da emas, CI daqiqalarini tejash uchun.
+# api/wms graveyard'ga karantinlangan (qarang graveyard/README.md) — matritsada yo'q.
+docker-build-push:
+  stage: docker
+  image: docker:27
+  services:
+    - docker:27-dind
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: true
+  parallel:
+    matrix:
+      - APP: [web, admin, seller, telegram-mini-app, telegram-bot]
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: '/certs'
+    DOCKER_TLS_VERIFY: 1
+    DOCKER_CERT_PATH: '$DOCKER_TLS_CERTDIR/client'
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - IMAGE="$CI_REGISTRY_IMAGE/ecom-$APP"
+    - TAG="${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
+    - docker build -f "apps/$APP/Dockerfile" -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+    - docker push "$IMAGE:$TAG"
+    - docker push "$IMAGE:latest"
