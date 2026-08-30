@@ -60,7 +60,7 @@ importers:
         specifier: ^3.3.4
         version: 3.10.0(react-hook-form@7.79.0(react@19.1.0))
       '@tanstack/react-query':
-        specifier: ^5.32.0
+        specifier: ^5.101.0
         version: 5.101.0(react@19.1.0)
       '@tanstack/react-table':
         specifier: ^8.16.0
@@ -136,7 +136,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/utils
       '@tanstack/react-query':
-        specifier: ^5.32.0
+        specifier: ^5.101.0
         version: 5.101.0(react@19.1.0)
       expo:
         specifier: ~54.0.0
@@ -330,7 +330,7 @@ importers:
         specifier: ^3.3.4
         version: 3.10.0(react-hook-form@7.79.0(react@19.1.0))
       '@tanstack/react-query':
-        specifier: ^5.32.0
+        specifier: ^5.101.0
         version: 5.101.0(react@19.1.0)
       '@tanstack/react-table':
         specifier: ^8.16.0
@@ -449,7 +449,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/utils
       '@tanstack/react-query':
-        specifier: ^5.32.0
+        specifier: ^5.101.0
         version: 5.101.0(react@19.1.0)
       '@telegram-apps/sdk-react':
         specifier: ^1.1.0
@@ -522,7 +522,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/utils
       '@tanstack/react-query':
-        specifier: ^5.32.0
+        specifier: ^5.101.0
         version: 5.101.0(react@19.1.0)
       lucide-react:
         specifier: ^0.376.0
