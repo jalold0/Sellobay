@@ -22,7 +22,7 @@ const nextConfig = {
   poweredByHeader: false,
   // Docker uchun — minimal runtime image
   output: 'standalone',
-  transpilePackages: ['@ecom/core-domain', '@ecom/ui', '@ecom/i18n', '@ecom/utils', '@ecom/types'],
+  transpilePackages: ['@ecom/core-domain', '@ecom/ui', '@ecom/i18n', '@ecom/utils', '@ecom/types', '@ecom/storage'],
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
   },

@@ -26,7 +26,7 @@ import { AddressSection } from './address-section';
 import { Step } from './checkout-ui';
 import { OrderSummary } from './order-summary';
 import { PaymentSection } from './payment-section';
-import { downscaleToDataUrl } from './receipt-image';
+import { uploadReceipt } from './receipt-image';
 import { ShippingSection } from './shipping-section';
 
 import type {
@@ -78,8 +78,23 @@ export function CheckoutFlow() {
 
   // Karta orqali to'lov — platforma kartalari, chek (data-URL) va izoh.
   const [cards, setCards] = React.useState<PaymentCardDTO[]>([]);
-  const [receipt, setReceipt] = React.useState('');
+  // Chek ikki qiymatga bo'lingan: `receiptPath` — serverga yuboriladigan ichki
+  // yo'l, `receiptPreview` — faqat shu brauzerdagi ko'rinish (blob: manzil).
+  // Rasmning o'zi yopiq saqlangani uchun uni ochiq havola bilan ko'rsatib
+  // bo'lmaydi va ko'rsatishning hojati ham yo'q — mijoz o'zi tanlagan faylni ko'radi.
+  const [receiptPath, setReceiptPath] = React.useState('');
+  const [receiptPreview, setReceiptPreview] = React.useState('');
   const [receiptBusy, setReceiptBusy] = React.useState(false);
+
+  // Ko'rinish uchun yaratilgan blob: manzil brauzer xotirasini egallaydi. Effekt
+  // tozalash bosqichi ESKI manzilni bo'shatadi — chek almashtirilganda ham,
+  // sahifa yopilganda ham. Shu bois setter ichida qo'shimcha revoke shart emas.
+  React.useEffect(
+    () => () => {
+      if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    },
+    [receiptPreview],
+  );
   const [paymentNote, setPaymentNote] = React.useState('');
   const [copiedCard, setCopiedCard] = React.useState<string | null>(null);
 
@@ -105,9 +120,16 @@ export function CheckoutFlow() {
     }
     setReceiptBusy(true);
     try {
-      setReceipt(await downscaleToDataUrl(file));
-    } catch {
-      toast({ title: t('errors.failed'), variant: 'destructive' });
+      const uploaded = await uploadReceipt(file);
+      setReceiptPath(uploaded.pathname);
+      setReceiptPreview(uploaded.previewUrl);
+    } catch (e) {
+      // Serverdan kelgan aniq sabab (hajm, format, kvota) ko'rsatiladi —
+      // umumiy "xato" mijozga nima qilishni aytmaydi.
+      toast({
+        title: e instanceof Error ? e.message : t('errors.failed'),
+        variant: 'destructive',
+      });
     }
     setReceiptBusy(false);
   };
@@ -223,7 +245,7 @@ export function CheckoutFlow() {
       return;
     }
     // Karta orqali to'lov — chek majburiy.
-    if (payment === 'UZCARD' && !receipt) {
+    if (payment === 'UZCARD' && !receiptPath) {
       toast({ title: t('payment.receiptRequired'), variant: 'warning' });
       return;
     }
@@ -262,7 +284,7 @@ export function CheckoutFlow() {
       pickupPointId:
         deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
       paymentProvider: payment,
-      paymentReceipt: payment === 'UZCARD' ? receipt : undefined,
+      paymentReceipt: payment === 'UZCARD' ? receiptPath : undefined,
       paymentNote: payment === 'UZCARD' && paymentNote.trim() ? paymentNote.trim() : undefined,
       notes: address.notes.trim() || undefined,
       redeemCoins: coinsToRedeem,
@@ -393,7 +415,7 @@ export function CheckoutFlow() {
             cards={cards}
             copiedCard={copiedCard}
             onCopyCard={copyCard}
-            receipt={receipt}
+            receipt={receiptPreview}
             receiptBusy={receiptBusy}
             onReceiptFile={(f) => void onReceiptFile(f)}
             paymentNote={paymentNote}

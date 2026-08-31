@@ -18,6 +18,7 @@
     "@ecom/core-domain": "workspace:*",
     "@ecom/database": "workspace:*",
     "@ecom/i18n": "workspace:*",
+    "@ecom/storage": "workspace:*",
     "@ecom/types": "workspace:*",
     "@ecom/ui": "workspace:*",
     "@ecom/utils": "workspace:*",

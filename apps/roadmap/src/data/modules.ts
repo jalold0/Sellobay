@@ -143,17 +143,10 @@ export const MODULES: Module[] = [
       },
       {
         title: 'Rasm yuklash',
-        does: 'Sotuvchi kompyuteridan mahsulot rasmini to‘g‘ridan-to‘g‘ri yuklaydi.',
-        status: 'gap',
-        evidence: 'apps/seller/.../products/route.ts:39 — faqat URL qabul qilinadi',
-        tasks: [
-          {
-            title: 'Fayl yuklash oqimini qurish',
-            role: 'backend',
-            priority: 'kritik',
-            why: 'Real sotuvchi rasmni boshqa joyda joylashtira olmaydi — bu ro‘yxatga qo‘shilishga to‘siq',
-          },
-        ],
+        does: 'Sotuvchi telefon yoki kompyuterdan mahsulot rasmini to‘g‘ridan-to‘g‘ri yuklaydi.',
+        status: 'done',
+        evidence:
+          'MR !14 — /api/uploads/product-image + ProductImageUploader; 4 tagacha rasm, birinchisi asosiy',
       },
     ],
   },
@@ -450,17 +443,10 @@ export const MODULES: Module[] = [
       },
       {
         title: 'Chek rasmlarini to‘g‘ri saqlash',
-        does: 'Chek rasmi fayl saqlash xizmatida turadi, bazada emas.',
-        status: 'gap',
-        evidence: 'orders-server.ts:68 — 5 MB gacha base64 satr Postgres ustunida',
-        tasks: [
-          {
-            title: 'Cheklarni object storage‘ga ko‘chirish',
-            role: 'backend',
-            priority: 'yuqori',
-            why: 'Baza shishadi, zaxira nusxalar sekinlashadi',
-          },
-        ],
+        does: 'Chek Blob‘da YOPIQ saqlanadi, bazada faqat ichki yo‘l turadi.',
+        status: 'done',
+        evidence:
+          'MR !14 — access: private; admin /api/orders/receipt-image orqali, sessiya tekshiruvi bilan ko‘radi',
       },
       {
         title: 'Moliyaviy hisobot va solishtirish',
@@ -696,15 +682,27 @@ export const MODULES: Module[] = [
     features: [
       {
         title: 'Object storage',
-        does: 'Fayllar maxsus xizmatda saqlanadi va CDN orqali tarqatiladi.',
+        does: 'Fayllar Vercel Blob‘da saqlanadi va CDN orqali tarqatiladi.',
+        status: 'done',
+        evidence: 'packages/storage (@ecom/storage) — ADR 0007; MR !14',
+      },
+      {
+        title: 'Yuklangan faylni tekshirish',
+        does: 'Fayl turi baytlar bo‘yicha aniqlanadi; SVG va HTML qabul qilinmaydi.',
+        status: 'done',
+        evidence: 'packages/storage/src/image.ts — 9 ta test; Content-Type header‘iga ishonilmaydi',
+      },
+      {
+        title: 'Eski fayllarni tozalash',
+        does: 'Mahsulotdan olib tashlangan rasm do‘kondan ham o‘chiriladi.',
         status: 'gap',
-        evidence: 'Umuman yo‘q — S3, Vercel Blob, Cloudinary hech biri ulanmagan',
+        evidence: 'Hozircha o‘chirish yo‘q — ishlatilmaydigan fayl do‘konda qoladi',
         tasks: [
           {
-            title: 'Fayl saqlash xizmatini tanlash va ulash',
+            title: 'Yetim fayllarni o‘chirish vazifasi',
             role: 'backend',
-            priority: 'kritik',
-            why: 'Sotuvchi rasm yuklay olmaydi, cheklar bazada yotibdi. Ikkala muammoning ildizi shu',
+            priority: 'orta',
+            why: 'Kvota asta-sekin to‘ladi; katta muammo emas, lekin qarz bo‘lib qoladi',
           },
         ],
       },

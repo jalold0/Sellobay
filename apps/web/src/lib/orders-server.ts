@@ -10,6 +10,7 @@ import {
   looksLikeTashkentCityText,
 } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
+import { StorageNotConfiguredError } from '@ecom/storage';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
@@ -22,7 +23,12 @@ import {
 } from '@/lib/inventory-server';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { settleOrderLoyalty } from '@/lib/loyalty-server';
-import { MANUAL_CARD_PROVIDER, validateReceiptDataUrl } from '@/lib/manual-payment';
+import {
+  MANUAL_CARD_PROVIDER,
+  ReceiptError,
+  parseReceipt,
+  storeReceipt,
+} from '@/lib/manual-payment';
 import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
@@ -64,7 +70,8 @@ export const createOrderSchema = z.object({
     .default('CLICK'),
   promoCode: z.string().trim().max(40).optional().nullable(),
   notes: z.string().trim().max(500).optional().nullable(),
-  // Karta orqali qo'lda to'lov (UZCARD) — chek (data-URL rasm) + ixtiyoriy izoh.
+  // Karta orqali qo'lda to'lov (UZCARD) — chek + ixtiyoriy izoh.
+  // Qiymat: `receipts/...` yo'li (yangi) yoki eski klientdan kelgan data-URL.
   paymentReceipt: z.string().max(5_200_000).optional().nullable(),
   paymentNote: z.string().trim().max(300).optional().nullable(),
   // Sello Coins — ishlatmoqchi bo'lgan coinlar (login user uchun; backend cheklaydi)
@@ -85,9 +92,29 @@ function generateOrderNumber(): string {
 
 export async function createOrder(input: CreateOrderInput, currentUser: CurrentUser) {
   // Karta orqali qo'lda to'lov (UZCARD) — chek majburiy va to'g'ri formatda bo'lishi shart.
+  // Chek TRANZAKSIYADAN OLDIN saqlanadi: fayl yuklash tarmoq amali, uni bazaga
+  // yozish tranzaksiyasi ichida bajarish tranzaksiyani keraksiz uzoq ushlab turadi.
+  let receiptPath: string | null = null;
   if (input.paymentProvider === MANUAL_CARD_PROVIDER) {
-    const r = validateReceiptDataUrl(input.paymentReceipt);
-    if (!r.ok) throw new OrderError(400, 'RECEIPT_REQUIRED', r.error);
+    const parsed = parseReceipt(input.paymentReceipt);
+    if (!parsed.ok) throw new OrderError(400, 'RECEIPT_REQUIRED', parsed.error);
+    try {
+      receiptPath = await storeReceipt(parsed.ref);
+    } catch (e) {
+      if (e instanceof ReceiptError) {
+        throw new OrderError(400, 'RECEIPT_REQUIRED', e.message);
+      }
+      if (e instanceof StorageNotConfiguredError) {
+        // Konfiguratsiya xatosi. Buyurtmani cheksiz qabul qilib qo'ysak, admin
+        // to'lovni tasdiqlay olmaydi — shuning uchun bu yerda to'xtatamiz.
+        throw new OrderError(
+          503,
+          'STORAGE_UNAVAILABLE',
+          'Chekni saqlab bo`lmadi. Birozdan keyin urinib ko`ring.',
+        );
+      }
+      throw e;
+    }
   }
 
   // Uygacha/Express yetkazish FAQAT Toshkent shahar uchun. Koordinata berilgan
@@ -425,7 +452,8 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
           input.paymentProvider === MANUAL_CARD_PROVIDER
             ? {
                 kind: 'MANUAL_CARD',
-                receipt: input.paymentReceipt,
+                // Bazada faqat YO'L turadi — rasmning o'zi Blob'da yopiq saqlanadi.
+                receiptPath,
                 note: input.paymentNote ?? null,
               }
             : undefined;

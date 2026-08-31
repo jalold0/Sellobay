@@ -4,6 +4,7 @@
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { manualCardPayload, receiptSrc } from '@/lib/receipt';
 
 import type { NextRequest } from 'next/server';
 
@@ -76,12 +77,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     o.user?.email ||
     'Mehmon';
   const payment = o.payments[0];
-  const raw = (payment?.rawPayload ?? null) as {
-    kind?: string;
-    receipt?: string;
-    note?: string | null;
-  } | null;
-  const isManualCard = payment?.provider === 'UZCARD' && raw?.kind === 'MANUAL_CARD';
+  const manual = manualCardPayload(payment?.rawPayload);
+  const isManualCard = payment?.provider === 'UZCARD' && manual !== null;
 
   return apiOk({
     id: o.id,
@@ -133,8 +130,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     manualCard: isManualCard
       ? {
           pending: payment.status === 'PENDING',
-          receipt: raw?.receipt ?? '',
-          note: raw?.note ?? null,
+          receipt: receiptSrc(manual) ?? '',
+          note: manual?.note ?? null,
         }
       : null,
   });
