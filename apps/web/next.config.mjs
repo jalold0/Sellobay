@@ -42,9 +42,39 @@ const nextConfig = {
     }
     return config;
   },
+  // Rasm optimizatsiyasi uchun ruxsat etilgan manbalar.
+  //
+  // Avval bu yerda { protocol: 'https', hostname: '**' } turardi va bu
+  // /_next/image ni OCHIQ RASM PROKSISIGA aylantirgan edi: begona odam
+  // ?url= ga istalgan saytning rasmini berib, Vercel image-optimization
+  // kvotasini bizning hisobimizdan sarflay olardi.
+  //
+  // Ro'yxat ataylab qisqa. Yangi host qo'shishdan oldin savol bering:
+  // rasmni o'zimizning Blob do'konimizga yuklab bo'lmaydimi? (@ecom/storage)
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**' },
+      // --- Yangi yuklamalar: @ecom/storage -> Vercel Blob ---
+      // Do'kon identifikatori subdomen bo'lib keladi va muhitga qarab
+      // o'zgaradi (preview/production), shuning uchun bir bosqichli `*`.
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+
+      // --- Legacy: bazadagi ProductImage.url hostlari (2026-09-01 holati) ---
+      // SELECT split_part(split_part(url,'//',2),'/',1), count(*) FROM "ProductImage"
+      { protocol: 'https', hostname: 'picsum.photos' }, // seed/demo rasmlar - 10 qator
+      { protocol: 'https', hostname: 'storage.kun.uz' }, // qo'lda kiritilgan - 2 qator
+      { protocol: 'https', hostname: 'avatars.mds.yandex.net' }, // qo'lda kiritilgan - 1 qator
+
+      // --- Dizaynga qat'iy yozilgan rasmlar ---
+      // featured-collection, seller-banner, testimonials
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+
+      // --- Global sourcing importi (admin -> "Rasm havolalari") ---
+      // Taobao/Tmall/1688 rasmlari shu CDN'da yotadi va operator havolani
+      // to'g'ridan-to'g'ri ProductImage.url ga yozadi (global-catalog-server.ts).
+      // Import paytida rasmlar Blob'ga ko'chiriladigan bo'lsa - SHU QATORNI O'CHIRING.
+      { protocol: 'https', hostname: '**.alicdn.com' },
+
+      // Lokal dev: public/ dan tashqaridagi manbalar
       { protocol: 'http', hostname: 'localhost' },
     ],
   },
