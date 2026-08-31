@@ -7,7 +7,8 @@
     "REDIS_URL",
     "ELASTICSEARCH_URL",
     "JWT_SECRET",
-    "JWT_REFRESH_SECRET"
+    "JWT_REFRESH_SECRET",
+    "ROADMAP_PASSWORD"
   ],
   "tasks": {
     "build": {

@@ -30,6 +30,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@ecom/telegram-mini-app", "dev"],
       "port": 3003
+    },
+    {
+      "name": "roadmap",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@ecom/roadmap", "dev"],
+      "port": 3004
     }
   ]
 }

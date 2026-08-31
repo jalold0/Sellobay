@@ -50,7 +50,7 @@ lint-typecheck-build:
     # Unit-testlar (hozircha @ecom/core-domain — sof domen qatlami)
     - pnpm turbo run test --filter=@ecom/core-domain
     # Vercel'da deploy bo'ladigan Next.js app'lari
-    - pnpm turbo run build --filter=@ecom/web --filter=@ecom/admin --filter=@ecom/seller
+    - pnpm turbo run build --filter=@ecom/web --filter=@ecom/admin --filter=@ecom/seller --filter=@ecom/roadmap
 
 # Docker image'lar faqat versiya tegida yoki qo'lda (CI/CD > Pipelines > Run pipeline)
 # quriladi — har push'da emas, CI daqiqalarini tejash uchun.
