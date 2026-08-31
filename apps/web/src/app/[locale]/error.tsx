@@ -1,7 +1,9 @@
 'use client';
 
 import { Button } from '@ecom/ui';
+import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, Home, RotateCw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -12,9 +14,14 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations('errorPage');
+
   React.useEffect(() => {
-    // Real loyihada: Sentry.captureException(error)
-    console.error('[App Error]', error);
+    // MUHIM: React xato chegarasi ushlagan xato Sentry'ga O'ZI bormaydi —
+    // chegara uni yutadi va global handler ko'rmay qoladi. Foydalanuvchi eng
+    // ko'p uchratadigan xatolar aynan shu yerga tushadi, shuning uchun uni
+    // qo'lda qayd etamiz.
+    Sentry.captureException(error);
   }, [error]);
 
   return (
@@ -23,21 +30,21 @@ export default function Error({
         <AlertTriangle className="h-7 w-7" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold">Nimadir xato ketdi</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Sahifani yuklashda kutilmagan xato yuz berdi. Iltimos qaytadan urinib ko&apos;ring yoki bosh sahifaga qayting.
-        </p>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <p className="text-muted-foreground mt-2 text-sm">{t('description')}</p>
         {error.digest && (
-          <p className="mt-2 font-mono text-[11px] text-muted-foreground">Digest: {error.digest}</p>
+          <p className="text-muted-foreground mt-2 font-mono text-[11px]">
+            {t('code')}: {error.digest}
+          </p>
         )}
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button onClick={reset} className="gap-2">
-          <RotateCw className="h-4 w-4" /> Qaytadan urinish
+          <RotateCw className="h-4 w-4" /> {t('retry')}
         </Button>
         <Button asChild variant="outline" className="gap-2">
           <Link href="/">
-            <Home className="h-4 w-4" /> Bosh sahifa
+            <Home className="h-4 w-4" /> {t('home')}
           </Link>
         </Button>
       </div>

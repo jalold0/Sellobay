@@ -1105,5 +1105,28 @@
       "emptyTitle": "Katalog to‘ldirilmoqda",
       "emptyDesc": "Hozircha global tovar yo‘q. Kerakli tovar havolasini pastdagi formaga tashlang — narxini hisoblab beramiz."
     }
+  },
+  "cookieBanner": {
+    "text": "Biz sayt ishlashini yaxshilash uchun cookie ishlatamiz. Davom etib, siz <policy>cookie siyosati</policy>ga rozilik bildirasiz.",
+    "essential": "Faqat zaruriy",
+    "acceptAll": "Hammasini qabul qilish",
+    "close": "Yopish"
+  },
+  "notFound": {
+    "title": "Sahifa topilmadi",
+    "description": "Bu sahifa o'chirilgan, ko'chirilgan yoki hech qachon mavjud bo'lmagan. Katalogdan davom eting.",
+    "home": "Bosh sahifa",
+    "catalog": "Katalog",
+    "searchPlaceholder": "Yoki qidirishni boshlang..."
+  },
+  "errorPage": {
+    "title": "Nimadir xato ketdi",
+    "description": "Sahifani yuklashda kutilmagan xato yuz berdi. Qaytadan urinib ko'ring yoki bosh sahifaga qayting.",
+    "retry": "Qaytadan urinish",
+    "home": "Bosh sahifa",
+    "code": "Xato kodi"
+  },
+  "localeSwitcher": {
+    "label": "Til tanlash"
   }
 }

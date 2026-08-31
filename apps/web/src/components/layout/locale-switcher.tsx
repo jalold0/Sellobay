@@ -2,6 +2,7 @@
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@ecom/ui';
 import { ChevronDown, Globe } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
 
 const LOCALES = [
@@ -11,6 +12,7 @@ const LOCALES = [
 ] as const;
 
 export function LocaleSwitcher({ current }: { current: string }) {
+  const t = useTranslations('localeSwitcher');
   const router = useRouter();
   const pathname = usePathname();
 
@@ -30,7 +32,7 @@ export function LocaleSwitcher({ current }: { current: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold outline-none transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/30"
-        aria-label="Til tanlash"
+        aria-label={t('label')}
       >
         <Globe size={13} />
         <span className="uppercase tracking-wider">{current}</span>
