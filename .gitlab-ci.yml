@@ -61,6 +61,12 @@ lint-typecheck-build:
 # har main push'da avtomatik migratsiya qilish xavfli. Staging paydo bolgach
 # avtomatlashtirish mumkin.
 #
+# allow_failure: true — job HAR DOIM qo'lda qoladi, lekin pipeline uni KUTMAYDI.
+# Usiz main'dagi har bir pipeline "blocked" holatida muzlab qolardi (manual job
+# bajarilmagani uchun) va yashil/qizil farqi ko'rinmasdi: haqiqiy yiqilish ham,
+# oddiy kutish ham bir xil ko'rinardi. Endi verify o'tsa pipeline "passed" bo'ladi,
+# migratsiya tugmasi esa o'sha joyda turaveradi.
+#
 # TALAB: GitLab > Settings > CI/CD > Variables da DATABASE_URL qoyilishi kerak
 # (masked, protected). Qoyilmasa job yiqiladi - bu ataylab, jim otib ketmasin.
 migrate-deploy:
@@ -69,6 +75,7 @@ migrate-deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
+      allow_failure: true
   before_script:
     - corepack enable
     - corepack prepare pnpm@9.15.9 --activate
