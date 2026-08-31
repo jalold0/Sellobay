@@ -30,6 +30,9 @@ const nextConfig = {
   // (NFT tracing to'g'ri ishlashi uchun)
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', '@node-rs/argon2', 'prisma'],
+    // Next 14 da instrumentation.ts SHU FLAGSIZ umuman yuklanmaydi (Next 15 da stabil).
+    // Usiz server va edge tomonidagi xato kuzatuvi jim turadi.
+    instrumentationHook: true,
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
@@ -49,19 +52,21 @@ const nextConfig = {
 
 const config = withNextIntl(nextConfig);
 
-// Sentry webpack plugin FAQAT auth token bo'lganda ulanadi.
+// Sentry plugin HAR DOIM ulanadi.
 //
-// Uning yagona vazifasi — source map'larni Sentry'ga yuklash, ya'ni minifikatsiya
-// qilingan stack trace'ni o'qiladigan holga keltirish. Token yo'q bo'lsa (lokal
-// ishlab chiqish, CI) build umuman o'zgarmaydi. Xato kuzatuvining o'zi bunga
-// bog'liq emas — u instrumentation fayllarida va DSN bilan ishlaydi.
-export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(config, {
-      silent: true,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      // Sentry'ning o'z log chiqarishini production bundle'dan olib tashlaydi
-      disableLogger: true,
-    })
-  : config;
+// Avval u faqat SENTRY_AUTH_TOKEN bo'lganda ulanardi va bu XATO edi: aynan shu
+// plugin sentry.client.config.ts ni brauzer bundle'iga qo'shadi. Tokensiz plugin
+// ulanmasa, brauzerda Sentry umuman ishga tushmaydi.
+//
+// Token faqat source map yuklashga ta'sir qiladi. U yo'q bo'lsa plugin yuklashni
+// jim o'tkazib yuboradi va build muvaffaqiyatli tugaydi.
+export default withSentryConfig(config, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  webpack: {
+    // Sentry'ning o'z debug log'larini production bundle'dan olib tashlaydi
+    treeshake: { removeDebugLogging: true },
+  },
+});
