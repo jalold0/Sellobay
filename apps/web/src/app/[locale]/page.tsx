@@ -4,11 +4,11 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { CategoryGrid } from '../../components/layout/category-grid';
 import { FeaturedCollection } from '../../components/layout/featured-collection';
-import { HeroSection } from '../../components/layout/hero-section';
+import { PromoBanner } from '../../components/layout/promo-banner';
+import { QuickTiles } from '../../components/layout/quick-tiles';
 import { SaleSection } from '../../components/layout/sale-section';
 import { SellerBanner } from '../../components/layout/seller-banner';
 import { Testimonials } from '../../components/layout/testimonials';
-import { TrustStrip } from '../../components/layout/trust-strip';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
 import { fetchHomeProducts } from '../../lib/catalog';
@@ -19,21 +19,22 @@ export const revalidate = 120;
 
 export default async function HomePage() {
   const locale = (await getLocale()) as Locale;
-  const { hero, featured, collection, sale } = await fetchHomeProducts();
+  const { featured, collection, sale } = await fetchHomeProducts();
   const t = await getTranslations('home');
 
   return (
-    <div className="space-y-12 md:space-y-20">
-      {/* 1. Cinematic hero — full-bleed Unsplash imagery + bold typography + dual CTAs */}
-      <HeroSection locale={locale} heroProducts={hero} />
+    <div className="space-y-10 md:space-y-16">
+      {/* 1. Banner + yon kartalar — 260px, konteyner ichida.
+             Oldin bu yerda 620px to'liq kenglikdagi HeroSection va TrustStrip turardi;
+             ikkalasi birgalikda mahsulotlarni ikkinchi ekranga surib yuborardi. */}
+      <div className="space-y-2.5">
+        <PromoBanner saleProducts={sale} />
 
-      {/* 2. Trust strip — bold metrics horizontal bar (50k sellers, 2M products, 24h delivery, 99% satisfaction) */}
-      <TrustStrip />
+        {/* 2. Xizmat va'dalari — raqamsiz, tekshirilishi mumkin */}
+        <QuickTiles />
+      </div>
 
-      {/* 3. Categories — visual grid */}
-      <CategoryGrid locale={locale} />
-
-      {/* 4. Bestsellers — eyebrow + Playfair sarlavha */}
+      {/* 3. Mahsulotlar — birinchi ekranda ko'rinishi uchun yuqoriga ko'chirildi */}
       <section>
         <div className="mb-7 flex items-end justify-between">
           <div>
@@ -57,6 +58,9 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
+      <CategoryGrid locale={locale} />
 
       {/* 5. Featured collection — editorial 3-image showcase */}
       <FeaturedCollection locale={locale} products={collection} />
