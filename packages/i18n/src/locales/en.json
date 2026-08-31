@@ -1115,5 +1115,28 @@
       "emptyTitle": "Catalogue is being filled",
       "emptyDesc": "No global products yet. Paste a link to the item you want in the form below — we will price it."
     }
+  },
+  "cookieBanner": {
+    "text": "We use cookies to make the site work better. By continuing, you agree to our <policy>cookie policy</policy>.",
+    "essential": "Essential only",
+    "acceptAll": "Accept all",
+    "close": "Close"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This page was removed, moved, or never existed. Continue from the catalogue.",
+    "home": "Home",
+    "catalog": "Catalogue",
+    "searchPlaceholder": "Or start searching..."
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred while loading the page. Try again or return to the home page.",
+    "retry": "Try again",
+    "home": "Home",
+    "code": "Error code"
+  },
+  "localeSwitcher": {
+    "label": "Select language"
   }
 }
