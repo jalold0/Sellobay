@@ -8,7 +8,7 @@ import * as React from 'react';
 
 import { formatMoney } from '../../lib/format';
 import { type GroupDeal, dealImageUrl, discountPercent } from '../../lib/group-buy';
-import { type Locale } from '../../lib/mock-data';
+import { pickLocale, type Locale } from '../../lib/mock-data';
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -46,7 +46,7 @@ export function GroupBuyCard({ deal }: { deal: GroupDeal }) {
     const url = `${window.location.origin}/${locale}/group-buy#${deal.id}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: deal.name[locale], url });
+        await navigator.share({ title: pickLocale(deal.name, locale), url });
       } else {
         await navigator.clipboard.writeText(url);
         toast({ title: t('linkCopied'), variant: 'success' });
@@ -67,10 +67,10 @@ export function GroupBuyCard({ deal }: { deal: GroupDeal }) {
 
   return (
     <Card id={deal.id} className="flex scroll-mt-32 flex-col overflow-hidden">
-      <div className="relative aspect-square bg-muted">
+      <div className="bg-muted relative aspect-square">
         <Image
           src={dealImageUrl(deal.imageSeed)}
-          alt={deal.name[locale]}
+          alt={pickLocale(deal.name, locale)}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
           className="object-cover"
@@ -81,18 +81,20 @@ export function GroupBuyCard({ deal }: { deal: GroupDeal }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
-        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium">{deal.name[locale]}</h3>
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium">
+          {pickLocale(deal.name, locale)}
+        </h3>
 
         <div className="flex items-end gap-2">
           <span className="text-lg font-bold text-rose-600">{formatMoney(deal.groupPrice)}</span>
-          <span className="text-xs text-muted-foreground line-through">
+          <span className="text-muted-foreground text-xs line-through">
             {formatMoney(deal.soloPrice)}
           </span>
         </div>
 
         {/* Progress */}
         <div>
-          <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="text-muted-foreground mb-1 flex items-center justify-between text-xs">
             <span className="inline-flex items-center gap-1">
               <Users size={12} /> {t('joinedCount', { current, target: deal.targetSize })}
             </span>
@@ -100,7 +102,7 @@ export function GroupBuyCard({ deal }: { deal: GroupDeal }) {
               <Clock size={12} /> {countdown}
             </span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
+          <div className="bg-muted h-2 overflow-hidden rounded-full">
             <div
               className={`h-full rounded-full transition-all ${complete ? 'bg-emerald-500' : 'bg-rose-500'}`}
               style={{ width: `${progress}%` }}
