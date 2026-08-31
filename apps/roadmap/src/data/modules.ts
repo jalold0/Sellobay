@@ -667,21 +667,21 @@ export const MODULES: Module[] = [
       {
         title: 'Sxema migratsiyalari',
         does: 'Har bir sxema o‘zgarishi versiyalanadi — orqaga qaytarish va takrorlash mumkin.',
-        status: 'gap',
+        status: 'wip',
         evidence:
-          'prisma/migrations papkasi UMUMAN YO‘Q. CLAUDE.md o‘zi pnpm db:migrate ni talab qiladi',
+          'ADR 0006 — 0_init baseline qo‘llandi (54 jadval, 99 indeks), migrate status: up to date. Production‘ga qo‘llash hozircha qo‘lda',
         tasks: [
           {
-            title: 'Migratsiya tizimini yo‘lga qo‘yish',
+            title: 'DATABASE_URL ni GitLab CI o‘zgaruvchilariga qo‘shish',
             role: 'devops',
-            priority: 'kritik',
-            why: 'Hozir deployni takrorlab ham, orqaga qaytarib ham bo‘lmaydi. Ma‘lumot ko‘paygan sari qimmatlashadi',
+            priority: 'yuqori',
+            why: 'migrate-deploy job usiz ishlamaydi — Settings > CI/CD > Variables, masked va protected',
           },
           {
             title: 'Alohida test bazasi va staging muhiti',
             role: 'devops',
             priority: 'yuqori',
-            why: 'Migratsiyani production‘dan oldin sinash uchun',
+            why: 'Hozir migratsiya production‘da birinchi marta sinaladi — staging bo‘lsa avtomatlashtirish ham mumkin bo‘ladi',
           },
         ],
       },

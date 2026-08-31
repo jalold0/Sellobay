@@ -24,6 +24,8 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "db:generate": "pnpm --filter @ecom/database generate",
     "db:migrate": "pnpm --filter @ecom/database migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @ecom/database migrate:deploy",
+    "db:migrate:status": "pnpm --filter @ecom/database migrate:status",
     "db:seed": "pnpm --filter @ecom/database seed",
     "db:studio": "pnpm --filter @ecom/database studio",
     "docker:up": "docker compose -f infrastructure/docker/docker-compose.yml up -d",
