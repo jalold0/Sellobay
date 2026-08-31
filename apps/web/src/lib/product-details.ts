@@ -1,7 +1,7 @@
 // Mahsulot detali uchun kengaytirilgan mock — kelajakda backend'dan keladi.
 // `mock-data.ts` minimal modelni ushlab turadi, bu yer "rich" view modelni qo'shadi.
 
-import { findById, type LocalizedText, type MockProduct, products } from './mock-data';
+import { findById, type LocalizedText, type MockProduct, pickLocale, products } from './mock-data';
 
 export interface ProductGalleryImage {
   seed: string;
@@ -267,10 +267,14 @@ export function buildProductDetail(
 
   return {
     product,
+    // MUHIM: name.ru/name.en YO'Q bo'lishi mumkin — sotuvchi faqat nameUz bilan
+    // mahsulot yarata oladi (apps/seller .../api/products: nameRu/nameEn optional).
+    // To'g'ridan-to'g'ri interpolatsiya "undefined — премиальные..." chiqarardi va bu
+    // meta description / OpenGraph'ga ham tushardi. pickLocale uz'ga qaytaradi.
     description: {
-      uz: `${product.name.uz} — premium material va zamonaviy dizayn uyg'unligi. Har bir detal o'ylab tayyorlangan: ergonomik shakl, chidamli komponentlar va estetik ko'rinish. Kundalik foydalanish uchun ham, maxsus tadbirlar uchun ham mos.`,
-      ru: `${product.name.ru} — премиальные материалы и современный дизайн. Каждая деталь продумана: эргономичная форма, прочные компоненты и эстетичный вид.`,
-      en: `${product.name.en} — premium materials meet modern design. Every detail is carefully crafted: ergonomic shape, durable components, and aesthetic appeal.`,
+      uz: `${pickLocale(product.name, 'uz')} — premium material va zamonaviy dizayn uyg'unligi. Har bir detal o'ylab tayyorlangan: ergonomik shakl, chidamli komponentlar va estetik ko'rinish. Kundalik foydalanish uchun ham, maxsus tadbirlar uchun ham mos.`,
+      ru: `${pickLocale(product.name, 'ru')} — премиальные материалы и современный дизайн. Каждая деталь продумана: эргономичная форма, прочные компоненты и эстетичный вид.`,
+      en: `${pickLocale(product.name, 'en')} — premium materials meet modern design. Every detail is carefully crafted: ergonomic shape, durable components, and aesthetic appeal.`,
     },
     features: [
       { uz: 'Premium material', ru: 'Премиальный материал', en: 'Premium material' },
