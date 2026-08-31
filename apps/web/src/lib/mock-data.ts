@@ -313,8 +313,48 @@ export const products: MockProduct[] = [
   },
 ];
 
-export function productImage(seed: string, size = 400): string {
-  return `https://picsum.photos/seed/${seed}/${size}/${size}`;
+/**
+ * Mahsulot rasmi.
+ *
+ * Oldin bu picsum.photos'ga qaytarardi — u TASODIFIY foto beradi, ya'ni
+ * "Nike Air Max 270" ostida tog' manzarasi chiqardi. Ustiga xizmatning o'zi
+ * ham beqaror (2026-08-31 da barcha so'rovlar 522 qaytargan).
+ *
+ * Endi rasmlar repo ichida (apps/web/public/products/) va Vercel CDN'dan
+ * tarqatiladi. Ro'yxat ATAYLAB aniq: fayli yo'q seed uchun 404 chiqmasin,
+ * balki brendli placeholder ko'rinsin.
+ */
+const LOCAL_PRODUCT_IMAGES = new Set([
+  'accessories-1',
+  'adidas-tee',
+  'adidas-ub',
+  'beauty-1',
+  'chanel-no5',
+  'clothing-1',
+  'cosmetics-1',
+  'dior-sauvage',
+  'e2e-moderatsiya-f1315062',
+  'e2e-test-krossovka',
+  'gucci-bag',
+  'gucci-marmont',
+  'la-mer',
+  'mac-ruby',
+  'nike-air-max',
+  'nike-hoodie',
+  'nike99',
+  'perfume-1',
+  'prada-bag',
+  'puma-rsx',
+  'shoes-1',
+  'variant-test-futbolka',
+  'zara-blazer',
+  'zara-shirt',
+]);
+
+export const PRODUCT_IMAGE_PLACEHOLDER = '/products/_placeholder.svg';
+
+export function productImage(seed: string, _size = 400): string {
+  return LOCAL_PRODUCT_IMAGES.has(seed) ? `/products/${seed}.jpg` : PRODUCT_IMAGE_PLACEHOLDER;
 }
 
 export function pickLocale<T extends LocalizedText>(value: T, locale: string): string {

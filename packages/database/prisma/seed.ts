@@ -229,7 +229,8 @@ async function main() {
   ];
 
   for (const p of products) {
-    const productImage = `https://picsum.photos/seed/${p.imageSeed}/600/600`;
+    // Rasmlar repo ichida: apps/web/public/products/<imageSeed>.jpg
+    const productImage = `/products/${p.imageSeed}.jpg`;
     const product = await prisma.product.upsert({
       where: { slug: p.slug },
       // Mavjud mahsulotlarda ham status/narxni tuzatib qo'yamiz (idempotent seed)

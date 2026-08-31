@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { type Locale, type MockProduct } from '../../lib/mock-data';
+import { type Locale, type MockProduct, productImage } from '../../lib/mock-data';
 import { ProductCardClient } from '../product/product-card-client';
 import { CountdownTimer } from './countdown-timer';
 
@@ -95,7 +95,7 @@ export function SaleSection({ locale, saleProducts }: Props) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`https://picsum.photos/seed/${p.imageSeed}/300/300`}
+                  src={productImage(p.imageSeed)}
                   alt=""
                   className="h-full w-full object-cover"
                 />
