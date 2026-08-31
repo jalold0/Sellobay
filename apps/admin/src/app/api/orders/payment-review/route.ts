@@ -5,6 +5,7 @@
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { manualCardPayload, receiptSrc } from '@/lib/receipt';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,8 +44,9 @@ export async function GET() {
 
   const items = payments
     .map((p) => {
-      const raw = (p.rawPayload ?? {}) as { kind?: string; receipt?: string; note?: string | null };
-      if (raw.kind !== 'MANUAL_CARD' || !raw.receipt) return null; // faqat chekli karta to'lovlari
+      const payload = manualCardPayload(p.rawPayload);
+      const receipt = receiptSrc(payload);
+      if (!payload || !receipt) return null; // faqat chekli karta to'lovlari
       const o = p.order;
       const customerName =
         [o.user?.firstName, o.user?.lastName].filter(Boolean).join(' ').trim() ||
@@ -62,8 +64,8 @@ export async function GET() {
         customerPhone: o.user?.phone ?? o.guestPhone ?? '',
         city: o.shippingAddress?.city ?? '',
         itemCount: o._count.items,
-        note: raw.note ?? null,
-        receipt: raw.receipt,
+        note: payload.note ?? null,
+        receipt,
         placedAt: o.placedAt.toISOString(),
         createdAt: p.createdAt.toISOString(),
       };

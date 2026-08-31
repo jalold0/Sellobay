@@ -21,10 +21,12 @@ import {
   Textarea,
   toast,
 } from '@ecom/ui';
-import { ArrowLeft, Image as ImageIcon, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+
+import { ProductImageUploader } from '@/components/products/image-uploader';
 
 interface CategoryItem {
   id: string;
@@ -63,11 +65,9 @@ export default function SellerNewProductPage() {
     categorySlug: '',
     brandSlug: '',
   });
-  // 4 ta rasm slot (0 = asosiy)
-  const [images, setImages] = React.useState<string[]>(['', '', '', '']);
-
-  const setImage = (idx: number, value: string) =>
-    setImages((prev) => prev.map((v, i) => (i === idx ? value : v)));
+  // Yuklangan rasm manzillari (0 = asosiy). Bo'sh slot tushunchasi yo'q —
+  // ro'yxatda faqat haqiqatan yuklangan rasmlar turadi.
+  const [images, setImages] = React.useState<string[]>([]);
 
   // Variantlar (ixtiyoriy)
   interface VariantRow {
@@ -133,12 +133,6 @@ export default function SellerNewProductPage() {
       if (Number(form.stock) <= 0)
         return "Zaxira 0 dan katta bo'lishi kerak (aks holda mahsulot 'sotuvda yo'q' bo'lib qoladi)";
     }
-    for (let i = 0; i < images.length; i++) {
-      const u = images[i]?.trim();
-      if (u && !/^https?:\/\//i.test(u)) {
-        return `Rasm ${i + 1} URL'i http:// yoki https:// bilan boshlanishi kerak`;
-      }
-    }
     return null;
   };
 
@@ -166,8 +160,7 @@ export default function SellerNewProductPage() {
     if (form.weightGrams && Number(form.weightGrams) > 0)
       payload.weightGrams = Number(form.weightGrams);
     if (form.brandSlug) payload.brandSlug = form.brandSlug;
-    const filledImages = images.map((u) => u.trim()).filter(Boolean);
-    if (filledImages.length > 0) payload.imageUrls = filledImages;
+    if (images.length > 0) payload.imageUrls = images;
     // Variantlar (faqat bittasi bo'lsa ham yuboramiz, server color/size bo'sh bo'lganlarini skip qiladi)
     const filledVariants = variants
       .map((v) => ({
@@ -353,53 +346,10 @@ export default function SellerNewProductPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Rasmlar (4 tagacha)</CardTitle>
+              <CardTitle>Rasmlar</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-muted-foreground text-[11px]">
-                Rasm URL'larini joylashtiring. Bo&apos;sh qoldirsangiz, placeholder ishlatiladi.
-                Birinchi slot — <strong>asosiy rasm</strong>. To&apos;liq fayl yuklash
-                (Cloudinary/S3) keyingi bosqichda.
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {images.map((url, i) => (
-                  <div
-                    key={i}
-                    className={`flex aspect-square flex-col gap-1.5 rounded-lg border-2 p-2 ${
-                      url
-                        ? 'border-primary/40 bg-primary/5'
-                        : i === 0
-                          ? 'border-primary/60 border-dashed'
-                          : 'border-dashed'
-                    }`}
-                  >
-                    {url ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt={`Rasm ${i + 1}`}
-                          className="h-16 w-full flex-1 rounded object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.opacity = '0.3';
-                          }}
-                        />
-                      </>
-                    ) : (
-                      <div className="text-muted-foreground flex flex-1 flex-col items-center justify-center text-[10px]">
-                        <ImageIcon className="h-5 w-5" />
-                        {i === 0 ? 'Asosiy' : `Rasm ${i + 1}`}
-                      </div>
-                    )}
-                    <Input
-                      value={url}
-                      onChange={(e) => setImage(i, e.target.value)}
-                      placeholder="https://..."
-                      className="h-7 text-[10px]"
-                    />
-                  </div>
-                ))}
-              </div>
+            <CardContent>
+              <ProductImageUploader value={images} onChange={setImages} />
             </CardContent>
           </Card>
         </div>

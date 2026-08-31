@@ -2,7 +2,7 @@
 // platforma kartalari, chek yuklash va izoh.
 import { Check, ImageUp, ShieldCheck, X } from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { type PaymentCard } from '../../lib/api';
 import { formatMoney } from '../../lib/format';
@@ -18,6 +18,8 @@ type Props = {
   onSelectPayment: (id: PaymentId) => void;
   cards: PaymentCard[];
   receipt: string | null;
+  /** Chek serverga yuklanayotgan payt — tugma bloklanadi. */
+  receiptBusy?: boolean;
   onPickReceipt: () => void;
   onRemoveReceipt: () => void;
   receiptNote: string;
@@ -30,6 +32,7 @@ export function PaymentStep({
   onSelectPayment,
   cards,
   receipt,
+  receiptBusy = false,
   onPickReceipt,
   onRemoveReceipt,
   receiptNote,
@@ -91,16 +94,28 @@ export function PaymentStep({
           {/* Chek yuklash */}
           <Pressable
             onPress={onPickReceipt}
+            disabled={receiptBusy}
             className={cn(
               'flex-row items-center justify-center gap-2 rounded-xl border-2 border-dashed px-3 py-3',
               receipt ? 'border-emerald-400 bg-emerald-50' : 'border-border bg-white',
+              receiptBusy && 'opacity-60',
             )}
           >
-            {receipt ? <Check size={16} color="#059669" /> : <ImageUp size={16} color="#531625" />}
+            {receiptBusy ? (
+              <ActivityIndicator size="small" color="#531625" />
+            ) : receipt ? (
+              <Check size={16} color="#059669" />
+            ) : (
+              <ImageUp size={16} color="#531625" />
+            )}
             <Text
               className={cn('text-[13px] font-bold', receipt ? 'text-emerald-700' : 'text-primary')}
             >
-              {receipt ? 'Chek yuklandi · Almashtirish' : 'Chekni yuklash'}
+              {receiptBusy
+                ? 'Yuklanmoqda...'
+                : receipt
+                  ? 'Chek yuklandi · Almashtirish'
+                  : 'Chekni yuklash'}
             </Text>
           </Pressable>
           {receipt ? (

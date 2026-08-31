@@ -42,6 +42,7 @@ import { useCart } from '../../src/store/cart';
 import { useLocale } from '../../src/store/locale';
 import { useSession } from '../../src/store/session';
 import { toast } from '../../src/store/toast';
+import { uploadReceipt } from '../../src/lib/api/uploads';
 import { Button } from '../../src/ui/button';
 import { EmptyState } from '../../src/ui/empty-state';
 
@@ -126,9 +127,13 @@ export default function CheckoutScreen() {
   const [payment, setPayment] = React.useState<PaymentId>('CLICK');
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Karta orqali to'lov (UZCARD): platforma kartalari + chek (data-URL) + izoh
+  // Karta orqali to'lov (UZCARD): platforma kartalari + chek + izoh.
+  // Chek ikkiga bo'lingan: `receiptPath` — serverga yuboriladigan ichki yo'l,
+  // `receiptPreview` — telefondagi lokal fayl manzili (faqat ko'rsatish uchun).
   const [cards, setCards] = React.useState<PaymentCard[]>([]);
-  const [receipt, setReceipt] = React.useState<string | null>(null);
+  const [receiptPath, setReceiptPath] = React.useState<string | null>(null);
+  const [receiptPreview, setReceiptPreview] = React.useState<string | null>(null);
+  const [receiptBusy, setReceiptBusy] = React.useState(false);
   const [receiptNote, setReceiptNote] = React.useState('');
   React.useEffect(() => {
     if (payment !== 'UZCARD' || cards.length > 0) return;
@@ -145,17 +150,27 @@ export default function CheckoutScreen() {
     haptics.light();
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
+      // Sifat 0.5 va uzunlik cheklovi — chek raqamlari o'qiladi, hajm esa
+      // mobil internet uchun qulay qoladi. `base64` SO'RALMAYDI: rasm endi
+      // fayl bo'lib yuboriladi, base64 esa xotirani bekorga egallardi.
       quality: 0.5,
-      base64: true,
     });
     const asset = res.assets?.[0];
-    if (res.canceled || !asset?.base64) return;
-    const mime =
-      asset.mimeType && /^image\/(jpeg|png|webp)$/.test(asset.mimeType)
-        ? asset.mimeType
-        : 'image/jpeg';
-    setReceipt(`data:${mime};base64,${asset.base64}`);
-    haptics.success();
+    if (res.canceled || !asset?.uri) return;
+
+    setReceiptBusy(true);
+    try {
+      const pathname = await uploadReceipt(asset.uri, asset.mimeType);
+      setReceiptPath(pathname);
+      setReceiptPreview(asset.uri);
+      haptics.success();
+    } catch (e) {
+      toast({
+        title: e instanceof Error ? e.message : 'Chek yuklanmadi',
+        variant: 'destructive',
+      });
+    }
+    setReceiptBusy(false);
   };
 
   // Sello Coins — login bo'lsa real balans (Bearer). Aks holda 0 (redeem ko'rinmaydi).
@@ -284,7 +299,7 @@ export default function CheckoutScreen() {
       return;
     }
     // Karta o'tkazma tanlangan bo'lsa — chek (kvitansiya) rasmi majburiy
-    if (step === 'payment' && payment === 'UZCARD' && !receipt) {
+    if (step === 'payment' && payment === 'UZCARD' && !receiptPath) {
       haptics.warning();
       toast({ title: 'Chek (kvitansiya) rasmini yuklang', variant: 'warning' });
       return;
@@ -327,7 +342,7 @@ export default function CheckoutScreen() {
         pickupPointId:
           deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
         paymentProvider: payment,
-        paymentReceipt: payment === 'UZCARD' ? (receipt ?? undefined) : undefined,
+        paymentReceipt: payment === 'UZCARD' ? (receiptPath ?? undefined) : undefined,
         paymentNote: payment === 'UZCARD' && receiptNote.trim() ? receiptNote.trim() : undefined,
         promoCode: appliedPromo?.code,
         redeemCoins: coinsToRedeem,
@@ -421,9 +436,13 @@ export default function CheckoutScreen() {
             payment={payment}
             onSelectPayment={setPayment}
             cards={cards}
-            receipt={receipt}
+            receipt={receiptPreview}
+            receiptBusy={receiptBusy}
             onPickReceipt={() => void pickReceipt()}
-            onRemoveReceipt={() => setReceipt(null)}
+            onRemoveReceipt={() => {
+              setReceiptPath(null);
+              setReceiptPreview(null);
+            }}
             receiptNote={receiptNote}
             onChangeReceiptNote={setReceiptNote}
             total={total}

@@ -1,31 +1,41 @@
-// Chek rasmini brauzerda kichraytirib JPEG data-URL qaytaradi (DB'da base64 saqlanadi).
-// checkout-flow.tsx'dan ajratilgan sof util (xatti-harakat o'zgarmagan).
+// Chekni serverga yuklash.
+//
+// Rasm avval brauzerda kichraytiriladi (telefon skrinshoti 5-8 MB bo'lishi
+// mumkin), so'ng /api/uploads/receipt ga yuboriladi. Kichraytirish mantiqi
+// @ecom/storage/browser da — sotuvchi paneli ham aynan shuni ishlatadi.
 
-export async function downscaleToDataUrl(
-  file: File,
-  maxDim = 1400,
-  quality = 0.82,
-): Promise<string> {
-  const dataUrl = await new Promise<string>((res, rej) => {
-    const fr = new FileReader();
-    fr.onload = () => res(fr.result as string);
-    fr.onerror = () => rej(new Error('read'));
-    fr.readAsDataURL(file);
+import { downscaleImageFile } from '@ecom/storage/browser';
+
+export interface ReceiptUpload {
+  /** Bazaga yoziladigan ichki yo'l — buyurtma bilan birga yuboriladi. */
+  pathname: string;
+  /** Faqat shu brauzerda ko'rsatish uchun manzil (serverga bog'liq emas). */
+  previewUrl: string;
+}
+
+/**
+ * Chekni yuklaydi. Chek YOPIQ saqlangani uchun javobda ochiq havola emas,
+ * ichki yo'l qaytadi; ko'rsatish uchun lokal `blob:` manzili ishlatiladi.
+ */
+export async function uploadReceipt(file: File): Promise<ReceiptUpload> {
+  // Chekdagi raqamlar o'qilishi kifoya — 1400px yetarli.
+  const prepared = await downscaleImageFile(file, { maxDim: 1400, fileName: 'chek.jpg' });
+  const body = new FormData();
+  body.append('file', prepared);
+
+  const res = await fetch('/api/uploads/receipt', {
+    method: 'POST',
+    credentials: 'same-origin',
+    body,
   });
-  const img = await new Promise<HTMLImageElement>((res, rej) => {
-    const im = new window.Image();
-    im.onload = () => res(im);
-    im.onerror = () => rej(new Error('img'));
-    im.src = dataUrl;
-  });
-  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-  const w = Math.max(1, Math.round(img.width * scale));
-  const h = Math.max(1, Math.round(img.height * scale));
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return dataUrl;
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL('image/jpeg', quality);
+  const json = (await res.json().catch(() => null)) as {
+    success?: boolean;
+    data?: { pathname?: string };
+    error?: { message?: string };
+  } | null;
+
+  if (!res.ok || !json?.success || !json.data?.pathname) {
+    throw new Error(json?.error?.message ?? 'Chek yuklanmadi');
+  }
+  return { pathname: json.data.pathname, previewUrl: URL.createObjectURL(prepared) };
 }
