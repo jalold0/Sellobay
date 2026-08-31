@@ -1,6 +1,8 @@
 // Katalog — mahsulotlar ro'yxati/detali + ApiProduct→MockProduct adapter.
 // DB xatosida dev rejimda mock fallback (ilova hech qachon yiqilmaydi).
 
+import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
+
 import {
   globalProducts,
   products as mockProducts,
@@ -36,8 +38,6 @@ interface ProductsResponse {
 
 // ─── ApiProduct → MockProduct adapter (ekranlar shu shape'da) ────
 
-const PICSUM_SEED_RE = /picsum\.photos\/seed\/([^/]+)\//;
-
 function deriveBadge(p: ApiProduct): MockProduct['badge'] {
   if (p.oldPrice) return 'SALE';
   if (p.rating >= 4.7 && p.reviewCount >= 100) return 'TOP';
@@ -46,7 +46,6 @@ function deriveBadge(p: ApiProduct): MockProduct['badge'] {
 }
 
 function toMockProduct(p: ApiProduct): MockProduct {
-  const seedMatch = p.imageUrl ? PICSUM_SEED_RE.exec(p.imageUrl) : null;
   return {
     id: p.id,
     slug: p.slug,
@@ -59,7 +58,10 @@ function toMockProduct(p: ApiProduct): MockProduct {
     currency: 'UZS',
     rating: p.rating,
     reviewCount: p.reviewCount,
-    imageSeed: seedMatch?.[1] ?? p.slug,
+    imageSeed: picsumSeed(p.imageUrl) ?? p.slug,
+    // Sotuvchi yuklagan haqiqiy rasm — ilgari mobil uni umuman uzatmasdi,
+    // shu sababli telefonda faqat seed rasmlari ko'rinardi.
+    imageUrl: isRealProductImageUrl(p.imageUrl) ? (p.imageUrl ?? undefined) : undefined,
     badge: deriveBadge(p),
     inStock: true,
   };

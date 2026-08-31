@@ -1,6 +1,8 @@
 // Deterministik mock data — backend tayyor bo'lmaganda UI ko'rinishi uchun.
 // Kelajakda useQuery'ning queryFn'i `apiClient.get(...)` ga almashtirilsa, page'lar o'zgarmaydi.
 
+import { adminProductImage } from '../product-image';
+
 import type {
   AdminUser,
   Brand,
@@ -13,9 +15,29 @@ import type {
   Seller,
 } from './types';
 
-const CITIES = ['Toshkent', 'Samarqand', 'Buxoro', 'Andijon', 'Farg`ona', 'Namangan', 'Qarshi', 'Nukus'];
+const CITIES = [
+  'Toshkent',
+  'Samarqand',
+  'Buxoro',
+  'Andijon',
+  'Farg`ona',
+  'Namangan',
+  'Qarshi',
+  'Nukus',
+];
 const BRANDS = ['Nike', 'Adidas', 'Zara', 'Chanel', 'Dior', 'Gucci', 'Puma', 'H&M'];
-const FIRST_NAMES = ['Ali', 'Vali', 'Hasan', 'Husan', 'Diyora', 'Madina', 'Aziza', 'Bekzod', 'Jasur', 'Lola'];
+const FIRST_NAMES = [
+  'Ali',
+  'Vali',
+  'Hasan',
+  'Husan',
+  'Diyora',
+  'Madina',
+  'Aziza',
+  'Bekzod',
+  'Jasur',
+  'Lola',
+];
 const LAST_NAMES = ['Karimov', 'Rasulov', 'Aliyev', 'Toshmatov', 'Yusupova', 'Saidova', 'Nazarov'];
 
 function pad(n: number, len = 8): string {
@@ -40,16 +62,64 @@ export const mockBrands: Brand[] = BRANDS.map((name, i) => ({
 }));
 
 export const mockCategories: Category[] = [
-  { id: 'c1', slug: 'clothing', name: { uz: 'Kiyim-kechak', ru: 'Одежда', en: 'Clothing' }, isActive: true, position: 1, productCount: 248 },
-  { id: 'c2', slug: 'shoes', name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Shoes' }, isActive: true, position: 2, productCount: 142 },
-  { id: 'c3', slug: 'perfume', name: { uz: 'Atirlar', ru: 'Парфюмерия', en: 'Perfume' }, isActive: true, position: 3, productCount: 87 },
-  { id: 'c4', slug: 'cosmetics', name: { uz: 'Kosmetika', ru: 'Косметика', en: 'Cosmetics' }, isActive: true, position: 4, productCount: 113 },
-  { id: 'c5', slug: 'beauty', name: { uz: "Go'zallik", ru: 'Красота', en: 'Beauty' }, isActive: true, position: 5, productCount: 64 },
-  { id: 'c6', slug: 'accessories', name: { uz: 'Aksessuarlar', ru: 'Аксессуары', en: 'Accessories' }, isActive: true, position: 6, productCount: 95 },
+  {
+    id: 'c1',
+    slug: 'clothing',
+    name: { uz: 'Kiyim-kechak', ru: 'Одежда', en: 'Clothing' },
+    isActive: true,
+    position: 1,
+    productCount: 248,
+  },
+  {
+    id: 'c2',
+    slug: 'shoes',
+    name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Shoes' },
+    isActive: true,
+    position: 2,
+    productCount: 142,
+  },
+  {
+    id: 'c3',
+    slug: 'perfume',
+    name: { uz: 'Atirlar', ru: 'Парфюмерия', en: 'Perfume' },
+    isActive: true,
+    position: 3,
+    productCount: 87,
+  },
+  {
+    id: 'c4',
+    slug: 'cosmetics',
+    name: { uz: 'Kosmetika', ru: 'Косметика', en: 'Cosmetics' },
+    isActive: true,
+    position: 4,
+    productCount: 113,
+  },
+  {
+    id: 'c5',
+    slug: 'beauty',
+    name: { uz: "Go'zallik", ru: 'Красота', en: 'Beauty' },
+    isActive: true,
+    position: 5,
+    productCount: 64,
+  },
+  {
+    id: 'c6',
+    slug: 'accessories',
+    name: { uz: 'Aksessuarlar', ru: 'Аксессуары', en: 'Accessories' },
+    isActive: true,
+    position: 6,
+    productCount: 95,
+  },
 ];
 
-function img(seed: string, size = 200): string {
-  return `https://picsum.photos/seed/${seed}/${size}/${size}`;
+// DIQQAT: bu fayldagi ma'lumot NAMUNA (mock), haqiqiy emas. Uni ishlatadigan
+// sahifalar hali bazaga ulanmagan.
+//
+// Rasm manzili endi tasodifiy foto xizmatiga (picsum.photos) bormaydi: u
+// mahsulotga aloqasi yo'q rasm qaytarardi va namuna ma'lumot haqiqiydek
+// ko'rinardi. Neytral placeholder esa sahifa hali tayyor emasligini ko'rsatadi.
+function img(seed: string, _size = 200): string {
+  return adminProductImage(null, seed);
 }
 
 const PRODUCT_NAMES = [
@@ -63,7 +133,15 @@ const PRODUCT_NAMES = [
   { uz: 'Charm kamar', ru: 'Кожаный ремень', en: 'Leather belt' },
 ];
 
-const STATUSES: Array<Product['status']> = ['ACTIVE', 'ACTIVE', 'ACTIVE', 'DRAFT', 'PENDING_REVIEW', 'OUT_OF_STOCK', 'ARCHIVED'];
+const STATUSES: Array<Product['status']> = [
+  'ACTIVE',
+  'ACTIVE',
+  'ACTIVE',
+  'DRAFT',
+  'PENDING_REVIEW',
+  'OUT_OF_STOCK',
+  'ARCHIVED',
+];
 
 export const mockProducts: Product[] = Array.from({ length: 48 }, (_, i) => {
   const name = pick(PRODUCT_NAMES, i);
@@ -106,7 +184,14 @@ const ORDER_STATUSES: Order['status'][] = [
   'CANCELLED',
   'RETURNED',
 ];
-const PAY_STATUSES: Order['paymentStatus'][] = ['PENDING', 'PAID', 'PAID', 'PAID', 'FAILED', 'REFUNDED'];
+const PAY_STATUSES: Order['paymentStatus'][] = [
+  'PENDING',
+  'PAID',
+  'PAID',
+  'PAID',
+  'FAILED',
+  'REFUNDED',
+];
 const PAY_PROVIDERS = ['CLICK', 'PAYME', 'UZUM_BANK', 'CASH_ON_DELIVERY', 'UZCARD'];
 const DELIVERY_METHODS: Order['deliveryMethod'][] = ['HOME_DELIVERY', 'PICKUP_POINT', 'EXPRESS'];
 
@@ -170,8 +255,14 @@ export function getOrderDetail(id: string): OrderDetail | undefined {
       ...(['CANCELLED', 'PENDING'].includes(order.status)
         ? []
         : [
-            { status: 'CONFIRMED' as const, changedAt: dateAgo(Number(id.split('-')[1] ?? 0) * 0.3 - 0.1) },
-            { status: 'PAID' as const, changedAt: dateAgo(Number(id.split('-')[1] ?? 0) * 0.3 - 0.2) },
+            {
+              status: 'CONFIRMED' as const,
+              changedAt: dateAgo(Number(id.split('-')[1] ?? 0) * 0.3 - 0.1),
+            },
+            {
+              status: 'PAID' as const,
+              changedAt: dateAgo(Number(id.split('-')[1] ?? 0) * 0.3 - 0.2),
+            },
           ]),
       { status: order.status, changedAt: dateAgo(0.05) },
     ],
@@ -219,17 +310,91 @@ export const mockSellers: Seller[] = Array.from({ length: 14 }, (_, i) => {
 });
 
 export const mockPromoCodes: PromoCode[] = [
-  { id: 'pc-1', code: 'WELCOME10', type: 'PERCENT', value: 10, minOrderTotal: 200_000, usageLimit: 1000, usedCount: 432, startsAt: dateAgo(30), endsAt: dateAgo(-60), isActive: true },
-  { id: 'pc-2', code: 'NAVRUZ20', type: 'PERCENT', value: 20, minOrderTotal: 500_000, usageLimit: 500, usedCount: 500, startsAt: dateAgo(90), endsAt: dateAgo(60), isActive: false },
-  { id: 'pc-3', code: 'FREESHIP', type: 'FREE_SHIPPING', value: 0, usageLimit: undefined, usedCount: 184, isActive: true },
-  { id: 'pc-4', code: 'BLACK50', type: 'FIXED', value: 50_000, minOrderTotal: 300_000, usageLimit: 200, usedCount: 12, startsAt: dateAgo(-7), endsAt: dateAgo(-14), isActive: true },
+  {
+    id: 'pc-1',
+    code: 'WELCOME10',
+    type: 'PERCENT',
+    value: 10,
+    minOrderTotal: 200_000,
+    usageLimit: 1000,
+    usedCount: 432,
+    startsAt: dateAgo(30),
+    endsAt: dateAgo(-60),
+    isActive: true,
+  },
+  {
+    id: 'pc-2',
+    code: 'NAVRUZ20',
+    type: 'PERCENT',
+    value: 20,
+    minOrderTotal: 500_000,
+    usageLimit: 500,
+    usedCount: 500,
+    startsAt: dateAgo(90),
+    endsAt: dateAgo(60),
+    isActive: false,
+  },
+  {
+    id: 'pc-3',
+    code: 'FREESHIP',
+    type: 'FREE_SHIPPING',
+    value: 0,
+    usageLimit: undefined,
+    usedCount: 184,
+    isActive: true,
+  },
+  {
+    id: 'pc-4',
+    code: 'BLACK50',
+    type: 'FIXED',
+    value: 50_000,
+    minOrderTotal: 300_000,
+    usageLimit: 200,
+    usedCount: 12,
+    startsAt: dateAgo(-7),
+    endsAt: dateAgo(-14),
+    isActive: true,
+  },
 ];
 
 export const mockAdminUsers: AdminUser[] = [
-  { id: 'au-1', firstName: 'Akmal', lastName: 'Karimov', email: 'admin@example.uz', roles: ['SUPER_ADMIN'], lastLoginAt: dateAgo(0.04), status: 'ACTIVE', avatarUrl: img('admin-1', 100) },
-  { id: 'au-2', firstName: 'Madina', lastName: 'Rasulova', email: 'madina@example.uz', roles: ['MARKETING_MANAGER'], lastLoginAt: dateAgo(1), status: 'ACTIVE' },
-  { id: 'au-3', firstName: 'Bekzod', lastName: 'Aliyev', email: 'bekzod@example.uz', roles: ['FINANCE_MANAGER', 'SUPPORT_AGENT'], lastLoginAt: dateAgo(3), status: 'ACTIVE' },
-  { id: 'au-4', firstName: 'Lola', lastName: 'Saidova', email: 'lola@example.uz', roles: ['SUPPORT_AGENT'], lastLoginAt: dateAgo(0.2), status: 'ACTIVE' },
+  {
+    id: 'au-1',
+    firstName: 'Akmal',
+    lastName: 'Karimov',
+    email: 'admin@example.uz',
+    roles: ['SUPER_ADMIN'],
+    lastLoginAt: dateAgo(0.04),
+    status: 'ACTIVE',
+    avatarUrl: img('admin-1', 100),
+  },
+  {
+    id: 'au-2',
+    firstName: 'Madina',
+    lastName: 'Rasulova',
+    email: 'madina@example.uz',
+    roles: ['MARKETING_MANAGER'],
+    lastLoginAt: dateAgo(1),
+    status: 'ACTIVE',
+  },
+  {
+    id: 'au-3',
+    firstName: 'Bekzod',
+    lastName: 'Aliyev',
+    email: 'bekzod@example.uz',
+    roles: ['FINANCE_MANAGER', 'SUPPORT_AGENT'],
+    lastLoginAt: dateAgo(3),
+    status: 'ACTIVE',
+  },
+  {
+    id: 'au-4',
+    firstName: 'Lola',
+    lastName: 'Saidova',
+    email: 'lola@example.uz',
+    roles: ['SUPPORT_AGENT'],
+    lastLoginAt: dateAgo(0.2),
+    status: 'ACTIVE',
+  },
 ];
 
 // Daromad grafigi uchun — oxirgi 30 kun

@@ -10,6 +10,7 @@
 //    serverless cold-start va connection overhead'ini tejaydi). 'products' tag
 //    orqali invalidatsiya qilinadi (mahsulot o'zgarsa revalidateTag('products')).
 
+import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { unstable_cache } from 'next/cache';
 
 import { prisma } from './db';
@@ -26,8 +27,6 @@ const CATALOG_REVALIDATE_SECONDS = 120;
 const ALLOW_MOCK_FALLBACK = process.env.NODE_ENV !== 'production';
 
 // ─── DB → MockProduct mapping ────────────────────────────────────
-
-const PICSUM_SEED_RE = /picsum\.photos\/seed\/([^/]+)\//;
 
 interface DbProductRow {
   id: string;
@@ -61,7 +60,6 @@ function deriveBadge(p: DbProductRow): MockProduct['badge'] {
 
 function toMockProduct(p: DbProductRow): MockProduct {
   const imageUrl = p.images[0]?.url ?? '';
-  const seedMatch = PICSUM_SEED_RE.exec(imageUrl);
   // Zaxira = barcha varyantlar inventarining yig'indisi. 0 bo'lsa "omborda yo'q".
   const stock = p.variants.reduce(
     (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
@@ -79,9 +77,9 @@ function toMockProduct(p: DbProductRow): MockProduct {
     currency: 'UZS',
     rating: Number(p.rating),
     reviewCount: p.reviewCount,
-    imageSeed: seedMatch?.[1] ?? p.slug,
-    // Haqiqiy rasm URL (picsum placeholder bo'lmasa) — komponentlar shuni ishlatadi.
-    imageUrl: imageUrl && !seedMatch ? imageUrl : undefined,
+    imageSeed: picsumSeed(imageUrl) ?? p.slug,
+    // Haqiqiy rasm URL (seed qoldig'i bo'lmasa) — komponentlar shuni ishlatadi.
+    imageUrl: isRealProductImageUrl(imageUrl) ? imageUrl : undefined,
     badge: deriveBadge(p),
     inStock: stock > 0,
     // Verified: seller yo'q (platform-rasmiy) yoki seller ACTIVE holatda
@@ -274,8 +272,8 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
     });
     if (!row) return null;
 
-    // Placeholder (picsum) bo'lmagan haqiqiy URL'lar
-    const galleryUrls = row.images.map((i) => i.url).filter((u) => u && !PICSUM_SEED_RE.test(u));
+    // Faqat haqiqiy rasm manzillari (seed qoldiqlari emas)
+    const galleryUrls = row.images.map((i) => i.url).filter(isRealProductImageUrl);
 
     const colors: string[] = [];
     const sizeMap = new Map<string, boolean>();

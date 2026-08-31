@@ -1,6 +1,10 @@
 // Mobile mock-data — web bilan uyg'unlashtirilgan minimal nusxa.
 // Backend tayyor bo'lganda useQuery'ga ko'chiriladi.
 
+import { productImageBySeed } from '@ecom/utils';
+
+import { API_BASE } from './api/core';
+
 export type Locale = 'uz' | 'ru' | 'en';
 // DB `name`ni Json sifatida saqlaydi va server faqat `uz`ni majburiy qiladi
 // (apps/seller .../api/products: nameRu/nameEn optional). Shuning uchun ru/en
@@ -35,6 +39,8 @@ export interface MockProduct {
   rating: number;
   reviewCount: number;
   imageSeed: string;
+  /** Sotuvchi yuklagan haqiqiy rasm (Blob). Bo'lmasa imageSeed ishlatiladi. */
+  imageUrl?: string;
   badge?: 'NEW' | 'SALE' | 'TOP';
   inStock: boolean;
   // Yetkazish/ishonch signallari (Coupang uslubi) — hammasi IXTIYORIY,
@@ -632,8 +638,24 @@ export const globalProducts: MockProduct[] = [
   },
 ];
 
-export function productImage(seed: string, size = 400): string {
-  return `https://picsum.photos/seed/${seed}/${size}/${size}`;
+/**
+ * Mahsulot rasmi seed bo'yicha — ABSOLUT manzil.
+ *
+ * Ilgari bu picsum.photos'ga qaytarardi, ya'ni telefonda mahsulotga aloqasi
+ * yo'q tasodifiy foto chiqardi va u web'dagi rasm bilan mos kelmasdi. Endi
+ * mantiq @ecom/utils da, rasm esa web ilovasining `public/products/` papkasidan
+ * olinadi — shu sababli manzil ABSOLUT bo'lishi shart: mobil ilova `/products/x.jpg`
+ * kabi nisbiy yo'lni o'zi hal qila olmaydi.
+ *
+ * `size` ataylab e'tiborsiz — rasm o'lchamini komponent belgilaydi.
+ */
+export function productImage(seed: string, _size = 400): string {
+  return productImageBySeed(seed, API_BASE);
+}
+
+/** Rasm manbasi: sotuvchi yuklagani bo'lsa o'sha, aks holda seed bo'yicha. */
+export function productImageSource(item: { imageSeed: string; imageUrl?: string }): string {
+  return item.imageUrl ?? productImage(item.imageSeed);
 }
 
 export function findBySlug<T extends { slug: string }>(list: T[], slug: string): T | undefined {

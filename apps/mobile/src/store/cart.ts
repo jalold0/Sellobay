@@ -11,6 +11,8 @@ export interface CartItem {
   brand: string;
   slug: string;
   imageSeed: string;
+  /** Sotuvchi yuklagan haqiqiy rasm. Bo'lmasa imageSeed ishlatiladi. */
+  imageUrl?: string;
   unitPrice: number;
   oldPrice?: number;
   currency: 'UZS';

@@ -4,6 +4,7 @@
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { adminProductImage } from '@/lib/product-image';
 import { manualCardPayload, receiptSrc } from '@/lib/receipt';
 
 import type { NextRequest } from 'next/server';
@@ -54,7 +55,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
           unitPrice: true,
           totalPrice: true,
           product: {
-            select: { images: { take: 1, orderBy: { position: 'asc' }, select: { url: true } } },
+            select: {
+              slug: true,
+              images: { take: 1, orderBy: { position: 'asc' }, select: { url: true } },
+            },
           },
         },
       },
@@ -116,7 +120,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       id: it.id,
       productName: it.nameSnapshot,
       sku: it.sku,
-      imageUrl: it.product?.images[0]?.url ?? '',
+      imageUrl: adminProductImage(it.product?.images[0]?.url, it.product?.slug ?? ''),
       quantity: it.quantity,
       unitPrice: Number(it.unitPrice),
       totalPrice: Number(it.totalPrice),

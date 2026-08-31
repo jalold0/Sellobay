@@ -6,7 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { type PickupPoint, type PromoType } from '../../lib/api';
 import { formatMoney, pickLocalized } from '../../lib/format';
-import { productImage } from '../../lib/mock-data';
+import { productImageSource } from '../../lib/mock-data';
 import { type CartItem } from '../../store/cart';
 import { AppImage } from '../../ui/app-image';
 import { Button } from '../../ui/button';
@@ -134,7 +134,7 @@ export function ReviewStep({
         {items.map((it) => (
           <View key={it.id} className="flex-row items-center gap-2 py-1">
             <AppImage
-              source={productImage(it.imageSeed, 100)}
+              source={productImageSource(it)}
               className="bg-muted h-10 w-10 rounded-md"
               contentFit="cover"
             />

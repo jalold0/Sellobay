@@ -10,7 +10,8 @@
   },
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ecom/core-domain": "workspace:*",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@ecom/eslint-config": "workspace:*",
     "@ecom/tsconfig": "workspace:*",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.10"
   }
 }

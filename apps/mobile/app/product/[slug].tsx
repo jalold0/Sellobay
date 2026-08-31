@@ -139,6 +139,7 @@ export default function ProductDetailScreen() {
       brand: product.brand,
       slug: product.slug,
       imageSeed: product.imageSeed,
+      imageUrl: product.imageUrl,
       unitPrice: product.price,
       oldPrice: product.oldPrice,
       currency: product.currency,

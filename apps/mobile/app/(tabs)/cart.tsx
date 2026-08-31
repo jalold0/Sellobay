@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { formatMoney } from '../../src/lib/format';
 import { haptics } from '../../src/lib/haptics';
-import { productImage } from '../../src/lib/mock-data';
+import { productImageSource } from '../../src/lib/mock-data';
 import { useT } from '../../src/lib/useT';
 import { type CartItem, useCart } from '../../src/store/cart';
 import { useSession } from '../../src/store/session';
@@ -190,7 +190,7 @@ function CartItemRow({
     <View className="border-border flex-row gap-3 rounded-2xl border bg-white p-3">
       <Pressable onPress={() => router.push(`/product/${item.slug}` as never)}>
         <AppImage
-          source={productImage(item.imageSeed, 200)}
+          source={productImageSource(item)}
           className="bg-muted h-[82px] w-[82px] rounded-xl"
           contentFit="cover"
         />

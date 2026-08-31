@@ -3,6 +3,7 @@
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { adminProductImage } from '@/lib/product-image';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,7 +61,7 @@ export async function GET() {
       status: p.status,
       basePrice: Number(p.basePrice),
       compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : undefined,
-      imageUrl: p.images[0]?.url ?? '',
+      imageUrl: adminProductImage(p.images[0]?.url, p.slug),
       stock,
       soldCount: p.soldCount,
       rating: Number(p.rating),
