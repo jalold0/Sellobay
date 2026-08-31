@@ -107,7 +107,7 @@
       "titleLine2": "25 essential pieces",
       "link": "Open the collection",
       "womenTitle": "For women",
-      "womenCount": "840,000+ products",
+      "womenCount": "New collection",
       "saleEyebrow": "48 hours only",
       "saleTitleLine1": "Seasonal SALE",
       "saleTitleLine2": "up to −50%",
@@ -115,12 +115,36 @@
     },
     "sellerCta": {
       "eyebrow": "For sellers",
-      "titleLine1": "Reach millions of buyers",
+      "titleLine1": "Reach new buyers",
       "titleLine2": "starting today",
       "perk1": "Register in 15 minutes",
       "perk2": "First month commission-free",
       "perk3": "Fulfillment warehouse",
       "cta": "Start selling"
+    },
+    "promo": {
+      "eyebrow": "Seasonal deals",
+      "title": "Perfume & cosmetics",
+      "subtitlePrefix": "Original brands —",
+      "discountUpTo": "up to {percent}% off",
+      "subtitleNoSale": "Original brands from verified sellers",
+      "cta": "Shop the deals",
+      "globalEyebrow": "Sellobay Global",
+      "globalTitle": "Straight from China",
+      "globalText": "Order what the local market does not stock",
+      "globalCta": "Send a request",
+      "groupEyebrow": "Cheaper together",
+      "groupTitle": "Buy as a group",
+      "groupText": "When the group fills, everyone gets the lower price",
+      "groupCta": "See groups"
+    },
+    "quickTiles": {
+      "authentic": "Authenticity guaranteed",
+      "delivery": "Fast delivery",
+      "returns": "Free returns",
+      "new": "New arrivals",
+      "flash": "Flash deals",
+      "secure": "Secure payment"
     }
   },
   "featured": {
@@ -146,7 +170,7 @@
   },
   "testimonials": {
     "title": "What customers and sellers say",
-    "subtitle": "50,000+ sellers and 2M+ customers have chosen Sellobay",
+    "subtitle": "What customers who chose Sellobay say",
     "items": {
       "madina": {
         "name": "Madina Karimova",
@@ -168,7 +192,7 @@
   "footer": {
     "newsletterTitle": "Be the first to know about new arrivals",
     "newsletterSubtitle": "Leave your email and get a 10% discount coupon. No spam — only news.",
-    "tagline": "Uzbekistan's largest multi-vendor marketplace. Thousands of sellers, millions of original products.",
+    "tagline": "A multi-vendor marketplace for Uzbekistan. Verified sellers, original products.",
     "address": "Tashkent, Mirzo Ulugbek district",
     "paymentMethods": "Payment methods:",
     "copyright": "© {year} Sellobay LLC. All rights reserved.",

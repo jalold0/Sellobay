@@ -114,7 +114,7 @@
       "titleLine2": "25 ta asosiy buyum",
       "link": "Kolleksiyani ochish",
       "womenTitle": "Ayollar uchun",
-      "womenCount": "840 000+ mahsulot",
+      "womenCount": "Yangi kolleksiya",
       "saleEyebrow": "Faqat 48 soat",
       "saleTitleLine1": "Mavsumiy SALE",
       "saleTitleLine2": "−50% gacha",
@@ -122,12 +122,36 @@
     },
     "sellerCta": {
       "eyebrow": "Sotuvchilar uchun",
-      "titleLine1": "Millionlab xaridorga",
+      "titleLine1": "Yangi xaridorlarga",
       "titleLine2": "bugun yetib boring",
       "perk1": "15 daqiqada ro'yxatdan o'tish",
       "perk2": "Birinchi oy komissiyasiz",
       "perk3": "Fulfillment ombori",
       "cta": "Sotishni boshlash"
+    },
+    "promo": {
+      "eyebrow": "Mavsumiy chegirmalar",
+      "title": "Atirlar va kosmetika",
+      "subtitlePrefix": "Original brendlar —",
+      "discountUpTo": "{percent}% gacha chegirma",
+      "subtitleNoSale": "Original brendlar, tekshirilgan sotuvchilardan",
+      "cta": "Chegirmalarni ko'rish",
+      "globalEyebrow": "Sellobay Global",
+      "globalTitle": "Xitoydan to'g'ridan-to'g'ri",
+      "globalText": "Bozorda yo'q mahsulotni buyurtma qiling",
+      "globalCta": "So'rov qoldirish",
+      "groupEyebrow": "Birgalikda arzon",
+      "groupTitle": "Guruh bo'lib oling",
+      "groupText": "Guruh to'lganda hamma past narxda oladi",
+      "groupCta": "Guruhlarni ko'rish"
+    },
+    "quickTiles": {
+      "authentic": "Original kafolati",
+      "delivery": "Tezkor yetkazish",
+      "returns": "Bepul qaytarish",
+      "new": "Yangi tushganlar",
+      "flash": "Flash chegirmalar",
+      "secure": "Xavfsiz to'lov"
     }
   },
   "featured": {
@@ -153,7 +177,7 @@
   },
   "testimonials": {
     "title": "Mijozlar va sotuvchilar fikri",
-    "subtitle": "50,000+ sotuvchi va 2M+ mijoz Sellobay'ni tanlagan",
+    "subtitle": "Sellobay'ni tanlagan mijozlar fikri",
     "items": {
       "madina": {
         "name": "Madina Karimova",
@@ -175,7 +199,7 @@
   "footer": {
     "newsletterTitle": "Yangi tushgandan birinchi xabardor bo'ling",
     "newsletterSubtitle": "Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling. Spam yo'q — faqat yangiliklar.",
-    "tagline": "O'zbekistondagi eng yirik multi-vendor marketplace. Minglab sotuvchilar, millionlab original mahsulotlar.",
+    "tagline": "O'zbekiston uchun multi-vendor marketplace. Tekshirilgan sotuvchilar, original mahsulotlar.",
     "address": "Toshkent sh., Mirzo Ulug'bek tumani",
     "paymentMethods": "To'lov usullari:",
     "copyright": "© {year} Sellobay LLC. Barcha huquqlar himoyalangan.",

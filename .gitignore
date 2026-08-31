@@ -77,3 +77,6 @@ android/app/build/
 
 # Lokal dizayn/tahlil arxivlari (root'dagi zip bundle'lar)
 /*.zip
+
+# Dizayn maketi ishchi fayllari (seed qilingan HTML 2.5MB)
+.design/
