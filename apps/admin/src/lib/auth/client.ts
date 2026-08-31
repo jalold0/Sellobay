@@ -319,3 +319,39 @@ export interface PendingSeller {
     status: string;
   };
 }
+
+// ─── Bosh sahifa ko'rsatkichlari ──────────────────────────────────
+// Barcha qiymat bazadan keladi (/api/dashboard). `deltaPercent` null bo'lishi
+// mumkin: oldingi davr nolga teng bo'lsa foiz hisoblab bo'lmaydi va uni
+// ko'rsatmaslik kerak.
+
+export interface DashboardMetric {
+  current: number;
+  deltaPercent: number | null;
+  allTime: number;
+}
+
+export interface DashboardData {
+  windowDays: number;
+  revenue: DashboardMetric;
+  orders: DashboardMetric;
+  customers: DashboardMetric;
+  averageOrderValue: DashboardMetric;
+  dailySeries: { date: string; revenue: number; orders: number }[];
+  deliveryBreakdown: { method: string; count: number }[];
+  recentOrders: {
+    id: string;
+    number: string;
+    status: AdminOrderStatus;
+    grandTotal: number;
+    placedAt: string;
+    itemsCount: number;
+    customerName: string;
+  }[];
+  lowStock: { id: string; sku: string; name: Localized; imageUrl: string; stock: number }[];
+  topProducts: { id: string; name: Localized; brandName: string; soldCount: number }[];
+}
+
+export function fetchDashboard() {
+  return api<DashboardData>('/api/dashboard');
+}

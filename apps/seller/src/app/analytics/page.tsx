@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
   KpiCard,
+  MockDataNotice,
   PageHeader,
 } from '@ecom/ui';
 import { Eye, Percent, Star, TrendingUp } from 'lucide-react';
@@ -22,10 +23,18 @@ export default function SellerAnalyticsPage() {
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Analitika hali hisoblanmaydi. Buyurtmalar va mahsulotlar bo'limlari haqiqiy ma'lumotdan ishlaydi." />
+
       <PageHeader title="Analitika" description="Sotuvlaringiz va mahsulot samaradorligi" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Daromad (30k)" value={formatMoney(revenue30)} delta={9.4} icon={TrendingUp} accent="success" />
+        <KpiCard
+          label="Daromad (30k)"
+          value={formatMoney(revenue30)}
+          delta={9.4}
+          icon={TrendingUp}
+          accent="success"
+        />
         <KpiCard label="Konversiya" value="3.8%" delta={0.4} icon={Percent} accent="info" />
         <KpiCard label="O`rtacha chek" value={formatMoney(aov)} delta={2.1} accent="primary" />
         <KpiCard label="Reyting" value="4.8" icon={Star} accent="warning" />
@@ -43,7 +52,7 @@ export default function SellerAnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Karta ko`rishlari</CardTitle>
-            <p className="text-xs text-muted-foreground">Kanal bo`yicha</p>
+            <p className="text-muted-foreground text-xs">Kanal bo`yicha</p>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {[
@@ -62,8 +71,11 @@ export default function SellerAnalyticsPage() {
                     </span>
                     <span className="font-medium">{formatNumber(c.views)}</span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c.color }} />
+                  <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${pct}%`, background: c.color }}
+                    />
                   </div>
                 </div>
               );
@@ -80,7 +92,7 @@ export default function SellerAnalyticsPage() {
           <ul className="divide-y">
             {top.map((p, i) => (
               <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold">
+                <span className="bg-muted grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold">
                   {i + 1}
                 </span>
                 <div className="h-9 w-9 shrink-0 overflow-hidden rounded">
@@ -89,11 +101,11 @@ export default function SellerAnalyticsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                  <div className="text-xs text-muted-foreground">{p.sku}</div>
+                  <div className="text-muted-foreground text-xs">{p.sku}</div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold">{formatNumber(p.soldCount)}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     <Eye className="inline h-3 w-3" /> {formatNumber(p.reviewCount * 30)}
                   </div>
                 </div>

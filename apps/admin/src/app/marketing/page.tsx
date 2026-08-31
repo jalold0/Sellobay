@@ -8,6 +8,7 @@ import {
   CardTitle,
   DataTable,
   KpiCard,
+  MockDataNotice,
   PageHeader,
   StatusBadge,
   Tabs,
@@ -37,7 +38,13 @@ const promoColumns: ColumnDef<PromoCode>[] = [
       const t = row.original.type;
       return (
         <StatusBadge tone="info" dot={false}>
-          {t === 'PERCENT' ? 'Foiz' : t === 'FIXED' ? 'Qat`iy' : t === 'FREE_SHIPPING' ? 'Tekin yetkazib berish' : 'BXGY'}
+          {t === 'PERCENT'
+            ? 'Foiz'
+            : t === 'FIXED'
+              ? 'Qat`iy'
+              : t === 'FREE_SHIPPING'
+                ? 'Tekin yetkazib berish'
+                : 'BXGY'}
         </StatusBadge>
       );
     },
@@ -50,8 +57,8 @@ const promoColumns: ColumnDef<PromoCode>[] = [
         {row.original.type === 'PERCENT'
           ? `${row.original.value}%`
           : row.original.type === 'FIXED'
-          ? formatMoney(row.original.value)
-          : '—'}
+            ? formatMoney(row.original.value)
+            : '—'}
       </div>
     ),
   },
@@ -69,11 +76,8 @@ const promoColumns: ColumnDef<PromoCode>[] = [
             <span className="text-muted-foreground">{limit ? formatNumber(limit) : '∞'}</span>
           </div>
           {limit ? (
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{ width: `${pct}%` }}
-              />
+            <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+              <div className="bg-primary h-full rounded-full" style={{ width: `${pct}%` }} />
             </div>
           ) : null}
         </div>
@@ -84,7 +88,7 @@ const promoColumns: ColumnDef<PromoCode>[] = [
     accessorKey: 'endsAt',
     header: 'Tugaydi',
     cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground">
+      <span className="text-muted-foreground text-xs">
         {row.original.endsAt ? formatDate(row.original.endsAt) : 'Cheksiz'}
       </span>
     ),
@@ -107,6 +111,8 @@ export default function AdminMarketingPage() {
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Promokod va kampaniyalar hali bazaga ulanmagan." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Marketing"
@@ -119,8 +125,18 @@ export default function AdminMarketingPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Faol aksiyalar" value={formatNumber(activePromos)} icon={Tag} accent="primary" />
-        <KpiCard label="Jami foydalanish" value={formatNumber(totalRedeemed)} icon={Gift} accent="success" />
+        <KpiCard
+          label="Faol aksiyalar"
+          value={formatNumber(activePromos)}
+          icon={Tag}
+          accent="primary"
+        />
+        <KpiCard
+          label="Jami foydalanish"
+          value={formatNumber(totalRedeemed)}
+          icon={Gift}
+          accent="success"
+        />
         <KpiCard label="Push ulashi (CTR)" value="14.2%" icon={Send} accent="info" />
         <KpiCard label="Email ochilishi" value="32.7%" icon={Mail} accent="warning" />
       </div>
@@ -143,7 +159,11 @@ export default function AdminMarketingPage() {
 
         <TabsContent value="promos">
           <Card className="p-1">
-            <DataTable columns={promoColumns} data={mockPromoCodes} searchPlaceholder="Kod yoki turi..." />
+            <DataTable
+              columns={promoColumns}
+              data={mockPromoCodes}
+              searchPlaceholder="Kod yoki turi..."
+            />
           </Card>
         </TabsContent>
 
@@ -152,27 +172,33 @@ export default function AdminMarketingPage() {
             {[
               { name: 'Navro`z 2026', channel: 'PUSH', sent: 12400, ctr: '12.4%', icon: Send },
               { name: 'Black Friday', channel: 'EMAIL', sent: 8700, ctr: '28.1%', icon: Mail },
-              { name: 'VIP rebranding', channel: 'TELEGRAM', sent: 3200, ctr: '19.7%', icon: MessageCircle },
+              {
+                name: 'VIP rebranding',
+                channel: 'TELEGRAM',
+                sent: 3200,
+                ctr: '19.7%',
+                icon: MessageCircle,
+              },
             ].map((c) => {
               const Icon = c.icon;
               return (
                 <Card key={c.name}>
                   <CardHeader className="flex flex-row items-center gap-3 space-y-0">
-                    <div className="grid h-9 w-9 place-items-center rounded-md bg-primary/10 text-primary">
+                    <div className="bg-primary/10 text-primary grid h-9 w-9 place-items-center rounded-md">
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                       <CardTitle className="truncate text-base">{c.name}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{c.channel}</p>
+                      <p className="text-muted-foreground text-xs">{c.channel}</p>
                     </div>
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <div className="text-xs text-muted-foreground">Yuborilgan</div>
+                      <div className="text-muted-foreground text-xs">Yuborilgan</div>
                       <div className="font-semibold">{formatNumber(c.sent)}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground">CTR</div>
+                      <div className="text-muted-foreground text-xs">CTR</div>
                       <div className="font-semibold">{c.ctr}</div>
                     </div>
                   </CardContent>
@@ -186,19 +212,21 @@ export default function AdminMarketingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Sodiqlik dasturi</CardTitle>
-              <p className="text-xs text-muted-foreground">Har 10 000 UZS — 100 ball. Ballarni keyingi xaridda ishlatish mumkin.</p>
+              <p className="text-muted-foreground text-xs">
+                Har 10 000 UZS — 100 ball. Ballarni keyingi xaridda ishlatish mumkin.
+              </p>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               <div className="rounded-md border p-4">
-                <div className="text-xs text-muted-foreground">Jami foydalanuvchilar</div>
+                <div className="text-muted-foreground text-xs">Jami foydalanuvchilar</div>
                 <div className="text-2xl font-bold">12 480</div>
               </div>
               <div className="rounded-md border p-4">
-                <div className="text-xs text-muted-foreground">Faol ballar</div>
+                <div className="text-muted-foreground text-xs">Faol ballar</div>
                 <div className="text-2xl font-bold">3.2M</div>
               </div>
               <div className="rounded-md border p-4">
-                <div className="text-xs text-muted-foreground">Bu oy yondirilgan</div>
+                <div className="text-muted-foreground text-xs">Bu oy yondirilgan</div>
                 <div className="text-2xl font-bold">142 K</div>
               </div>
             </CardContent>
@@ -209,7 +237,9 @@ export default function AdminMarketingPage() {
           <Card>
             <CardHeader>
               <CardTitle>Segmentlar</CardTitle>
-              <p className="text-xs text-muted-foreground">RFM, xulq-atvor va sotib olish tarixiga ko`ra</p>
+              <p className="text-muted-foreground text-xs">
+                RFM, xulq-atvor va sotib olish tarixiga ko`ra
+              </p>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

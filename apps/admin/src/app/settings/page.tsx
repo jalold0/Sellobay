@@ -11,6 +11,7 @@ import {
   CardTitle,
   Input,
   Label,
+  MockDataNotice,
   PageHeader,
   Select,
   SelectContent,
@@ -37,13 +38,15 @@ const ROLES = [
   { key: 'ADMIN', label: 'Admin', desc: 'Asosiy boshqaruv' },
   { key: 'MARKETING_MANAGER', label: 'Marketing menejeri', desc: 'Kampaniyalar, promo' },
   { key: 'FINANCE_MANAGER', label: 'Moliya menejeri', desc: 'Hisob, payout' },
-  { key: 'SUPPORT_AGENT', label: "Qo`llab-quvvatlash", desc: 'Tikets, mijoz' },
+  { key: 'SUPPORT_AGENT', label: 'Qo`llab-quvvatlash', desc: 'Tikets, mijoz' },
   { key: 'WAREHOUSE_STAFF', label: 'Ombor xodimi', desc: 'WMS, inventar' },
 ];
 
 export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Sozlamalar hali saqlanmaydi — o'zgartirish kiritilsa yo'qoladi." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Sozlamalar"
@@ -135,7 +138,7 @@ export default function AdminSettingsPage() {
                       <div className="font-medium">
                         {u.firstName} {u.lastName}
                       </div>
-                      <div className="text-xs text-muted-foreground">{u.email}</div>
+                      <div className="text-muted-foreground text-xs">{u.email}</div>
                     </div>
                     <div className="hidden gap-1 md:flex">
                       {u.roles.map((r) => (
@@ -144,7 +147,7 @@ export default function AdminSettingsPage() {
                         </StatusBadge>
                       ))}
                     </div>
-                    <div className="hidden text-xs text-muted-foreground md:block">
+                    <div className="text-muted-foreground hidden text-xs md:block">
                       {u.lastLoginAt ? formatRelative(u.lastLoginAt) : '—'}
                     </div>
                     <Button variant="ghost" size="sm">
@@ -162,8 +165,9 @@ export default function AdminSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Rol va huquqlar (RBAC)</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Har bir rolga tegishli huquqlarni boshqaring. O`zgarishlar real-time foydalanuvchilarga tatbiq qilinadi.
+              <p className="text-muted-foreground text-xs">
+                Har bir rolga tegishli huquqlarni boshqaring. O`zgarishlar real-time
+                foydalanuvchilarga tatbiq qilinadi.
               </p>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -174,7 +178,7 @@ export default function AdminSettingsPage() {
                 >
                   <div>
                     <div className="font-medium">{r.label}</div>
-                    <div className="text-xs text-muted-foreground">{r.desc}</div>
+                    <div className="text-muted-foreground text-xs">{r.desc}</div>
                   </div>
                   <Button variant="outline" size="sm">
                     Huquqlar
@@ -216,14 +220,16 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div>
                     <div className="font-medium">SMS-OTP</div>
-                    <div className="text-xs text-muted-foreground">+998 90 *** ** 00</div>
+                    <div className="text-muted-foreground text-xs">+998 90 *** ** 00</div>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div>
                     <div className="font-medium">TOTP (Authenticator)</div>
-                    <div className="text-xs text-muted-foreground">Google/Microsoft authenticator</div>
+                    <div className="text-muted-foreground text-xs">
+                      Google/Microsoft authenticator
+                    </div>
                   </div>
                   <Switch />
                 </div>
@@ -231,7 +237,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium">Aktiv sessiyalar</div>
-                    <div className="text-xs text-muted-foreground">3 ta qurilma</div>
+                    <div className="text-muted-foreground text-xs">3 ta qurilma</div>
                   </div>
                   <Button variant="outline" size="sm">
                     <Key className="mr-2 h-4 w-4" /> Boshqarish
@@ -257,10 +263,13 @@ export default function AdminSettingsPage() {
                 { name: 'Telegram Bot', status: 'connected', desc: 'Mijoz xabarlari' },
                 { name: 'Sentry', status: 'connected', desc: 'Xato monitoring' },
               ].map((i) => (
-                <div key={i.name} className="flex items-center justify-between rounded-md border p-3">
+                <div
+                  key={i.name}
+                  className="flex items-center justify-between rounded-md border p-3"
+                >
                   <div>
                     <div className="font-medium">{i.name}</div>
-                    <div className="text-xs text-muted-foreground">{i.desc}</div>
+                    <div className="text-muted-foreground text-xs">{i.desc}</div>
                   </div>
                   {i.status === 'connected' ? (
                     <StatusBadge tone="success">Ulangan</StatusBadge>
@@ -309,14 +318,14 @@ export default function AdminSettingsPage() {
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
                   <div className="text-sm font-medium">Maintenance rejimi</div>
-                  <div className="text-xs text-muted-foreground">Sayt vaqtinchalik o`chiriladi</div>
+                  <div className="text-muted-foreground text-xs">Sayt vaqtinchalik o`chiriladi</div>
                 </div>
                 <Switch />
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
                   <div className="text-sm font-medium">Email bildirishnomalar</div>
-                  <div className="text-xs text-muted-foreground">Yangi buyurtma, payout</div>
+                  <div className="text-muted-foreground text-xs">Yangi buyurtma, payout</div>
                 </div>
                 <Switch defaultChecked />
               </div>

@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
   KpiCard,
+  MockDataNotice,
   PageHeader,
 } from '@ecom/ui';
 import { AlertTriangle, Box, Boxes, Warehouse } from 'lucide-react';
@@ -22,6 +23,8 @@ export default function AdminInventoryPage() {
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Inventar hali bazaga ulanmagan. Kam qolgan zaxira bosh sahifada haqiqiy ma'lumotdan ko'rsatiladi." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Inventar"
@@ -30,15 +33,30 @@ export default function AdminInventoryPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Jami stok" value={formatNumber(totalStock)} icon={Boxes} accent="primary" />
-        <KpiCard label="Inventar qiymati" value={formatMoney(inventoryValue)} icon={Box} accent="success" />
-        <KpiCard label="Quyi-stok" value={formatNumber(lowStock)} icon={AlertTriangle} accent="warning" />
-        <KpiCard label="Tugagan" value={formatNumber(outOfStock)} icon={Warehouse} accent="danger" />
+        <KpiCard
+          label="Inventar qiymati"
+          value={formatMoney(inventoryValue)}
+          icon={Box}
+          accent="success"
+        />
+        <KpiCard
+          label="Quyi-stok"
+          value={formatNumber(lowStock)}
+          icon={AlertTriangle}
+          accent="warning"
+        />
+        <KpiCard
+          label="Tugagan"
+          value={formatNumber(outOfStock)}
+          icon={Warehouse}
+          accent="danger"
+        />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Omborlar</CardTitle>
-          <p className="text-xs text-muted-foreground">3 ta faol ombor</p>
+          <p className="text-muted-foreground text-xs">3 ta faol ombor</p>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           {[
@@ -48,17 +66,17 @@ export default function AdminInventoryPage() {
           ].map((w) => (
             <div key={w.code} className="rounded-md border p-4">
               <div className="flex items-center justify-between">
-                <Warehouse className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-mono text-muted-foreground">{w.code}</span>
+                <Warehouse className="text-muted-foreground h-4 w-4" />
+                <span className="text-muted-foreground font-mono text-xs">{w.code}</span>
               </div>
               <div className="mt-2 font-medium">{w.name}</div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <div className="text-xs text-muted-foreground">Stok</div>
+                  <div className="text-muted-foreground text-xs">Stok</div>
                   <div className="font-semibold">{formatNumber(w.stock)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">Qiymat</div>
+                  <div className="text-muted-foreground text-xs">Qiymat</div>
                   <div className="font-semibold">{formatMoney(w.value)}</div>
                 </div>
               </div>
@@ -84,7 +102,7 @@ export default function AdminInventoryPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                    <div className="truncate text-xs text-muted-foreground">{p.sku}</div>
+                    <div className="text-muted-foreground truncate text-xs">{p.sku}</div>
                   </div>
                   <span
                     className={
