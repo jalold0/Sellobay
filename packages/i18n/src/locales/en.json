@@ -158,27 +158,6 @@
     "ctaLearn": "Learn more",
     "trust": "{count}+ sellers have already chosen Sellobay"
   },
-  "testimonials": {
-    "title": "What customers and sellers say",
-    "subtitle": "What customers who chose Sellobay say",
-    "items": {
-      "madina": {
-        "name": "Madina Karimova",
-        "role": "Tashkent",
-        "quote": "Shopping on Sellobay is so convenient. Fast delivery, authentic products. I've been ordering only here for 2 years."
-      },
-      "akmal": {
-        "name": "Akmal Yusupov",
-        "role": "Seller · Premium Shoes",
-        "quote": "Opened a store on Sellobay and now sell 5x more per month. Marketing support and analytics — you won't find this anywhere else."
-      },
-      "nilufar": {
-        "name": "Nilufar Rashidova",
-        "role": "Samarkand",
-        "quote": "Wide cosmetics selection, affordable prices. Authenticity guarantee — 100% trusted platform."
-      }
-    }
-  },
   "footer": {
     "newsletterTitle": "Be the first to know about new arrivals",
     "newsletterSubtitle": "Leave your email and get a 10% discount coupon. No spam — only news.",
@@ -356,7 +335,10 @@
     "tabDelivery": "Delivery & returns",
     "reviewsVerified": "based on {count} verified reviews",
     "similarProducts": "Similar products",
-    "deliveryFastShort": "2-3 days"
+    "deliveryFastShort": "2-3 days",
+    "noDescription": "No description has been added for this product yet.",
+    "noReviews": "No reviews yet. Be the first — you can leave one after your order arrives.",
+    "noQuestions": "No questions about this product yet."
   },
   "cart": {
     "title": "Cart",

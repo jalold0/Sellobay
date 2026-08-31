@@ -34,7 +34,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
   const { product, description } = detail;
   const name = pickLocale(product.name, params.locale);
-  const desc = pickLocale(description, params.locale);
+  // Tavsif sotuvchidan keladi. Yo'q bo'lsa mahsulot nomi ishlatiladi —
+  // ilgari bu yerda o'ylab topilgan matn turardi va u Google natijalariga tushardi.
+  const desc = description ? pickLocale(description, params.locale) : name;
   const img = product.imageUrl ?? productImage(product.imageSeed, 1200);
   return {
     title: name,
@@ -89,18 +91,23 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-10">
+      {/* Reyting Google'ga FAQAT haqiqiy sharh bo'lganda yuboriladi: sharhsiz
+          aggregateRating yuborish qidiruv tizimlari qoidalarini buzadi va
+          natijalarda soxta yulduzcha ko'rsatadi. */}
       <ProductJsonLd
         name={name}
-        description={pickLocale(detail.description, locale).slice(0, 500)}
+        description={
+          detail.description ? pickLocale(detail.description, locale).slice(0, 500) : name
+        }
         imageUrl={detail.product.imageUrl ?? productImage(detail.product.imageSeed, 800)}
-        sku={`ECM-${detail.product.id.toUpperCase()}`}
+        sku={extras?.sku ?? detail.product.slug}
         brand={detail.product.brand}
         price={detail.product.price}
         oldPrice={detail.product.oldPrice}
         currency={detail.product.currency}
         inStock={detail.product.inStock}
-        rating={detail.product.rating}
-        reviewCount={detail.product.reviewCount}
+        rating={detail.product.reviewCount > 0 ? detail.product.rating : undefined}
+        reviewCount={detail.product.reviewCount > 0 ? detail.product.reviewCount : undefined}
         url={url}
       />
       <BreadcrumbJsonLd

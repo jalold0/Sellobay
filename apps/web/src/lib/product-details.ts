@@ -1,7 +1,7 @@
 // Mahsulot detali uchun kengaytirilgan mock — kelajakda backend'dan keladi.
 // `mock-data.ts` minimal modelni ushlab turadi, bu yer "rich" view modelni qo'shadi.
 
-import { findById, type LocalizedText, type MockProduct, pickLocale, products } from './mock-data';
+import { findById, type LocalizedText, type MockProduct, products } from './mock-data';
 
 export interface ProductGalleryImage {
   seed: string;
@@ -25,7 +25,8 @@ export interface ProductVariantSize {
 export interface ProductReview {
   id: string;
   author: string;
-  avatarSeed: string;
+  /** Avatar uchun kalit — haqiqiy sharhda bo'lmasligi mumkin (bosh harflar ko'rsatiladi). */
+  avatarSeed?: string;
   rating: number; // 1..5
   title?: string;
   body: string;
@@ -50,7 +51,8 @@ export interface ProductSpec {
 
 export interface ProductFullDetail {
   product: MockProduct;
-  description: LocalizedText;
+  /** Sotuvchi yozgan tavsif. Yo'q bo'lsa null — bo'lim ko'rsatilmaydi. */
+  description: LocalizedText | null;
   features: LocalizedText[];
   gallery: ProductGalleryImage[];
   colors: ProductVariantColor[];
@@ -88,83 +90,34 @@ const CLOTHING_SIZES: ProductVariantSize[] = [
   { id: 'XXL', label: 'XXL', inStock: false },
 ];
 
-const REVIEW_AUTHORS = [
-  'Akmal K.',
-  'Madina S.',
-  'Bekzod A.',
-  'Lola R.',
-  'Jasur T.',
-  'Diyora N.',
-  'Husan I.',
-  'Aziza U.',
-];
+/**
+ * SHARH, SAVOL VA REYTING TAQSIMOTI ENDI TO'QIB CHIQARILMAYDI.
+ *
+ * Ilgari bu yerda `buildReviews`, `buildQuestions` va `buildRatingBreakdown`
+ * turardi. Ular har bir mahsulot uchun sharh YARATARDI: o'ylab topilgan ism
+ * ("Akmal K."), tayyor matn, sana, "tasdiqlangan xarid" belgisi va foydali
+ * ovozlar soni. Savollar esa sotuvchi nomidan javob berardi — jumladan
+ * "100% asl mahsulot kafolati bilan" degan kafolat, uni hech kim bermagan.
+ *
+ * Bazada 0 ta sharh bor edi, saytda esa 8 ta mahsulot sharh ko'rsatardi.
+ * Mijoz bosib kirsa, hech narsa topmasdi.
+ *
+ * Endi sharhlar `Review` jadvalidan keladi (catalog.ts). Sharh yo'q bo'lsa
+ * ro'yxat bo'sh qoladi va interfeys "hali sharh yo'q" deb yozadi.
+ */
 
-const REVIEW_BODIES = [
-  "Mahsulot juda sifatli, kutganimdan ham yaxshi chiqdi. Yetkazib berish ham tez bo'ldi, ertasi kuni keldi.",
-  "O'lchami aniq, sayt tavsifiga to'liq mos. Tavsiya qilaman!",
-  'Birinchi marta shu yerdan xarid qildim. Hammasi yaxshi, rahmat sotuvchiga.',
-  "Narxi sifatga mos, ko'rinishi reklamadan ham chiroyli.",
-  'Yaxshi mahsulot, lekin yetkazib berish bir kun kechikdi. Lekin baribir tavsiya qilaman.',
-  'Asl mahsulot, hech qanday muammosiz oldim. Faqat qadoq biroz shikastlanganday edi.',
-];
-
-function pseudoRandom(seed: string, max: number, offset = 0): number {
-  let hash = offset;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  return Math.abs(hash) % max;
-}
-
-const NOW = new Date('2026-06-06T10:00:00Z').getTime();
-
-function buildReviews(productId: string, total: number): ProductReview[] {
-  const n = Math.min(total, 6);
-  return Array.from({ length: n }, (_, i) => {
-    const idx = pseudoRandom(productId, REVIEW_BODIES.length, i);
-    const rating = 3 + ((i + pseudoRandom(productId, 3, i)) % 3); // 3..5
-    return {
-      id: `r-${productId}-${i}`,
-      author: REVIEW_AUTHORS[(idx + i) % REVIEW_AUTHORS.length]!,
-      avatarSeed: `avatar-${productId}-${i}`,
-      rating,
-      body: REVIEW_BODIES[idx]!,
-      createdAt: new Date(NOW - (i * 5 + 3) * 86_400_000).toISOString(),
-      verifiedPurchase: i % 2 === 0,
-      helpfulCount: pseudoRandom(productId, 50, i),
-    };
-  });
-}
-
-function buildQuestions(productId: string): ProductQuestion[] {
-  return [
-    {
-      id: `q-${productId}-1`,
-      author: 'Foydalanuvchi',
-      question: 'Yetkazib berish qancha vaqt oladi?',
-      answer:
-        "Toshkent bo'yicha 24 soat ichida, viloyatlarga 2-3 ish kuni. Express variant ham mavjud.",
-      answeredBy: 'Sotuvchi',
-      createdAt: new Date(NOW - 7 * 86_400_000).toISOString(),
-    },
-    {
-      id: `q-${productId}-2`,
-      author: 'Anonim',
-      question: 'Asl mahsulotmi?',
-      answer: 'Ha, 100% asl mahsulot kafolati bilan. Rasmiy distribyutordan keladi.',
-      answeredBy: 'Sotuvchi',
-      createdAt: new Date(NOW - 14 * 86_400_000).toISOString(),
-    },
-  ];
-}
-
-function buildRatingBreakdown(productId: string): Record<1 | 2 | 3 | 4 | 5, number> {
-  // Reyting taqsimoti, foiz — yuqori reytingda 5 ga ko'p, pastlarga oz.
-  const seed = pseudoRandom(productId, 100, 0);
-  const five = 55 + (seed % 30);
-  const four = 20 + (seed % 15);
-  const three = Math.max(2, 10 - (seed % 5));
-  const two = Math.max(1, 5 - (seed % 3));
-  const one = Math.max(1, 100 - five - four - three - two);
-  return { 1: one, 2: two, 3: three, 4: four, 5: five };
+/** Haqiqiy sharhlardan reyting taqsimotini (foizda) hisoblaydi. */
+function ratingBreakdownFrom(reviews: ProductReview[]): Record<1 | 2 | 3 | 4 | 5, number> {
+  const empty = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<1 | 2 | 3 | 4 | 5, number>;
+  if (reviews.length === 0) return empty;
+  for (const review of reviews) {
+    const star = Math.min(5, Math.max(1, Math.round(review.rating))) as 1 | 2 | 3 | 4 | 5;
+    empty[star] += 1;
+  }
+  for (const star of [1, 2, 3, 4, 5] as const) {
+    empty[star] = Math.round((empty[star] / reviews.length) * 100);
+  }
+  return empty;
 }
 
 export function getProductDetail(slugOrId: string): ProductFullDetail | undefined {
@@ -173,11 +126,22 @@ export function getProductDetail(slugOrId: string): ProductFullDetail | undefine
   return buildProductDetail(product);
 }
 
-/** DB'dan kelgan real qo'shimchalar (rasm/variant) — berilsa sintetik o'rniga shular ishlatiladi. */
+/**
+ * Bazadan kelgan HAQIQIY qo'shimchalar. Berilsa — sahifa faqat shulardan quriladi.
+ *
+ * Bu obyekt qancha to'la bo'lsa, sahifada shuncha kam narsa taxmin qilinadi.
+ */
 export interface ProductDetailRealExtras {
   galleryUrls?: string[];
   colors?: string[];
   sizes?: { label: string; inStock: boolean }[];
+  /** Haqiqiy SKU — ilgari `ECM-<id>` deb to'qib chiqarilardi. */
+  sku?: string;
+  weightGrams?: number | null;
+  /** Sotuvchi yozgan tavsif. */
+  description?: LocalizedText | null;
+  /** Tasdiqlangan sharhlar. Bo'sh bo'lsa sahifada sharh ko'rsatilmaydi. */
+  reviews?: ProductReview[];
 }
 
 // Keng tarqalgan rang nomlari → hex (variant rang tanlagichi uchun)
@@ -238,6 +202,8 @@ export function buildProductDetail(
   const isFootwear = categorySlug === 'shoes';
   const isClothing = categorySlug === 'clothing';
   const hasSizes = isFootwear || isClothing;
+  // Sharhlar faqat bazadan. Bo'lmasa — bo'sh ro'yxat, hech narsa to'qilmaydi.
+  const reviews = real?.reviews ?? [];
 
   // Galereya: real URL'lar bo'lsa faqat ular; bo'lmasa seed placeholder'lar.
   const gallery: ProductGalleryImage[] =
@@ -271,41 +237,44 @@ export function buildProductDetail(
     // mahsulot yarata oladi (apps/seller .../api/products: nameRu/nameEn optional).
     // To'g'ridan-to'g'ri interpolatsiya "undefined — премиальные..." chiqarardi va bu
     // meta description / OpenGraph'ga ham tushardi. pickLocale uz'ga qaytaradi.
-    description: {
-      uz: `${pickLocale(product.name, 'uz')} — premium material va zamonaviy dizayn uyg'unligi. Har bir detal o'ylab tayyorlangan: ergonomik shakl, chidamli komponentlar va estetik ko'rinish. Kundalik foydalanish uchun ham, maxsus tadbirlar uchun ham mos.`,
-      ru: `${pickLocale(product.name, 'ru')} — премиальные материалы и современный дизайн. Каждая деталь продумана: эргономичная форма, прочные компоненты и эстетичный вид.`,
-      en: `${pickLocale(product.name, 'en')} — premium materials meet modern design. Every detail is carefully crafted: ergonomic shape, durable components, and aesthetic appeal.`,
-    },
-    features: [
-      { uz: 'Premium material', ru: 'Премиальный материал', en: 'Premium material' },
-      {
-        uz: 'Zamonaviy va minimalist dizayn',
-        ru: 'Современный минималистичный дизайн',
-        en: 'Modern minimalist design',
-      },
-      { uz: 'Qulay foydalanish', ru: 'Удобное использование', en: 'Comfortable use' },
-      { uz: 'Asl mahsulot kafolati', ru: 'Гарантия подлинности', en: 'Authenticity guaranteed' },
-    ],
+    // Tavsif SOTUVCHIDAN keladi. Ilgari bu yerda har bir mahsulot uchun bir xil
+    // shablon matn yozilardi ("premium material va zamonaviy dizayn uyg'unligi...
+    // ergonomik shakl, chidamli komponentlar"), ya'ni platforma mahsulot haqida
+    // bilmagan narsasini aytardi. Tavsif yo'q bo'lsa — hech narsa ko'rsatilmaydi.
+    description: real?.description ?? null,
+    // "Premium material", "Asl mahsulot kafolati" kabi belgilar OLIB TASHLANDI:
+    // ular mahsulotdan emas, koddan kelardi va hech kim tekshirmagan kafolat edi.
+    features: [],
     gallery,
     colors,
     sizes,
+    // Xususiyatlar jadvalida FAQAT bazada bor maydonlar qoldi.
+    //
+    // Olib tashlanganlari va sababi:
+    //   • "Kafolat: 12 oy"        — hech kim bunday kafolat bermagan
+    //   • "Mamlakat: Italiya/Vetnam" — mahsulot id'sining xeshiga qarab tanlanardi,
+    //     ya'ni ishlab chiqarilgan mamlakat o'ylab topilardi
+    //   • "SKU: ECM-<id>"         — haqiqiy SKU bazada bor, u to'qishning hojati yo'q
+    //   • "Reyting"               — reyting sahifaning boshqa joyida ko'rsatiladi
     specs: [
-      { label: { uz: 'Brend', ru: 'Бренд', en: 'Brand' }, value: product.brand },
-      { label: { uz: 'Modeli', ru: 'Модель', en: 'Model' }, value: product.name.uz },
-      { label: { uz: 'SKU', ru: 'SKU', en: 'SKU' }, value: `ECM-${product.id.toUpperCase()}` },
-      { label: { uz: 'Kafolat', ru: 'Гарантия', en: 'Warranty' }, value: '12 oy' },
-      {
-        label: { uz: 'Mamlakat', ru: 'Страна', en: 'Country' },
-        value: pseudoRandom(product.id, 4) === 0 ? 'Italiya' : 'Vetnam',
-      },
-      {
-        label: { uz: 'Reyting', ru: 'Рейтинг', en: 'Rating' },
-        value: `${product.rating.toFixed(1)} / 5.0`,
-      },
+      ...(product.brand
+        ? [{ label: { uz: 'Brend', ru: 'Бренд', en: 'Brand' }, value: product.brand }]
+        : []),
+      ...(real?.sku ? [{ label: { uz: 'SKU', ru: 'SKU', en: 'SKU' }, value: real.sku }] : []),
+      ...(real?.weightGrams
+        ? [
+            {
+              label: { uz: 'Vazn', ru: 'Вес', en: 'Weight' },
+              value: `${real.weightGrams} g`,
+            },
+          ]
+        : []),
     ],
-    reviews: buildReviews(product.id, product.reviewCount),
-    questions: buildQuestions(product.id),
-    ratingBreakdown: buildRatingBreakdown(product.id),
+    reviews,
+    // Savol-javob bo'limi hali qurilmagan. Ilgari u sotuvchi nomidan
+    // o'ylab topilgan javoblar ko'rsatardi.
+    questions: [],
+    ratingBreakdown: ratingBreakdownFrom(reviews),
   };
 }
 

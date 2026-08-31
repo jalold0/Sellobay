@@ -133,15 +133,24 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
             {name}
           </Text>
 
-          <View className="flex-row items-center gap-1">
-            <Star size={11} color="#C9A961" fill="#C9A961" />
-            <Text className="text-[11px] text-neutral-400">
-              {product.rating.toFixed(1)}
-              {product.soldCount
-                ? ` · ${t('product.soldSuffix').replace('{count}', formatSold(product.soldCount))}`
-                : ''}
-            </Text>
-          </View>
+          {/* Reyting FAQAT haqiqiy sharh bo'lganda. Sharhsiz "0.0" yozish
+              mahsulotni yomon baholangandek ko'rsatadi. */}
+          {product.reviewCount > 0 || product.soldCount ? (
+            <View className="flex-row items-center gap-1">
+              {product.reviewCount > 0 && (
+                <>
+                  <Star size={11} color="#C9A961" fill="#C9A961" />
+                  <Text className="text-[11px] text-neutral-400">{product.rating.toFixed(1)}</Text>
+                </>
+              )}
+              {product.soldCount ? (
+                <Text className="text-[11px] text-neutral-400">
+                  {product.reviewCount > 0 ? ' · ' : ''}
+                  {t('product.soldSuffix').replace('{count}', formatSold(product.soldCount))}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           <View className="mt-0.5 flex-row flex-wrap items-center gap-1.5">
             <View
