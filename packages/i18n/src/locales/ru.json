@@ -62,7 +62,7 @@
     "eyebrow": "Новый сезон · 2026",
     "headlineLine1": "Стиль — это язык.",
     "headlineLine2": "Говорите на нём",
-    "subheadline": "Тысячи проверенных продавцов, более 2 миллионов оригинальных товаров. До вашей двери за 24 часа.",
+    "subheadline": "Проверенные продавцы, оригинальные товары. Быстрая доставка.",
     "ctaShop": "Покупать",
     "ctaSell": "Стать продавцом",
     "trustFast": "Доставка 24 часа",
@@ -70,17 +70,7 @@
     "trustReturn": "Проверка при получении",
     "editorsPick": "Выбор редакции",
     "headlineLine3": "на Sellobay.",
-    "ctaCollection": "Смотреть коллекцию",
-    "stats": {
-      "sellersValue": "50 000+",
-      "sellersLabel": "продавцов",
-      "productsValue": "2 млн+",
-      "productsLabel": "товаров",
-      "deliveryValue": "24 часа",
-      "deliveryLabel": "доставка",
-      "authenticValue": "100%",
-      "authenticLabel": "гарантия оригинальности"
-    }
+    "ctaCollection": "Смотреть коллекцию"
   },
   "home": {
     "categoriesTitle": "Категории",
@@ -950,17 +940,17 @@
     "title": "Стать продавцом",
     "heroEyebrow": "Sellobay для бизнеса",
     "heroTitle": "Продавайте на Sellobay",
-    "heroSubtitle": "Присоединяйтесь к крупнейшему онлайн-маркетплейсу Узбекистана. 850+ брендов уже с нами.",
+    "heroSubtitle": "Начните продавать на Sellobay — зарегистрируйтесь и разместите товары.",
     "benefitsTitle": "Почему Sellobay?",
     "benefit": {
-      "customers": "120 000+ активных клиентов",
+      "customers": "Готовая аудитория",
       "customersDesc": "Новые покупатели каждый день",
       "growth": "Быстрый рост",
       "growthDesc": "Маркетинг и аналитика на нас",
       "logistics": "Логистика решена",
       "logisticsDesc": "Доставку берём на себя",
       "commission": "Низкая комиссия 8–12%",
-      "commissionDesc": "Самая низкая ставка на рынке"
+      "commissionDesc": "От 8 до 12% в зависимости от категории"
     },
     "requirementsTitle": "Требования",
     "req": {

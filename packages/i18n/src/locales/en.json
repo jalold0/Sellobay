@@ -62,7 +62,7 @@
     "eyebrow": "New season · 2026",
     "headlineLine1": "Style is a language.",
     "headlineLine2": "Speak it",
-    "subheadline": "Thousands of verified sellers, over 2 million original products. At your door within 24 hours.",
+    "subheadline": "Verified sellers, original products. Fast delivery.",
     "ctaShop": "Shop now",
     "ctaSell": "Become a seller",
     "trustFast": "24-hour delivery",
@@ -70,17 +70,7 @@
     "trustReturn": "Inspect on pickup",
     "editorsPick": "Editor's pick",
     "headlineLine3": "on Sellobay.",
-    "ctaCollection": "View collection",
-    "stats": {
-      "sellersValue": "50,000+",
-      "sellersLabel": "sellers",
-      "productsValue": "2M+",
-      "productsLabel": "products",
-      "deliveryValue": "24 hours",
-      "deliveryLabel": "delivery",
-      "authenticValue": "100%",
-      "authenticLabel": "authenticity guarantee"
-    }
+    "ctaCollection": "View collection"
   },
   "home": {
     "categoriesTitle": "Categories",
@@ -950,17 +940,17 @@
     "title": "Become a seller",
     "heroEyebrow": "Sellobay business",
     "heroTitle": "Sell on Sellobay",
-    "heroSubtitle": "Join Uzbekistan's largest online marketplace. 850+ brands are already with us.",
+    "heroSubtitle": "Start selling on Sellobay — sign up and list your products.",
     "benefitsTitle": "Why Sellobay?",
     "benefit": {
-      "customers": "120,000+ active customers",
+      "customers": "A ready audience",
       "customersDesc": "New buyers every day",
       "growth": "Fast growth",
       "growthDesc": "Marketing and analytics on us",
       "logistics": "Logistics handled",
       "logisticsDesc": "We take care of delivery",
       "commission": "Low commission 8–12%",
-      "commissionDesc": "The lowest rate on the market"
+      "commissionDesc": "8-12% depending on category"
     },
     "requirementsTitle": "Requirements",
     "req": {

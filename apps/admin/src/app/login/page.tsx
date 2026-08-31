@@ -47,7 +47,7 @@ function LoginForm() {
         </div>
         <div className="mt-auto max-w-md text-white">
           <h2 className="text-3xl font-bold leading-tight">
-            O`zbekistondagi eng yirik marketplace ekotizimini boshqaring
+            Sellobay marketplace ekotizimini boshqaring
           </h2>
           <p className="mt-4 text-white/80">
             Buyurtmalar, mahsulotlar, sotuvchilar, kuryerlar va marketing — barchasi bitta panelda.
