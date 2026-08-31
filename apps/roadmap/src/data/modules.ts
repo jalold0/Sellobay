@@ -753,14 +753,21 @@ export const MODULES: Module[] = [
       {
         title: 'Xato kuzatuvi',
         does: 'Production‘da xato yuz bersa, jamoa darhol xabar oladi.',
-        status: 'gap',
-        evidence: 'Sentry, OpenTelemetry — hech biri yo‘q',
+        status: 'wip',
+        evidence:
+          '@sentry/nextjs apps/web ga ulandi (instrumentation + global-error). DSN qo‘yilmagunicha passiv — tarmoqqa so‘rov ketmaydi',
         tasks: [
           {
-            title: 'Xato kuzatuvini ulash',
-            role: 'devops',
+            title: 'Sentry loyihasi ochib DSN ni Vercel env ga qo‘shish',
+            role: 'asoschi',
             priority: 'kritik',
-            why: 'Hozir xato mijoz shikoyat qilmaguncha bilinmaydi. Bir kunlik ish',
+            why: 'Kod tayyor, lekin DSN yo‘qligicha xato hech qayerga bormaydi. Bepul tarif yetarli',
+          },
+          {
+            title: 'admin va seller ilovalariga ham ulash',
+            role: 'devops',
+            priority: 'orta',
+            why: 'Hozir faqat web qoplangan',
           },
         ],
       },

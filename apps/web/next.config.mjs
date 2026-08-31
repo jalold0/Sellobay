@@ -1,4 +1,5 @@
 import { PrismaPlugin } from '@prisma/nextjs-monorepo-workaround-plugin';
+import { withSentryConfig } from '@sentry/nextjs';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
@@ -46,4 +47,21 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+const config = withNextIntl(nextConfig);
+
+// Sentry webpack plugin FAQAT auth token bo'lganda ulanadi.
+//
+// Uning yagona vazifasi — source map'larni Sentry'ga yuklash, ya'ni minifikatsiya
+// qilingan stack trace'ni o'qiladigan holga keltirish. Token yo'q bo'lsa (lokal
+// ishlab chiqish, CI) build umuman o'zgarmaydi. Xato kuzatuvining o'zi bunga
+// bog'liq emas — u instrumentation fayllarida va DSN bilan ishlaydi.
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(config, {
+      silent: true,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      // Sentry'ning o'z log chiqarishini production bundle'dan olib tashlaydi
+      disableLogger: true,
+    })
+  : config;
