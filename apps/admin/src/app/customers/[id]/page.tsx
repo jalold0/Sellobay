@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
   KpiCard,
+  MockDataNotice,
   PageHeader,
   Separator,
   StatusBadge,
@@ -44,6 +45,8 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Mijoz kartasi hali bazaga ulanmagan. Mijozlar ro'yxati (oldingi sahifa) haqiqiy ma'lumotdan ishlaydi." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs overrides={{ [`/customers/${customer.id}`]: fullName }} />}
         title={fullName}

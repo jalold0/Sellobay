@@ -8,6 +8,7 @@ import {
   CardTitle,
   Input,
   Label,
+  MockDataNotice,
   PageHeader,
   StatusBadge,
   Switch,
@@ -21,6 +22,8 @@ import { mockCategories } from '../../lib/mock';
 export default function AdminCategoriesPage() {
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Kategoriyalar hali bazaga ulanmagan. Haqiqiy kategoriyalar saytdagi katalogda ko'rinadi." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Kategoriyalar"
@@ -35,7 +38,7 @@ export default function AdminCategoriesPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-            <FolderTree className="h-4 w-4 text-muted-foreground" />
+            <FolderTree className="text-muted-foreground h-4 w-4" />
             <CardTitle>Daraxt</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -43,9 +46,9 @@ export default function AdminCategoriesPage() {
               {mockCategories.map((c) => (
                 <li
                   key={c.id}
-                  className="flex items-center gap-3 px-6 py-3 transition hover:bg-muted/40"
+                  className="hover:bg-muted/40 flex items-center gap-3 px-6 py-3 transition"
                 >
-                  <GripVertical className="h-4 w-4 cursor-grab text-muted-foreground" />
+                  <GripVertical className="text-muted-foreground h-4 w-4 cursor-grab" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{pickLocalized(c.name)}</span>
@@ -59,11 +62,11 @@ export default function AdminCategoriesPage() {
                         </StatusBadge>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground">/{c.slug}</div>
+                    <div className="text-muted-foreground text-xs">/{c.slug}</div>
                   </div>
                   <div className="text-sm">
                     <span className="font-medium">{formatNumber(c.productCount)}</span>
-                    <span className="ml-1 text-xs text-muted-foreground">mahsulot</span>
+                    <span className="text-muted-foreground ml-1 text-xs">mahsulot</span>
                   </div>
                   <Button size="icon" variant="ghost" className="h-8 w-8">
                     <Edit3 className="h-4 w-4" />
@@ -77,7 +80,7 @@ export default function AdminCategoriesPage() {
         <Card>
           <CardHeader>
             <CardTitle>Yangi kategoriya</CardTitle>
-            <p className="text-xs text-muted-foreground">Tezkor qo`shish</p>
+            <p className="text-muted-foreground text-xs">Tezkor qo`shish</p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>

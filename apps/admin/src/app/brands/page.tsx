@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Card,
-  DataTable,
-  PageHeader,
-  StatusBadge,
-  Switch,
-} from '@ecom/ui';
+import { Button, Card, DataTable, MockDataNotice, PageHeader, StatusBadge, Switch } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
 import { Plus } from 'lucide-react';
 
@@ -21,12 +14,12 @@ const columns: ColumnDef<Brand>[] = [
     header: 'Brend',
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-md bg-muted text-xs font-bold">
+        <div className="bg-muted grid h-9 w-9 place-items-center rounded-md text-xs font-bold">
           {row.original.name[0]}
         </div>
         <div>
           <div className="font-medium">{row.original.name}</div>
-          <div className="text-xs text-muted-foreground">/{row.original.slug}</div>
+          <div className="text-muted-foreground text-xs">/{row.original.slug}</div>
         </div>
       </div>
     ),
@@ -60,6 +53,8 @@ const columns: ColumnDef<Brand>[] = [
 export default function AdminBrandsPage() {
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Brendlar ro'yxati hali bazaga ulanmagan. Haqiqiy brendlar mahsulot sahifasida ko'rinadi." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Brendlar"

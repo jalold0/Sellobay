@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
   KpiCard,
+  MockDataNotice,
   PageHeader,
   Tabs,
   TabsContent,
@@ -31,6 +32,8 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Analitika hali hisoblanmaydi — daromad, kanal va konversiya raqamlari namuna. Bosh sahifadagi ko'rsatkichlar esa haqiqiy." />
+
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Analitika"
@@ -38,10 +41,34 @@ export default function AdminAnalyticsPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Daromad (30k)" value={formatMoney(revenue30)} delta={12.4} icon={BarChart3} accent="success" />
-        <KpiCard label="Buyurtmalar (30k)" value={formatNumber(orders30)} delta={6.2} icon={ShoppingBag} accent="info" />
-        <KpiCard label="Konversiya" value={`${conv}%`} delta={-0.3} icon={Percent} accent="warning" />
-        <KpiCard label="O`rtacha chek (AOV)" value={formatMoney(aov)} delta={3.5} icon={Users} accent="primary" />
+        <KpiCard
+          label="Daromad (30k)"
+          value={formatMoney(revenue30)}
+          delta={12.4}
+          icon={BarChart3}
+          accent="success"
+        />
+        <KpiCard
+          label="Buyurtmalar (30k)"
+          value={formatNumber(orders30)}
+          delta={6.2}
+          icon={ShoppingBag}
+          accent="info"
+        />
+        <KpiCard
+          label="Konversiya"
+          value={`${conv}%`}
+          delta={-0.3}
+          icon={Percent}
+          accent="warning"
+        />
+        <KpiCard
+          label="O`rtacha chek (AOV)"
+          value={formatMoney(aov)}
+          delta={3.5}
+          icon={Users}
+          accent="primary"
+        />
       </div>
 
       <Tabs defaultValue="overview">
@@ -88,7 +115,7 @@ export default function AdminAnalyticsPage() {
               <ul className="divide-y">
                 {topProducts.map((p, i) => (
                   <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                    <span className="grid h-7 w-7 place-items-center rounded-full bg-muted text-xs font-bold">
+                    <span className="bg-muted grid h-7 w-7 place-items-center rounded-full text-xs font-bold">
                       {i + 1}
                     </span>
                     <div className="h-9 w-9 shrink-0 overflow-hidden rounded">
@@ -97,11 +124,11 @@ export default function AdminAnalyticsPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{p.name.uz}</div>
-                      <div className="text-xs text-muted-foreground">{p.brandName}</div>
+                      <div className="text-muted-foreground text-xs">{p.brandName}</div>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold">{formatNumber(p.soldCount)}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-muted-foreground text-xs">
                         {formatMoney(p.basePrice * p.soldCount)}
                       </div>
                     </div>
@@ -147,7 +174,7 @@ export default function AdminAnalyticsPage() {
         </TabsContent>
       </Tabs>
 
-      <div className="text-xs text-muted-foreground">
+      <div className="text-muted-foreground text-xs">
         {formatNumber(mockOrders.length)} ta buyurtma asosida.
       </div>
     </div>

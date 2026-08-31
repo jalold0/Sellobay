@@ -39,4 +39,5 @@ export * from './components/status-badge';
 export * from './components/empty-state';
 export * from './components/page-header';
 export * from './components/kpi-card';
+export * from './components/mock-data-notice';
 export * from './components/alert';

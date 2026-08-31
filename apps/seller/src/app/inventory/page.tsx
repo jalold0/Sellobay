@@ -6,6 +6,7 @@ import {
   DataTable,
   Input,
   KpiCard,
+  MockDataNotice,
   PageHeader,
   toast,
 } from '@ecom/ui';
@@ -41,13 +42,13 @@ export default function SellerInventoryPage() {
       header: 'Mahsulot',
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+          <div className="bg-muted h-10 w-10 shrink-0 overflow-hidden rounded-md">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="min-w-0">
             <div className="truncate font-medium">{pickLocalized(row.original.name)}</div>
-            <div className="truncate text-xs text-muted-foreground">{row.original.sku}</div>
+            <div className="text-muted-foreground truncate text-xs">{row.original.sku}</div>
           </div>
         </div>
       ),
@@ -61,8 +62,8 @@ export default function SellerInventoryPage() {
             row.original.stock === 0
               ? 'text-right font-mono text-red-600'
               : row.original.stock <= 10
-              ? 'text-right font-mono text-amber-600'
-              : 'text-right font-mono'
+                ? 'text-right font-mono text-amber-600'
+                : 'text-right font-mono'
           }
         >
           {formatNumber(row.original.stock)}
@@ -80,9 +81,7 @@ export default function SellerInventoryPage() {
             min={0}
             placeholder={String(row.original.stock)}
             value={drafts[row.original.id] ?? ''}
-            onChange={(e) =>
-              setDrafts((s) => ({ ...s, [row.original.id]: e.target.value }))
-            }
+            onChange={(e) => setDrafts((s) => ({ ...s, [row.original.id]: e.target.value }))}
             className="h-8 w-24 text-right"
           />
         </div>
@@ -92,7 +91,7 @@ export default function SellerInventoryPage() {
       accessorKey: 'basePrice',
       header: () => <div className="text-right">Narx</div>,
       cell: ({ row }) => (
-        <div className="text-right text-sm text-muted-foreground">
+        <div className="text-muted-foreground text-right text-sm">
           {formatMoney(row.original.basePrice)}
         </div>
       ),
@@ -101,6 +100,8 @@ export default function SellerInventoryPage() {
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Inventar hali bazaga ulanmagan. Mahsulot zaxirasi 'Mahsulotlar' bo'limida haqiqiy ko'rsatiladi." />
+
       <PageHeader
         title="Inventar"
         description="Stok darajalarini bir joyda boshqaring"
@@ -110,7 +111,8 @@ export default function SellerInventoryPage() {
               <ArrowDownToLine className="mr-2 h-4 w-4" /> CSV eksport
             </Button>
             <Button size="sm" disabled={!dirtyCount} onClick={onCommit}>
-              <Save className="mr-2 h-4 w-4" /> {dirtyCount > 0 ? `${dirtyCount} ni saqlash` : 'Saqlash'}
+              <Save className="mr-2 h-4 w-4" />{' '}
+              {dirtyCount > 0 ? `${dirtyCount} ni saqlash` : 'Saqlash'}
             </Button>
           </>
         }
@@ -119,16 +121,17 @@ export default function SellerInventoryPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Jami stok" value={formatNumber(totalStock)} icon={Boxes} accent="primary" />
         <KpiCard label="Inventar qiymati" value={formatMoney(inventoryValue)} accent="success" />
-        <KpiCard label="Quyi-stok" value={formatNumber(lowStock)} icon={AlertTriangle} accent="warning" />
+        <KpiCard
+          label="Quyi-stok"
+          value={formatNumber(lowStock)}
+          icon={AlertTriangle}
+          accent="warning"
+        />
         <KpiCard label="Tugagan" value={formatNumber(outOfStock)} accent="danger" />
       </div>
 
       <Card className="p-1">
-        <DataTable
-          columns={columns}
-          data={sellerProducts}
-          searchPlaceholder="Nomi yoki SKU..."
-        />
+        <DataTable columns={columns} data={sellerProducts} searchPlaceholder="Nomi yoki SKU..." />
       </Card>
     </div>
   );

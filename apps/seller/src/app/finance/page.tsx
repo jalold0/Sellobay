@@ -11,6 +11,7 @@ import {
   CardTitle,
   DataTable,
   KpiCard,
+  MockDataNotice,
   PageHeader,
   Separator,
   StatusBadge,
@@ -24,7 +25,7 @@ import { sellerPayouts, type SellerPayout } from '../../lib/mock';
 
 const STATUS_CFG: Record<SellerPayout['status'], { label: string; tone: StatusTone }> = {
   PENDING: { label: 'Kutilmoqda', tone: 'warning' },
-  PAID: { label: "To`langan", tone: 'success' },
+  PAID: { label: 'To`langan', tone: 'success' },
   FAILED: { label: 'Xato', tone: 'danger' },
 };
 
@@ -58,7 +59,9 @@ const columns: ColumnDef<SellerPayout>[] = [
   {
     accessorKey: 'netAmount',
     header: () => <div className="text-right">Netto</div>,
-    cell: ({ row }) => <div className="text-right font-semibold">{formatMoney(row.original.netAmount)}</div>,
+    cell: ({ row }) => (
+      <div className="text-right font-semibold">{formatMoney(row.original.netAmount)}</div>
+    ),
   },
   {
     accessorKey: 'status',
@@ -84,11 +87,15 @@ const columns: ColumnDef<SellerPayout>[] = [
 export default function SellerFinancePage() {
   const totalNet = sellerPayouts.reduce((s, p) => s + p.netAmount, 0);
   const pending = sellerPayouts.find((p) => p.status === 'PENDING');
-  const paid = sellerPayouts.filter((p) => p.status === 'PAID').reduce((s, p) => s + p.netAmount, 0);
+  const paid = sellerPayouts
+    .filter((p) => p.status === 'PAID')
+    .reduce((s, p) => s + p.netAmount, 0);
   const totalCommission = sellerPayouts.reduce((s, p) => s + p.commission, 0);
 
   return (
     <div className="space-y-6">
+      <MockDataNotice description="Moliya va to'lovlar hali bazaga ulanmagan." />
+
       <PageHeader
         title="Moliya"
         description="Payouts, komissiya, invoice"
@@ -104,15 +111,26 @@ export default function SellerFinancePage() {
           <Wallet className="h-4 w-4" />
           <AlertTitle>Kutilayotgan payout: {formatMoney(pending.netAmount)}</AlertTitle>
           <AlertDescription>
-            {formatDate(pending.periodEnd)} sanasidan keyin 3 ish kuni ichida bank hisobiga o`tkaziladi.
+            {formatDate(pending.periodEnd)} sanasidan keyin 3 ish kuni ichida bank hisobiga
+            o`tkaziladi.
           </AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Umumiy daromad (netto)" value={formatMoney(totalNet)} icon={Banknote} accent="success" />
+        <KpiCard
+          label="Umumiy daromad (netto)"
+          value={formatMoney(totalNet)}
+          icon={Banknote}
+          accent="success"
+        />
         <KpiCard label="To`langan" value={formatMoney(paid)} icon={Receipt} accent="info" />
-        <KpiCard label="Kutilmoqda" value={formatMoney(pending?.netAmount ?? 0)} icon={Wallet} accent="warning" />
+        <KpiCard
+          label="Kutilmoqda"
+          value={formatMoney(pending?.netAmount ?? 0)}
+          icon={Wallet}
+          accent="warning"
+        />
         <KpiCard label="Komissiya" value={formatMoney(totalCommission)} accent="danger" />
       </div>
 
@@ -122,19 +140,19 @@ export default function SellerFinancePage() {
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3 md:divide-x">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Asosiy komissiya</div>
+            <div className="text-muted-foreground text-xs">Asosiy komissiya</div>
             <div className="text-2xl font-bold">10%</div>
-            <p className="text-xs text-muted-foreground">Har bir buyurtmadan</p>
+            <p className="text-muted-foreground text-xs">Har bir buyurtmadan</p>
           </div>
           <div className="space-y-1 md:pl-4">
-            <div className="text-xs text-muted-foreground">Yetkazib berish</div>
+            <div className="text-muted-foreground text-xs">Yetkazib berish</div>
             <div className="text-2xl font-bold">{formatMoney(20_000)}</div>
-            <p className="text-xs text-muted-foreground">Express buyurtmadan</p>
+            <p className="text-muted-foreground text-xs">Express buyurtmadan</p>
           </div>
           <div className="space-y-1 md:pl-4">
-            <div className="text-xs text-muted-foreground">Saqlash</div>
+            <div className="text-muted-foreground text-xs">Saqlash</div>
             <div className="text-2xl font-bold">{formatMoney(0)}</div>
-            <p className="text-xs text-muted-foreground">Hozircha bepul</p>
+            <p className="text-muted-foreground text-xs">Hozircha bepul</p>
           </div>
         </CardContent>
       </Card>
