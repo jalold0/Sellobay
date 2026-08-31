@@ -309,6 +309,55 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
+  apps/roadmap:
+    dependencies:
+      jose:
+        specifier: ^5.2.4
+        version: 5.10.0
+      next:
+        specifier: ^14.2.3
+        version: 14.2.35(@opentelemetry/api@1.9.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-dom:
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
+    devDependencies:
+      '@ecom/eslint-config':
+        specifier: workspace:*
+        version: link:../../packages/eslint-config
+      '@ecom/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.43
+      '@types/react':
+        specifier: 19.1.17
+        version: 19.1.17
+      '@types/react-dom':
+        specifier: 19.1.9
+        version: 19.1.9(@types/react@19.1.17)
+      autoprefixer:
+        specifier: ^10.4.19
+        version: 10.5.0(postcss@8.5.19)
+      eslint:
+        specifier: ^8.57.0
+        version: 8.57.1
+      eslint-config-next:
+        specifier: ^14.2.3
+        version: 14.2.35(eslint@8.57.1)(typescript@5.9.3)
+      postcss:
+        specifier: ^8.4.38
+        version: 8.5.19
+      tailwindcss:
+        specifier: ^3.4.3
+        version: 3.4.19(tsx@4.22.4)(yaml@2.9.0)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
   apps/seller:
     dependencies:
       '@ecom/auth':
@@ -10532,6 +10581,15 @@ snapshots:
       fraction.js: 5.3.4
       picocolors: 1.1.1
       postcss: 8.5.15
+      postcss-value-parser: 4.2.0
+
+  autoprefixer@10.5.0(postcss@8.5.19):
+    dependencies:
+      browserslist: 4.28.2
+      caniuse-lite: 1.0.30001799
+      fraction.js: 5.3.4
+      picocolors: 1.1.1
+      postcss: 8.5.19
       postcss-value-parser: 4.2.0
 
   available-typed-arrays@1.0.7:
