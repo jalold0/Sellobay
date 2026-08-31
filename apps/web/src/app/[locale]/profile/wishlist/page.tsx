@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, EmptyState, Skeleton } from '@ecom/ui';
+import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -25,10 +26,7 @@ interface ApiProduct {
   category: { slug: string; name: { uz?: string; ru?: string; en?: string } | string } | null;
 }
 
-const PICSUM_SEED_RE = /picsum\.photos\/seed\/([^/]+)\//;
-
 function toMockProduct(p: ApiProduct): MockProduct {
-  const seedMatch = p.imageUrl ? PICSUM_SEED_RE.exec(p.imageUrl) : null;
   return {
     id: p.id,
     slug: p.slug,
@@ -44,7 +42,10 @@ function toMockProduct(p: ApiProduct): MockProduct {
     currency: 'UZS',
     rating: p.rating,
     reviewCount: p.reviewCount,
-    imageSeed: seedMatch?.[1] ?? p.slug,
+    imageSeed: picsumSeed(p.imageUrl) ?? p.slug,
+    // Sotuvchi yuklagan haqiqiy rasm — ilgari bu yerda uzatilmasdi va sevimlilar
+    // ro'yxatida seed rasm ko'rinardi.
+    imageUrl: isRealProductImageUrl(p.imageUrl) ? (p.imageUrl ?? undefined) : undefined,
     badge: p.oldPrice ? 'SALE' : p.isFeatured ? 'TOP' : undefined,
     inStock: true,
   };

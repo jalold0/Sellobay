@@ -1,5 +1,18 @@
 // Sotuvchining shaxsiy ko`rinishidagi mock data.
 // Faqat sotuvchiga tegishli mahsulot va buyurtmalar.
+//
+// DIQQAT: bu fayldagi ma'lumot NAMUNA, haqiqiy emas — uni ishlatadigan sahifalar
+// (analitika, moliya, inventar, qaytarishlar) hali bazaga ulanmagan.
+//
+// Rasm manzili ilgari tasodifiy foto xizmatiga (picsum.photos) borardi va namuna
+// ma'lumot haqiqiydek ko'rinardi. Neytral placeholder esa sahifa hali tayyor
+// emasligini ochiq ko'rsatadi.
+
+import { resolveProductImageUrl } from '@ecom/utils';
+
+// Sotuvchi paneli web ilovadan boshqa domenda — manzil absolut bo'lishi kerak.
+const WEB_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sellobay-web.vercel.app';
+const MOCK_IMAGE = resolveProductImageUrl(null, 'namuna', WEB_URL);
 
 export type LocalizedText = { uz: string; ru?: string; en?: string };
 
@@ -23,7 +36,16 @@ export interface SellerOrder {
   number: string;
   customerName: string;
   itemsCount: number;
-  status: 'PENDING' | 'CONFIRMED' | 'PAID' | 'PROCESSING' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED';
+  status:
+    | 'PENDING'
+    | 'CONFIRMED'
+    | 'PAID'
+    | 'PROCESSING'
+    | 'PACKED'
+    | 'SHIPPED'
+    | 'DELIVERED'
+    | 'CANCELLED'
+    | 'RETURNED';
   grandTotal: number;
   placedAt: string;
   city: string;
@@ -57,7 +79,14 @@ function dateAgo(days: number) {
   return new Date(NOW - days * 86_400_000).toISOString();
 }
 
-const STATUSES: SellerProduct['status'][] = ['ACTIVE', 'ACTIVE', 'DRAFT', 'PENDING_REVIEW', 'OUT_OF_STOCK', 'ARCHIVED'];
+const STATUSES: SellerProduct['status'][] = [
+  'ACTIVE',
+  'ACTIVE',
+  'DRAFT',
+  'PENDING_REVIEW',
+  'OUT_OF_STOCK',
+  'ARCHIVED',
+];
 const PROD_NAMES = [
   { uz: 'Nike Air Max 270', ru: 'Nike Air Max 270', en: 'Nike Air Max 270' },
   { uz: 'Adidas Originals futbolka', ru: 'Adidas Originals футболка', en: 'Adidas Originals tee' },
@@ -71,10 +100,10 @@ export const sellerProducts: SellerProduct[] = Array.from({ length: 28 }, (_, i)
   id: `sp-${i + 1}`,
   sku: `SK-${(i + 1).toString().padStart(6, '0')}`,
   name: PROD_NAMES[i % PROD_NAMES.length]!,
-  imageUrl: `https://picsum.photos/seed/seller-${i}/200/200`,
+  imageUrl: MOCK_IMAGE,
   status: STATUSES[i % STATUSES.length]!,
-  basePrice: 199_000 + (i * 53_000) % 2_000_000,
-  stock: Math.max(0, (i * 7) % 90 - 5),
+  basePrice: 199_000 + ((i * 53_000) % 2_000_000),
+  stock: Math.max(0, ((i * 7) % 90) - 5),
   soldCount: (i * 13) % 240,
   rating: Number((3.8 + (i % 10) * 0.1).toFixed(1)),
   reviewCount: (i * 5) % 180,
@@ -84,16 +113,31 @@ export const sellerProducts: SellerProduct[] = Array.from({ length: 28 }, (_, i)
 
 const CITIES = ['Toshkent', 'Samarqand', 'Buxoro', 'Andijon', 'Farg`ona'];
 const ORDER_STATUSES: SellerOrder['status'][] = [
-  'PENDING', 'CONFIRMED', 'PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED', 'DELIVERED', 'CANCELLED', 'RETURNED',
+  'PENDING',
+  'CONFIRMED',
+  'PAID',
+  'PROCESSING',
+  'PACKED',
+  'SHIPPED',
+  'DELIVERED',
+  'DELIVERED',
+  'CANCELLED',
+  'RETURNED',
 ];
 
 export const sellerOrders: SellerOrder[] = Array.from({ length: 42 }, (_, i) => ({
   id: `so-${i + 1}`,
   number: `ORD-2026-${(2300 + i).toString().padStart(8, '0')}`,
-  customerName: ['Akmal Karimov', 'Madina Saidova', 'Bekzod Aliyev', 'Lola Rasulova', 'Jasur Toshmatov'][i % 5]!,
+  customerName: [
+    'Akmal Karimov',
+    'Madina Saidova',
+    'Bekzod Aliyev',
+    'Lola Rasulova',
+    'Jasur Toshmatov',
+  ][i % 5]!,
   itemsCount: 1 + (i % 5),
   status: ORDER_STATUSES[i % ORDER_STATUSES.length]!,
-  grandTotal: 280_000 + (i * 92_000) % 3_500_000,
+  grandTotal: 280_000 + ((i * 92_000) % 3_500_000),
   placedAt: dateAgo(i * 0.4),
   city: CITIES[i % CITIES.length]!,
 }));
@@ -103,7 +147,9 @@ export const sellerReturns: SellerReturn[] = Array.from({ length: 8 }, (_, i) =>
   orderNumber: `ORD-2026-${(2300 + i * 3).toString().padStart(8, '0')}`,
   customerName: ['Akmal Karimov', 'Madina Saidova', 'Bekzod Aliyev'][i % 3]!,
   productName: PROD_NAMES[i % PROD_NAMES.length]!,
-  reason: ['O`lcham mos kelmadi', 'Sifat past', 'Boshqa rang kerak', 'Yetkazib berishda shikast'][i % 4]!,
+  reason: ['O`lcham mos kelmadi', 'Sifat past', 'Boshqa rang kerak', 'Yetkazib berishda shikast'][
+    i % 4
+  ]!,
   status: (['REQUESTED', 'APPROVED', 'REJECTED', 'COMPLETED'] as const)[i % 4]!,
   refundAmount: 200_000 + i * 87_000,
   requestedAt: dateAgo(i * 2 + 1),
@@ -113,7 +159,7 @@ export const sellerPayouts: SellerPayout[] = Array.from({ length: 6 }, (_, i) =>
   id: `pa-${i + 1}`,
   periodStart: dateAgo((i + 1) * 14),
   periodEnd: dateAgo(i * 14),
-  ordersCount: 25 + (i * 7) % 30,
+  ordersCount: 25 + ((i * 7) % 30),
   grossAmount: 12_500_000 + i * 2_200_000,
   commission: (12_500_000 + i * 2_200_000) * 0.1,
   netAmount: (12_500_000 + i * 2_200_000) * 0.9,

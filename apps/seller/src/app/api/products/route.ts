@@ -156,15 +156,18 @@ export async function POST(req: NextRequest) {
     en: input.descriptionUz ?? '',
   };
 
-  // Rasmlar: ko'p (imageUrls) yoki bitta (imageUrl), bo'sh bo'lsa — picsum placeholder
+  // Rasmlar: ko'p (imageUrls) yoki bitta (imageUrl).
+  //
+  // Rasm berilmasa BAZAGA HECH NARSA YOZILMAYDI. Ilgari bu yerda
+  // `picsum.photos/seed/...` manzili saqlanardi — u tasodifiy foto qaytaradigan
+  // tashqi xizmat, ya'ni bazaga mahsulotga aloqasi yo'q rasm yozib qo'yardi va
+  // xizmat ishlamay qolsa mahsulot rasmsiz qolardi. Endi rasmsiz mahsulotni
+  // interfeys o'zi placeholder bilan ko'rsatadi (@ecom/utils).
   const collectedUrls: string[] = [];
   if (input.imageUrls && input.imageUrls.length > 0) {
     collectedUrls.push(...input.imageUrls);
   } else if (input.imageUrl?.trim()) {
     collectedUrls.push(input.imageUrl.trim());
-  }
-  if (collectedUrls.length === 0) {
-    collectedUrls.push(`https://picsum.photos/seed/${slug}/800/800`);
   }
 
   // Moderatsiya: PROD'da yangi mahsulot admin tasdiqini kutadi (PENDING_REVIEW) —

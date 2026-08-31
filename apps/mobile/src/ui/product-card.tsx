@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { discountPercent, formatMoney, pickLocalized } from '../lib/format';
 import { haptics } from '../lib/haptics';
-import { type MockProduct, productImage } from '../lib/mock-data';
+import { type MockProduct, productImageSource } from '../lib/mock-data';
 import { useT } from '../lib/useT';
 import { useCart } from '../store/cart';
 import { toast } from '../store/toast';
@@ -57,6 +57,7 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
       brand: product.brand,
       slug: product.slug,
       imageSeed: product.imageSeed,
+      imageUrl: product.imageUrl,
       unitPrice: product.price,
       oldPrice: product.oldPrice,
       currency: product.currency,
@@ -75,7 +76,7 @@ function ProductCardBase({ product, locale = 'uz' }: Props) {
       >
         <View className="bg-muted relative aspect-square">
           <AppImage
-            source={productImage(product.imageSeed, 400)}
+            source={productImageSource(product)}
             className="h-full w-full"
             contentFit="cover"
           />

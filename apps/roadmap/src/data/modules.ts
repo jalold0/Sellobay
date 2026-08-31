@@ -51,10 +51,10 @@ export const MODULES: Module[] = [
           '12+ faylda qattiq kodlangan o‘zbekcha: cookie banner, 404, error, marketing sahifalari',
         tasks: [
           {
-            title: 'Cookie banner, 404 va xato sahifasini tarjimaga o‘tkazish',
-            role: 'frontend',
-            priority: 'yuqori',
-            why: 'Bu uchtasi har sahifada ko‘rinadi — ruscha demo‘da o‘zbekcha chiqadi',
+            title: 'Marketing va yuridik sahifalarni tarjima qilish',
+            role: 'kontent',
+            priority: 'orta',
+            why: 'Universal komponentlar MR !13 da tarjima qilindi; qolgani uzun matn va yuridik ko‘rik talab qiladi',
           },
           {
             title: '9 ta marketing/yuridik sahifani tarjima qilish',
@@ -108,17 +108,9 @@ export const MODULES: Module[] = [
       },
       {
         title: 'Mahsulot rasmlari',
-        does: 'Mobil ilovada ham haqiqiy mahsulot rasmlari ko‘rinadi.',
-        status: 'gap',
-        evidence: 'apps/mobile/src/lib/mock-data.ts:636 — hamon picsum.photos',
-        tasks: [
-          {
-            title: 'Mobil uchun rasm manbasini tuzatish',
-            role: 'mobil',
-            priority: 'yuqori',
-            why: 'Web‘da tuzatildi (MR !7), mobil web-relative yo‘l ishlata olmaydi — absolut URL kerak',
-          },
-        ],
+        does: 'Mobil ilovada web bilan BIR XIL rasmlar ko‘rinadi.',
+        status: 'done',
+        evidence: 'MR !15 — @ecom/utils/product-image; mobil absolut manzil oladi',
       },
     ],
   },
@@ -314,7 +306,7 @@ export const MODULES: Module[] = [
         title: 'Mahsulot rasmlari',
         does: 'Har bir mahsulotda haqiqiy foto ko‘rinadi.',
         status: 'wip',
-        evidence: 'MR !7 — 24 ta rasm repoda; mobil/admin/seller hamon picsum‘da',
+        evidence: 'MR !7 + !15 — 24 ta rasm repoda, hisoblash mantiqi @ecom/utils da (12 ta test)',
       },
     ],
   },
@@ -756,10 +748,10 @@ export const MODULES: Module[] = [
           '@sentry/nextjs apps/web ga ulandi (instrumentation + global-error). DSN qo‘yilmagunicha passiv — tarmoqqa so‘rov ketmaydi',
         tasks: [
           {
-            title: 'Sentry loyihasi ochib DSN ni Vercel env ga qo‘shish',
-            role: 'asoschi',
-            priority: 'kritik',
-            why: 'Kod tayyor, lekin DSN yo‘qligicha xato hech qayerga bormaydi. Bepul tarif yetarli',
+            title: 'Sentry ogohlantirishlarini sozlash',
+            role: 'devops',
+            priority: 'orta',
+            why: 'DSN ulangan va xatolar kelyapti; endi qaysi xato kimga xabar qilishini belgilash kerak',
           },
           {
             title: 'admin va seller ilovalariga ham ulash',
