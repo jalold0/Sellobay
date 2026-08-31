@@ -5,11 +5,13 @@ import { PageHero } from '../../../components/static/page-hero';
 
 export const metadata = { title: 'Biz haqimizda' };
 
+// Traksiya raqamlari ATAYLAB olib tashlandi: ular haqiqiy sanoqlarga mos
+// kelmasdi. O'rniga tekshirilishi mumkin bo'lgan xizmat va'dalari.
 const STATS = [
-  { label: 'Faol mijozlar', value: '120 000+' },
-  { label: 'Sotuvchilar', value: '850+' },
-  { label: 'Mahsulot turlari', value: '50 000+' },
-  { label: 'Shaharlar', value: '14' },
+  { label: 'Kafolatlangan mahsulot', value: 'Original' },
+  { label: "Toshkent bo'ylab", value: '24 soat' },
+  { label: 'Qaytarish', value: 'Bepul' },
+  { label: "O'zbek, rus, ingliz", value: '3 til' },
 ];
 
 const VALUES = [
@@ -25,7 +27,7 @@ export default function AboutPage() {
       <PageHero
         icon={Building2}
         title="Biz haqimizda"
-        description="O'zbekistondagi eng yirik onlayn savdo ekosistemasini quryapmiz — minglab brendlar, millionlab mahsulot, butun mamlakatga yetkazib berish."
+        description="O'zbekiston uchun onlayn savdo ekotizimini quryapmiz — tekshirilgan sotuvchilar, original mahsulotlar va ishonchli yetkazib berish."
         accent="primary"
       />
 

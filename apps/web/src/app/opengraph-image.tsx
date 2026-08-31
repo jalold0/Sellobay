@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 // Sellobay OG image — Facebook/Twitter/Telegram preview, 1200×630
 export const runtime = 'edge';
-export const alt = 'Sellobay — O`zbekistondagi eng yirik marketplace';
+export const alt = 'Sellobay — O`zbekiston uchun onlayn marketplace';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -60,7 +60,7 @@ export default function OpenGraphImage() {
       {/* Markazda asosiy slogan */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ fontSize: 72, fontWeight: 900, lineHeight: 1.05, letterSpacing: -2 }}>
-          Minglab sotuvchilar.
+          Original mahsulotlar.
           <br />
           <span style={{ color: '#C9A961' }}>Yagona platforma.</span>
         </div>
@@ -80,11 +80,11 @@ export default function OpenGraphImage() {
         }}
       >
         <div style={{ display: 'flex', gap: 32, fontSize: 22, opacity: 0.9 }}>
-          <span>50,000+ sotuvchi</span>
+          <span>Original kafolati</span>
           <span style={{ color: '#C9A961' }}>·</span>
-          <span>2M+ mahsulot</span>
+          <span>Tezkor yetkazish</span>
           <span style={{ color: '#C9A961' }}>·</span>
-          <span>24/7 yordam</span>
+          <span>Bepul qaytarish</span>
         </div>
         <div style={{ fontSize: 22, opacity: 0.55 }}>sellobay.uz</div>
       </div>

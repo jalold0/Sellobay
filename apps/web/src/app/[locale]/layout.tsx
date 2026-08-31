@@ -40,10 +40,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: {
     template: '%s · Sellobay',
-    default: "Sellobay — O'zbekistondagi eng yirik marketplace",
+    default: "Sellobay — O'zbekiston uchun onlayn marketplace",
   },
   description:
-    "Minglab sotuvchilar, premium brendlar, tezkor yetkazib berish. O'zbekistondagi eng yirik marketplace — Sellobay.",
+    'Tekshirilgan sotuvchilar, original mahsulotlar, tezkor yetkazib berish. Kiyim, poyabzal, atirlar va kosmetika.',
   keywords: [
     'sellobay',
     'marketplace',

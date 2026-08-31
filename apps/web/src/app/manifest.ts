@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Sellobay — Marketplace ekotizimi',
     short_name: 'Sellobay',
     description:
-      "Minglab sotuvchilar, premium brendlar, tezkor yetkazib berish. O'zbekistondagi eng yirik marketplace — Sellobay.",
+      'Tekshirilgan sotuvchilar, original mahsulotlar, tezkor yetkazib berish. Kiyim, poyabzal, atirlar va kosmetika.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

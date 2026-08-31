@@ -70,20 +70,10 @@
     "headlineLine1": "Uslub — bu til.",
     "headlineLine2": "Uni Sellobay'da",
     "headlineLine3": "so'zlang.",
-    "subheadline": "Minglab tekshirilgan sotuvchilar, 2 milliondan ortiq original mahsulot. 24 soat ichida eshigingizgacha.",
+    "subheadline": "Tekshirilgan sotuvchilar, original mahsulotlar. Tezkor yetkazib berish.",
     "ctaShop": "Xarid qilish",
     "ctaCollection": "Kolleksiyani ko'rish",
     "ctaSell": "Sotuvchi bo'lish",
-    "stats": {
-      "sellersValue": "50 000+",
-      "sellersLabel": "sotuvchi",
-      "productsValue": "2 mln+",
-      "productsLabel": "mahsulot",
-      "deliveryValue": "24 soat",
-      "deliveryLabel": "yetkazish",
-      "authenticValue": "100%",
-      "authenticLabel": "originallik kafolati"
-    },
     "trustFast": "Tezkor 24 soat",
     "trustAuthentic": "100% asl mahsulot",
     "trustReturn": "Tekshirib olish",
@@ -957,17 +947,17 @@
     "title": "Sotuvchi bo'lish",
     "heroEyebrow": "Sellobay biznes",
     "heroTitle": "Sellobay'da soting",
-    "heroSubtitle": "O'zbekistondagi eng yirik onlayn bozorga qo'shiling. 850+ brend allaqachon biz bilan.",
+    "heroSubtitle": "Sellobay'da sotishni boshlang — ro'yxatdan o'tib, mahsulotlaringizni joylashtiring.",
     "benefitsTitle": "Nega Sellobay?",
     "benefit": {
-      "customers": "120 000+ faol mijoz",
+      "customers": "Tayyor auditoriya",
       "customersDesc": "Har kuni yangi xaridorlar",
       "growth": "Tezkor o'sish",
       "growthDesc": "Marketing va analitika bizdan",
       "logistics": "Logistika hal qilingan",
       "logisticsDesc": "Yetkazib berishni biz bajaramiz",
       "commission": "Past komissiya 8–12%",
-      "commissionDesc": "Bozordagi eng past stavka"
+      "commissionDesc": "Kategoriyaga qarab 8-12%"
     },
     "requirementsTitle": "Talablar",
     "req": {
