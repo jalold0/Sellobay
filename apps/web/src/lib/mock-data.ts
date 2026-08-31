@@ -1,5 +1,8 @@
 export type Locale = 'uz' | 'ru' | 'en';
-export type LocalizedText = Record<Locale, string>;
+// DB `name`ni Json sifatida saqlaydi va server faqat `uz`ni majburiy qiladi
+// (apps/seller .../api/products: nameRu/nameEn optional). Shuning uchun ru/en
+// ixtiyoriy. Har doim pickLocale() orqali o'qing — indeks bilan emas.
+export type LocalizedText = { uz: string; ru?: string; en?: string };
 
 export interface MockCategory {
   id: string;
