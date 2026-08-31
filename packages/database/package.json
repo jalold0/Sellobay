@@ -22,7 +22,8 @@
     "validate": "prisma validate",
     "lint": "eslint . --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "seed:test-accounts": "tsx prisma/seed-test-accounts.ts"
+    "seed:test-accounts": "tsx prisma/seed-test-accounts.ts",
+    "migrate:status": "prisma migrate status"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0"

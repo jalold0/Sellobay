@@ -3,6 +3,7 @@
 
 stages:
   - verify
+  - deploy
   - docker
 
 # GitHub'dagi `on: push [main, develop]` + `on: pull_request` ekvivalenti.
@@ -51,6 +52,30 @@ lint-typecheck-build:
     - pnpm turbo run test --filter=@ecom/core-domain
     # Vercel'da deploy bo'ladigan Next.js app'lari
     - pnpm turbo run build --filter=@ecom/web --filter=@ecom/admin --filter=@ecom/seller --filter=@ecom/roadmap
+
+# Migratsiyani production bazasiga qollash.
+#
+# ATAYLAB QOLDA (when: manual): hozir alohida staging bazasi yoq, shuning uchun
+# har main push'da avtomatik migratsiya qilish xavfli. Staging paydo bolgach
+# avtomatlashtirish mumkin.
+#
+# TALAB: GitLab > Settings > CI/CD > Variables da DATABASE_URL qoyilishi kerak
+# (masked, protected). Qoyilmasa job yiqiladi - bu ataylab, jim otib ketmasin.
+migrate-deploy:
+  stage: deploy
+  image: node:20-bookworm-slim
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@9.15.9 --activate
+    - pnpm config set store-dir "$PNPM_STORE"
+    - pnpm install --frozen-lockfile
+  script:
+    - test -n "$DATABASE_URL" || (echo "DATABASE_URL CI ozgaruvchisi qoyilmagan" && exit 1)
+    - pnpm --filter @ecom/database exec prisma migrate status
+    - pnpm --filter @ecom/database exec prisma migrate deploy
 
 # Docker image'lar faqat versiya tegida yoki qo'lda (CI/CD > Pipelines > Run pipeline)
 # quriladi — har push'da emas, CI daqiqalarini tejash uchun.
