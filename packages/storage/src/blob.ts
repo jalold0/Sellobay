@@ -22,16 +22,30 @@ import type { ValidatedImage } from './image.ts';
 export class StorageNotConfiguredError extends Error {
   constructor() {
     super(
-      'Fayl saqlash sozlanmagan: BLOB_READ_WRITE_TOKEN yo`q. ' +
+      'Fayl saqlash sozlanmagan: BLOB_STORE_ID ham, BLOB_READ_WRITE_TOKEN ham yo`q. ' +
         'Vercel loyihasiga Blob do`koni ulanganini tekshiring, lokalda `vercel env pull` qiling.',
     );
     this.name = 'StorageNotConfiguredError';
   }
 }
 
-/** Blob do'koni ulanganmi (env token bormi). */
+/**
+ * Blob do'koni ulanganmi.
+ *
+ * Vercel ikki xil autentifikatsiyani qo'llab-quvvatlaydi va do'kon qaysi usulda
+ * ulanganiga qarab loyihaga TURLI o'zgaruvchi qo'yiladi:
+ *
+ *   • BLOB_STORE_ID — do'kon loyihaga Vercel ichida ulanganda. Kalitning o'zi
+ *     env'ga umuman tushmaydi: SDK ishlash paytida OIDC token oladi. Bu
+ *     xavfsizroq, chunki uzoq muddatli maxfiy kalit hech qayerda yotmaydi.
+ *   • BLOB_READ_WRITE_TOKEN — qo'lda yaratilgan token bilan ishlaganda
+ *     (masalan Vercel'dan tashqarida yoki CI'da).
+ *
+ * Faqat tokenni tekshirish XATO bo'lardi: Vercel'da ulangan do'kon uchun u
+ * yo'q va kod ishlayotgan joyda "sozlanmagan" deb xato berardi.
+ */
 export function isStorageConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(process.env.BLOB_STORE_ID ?? process.env.BLOB_READ_WRITE_TOKEN);
 }
 
 function assertConfigured(): void {

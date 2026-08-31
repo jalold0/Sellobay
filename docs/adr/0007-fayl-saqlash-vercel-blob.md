@@ -54,9 +54,16 @@ tushishi mumkin. SVG ataylab qabul qilinmaydi — u XML va ichida `<script>`
 bo'lishi mumkin. Saqlashda yoziladigan `Content-Type` ham aniqlangan haqiqiy
 turdan olinadi, fayl nomi esa umuman ishlatilmaydi.
 
-### Token bo'lmasa kod jim qolmaydi
+### Sozlanmaganda kod jim qolmaydi
 
-`BLOB_READ_WRITE_TOKEN` yo'q bo'lsa `StorageNotConfiguredError` tashlanadi:
+Vercel ikki xil autentifikatsiyani qo'llaydi: do'kon loyihaga Vercel ichida
+ulanganda `BLOB_STORE_ID` qo'yiladi va kalit env'ga umuman tushmaydi (SDK
+ishlash paytida OIDC token oladi); `BLOB_READ_WRITE_TOKEN` esa faqat
+Vercel'dan tashqarida ishlaganda kerak. Shu sababli tekshiruv **ikkalasini**
+ham hisobga oladi — faqat tokenni kutish ulangan loyihada noto'g'ri "sozlanmagan"
+xatosini berardi (bu preview'da aynan shunday bo'ldi va tuzatildi).
+
+Ikkalasi ham yo'q bo'lsa `StorageNotConfiguredError` tashlanadi:
 API 503 va aniq xabar qaytaradi, web'da xato Sentry'ga ham boradi. Bu ataylab —
 jim ishlaydigan integratsiya ishlayotgandek ko'rinadi, lekin hech narsa
 saqlanmaydi va buni faqat mijoz yo'qolgan chek orqali bilib qoladi.
