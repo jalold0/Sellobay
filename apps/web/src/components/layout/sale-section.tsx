@@ -115,7 +115,7 @@ export function SaleSection({ locale, saleProducts }: Props) {
       </div>
 
       {/* Sale products grid — qizil chegara va katta chegirma badge bilan */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {saleProducts.map((p, i) => (
           <div key={p.id} className="relative">
             <ProductCardClient product={p} locale={locale} stockLeft={3 + (i % 5)} />

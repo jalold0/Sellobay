@@ -3,6 +3,7 @@ import { ChevronDown, Filter, X } from 'lucide-react';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 
+import { FilterPanel } from '../../../components/catalog/filter-panel';
 import { ProductCardClient } from '../../../components/product/product-card-client';
 import { fetchProducts } from '../../../lib/catalog';
 import { brands, categories, findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
@@ -166,131 +167,132 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
       <div className="grid gap-9 lg:grid-cols-[264px_1fr]">
         <aside className="lg:sticky lg:top-32 lg:self-start">
-          <div className="space-y-7">
-            <div className="flex items-baseline justify-between">
-              <h2 className="text-brand-ink font-serif text-lg font-semibold">{t('filters')}</h2>
-              {hasFilters ? (
-                <Link
-                  href="/catalog"
-                  className="text-primary text-[13px] font-semibold hover:underline"
-                >
-                  {t('reset')}
-                </Link>
-              ) : null}
-            </div>
+          <FilterPanel label={t('filters')}>
+            <div className="space-y-7">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-brand-ink font-serif text-lg font-semibold">{t('filters')}</h2>
+                {hasFilters ? (
+                  <Link
+                    href="/catalog"
+                    className="text-primary text-[13px] font-semibold hover:underline"
+                  >
+                    {t('reset')}
+                  </Link>
+                ) : null}
+              </div>
 
-            <FilterGroup title={t('category')}>
-              <ul className="space-y-2.5">
-                {categories.map((c) => {
-                  const active = c.slug === searchParams.category;
-                  return (
-                    <li key={c.id}>
-                      <Link
-                        href={active ? '/catalog' : `/catalog?category=${c.slug}`}
-                        className="group flex items-center gap-2.5"
-                      >
-                        <CheckSquare checked={active} />
-                        <span
-                          className={`flex-1 text-[13.5px] transition-colors ${
-                            active
-                              ? 'text-brand-ink font-semibold'
-                              : 'group-hover:text-brand-ink text-[#3a3a40]'
-                          }`}
+              <FilterGroup title={t('category')}>
+                <ul className="space-y-2.5">
+                  {categories.map((c) => {
+                    const active = c.slug === searchParams.category;
+                    return (
+                      <li key={c.id}>
+                        <Link
+                          href={active ? '/catalog' : `/catalog?category=${c.slug}`}
+                          className="group flex items-center gap-2.5"
                         >
-                          {pickLocale(c.name, locale)}
-                        </span>
-                        <span className="text-xs text-[#9a9aa2]">{c.productCount}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </FilterGroup>
-
-            <FilterGroup title={t('brand')}>
-              <ul className="space-y-2.5">
-                {brands.slice(0, BRANDS_VISIBLE).map((b) => {
-                  const active = b.slug === searchParams.brand;
-                  return (
-                    <li key={b.id}>
-                      <Link
-                        href={active ? '/catalog' : `/catalog?brand=${b.slug}`}
-                        className="group flex items-center gap-2.5"
-                      >
-                        <CheckSquare checked={active} />
-                        <span
-                          className={`flex-1 truncate text-[13.5px] transition-colors ${
-                            active
-                              ? 'text-brand-ink font-semibold'
-                              : 'group-hover:text-brand-ink text-[#3a3a40]'
-                          }`}
-                        >
-                          {b.name}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-              {brands.length > BRANDS_VISIBLE ? (
-                <details className="group/more mt-2.5">
-                  <summary className="text-primary cursor-pointer list-none text-[13px] font-semibold hover:underline group-open/more:hidden [&::-webkit-details-marker]:hidden">
-                    {t('brandMore', { count: brands.length - BRANDS_VISIBLE })}
-                  </summary>
-                  <ul className="space-y-2.5">
-                    {brands.slice(BRANDS_VISIBLE).map((b) => {
-                      const active = b.slug === searchParams.brand;
-                      return (
-                        <li key={b.id}>
-                          <Link
-                            href={active ? '/catalog' : `/catalog?brand=${b.slug}`}
-                            className="group flex items-center gap-2.5"
+                          <CheckSquare checked={active} />
+                          <span
+                            className={`flex-1 text-[13.5px] transition-colors ${
+                              active
+                                ? 'text-brand-ink font-semibold'
+                                : 'group-hover:text-brand-ink text-[#3a3a40]'
+                            }`}
                           >
-                            <CheckSquare checked={active} />
-                            <span
-                              className={`flex-1 truncate text-[13.5px] transition-colors ${
-                                active
-                                  ? 'text-brand-ink font-semibold'
-                                  : 'group-hover:text-brand-ink text-[#3a3a40]'
-                              }`}
+                            {pickLocale(c.name, locale)}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </FilterGroup>
+
+              <FilterGroup title={t('brand')}>
+                <ul className="space-y-2.5">
+                  {brands.slice(0, BRANDS_VISIBLE).map((b) => {
+                    const active = b.slug === searchParams.brand;
+                    return (
+                      <li key={b.id}>
+                        <Link
+                          href={active ? '/catalog' : `/catalog?brand=${b.slug}`}
+                          className="group flex items-center gap-2.5"
+                        >
+                          <CheckSquare checked={active} />
+                          <span
+                            className={`flex-1 truncate text-[13.5px] transition-colors ${
+                              active
+                                ? 'text-brand-ink font-semibold'
+                                : 'group-hover:text-brand-ink text-[#3a3a40]'
+                            }`}
+                          >
+                            {b.name}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {brands.length > BRANDS_VISIBLE ? (
+                  <details className="group/more mt-2.5">
+                    <summary className="text-primary cursor-pointer list-none text-[13px] font-semibold hover:underline group-open/more:hidden [&::-webkit-details-marker]:hidden">
+                      {t('brandMore', { count: brands.length - BRANDS_VISIBLE })}
+                    </summary>
+                    <ul className="space-y-2.5">
+                      {brands.slice(BRANDS_VISIBLE).map((b) => {
+                        const active = b.slug === searchParams.brand;
+                        return (
+                          <li key={b.id}>
+                            <Link
+                              href={active ? '/catalog' : `/catalog?brand=${b.slug}`}
+                              className="group flex items-center gap-2.5"
                             >
-                              {b.name}
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </details>
-              ) : null}
-            </FilterGroup>
+                              <CheckSquare checked={active} />
+                              <span
+                                className={`flex-1 truncate text-[13.5px] transition-colors ${
+                                  active
+                                    ? 'text-brand-ink font-semibold'
+                                    : 'group-hover:text-brand-ink text-[#3a3a40]'
+                                }`}
+                              >
+                                {b.name}
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </details>
+                ) : null}
+              </FilterGroup>
 
-            <FilterGroup title={t('priceHeader')}>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  placeholder={t('priceFrom')}
-                  aria-label={common('from')}
-                  className="border-border focus:border-primary text-brand-ink w-full rounded-[10px] border-[1.5px] px-3 py-2 text-[13px] font-semibold outline-none transition"
-                />
-                <span className="text-[#9a9aa2]">—</span>
-                <input
-                  type="number"
-                  placeholder={t('priceTo')}
-                  aria-label={common('to')}
-                  className="border-border focus:border-primary text-brand-ink w-full rounded-[10px] border-[1.5px] px-3 py-2 text-[13px] font-semibold outline-none transition"
-                />
-              </div>
-            </FilterGroup>
+              <FilterGroup title={t('priceHeader')}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder={t('priceFrom')}
+                    aria-label={common('from')}
+                    className="border-border focus:border-primary text-brand-ink w-full rounded-[10px] border-[1.5px] px-3 py-2 text-[13px] font-semibold outline-none transition"
+                  />
+                  <span className="text-[#9a9aa2]">—</span>
+                  <input
+                    type="number"
+                    placeholder={t('priceTo')}
+                    aria-label={common('to')}
+                    className="border-border focus:border-primary text-brand-ink w-full rounded-[10px] border-[1.5px] px-3 py-2 text-[13px] font-semibold outline-none transition"
+                  />
+                </div>
+              </FilterGroup>
 
-            <FilterGroup title={t('filterOther')}>
-              <div className="space-y-2.5">
-                <CheckboxRow label={t('onlyOriginal')} defaultChecked />
-                <CheckboxRow label={t('inDiscount')} />
-                <CheckboxRow label={t('delivery24h')} />
-              </div>
-            </FilterGroup>
-          </div>
+              <FilterGroup title={t('filterOther')}>
+                <div className="space-y-2.5">
+                  <CheckboxRow label={t('onlyOriginal')} defaultChecked />
+                  <CheckboxRow label={t('inDiscount')} />
+                  <CheckboxRow label={t('delivery24h')} />
+                </div>
+              </FilterGroup>
+            </div>
+          </FilterPanel>
         </aside>
 
         <div>
@@ -309,7 +311,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
               }
             />
           ) : (
-            <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
               {list.map((p) => (
                 <ProductCardClient key={p.id} product={p} locale={locale} />
               ))}

@@ -51,7 +51,7 @@ export default async function HomePage() {
             {t('viewAllLong')}
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
           {featured.map((p) => (
             <ProductCardClient key={p.id} product={p} locale={locale} />
           ))}
@@ -61,27 +61,14 @@ export default async function HomePage() {
       {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
       <CategoryGrid locale={locale} />
 
-      {/* 5. Featured collection — editorial 3-image showcase */}
-      <FeaturedCollection locale={locale} products={collection} />
-
-      {/* 6. Sale section with countdown */}
+      {/* 5. Aksiya — editorialdan OLDIN: xarid niyati bilan kelgan odam
+          chegirmalarni birinchi ekrandan keyin darrov ko'rishi kerak. */}
       <SaleSection locale={locale} saleProducts={sale} />
 
-      {/* 7. Seller CTA banner — million customers reach, perks list */}
-      <SellerBanner />
+      {/* 6. Editorial kolleksiya — brend hikoyasi, xariddan keyin */}
+      <FeaturedCollection locale={locale} products={collection} />
 
-      {/*
-        Mijoz fikrlari bo'limi OLIB TASHLANDI.
-        U uchta o'ylab topilgan odamni ko'rsatardi: ismlari (Madina Karimova,
-        Akmal Yusupov, Nilufar Rashidova), Unsplash'dan olingan begona
-        odamlarning suratlari, 5 yulduz va "2 yildan beri faqat shu yerdan
-        olaman" kabi gaplar. Platformada esa 9 ta mijoz bor.
-        Haqiqiy sharh tizimi ishga tushgach, shu yerga HAQIQIY fikrlar qo'yiladi.
-      */}
-      {/* 9. PWA install CTA */}
-      <InstallHeroCard />
-
-      {/* 10. Brands */}
+      {/* 7. Brendlar — navigatsiya bloki, CTA'lardan oldin */}
       <section className="space-y-5">
         <SectionTitle title={t('popularBrands')} description={`Sellobay × ${brands.length}+`} />
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
@@ -99,6 +86,21 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/*
+        Mijoz fikrlari bo'limi OLIB TASHLANDI.
+        U uchta o'ylab topilgan odamni ko'rsatardi: ismlari (Madina Karimova,
+        Akmal Yusupov, Nilufar Rashidova), Unsplash'dan olingan begona
+        odamlarning suratlari, 5 yulduz va "2 yildan beri faqat shu yerdan
+        olaman" kabi gaplar. Platformada esa 9 ta mijoz bor.
+        Haqiqiy sharh tizimi ishga tushgach, shu yerga HAQIQIY fikrlar qo'yiladi.
+      */}
+
+      {/* 8. Sotuvchi CTA */}
+      <SellerBanner />
+
+      {/* 9. PWA install CTA */}
+      <InstallHeroCard />
     </div>
   );
 }

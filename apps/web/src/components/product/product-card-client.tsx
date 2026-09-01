@@ -1,5 +1,6 @@
 'use client';
 
+import { FREE_SHIPPING_THRESHOLD } from '@ecom/core-domain';
 import { ProductCard, toast, type ProductCardProps } from '@ecom/ui';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -87,12 +88,15 @@ export function ProductCardClient({ product, locale, className, stockLeft }: Pro
       badge={product.badge}
       inStock={product.inStock}
       stockLeft={stockLeft}
+      // Bepul yetkazish chegarasi core-domain'da — savatdagi hisob bilan bitta manba
+      freeShipping={product.price >= FREE_SHIPPING_THRESHOLD}
       labels={{
         quickView: t('quickView'),
         outOfStock: t('outOfStock'),
         addToCart: t('addToCart'),
         onlyLeft: t('onlyLeft', { count: stockLeft ?? 0 }),
         wishlist: t('addToWishlist'),
+        freeShipping: t('freeShipping'),
       }}
       isWishlisted={isWishlisted}
       onAddToCart={product.inStock ? onAddToCart : undefined}
