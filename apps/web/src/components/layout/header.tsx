@@ -1,16 +1,14 @@
 'use client';
 
-import { Heart, ShoppingBag } from 'lucide-react';
+import { Heart, Menu, ShoppingBag } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { type Locale } from '../../lib/mock-data';
 import { SellobayMark } from '../brand/sellobay-mark';
 import { AnimatedSearch } from './animated-search';
 import { AuthMenu } from './auth-menu';
 import { CartBadge, WishlistBadge } from './cart-badge';
-import { CatalogMenu } from './catalog-menu';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 
@@ -125,7 +123,13 @@ export function Header() {
       {/* Category nav — 48px, SALE crimson, o'ngda Premium */}
       <nav className="hidden border-b bg-white md:block">
         <div className="container flex h-12 items-center gap-8 text-[13.5px] font-semibold text-[#3a3a40]">
-          <CatalogMenu locale={locale as Locale} />
+          <Link
+            href="/catalog"
+            className="text-brand-ink hover:text-primary flex shrink-0 items-center gap-2"
+          >
+            <Menu size={16} strokeWidth={2} />
+            {nav('catalog')}
+          </Link>
           <div className="flex items-center gap-8 overflow-x-auto">
             {CATEGORY_SLUGS.map((slug) => (
               <Link
