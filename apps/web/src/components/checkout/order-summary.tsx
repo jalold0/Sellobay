@@ -43,7 +43,7 @@ export function OrderSummary({
   return (
     <aside className="flex flex-col gap-4 lg:self-start">
       <div className="border-border rounded-[18px] border bg-white p-6 md:p-7 lg:sticky lg:top-24">
-        <h2 className="text-brand-ink mb-[18px] font-serif text-xl font-semibold">
+        <h2 className="text-brand-ink mb-[18px] text-xl font-bold">
           {t('summaryTitle', { count: items.length })}
         </h2>
 
@@ -121,9 +121,7 @@ export function OrderSummary({
           </div>
           <div className="border-border flex items-baseline justify-between border-t pt-3">
             <span className="text-brand-ink text-[14.5px] font-bold">{t('summaryTotal')}</span>
-            <span className="text-brand-ink font-serif text-2xl font-bold">
-              {formatMoney(total)}
-            </span>
+            <span className="text-brand-ink text-2xl font-bold">{formatMoney(total)}</span>
           </div>
         </div>
 

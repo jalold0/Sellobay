@@ -276,9 +276,7 @@ export default function MyOrdersPage() {
   if (orders.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-brand-ink font-serif text-2xl font-semibold md:text-[28px]">
-          {t('title')}
-        </h1>
+        <h1 className="text-brand-ink text-2xl font-bold md:text-[28px]">{t('title')}</h1>
         <EmptyState icon={Package} title={t('emptyTitle')} description={t('emptyDesc')} />
       </div>
     );
@@ -300,9 +298,7 @@ export default function MyOrdersPage() {
   return (
     <div className="space-y-[18px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-brand-ink font-serif text-2xl font-semibold md:text-[28px]">
-          {t('title')}
-        </h1>
+        <h1 className="text-brand-ink text-2xl font-bold md:text-[28px]">{t('title')}</h1>
         <div className="flex gap-2">
           {FILTERS.map((f) => (
             <button

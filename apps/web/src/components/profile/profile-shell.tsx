@@ -93,9 +93,7 @@ export function ProfileShell({ user, children }: { user: AuthUser; children: Rea
             <span>◆</span>
             {t('premiumCard.label')}
           </div>
-          <div className="mt-3 font-serif text-[30px] font-bold leading-none">
-            {groupNum(points)}
-          </div>
+          <div className="mt-3 text-[30px] font-bold leading-none">{groupNum(points)}</div>
           <div className="mt-1 text-xs text-white/65">
             {t('premiumCard.pointsTier', { tier: tl(`tiers.${tier.key}`) })}
           </div>
