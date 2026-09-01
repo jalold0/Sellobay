@@ -899,12 +899,20 @@
   },
   "tracking": {
     "title": "Buyurtmamni kuzatish",
-    "subtitle": "Buyurtma raqami orqali yetkazib berish holatini kuzating",
-    "notFound": "Bunday raqam bilan buyurtma topilmadi",
+    "subtitle": "Buyurtma raqami va telefon raqamingiz orqali holatni kuzating",
+    "notFound": "Bunday buyurtma topilmadi. Raqam va telefonni tekshiring.",
     "orderNumber": "Buyurtma raqami",
     "courier": "Kuryer",
     "helpTitle": "Yordamga muhtojmisiz?",
-    "helpDesc": "Operatorimiz 24/7 yordam berishga tayyor."
+    "helpDesc": "Operatorimiz 24/7 yordam berishga tayyor.",
+    "phone": "Telefon raqami",
+    "phoneHint": "Buyurtma berishda ko‘rsatilgan raqam",
+    "placedAt": "Berilgan sana",
+    "itemCount": "{count} ta mahsulot",
+    "total": "Jami summa",
+    "searching": "Qidirilmoqda…",
+    "tooMany": "Juda ko‘p urinish. Bir daqiqadan keyin qayta urinib ko‘ring.",
+    "items": "Mahsulotlar"
   },
   "orderSuccess": {
     "title": "Rahmat! Buyurtmangiz qabul qilindi",

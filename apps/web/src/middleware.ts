@@ -9,9 +9,13 @@ type Locale = (typeof LOCALES)[number];
 // Auth talab qiladigan yo'llar (locale prefix tashlangandan keyin)
 // /checkout — guest checkout uchun OCHIQ (login majburiy emas, faqat telefon yetadi).
 // Orders API guest buyurtmani qo'llab-quvvatlaydi (userId null, guestPhone bilan).
-const PROTECTED_PREFIXES = ['/profile', '/orders'];
-// Lekin /orders/success ochiq qoladi (buyurtmadan keyingi sahifa)
-const PROTECTED_EXCLUDES = ['/orders/success'];
+const PROTECTED_PREFIXES = ['/profile'];
+// /orders — buyurtmani kuzatish sahifasi. ATAYLAB OCHIQ: checkout login
+// talab qilmaydi (mehmon telefon bilan buyurtma bera oladi), demak bunday
+// mijozda kabinet yo'q va kuzatishning boshqa yo'li ham yo'q. Sahifa o'zi
+// hech narsa ko'rsatmaydi — ma'lumot /api/orders/track dan, raqam VA telefon
+// mos kelgandagina keladi.
+const PROTECTED_EXCLUDES: string[] = [];
 
 const intlMiddleware = createIntlMiddleware({
   locales: LOCALES as unknown as string[],

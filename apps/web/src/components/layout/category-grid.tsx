@@ -51,11 +51,9 @@ export function CategoryGrid({ locale }: Props) {
               <div className="text-brand-ink text-[13.5px] font-bold">
                 {pickLocale(c.name, locale)}
               </div>
-              <div className="text-muted-foreground mt-0.5 text-[11.5px]">
-                {t('productCount', {
-                  count: c.productCount.toLocaleString('en-US').replace(/,/g, ' '),
-                })}
-              </div>
+              {/* Mahsulot soni OLIB TASHLANDI: mock-data'da 1280, 642, 318...
+                  yozib qo'yilgan edi, bazada esa jami 11 ta mahsulot bor.
+                  Haqiqiy son kerak bo'lsa — Category bo'yicha COUNT qilinadi. */}
             </div>
           </Link>
         ))}
