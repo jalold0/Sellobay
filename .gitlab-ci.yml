@@ -5,6 +5,7 @@ stages:
   - verify
   - deploy
   - docker
+  - monitor
 
 # GitHub'dagi `on: push [main, develop]` + `on: pull_request` ekvivalenti.
 workflow:
@@ -29,6 +30,9 @@ lint-typecheck-build:
   interruptible: true
   # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags)
   rules:
+    # Jadval pipeline'i faqat route-health uchun — bu yerda build shart emas
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
     - if: $CI_PIPELINE_SOURCE == "web"
@@ -73,6 +77,9 @@ migrate-deploy:
   stage: deploy
   image: node:20-bookworm-slim
   rules:
+    # Jadval pipeline'i faqat route-health uchun — bu yerda build shart emas
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
       allow_failure: true
@@ -115,3 +122,31 @@ docker-build-push:
     - docker build -f "apps/$APP/Dockerfile" -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
     - docker push "$IMAGE:$TAG"
     - docker push "$IMAGE:latest"
+
+# Production marshrutlarini bosib chiqadi va siniganini topadi.
+#
+# NEGA: /uz/download production'da 90 soniya osilib turib 500 qaytarardi va
+# buni hech kim sezmagan. Sentry ulangan, lekin RSC oqimi o'rtasida uzilgan
+# xato u yerga tushmadi. Bu job aynan shunday jim nosozliklarni tutadi.
+#
+# HAR PUSH'DA EMAS, faqat jadval bo'yicha (CI/CD > Schedules) yoki qo'lda.
+# Sabab: push paytida production'da hali ESKI kod turadi — repodagi marshrut
+# ro'yxati bilan mos kelmay, soxta ogohlantirish berardi.
+#
+# Sozlash: GitLab > CI/CD > Schedules > New schedule (masalan har kuni 09:00).
+# SITE_URL o'zgaruvchisi qo'yilmasa production manzili ishlatiladi.
+route-health:
+  stage: monitor
+  image: node:20-bookworm-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+      allow_failure: true
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@9.15.9 --activate
+    - pnpm config set store-dir "$PNPM_STORE"
+    - pnpm install --frozen-lockfile
+  script:
+    - npx tsx scripts/route-health.ts "${SITE_URL:-https://sellobay-web.vercel.app}"
