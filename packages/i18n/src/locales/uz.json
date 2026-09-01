@@ -165,27 +165,6 @@
     "ctaLearn": "Batafsil ma'lumot",
     "trust": "Hozirgacha {count}+ sotuvchi Sellobay'ni tanlagan"
   },
-  "testimonials": {
-    "title": "Mijozlar va sotuvchilar fikri",
-    "subtitle": "Sellobay'ni tanlagan mijozlar fikri",
-    "items": {
-      "madina": {
-        "name": "Madina Karimova",
-        "role": "Toshkent",
-        "quote": "Sellobay'da xarid qilish juda qulay. Yetkazib berish tezkor, mahsulotlar haqiqiy. 2 yildan beri faqat shu yerdan olaman."
-      },
-      "akmal": {
-        "name": "Akmal Yusupov",
-        "role": "Sotuvchi · Premium Shoes",
-        "quote": "Sellobay'da do'kon ochib, oyiga 5 baravar ko'p sotmoqdaman. Marketing yordami va analitika — buni hech qayerda topa olmaysiz."
-      },
-      "nilufar": {
-        "name": "Nilufar Rashidova",
-        "role": "Samarqand",
-        "quote": "Kosmetika qismida tanlovi keng, narxlari hamyonbop. Asl mahsulot kafolati — 100% ishonchli platforma."
-      }
-    }
-  },
   "footer": {
     "newsletterTitle": "Yangi tushgandan birinchi xabardor bo'ling",
     "newsletterSubtitle": "Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling. Spam yo'q — faqat yangiliklar.",
@@ -363,7 +342,10 @@
     "tabDelivery": "Yetkazish va qaytarish",
     "reviewsVerified": "{count} ta tasdiqlangan sharh asosida",
     "similarProducts": "O'xshash mahsulotlar",
-    "deliveryFastShort": "2-3 kun"
+    "deliveryFastShort": "2-3 kun",
+    "noDescription": "Bu mahsulot uchun tavsif hali qo`shilmagan.",
+    "noReviews": "Bu mahsulotga hali sharh qoldirilmagan. Birinchi bo`ling — buyurtma yetkazilgach sharh yozishingiz mumkin.",
+    "noQuestions": "Bu mahsulot bo`yicha hali savol berilmagan."
   },
   "cart": {
     "title": "Savatcha",

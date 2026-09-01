@@ -239,8 +239,10 @@ export function ProductCard({
           {name}
         </LinkComponent>
 
-        {/* Rating — bitta gold yulduz + ball + (soni) */}
-        {rating !== undefined && (
+        {/* Reyting FAQAT haqiqiy sharh bo'lganda ko'rsatiladi.
+            Sharhsiz "0.0 ★ (0)" yozish mahsulotni yomon baholangandek
+            ko'rsatadi — aslida uni hali hech kim baholamagan. */}
+        {rating !== undefined && (reviewCount ?? 0) > 0 && (
           <div className="flex items-center gap-[5px] text-xs">
             <Star size={12} className="fill-brand-gold text-brand-gold" />
             <span className="text-brand-ink font-bold">{rating.toFixed(1)}</span>

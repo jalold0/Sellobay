@@ -245,11 +245,43 @@ export async function fetchProductBySlug(slug: string): Promise<MockProduct | nu
   }
 }
 
-/** Detal sahifasi uchun real qo'shimchalar: barcha rasmlar + variantlar (rang/o'lcham). */
+/**
+ * Detal sahifasi uchun BAZADAGI haqiqiy qo'shimchalar.
+ *
+ * Bu tuzilma o'sib borishi kerak, kamayishi emas: sahifa qancha ko'p maydonni
+ * bazadan olsa, shuncha kam narsa to'qib chiqariladi.
+ */
 export interface ProductDetailExtras {
   galleryUrls: string[]; // haqiqiy rasm URL'lari (placeholder emas), position tartibida
   colors: string[]; // variantlardagi noyob ranglar
   sizes: { label: string; inStock: boolean }[]; // variantlardagi noyob o'lchamlar
+  sku: string; // haqiqiy SKU (ilgari `ECM-<id>` deb to'qib chiqarilardi)
+  weightGrams: number | null;
+  description: LocalizedText | null; // sotuvchi yozgan tavsif
+  reviews: DbProductReview[]; // tasdiqlangan sharhlar (bo'lmasa bo'sh)
+}
+
+/** Bazadagi sharh — interfeys uchun tayyorlangan ko'rinish. */
+export interface DbProductReview {
+  id: string;
+  author: string;
+  rating: number;
+  title?: string;
+  body: string;
+  createdAt: string;
+  verifiedPurchase: boolean;
+  helpfulCount: number;
+}
+
+/**
+ * Sharh muallifi: ism + familiya bosh harfi ("Akmal K.").
+ * To'liq familiya ko'rsatilmaydi — sharh ochiq sahifada turadi.
+ */
+function reviewAuthorName(user: { firstName: string | null; lastName: string | null }): string {
+  const first = user.firstName?.trim();
+  const lastInitial = user.lastName?.trim()?.[0];
+  if (!first) return 'Mijoz';
+  return lastInitial ? `${first} ${lastInitial}.` : first;
 }
 
 export async function fetchProductDetailExtras(slug: string): Promise<ProductDetailExtras | null> {
@@ -257,7 +289,27 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
     const row = await prisma.product.findFirst({
       where: { slug, status: 'ACTIVE', deletedAt: null },
       select: {
+        sku: true,
+        weightGrams: true,
+        description: true,
         images: { select: { url: true }, orderBy: { position: 'asc' } },
+        // Faqat TASDIQLANGAN sharhlar. Sharh yo'q bo'lsa ro'yxat bo'sh qoladi —
+        // ilgari bu yerda sharhlar to'qib chiqarilardi (soxta ism va matn bilan).
+        reviews: {
+          where: { isApproved: true },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          select: {
+            id: true,
+            rating: true,
+            title: true,
+            body: true,
+            createdAt: true,
+            isVerifiedPurchase: true,
+            helpfulCount: true,
+            user: { select: { firstName: true, lastName: true } },
+          },
+        },
         variants: {
           where: { isActive: true },
           orderBy: { position: 'asc' },
@@ -293,6 +345,19 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
       galleryUrls,
       colors,
       sizes: Array.from(sizeMap.entries()).map(([label, inStock]) => ({ label, inStock })),
+      sku: row.sku,
+      weightGrams: row.weightGrams,
+      description: (row.description as LocalizedText | null) ?? null,
+      reviews: row.reviews.map((review) => ({
+        id: review.id,
+        author: reviewAuthorName(review.user),
+        rating: review.rating,
+        title: review.title ?? undefined,
+        body: review.body ?? '',
+        createdAt: review.createdAt.toISOString(),
+        verifiedPurchase: review.isVerifiedPurchase,
+        helpfulCount: review.helpfulCount,
+      })),
     };
   } catch (err) {
     console.error('[catalog] fetchProductDetailExtras DB xato:', err);

@@ -8,7 +8,6 @@ import { PromoBanner } from '../../components/layout/promo-banner';
 import { QuickTiles } from '../../components/layout/quick-tiles';
 import { SaleSection } from '../../components/layout/sale-section';
 import { SellerBanner } from '../../components/layout/seller-banner';
-import { Testimonials } from '../../components/layout/testimonials';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
 import { fetchHomeProducts } from '../../lib/catalog';
@@ -71,9 +70,14 @@ export default async function HomePage() {
       {/* 7. Seller CTA banner — million customers reach, perks list */}
       <SellerBanner />
 
-      {/* 8. Testimonials — social proof */}
-      <Testimonials />
-
+      {/*
+        Mijoz fikrlari bo'limi OLIB TASHLANDI.
+        U uchta o'ylab topilgan odamni ko'rsatardi: ismlari (Madina Karimova,
+        Akmal Yusupov, Nilufar Rashidova), Unsplash'dan olingan begona
+        odamlarning suratlari, 5 yulduz va "2 yildan beri faqat shu yerdan
+        olaman" kabi gaplar. Platformada esa 9 ta mijoz bor.
+        Haqiqiy sharh tizimi ishga tushgach, shu yerga HAQIQIY fikrlar qo'yiladi.
+      */}
       {/* 9. PWA install CTA */}
       <InstallHeroCard />
 
