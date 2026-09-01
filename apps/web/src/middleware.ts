@@ -1,7 +1,7 @@
 import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { COOKIE_ACCESS } from '@/lib/auth/constants';
+import { ACCESS_SECRET, AUTH_CONFIGURED, COOKIE_ACCESS } from '@/lib/auth/constants';
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
 type Locale = (typeof LOCALES)[number];
@@ -43,7 +43,7 @@ const encoder = new TextEncoder();
 
 async function isValidAccess(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, encoder.encode(process.env.JWT_SECRET ?? ''));
+    await jwtVerify(token, encoder.encode(ACCESS_SECRET));
     return true;
   } catch {
     return false;
@@ -55,6 +55,17 @@ export default async function middleware(req: NextRequest) {
   const localeFreePath = stripLocale(pathname);
 
   if (isProtected(localeFreePath)) {
+    // Sir yo`qligi "kirilmagan" degani EMAS — server sozlanmagan degani.
+    // Ilgari ikkalasi bir xil ishlangani uchun JWT_SECRET qo`yilmagan muhitda
+    // kirgan foydalanuvchi ham har safar /login ga qaytarilaverardi va sabab
+    // hech qayerda ko`rinmasdi.
+    if (!AUTH_CONFIGURED) {
+      console.error('[auth] JWT_SECRET qo`yilmagan — himoyalangan sahifalar ochilmaydi.');
+      return new NextResponse('Server auth sozlamasi to`liq emas (JWT_SECRET).', {
+        status: 503,
+        headers: { 'content-type': 'text/plain; charset=utf-8' },
+      });
+    }
     const token = req.cookies.get(COOKIE_ACCESS)?.value;
     const ok = token ? await isValidAccess(token) : false;
     if (!ok) {

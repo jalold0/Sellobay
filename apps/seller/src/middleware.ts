@@ -4,7 +4,7 @@
 import { jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { COOKIE_ACCESS } from '@/lib/auth/constants';
+import { ACCESS_SECRET, AUTH_CONFIGURED, COOKIE_ACCESS } from '@/lib/auth/constants';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_PREFIXES = ['/api/auth/', '/_next/', '/favicon', '/icon', '/apple-icon', '/manifest'];
@@ -13,7 +13,7 @@ const encoder = new TextEncoder();
 
 async function isValidAccess(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, encoder.encode(process.env.JWT_SECRET ?? ''));
+    await jwtVerify(token, encoder.encode(ACCESS_SECRET));
     return true;
   } catch {
     return false;
@@ -26,6 +26,24 @@ export async function middleware(req: NextRequest) {
   // Ochiq yo'llar
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
+
+  // Sir yo`qligi "kirilmagan" degani EMAS — server sozlanmagan degani.
+  // Ilgari ikkalasi bir xil ishlangani uchun JWT_SECRET qo`yilmagan muhitda
+  // kirgan foydalanuvchi ham har safar /login ga qaytarilaverardi va sabab
+  // hech qayerda ko`rinmasdi.
+  if (!AUTH_CONFIGURED) {
+    console.error('[auth] JWT_SECRET qo`yilmagan — panelga kirib bo`lmaydi.');
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'AUTH_NOT_CONFIGURED',
+          message: 'Server auth sozlamasi to`liq emas (JWT_SECRET).',
+        },
+      },
+      { status: 503 },
+    );
+  }
 
   const token = req.cookies.get(COOKIE_ACCESS)?.value;
   const validAccess = token ? await isValidAccess(token) : false;
