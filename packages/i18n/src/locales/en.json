@@ -892,12 +892,20 @@
   },
   "tracking": {
     "title": "Track my order",
-    "subtitle": "Track your delivery status by order number",
-    "notFound": "No order found with this number",
+    "subtitle": "Track your order with the order number and your phone",
+    "notFound": "Order not found. Check the number and phone.",
     "orderNumber": "Order number",
     "courier": "Courier",
     "helpTitle": "Need help?",
-    "helpDesc": "Our support team is available 24/7."
+    "helpDesc": "Our support team is available 24/7.",
+    "phone": "Phone number",
+    "phoneHint": "The number used when placing the order",
+    "placedAt": "Placed on",
+    "itemCount": "{count} items",
+    "total": "Total",
+    "searching": "Searching…",
+    "tooMany": "Too many attempts. Try again in a minute.",
+    "items": "Items"
   },
   "orderSuccess": {
     "title": "Thank you! Your order has been received",

@@ -11,6 +11,7 @@ import {
 } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
 import { StorageNotConfiguredError } from '@ecom/storage';
+import { normalizeUzPhone } from '@ecom/utils';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
@@ -55,7 +56,23 @@ export const createOrderSchema = z.object({
   items: z.array(itemSchema).min(1, "Buyurtmada kamida 1 ta mahsulot bo'lishi kerak"),
   // Manzil ma'lumotlari
   recipientName: z.string().trim().min(2).max(100),
-  phone: z.string().trim().min(9).max(20),
+  // CLAUDE.md qoidasi: telefon FAQAT normalizeUzPhone orqali, E.164 da saqlanadi.
+  // Ilgari bu yerda oddiy string turardi va bazaga foydalanuvchi nima yozgan bo'lsa
+  // o'sha tushardi (masalan '+998 90 123 45 67' probel bilan). Natijada buyurtmani
+  // telefon bo'yicha topib bo'lmasdi — solishtirish hech qachon mos kelmasdi.
+  phone: z
+    .string()
+    .trim()
+    .min(9)
+    .max(20)
+    .transform((v, ctx) => {
+      const normalized = normalizeUzPhone(v);
+      if (!normalized) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Telefon raqami noto'g'ri" });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
   region: z.string().trim().min(2).max(80).default('Toshkent'),
   city: z.string().trim().min(2).max(80),
   street: z.string().trim().min(2).max(200),
