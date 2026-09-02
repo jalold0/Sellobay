@@ -267,6 +267,7 @@
   },
   "product": {
     "addToCart": "В корзину",
+    "freeShipping": "Бесплатная доставка",
     "buyNow": "⚡ Купить сейчас",
     "outOfStock": "Нет в наличии",
     "inStock": "В наличии",

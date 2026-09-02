@@ -211,7 +211,7 @@ export function CheckoutFlow() {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
         <Package className="text-muted-foreground mx-auto h-12 w-12" />
-        <h1 className="text-brand-ink mt-4 font-serif text-2xl font-semibold">{t('emptyTitle')}</h1>
+        <h1 className="text-brand-ink mt-4 text-2xl font-bold">{t('emptyTitle')}</h1>
         <p className="text-muted-foreground mt-2 text-sm">{t('emptyHint')}</p>
         <Link
           href="/catalog"

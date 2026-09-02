@@ -275,7 +275,7 @@ export default function OrderDetailPage() {
 
       {/* Mahsulotlar + summalar */}
       <div className="border-border rounded-[18px] border bg-white p-6 md:p-7">
-        <h2 className="text-brand-ink mb-4 font-serif text-lg font-semibold">{t('items')}</h2>
+        <h2 className="text-brand-ink mb-4 text-lg font-bold">{t('items')}</h2>
         <ul className="divide-y">
           {order.items.map((it) => (
             <li key={it.id} className="flex items-center gap-3 py-3">
