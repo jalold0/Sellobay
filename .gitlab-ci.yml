@@ -23,19 +23,21 @@ variables:
   TURBO_TELEMETRY_DISABLED: '1'
   NEXT_TELEMETRY_DISABLED: '1'
 
-lint-typecheck-build:
+# Verify ikkiga BO'LINGAN, chunki `interruptible` job darajasidagi kalit —
+# uni `rules` ichida shartga bog'lab bo'lmaydi.
+#
+# Nega kerak: main'ga ketma-ket bir nechta MR merge qilinsa, GitLab eski
+# pipeline'larni BEKOR QILARDI ("Canceled"). Kod baribir tekshirilardi —
+# eng oxirgi pipeline hamma merge'ni o'z ichiga oladi — lekin ro'yxatda
+# uchta "Canceled" yozuvi qolardi va u yiqilishdan farq qilmasdi. Pipeline
+# holati shu tariqa ishonchini yo'qotadi.
+#
+# Endi: MR pipeline'lari bekor qilinaveradi (u yerda foydali — yangi push
+# eskisini almashtiradi), main/develop esa oxirigacha ishlaydi va har bir
+# merge commit o'z yashil natijasini oladi.
+.verify-base:
   stage: verify
   image: node:20-bookworm-slim
-  # GitHub'dagi `concurrency: cancel-in-progress` ekvivalenti
-  interruptible: true
-  # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags)
-  rules:
-    # Jadval pipeline'i faqat route-health uchun — bu yerda build shart emas
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
-    - if: $CI_PIPELINE_SOURCE == "web"
   cache:
     key:
       files:
@@ -58,6 +60,24 @@ lint-typecheck-build:
     - pnpm turbo run test
     # Vercel'da deploy bo'ladigan Next.js app'lari
     - pnpm turbo run build --filter=@ecom/web --filter=@ecom/admin --filter=@ecom/seller --filter=@ecom/roadmap
+
+# MR pipeline — yangi push eskisini almashtiradi (CI daqiqalarini tejaydi)
+verify:mr:
+  extends: .verify-base
+  interruptible: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# main/develop — HECH QACHON bekor qilinmaydi: har merge commit tekshirilsin
+verify:main:
+  extends: .verify-base
+  interruptible: false
+  rules:
+    # Jadval pipeline'i faqat route-health uchun — bu yerda build shart emas
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "web"
 
 # Migratsiyani production bazasiga qollash.
 #
