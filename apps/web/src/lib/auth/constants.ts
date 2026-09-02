@@ -7,6 +7,14 @@ function requireEnv(name: string): string {
 }
 
 export const ACCESS_SECRET = process.env.JWT_SECRET ?? '';
+
+/**
+ * Auth sozlanganmi. Middleware buni ALOHIDA holat sifatida ko'radi:
+ * sir yo'qligi — "foydalanuvchi kirmagan" degani EMAS, server sozlanmagan
+ * degani. Ilgari bu farq yo'q edi va sozlama xatosi cheksiz login
+ * aylanmasi bo'lib ko'rinardi.
+ */
+export const AUTH_CONFIGURED = Boolean(process.env.JWT_SECRET);
 export const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? ACCESS_SECRET;
 export const ACCESS_TTL = process.env.JWT_ACCESS_EXPIRES_IN ?? '15m';
 export const REFRESH_TTL_DAYS = 30;
