@@ -14,7 +14,15 @@ import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { unstable_cache } from 'next/cache';
 
 import { prisma } from './db';
-import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
+import {
+  brands as mockBrands,
+  categories as mockCategories,
+  pickLocale,
+  products as mockProducts,
+  type Locale,
+  type LocalizedText,
+  type MockProduct,
+} from './mock-data';
 
 export const CATALOG_CACHE_TAG = 'products';
 const CATALOG_REVALIDATE_SECONDS = 120;
@@ -410,4 +418,87 @@ function filterMock(query: CatalogQuery): MockProduct[] {
       list.sort((a, b) => b.reviewCount - a.reviewCount);
   }
   return list.slice(0, query.limit ?? 48);
+}
+
+// ─── Filtr variantlari (kategoriya / brend) ──────────────────────
+
+export interface FilterOptionRow {
+  slug: string;
+  label: string;
+}
+
+export interface FilterOptions {
+  categories: FilterOptionRow[];
+  brands: FilterOptionRow[];
+  source: 'db' | 'mock';
+}
+
+/**
+ * Katalog filtri uchun kategoriya va brend ro'yxati — BAZADAN.
+ *
+ * Ilgari bu ro'yxat mock-data.ts da qo'lda yozib qo'yilgan edi. Bugun slug'lar
+ * tasodifan bazadagilar bilan mos tushardi, lekin admin panelidan yangi brend
+ * yoki kategoriya qo'shilsa u filtrda UMUMAN ko'rinmasdi va buni hech kim
+ * sezmasdi — filtr jimgina eskirib borardi.
+ */
+async function queryFilterOptionsFromDb(locale: Locale): Promise<FilterOptions> {
+  const [categories, brands] = await Promise.all([
+    prisma.category.findMany({
+      where: { isActive: true, parentId: null },
+      orderBy: [{ position: 'asc' }, { slug: 'asc' }],
+      select: { slug: true, name: true },
+    }),
+    prisma.brand.findMany({
+      orderBy: { name: 'asc' },
+      select: { slug: true, name: true },
+    }),
+  ]);
+
+  return {
+    categories: categories.map((c) => ({
+      slug: c.slug,
+      label: pickLocalizedName(c.name, locale, c.slug),
+    })),
+    brands: brands.map((b) => ({ slug: b.slug, label: b.name })),
+    source: 'db',
+  };
+}
+
+/** Category.name — Json { uz, ru, en }. Tarjima yo`q bo`lsa slug qaytadi. */
+function pickLocalizedName(value: unknown, locale: Locale, fallback: string): string {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const rec = value as Record<string, unknown>;
+    const hit = rec[locale] ?? rec.uz ?? rec.ru ?? rec.en;
+    if (typeof hit === 'string' && hit.trim()) return hit;
+  }
+  return fallback;
+}
+
+const cachedFilterOptions = unstable_cache(
+  queryFilterOptionsFromDb,
+  ['catalog-filter-options-v1'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_CACHE_TAG] },
+);
+
+export async function fetchFilterOptions(locale: Locale): Promise<FilterOptions> {
+  try {
+    const opts = await cachedFilterOptions(locale);
+    // Bo'sh baza — DEV'da mock ko'rsatamiz, production'da bo'sh ro'yxat
+    if (!opts.categories.length && !opts.brands.length && ALLOW_MOCK_FALLBACK) {
+      return mockFilterOptions(locale);
+    }
+    return opts;
+  } catch (err) {
+    console.error('[catalog] fetchFilterOptions DB xato:', err);
+    if (ALLOW_MOCK_FALLBACK) return mockFilterOptions(locale);
+    throw err;
+  }
+}
+
+function mockFilterOptions(locale: Locale): FilterOptions {
+  return {
+    categories: mockCategories.map((c) => ({ slug: c.slug, label: pickLocale(c.name, locale) })),
+    brands: mockBrands.map((b) => ({ slug: b.slug, label: b.name })),
+    source: 'mock',
+  };
 }

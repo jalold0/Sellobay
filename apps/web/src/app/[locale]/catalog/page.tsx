@@ -5,8 +5,8 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { FilterBar } from '../../../components/catalog/filter-bar';
 import { ProductCardClient } from '../../../components/product/product-card-client';
-import { fetchProducts } from '../../../lib/catalog';
-import { brands, categories, findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
+import { fetchFilterOptions, fetchProducts } from '../../../lib/catalog';
+import { type Locale } from '../../../lib/mock-data';
 
 interface CatalogPageProps {
   searchParams: { category?: string; brand?: string; sort?: string; q?: string };
@@ -29,22 +29,24 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const product = await getTranslations('product');
   const common = await getTranslations('common');
 
-  const { items: list } = await fetchProducts({
-    category: searchParams.category,
-    brand: searchParams.brand,
-    q: searchParams.q,
-    sort: searchParams.sort,
-  });
+  // Filtr variantlari BAZADAN — mock-data'dagi qo'lda yozilgan ro'yxat emas.
+  const [{ items: list }, options] = await Promise.all([
+    fetchProducts({
+      category: searchParams.category,
+      brand: searchParams.brand,
+      q: searchParams.q,
+      sort: searchParams.sort,
+    }),
+    fetchFilterOptions(locale),
+  ]);
 
-  const selectedCategory = searchParams.category
-    ? findBySlug(categories, searchParams.category)
-    : undefined;
-  const selectedBrand = searchParams.brand ? findBySlug(brands, searchParams.brand) : undefined;
+  const selectedCategory = options.categories.find((c) => c.slug === searchParams.category);
+  const selectedBrand = options.brands.find((b) => b.slug === searchParams.brand);
 
   const title = selectedCategory
-    ? pickLocale(selectedCategory.name, locale)
+    ? selectedCategory.label
     : selectedBrand
-      ? selectedBrand.name
+      ? selectedBrand.label
       : searchParams.q
         ? t('searchResults', { q: searchParams.q })
         : t('title');
@@ -89,8 +91,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       </header>
 
       <FilterBar
-        categories={categories.map((c) => ({ value: c.slug, label: pickLocale(c.name, locale) }))}
-        brands={brands.map((b) => ({ value: b.slug, label: b.name }))}
+        categories={options.categories.map((c) => ({ value: c.slug, label: c.label }))}
+        brands={options.brands.map((b) => ({ value: b.slug, label: b.label }))}
         sorts={SORT_KEYS.map((key) => ({ value: SORT_VALUES[key], label: t(`sortBy.${key}`) }))}
         active={{
           category: searchParams.category,
