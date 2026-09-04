@@ -531,6 +531,59 @@ async function main() {
   }
   console.info(`[seed] ${pickupPoints.length} pickup point tayyor`);
 
+  // ─── Guruh xaridlari (Group Buy) ──────────────────────────────
+  // Narxlar mahsulotning HAQIQIY basePrice'idan hisoblanadi — qo'lda
+  // yozilgan "chegirma" yo'q. Qatnashchilar soni esa umuman seed
+  // qilinmaydi: u GroupBuyMember jadvalidan sanaladi (boshida 0).
+  const groupBuyPlan: Array<{
+    slug: string;
+    discountPct: number;
+    targetSize: number;
+    days: number;
+  }> = [
+    { slug: 'nike-air-max-270', discountPct: 10, targetSize: 5, days: 3 },
+    { slug: 'adidas-ultraboost-22', discountPct: 12, targetSize: 10, days: 5 },
+    { slug: 'puma-rs-x-sneakers', discountPct: 15, targetSize: 8, days: 2 },
+  ];
+
+  let groupBuyCount = 0;
+  for (const plan of groupBuyPlan) {
+    const product = await prisma.product.findUnique({
+      where: { slug: plan.slug },
+      select: { id: true, basePrice: true },
+    });
+    if (!product) continue; // mahsulot seed'da yo'q bo'lsa — jim o'tkazamiz
+
+    const solo = Number(product.basePrice);
+    // Guruh narxi 1000 so'mgacha yaxlitlanadi (kassa uchun qulay).
+    const groupPrice = Math.round((solo * (1 - plan.discountPct / 100)) / 1000) * 1000;
+    const expiresAt = new Date(Date.now() + plan.days * 24 * 60 * 60 * 1000);
+
+    // Idempotent: shu mahsulot uchun ochiq guruh bo'lsa yangilaymiz, bo'lmasa yaratamiz.
+    const existing = await prisma.groupBuy.findFirst({
+      where: { productId: product.id, status: 'OPEN' },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.groupBuy.update({
+        where: { id: existing.id },
+        data: { soloPrice: solo, groupPrice, targetSize: plan.targetSize, expiresAt },
+      });
+    } else {
+      await prisma.groupBuy.create({
+        data: {
+          productId: product.id,
+          soloPrice: solo,
+          groupPrice,
+          targetSize: plan.targetSize,
+          expiresAt,
+        },
+      });
+    }
+    groupBuyCount++;
+  }
+  console.info(`[seed] ${groupBuyCount} guruh xaridi tayyor`);
+
   console.info('[seed] DONE! Sellobay DB ishga tayyor.');
 }
 

@@ -1,20 +1,27 @@
 import { Badge } from '@ecom/ui';
 import { Gift, Share2, Users } from 'lucide-react';
-import type { Metadata } from 'next';
-import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 
 import { GroupBuyCard } from '../../../components/group-buy/group-buy-card';
-import { getGroupDeals } from '../../../lib/group-buy';
+import { getCurrentUser } from '../../../lib/auth/session';
+import { listActiveDeals } from '../../../lib/group-buy-server';
+
+import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('groupBuy');
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-export default function GroupBuyPage() {
-  const t = useTranslations('groupBuy');
-  const deals = getGroupDeals();
+export default async function GroupBuyPage() {
+  const t = await getTranslations('groupBuy');
+
+  // Haqiqiy guruhlar DB'dan. Hech narsa bo'lmasa — bo'sh holat ko'rsatiladi
+  // (ilgari bu yerda to'qima "aktiv guruhlar" chiqarilardi).
+  const user = await getCurrentUser();
+  const deals = await listActiveDeals(user?.id ?? null);
 
   const steps = [
     { icon: Users, title: t('step1Title'), desc: t('step1Desc') },
@@ -51,7 +58,7 @@ export default function GroupBuyPage() {
                   <Icon size={20} className="text-rose-600" />
                 </div>
                 <h3 className="mt-3 font-semibold">{s.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
+                <p className="text-muted-foreground mt-1 text-sm">{s.desc}</p>
               </div>
             );
           })}
@@ -61,11 +68,19 @@ export default function GroupBuyPage() {
       {/* Active groups */}
       <section>
         <h2 className="mb-4 text-2xl font-bold">{t('activeTitle')}</h2>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {deals.map((deal) => (
-            <GroupBuyCard key={deal.id} deal={deal} />
-          ))}
-        </div>
+        {deals.length === 0 ? (
+          <div className="rounded-2xl border border-dashed p-10 text-center">
+            <Users size={28} className="text-muted-foreground mx-auto" />
+            <p className="mt-3 font-medium">{t('emptyTitle')}</p>
+            <p className="text-muted-foreground mt-1 text-sm">{t('emptyText')}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {deals.map((deal) => (
+              <GroupBuyCard key={deal.id} deal={deal} isLoggedIn={Boolean(user)} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

@@ -797,7 +797,12 @@
     "share": "Ulashish",
     "linkCopied": "Havola nusxalandi",
     "expiresIn": "Tugashiga",
-    "save": "{percent}% tejang"
+    "save": "{percent}% tejang",
+    "emptyTitle": "Hozircha faol guruh yo'q",
+    "emptyText": "Yangi guruh xaridlari tez orada qo'shiladi. Keyinroq qarab turing.",
+    "expired": "Muddat tugadi",
+    "joining": "Qo'shilmoqda...",
+    "joinFailed": "Guruhga qo'shilib bo'lmadi. Birozdan keyin urinib ko'ring."
   },
   "loyalty": {
     "title": "Sello Coins",

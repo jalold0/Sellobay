@@ -790,7 +790,12 @@
     "share": "Share",
     "linkCopied": "Link copied",
     "expiresIn": "Ends in",
-    "save": "Save {percent}%"
+    "save": "Save {percent}%",
+    "emptyTitle": "No active groups yet",
+    "emptyText": "New group buys will appear soon. Check back later.",
+    "expired": "Expired",
+    "joining": "Joining...",
+    "joinFailed": "Could not join the group. Please try again later."
   },
   "loyalty": {
     "title": "Sello Coins",
