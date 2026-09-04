@@ -2,6 +2,8 @@
 // HTTP'ga bog'liq emas — route (interface) faqat parse/auth/rate-limit qilib shu yerga keladi.
 // Biznes-xatolar OrderError bilan tashlanadi; route uni status/code'ga map qiladi.
 
+import { randomInt } from 'crypto';
+
 import {
   SHIPPING_FEE,
   EXPRESS_FEE,
@@ -82,12 +84,40 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
 type CurrentUser = { id: string } | null;
 
-function generateOrderNumber(): string {
-  const year = 2026; // statik — Date.now() server timezone'idan ehtiyot
-  const rand = Math.floor(Math.random() * 99_999_999)
-    .toString()
-    .padStart(8, '0');
+/** Nechta urinishda bo'sh buyurtma raqami izlanadi. */
+const ORDER_NUMBER_ATTEMPTS = 5;
+
+function orderNumberCandidate(): string {
+  // Yil Toshkent kalendaridan olinadi (Asia/Tashkent = UTC+5, DST yo'q), shuning
+  // uchun server timezone'iga bog'liq emas. Avval `2026` statik yozilgan edi —
+  // 2027-yildan boshlab barcha raqamlar noto'g'ri yil bilan chiqardi.
+  const OFFSET_MS = 5 * 60 * 60 * 1000;
+  const year = new Date(Date.now() + OFFSET_MS).getUTCFullYear();
+  // randomInt — CSPRNG va bir tekis. Math.random() parallel serverless
+  // instance'larda korrelyatsiyalanib, to'qnashuv ehtimolini oshiradi.
+  const rand = randomInt(0, 100_000_000).toString().padStart(8, '0');
   return `ORD-${year}-${rand}`;
+}
+
+/**
+ * Bo'sh buyurtma raqamini qaytaradi. `Order.number` UNIQUE — to'qnashuv
+ * bo'lsa Prisma P2002 tashlaydi va mijoz checkout'da 500 oladi. Shuning uchun
+ * yozishdan oldin raqam bo'shligini tekshiramiz.
+ */
+async function generateOrderNumber(): Promise<string> {
+  for (let attempt = 0; attempt < ORDER_NUMBER_ATTEMPTS; attempt++) {
+    const candidate = orderNumberCandidate();
+    const taken = await prisma.order.findUnique({
+      where: { number: candidate },
+      select: { id: true },
+    });
+    if (!taken) return candidate;
+  }
+  throw new OrderError(
+    503,
+    'ORDER_NUMBER_UNAVAILABLE',
+    'Buyurtmani rasmiylashtirish vaqtincha imkonsiz. Birozdan keyin urinib ko`ring.',
+  );
 }
 
 export async function createOrder(input: CreateOrderInput, currentUser: CurrentUser) {
@@ -314,7 +344,7 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   // 5. Order + OrderItems + Ombor + Sello Coins (atomik $transaction)
   //    Order, ombor kamaytirish (DISPATCH), redeem (spend) va earn yozuvlari birga
   //    commit/rollback — balans va zaxira hech qachon buyurtmalar bilan nomuvofiq bo'lmaydi.
-  const orderNumber = generateOrderNumber();
+  const orderNumber = await generateOrderNumber();
   const txResult = await prisma
     .$transaction(async (tx) => {
       // 5a. Promokod — TX ichida tekshirib qo'llaymiz (usedCount race'siz)

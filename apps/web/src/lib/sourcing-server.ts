@@ -6,6 +6,8 @@
 //       narx taklif qiladi (QUOTED) → mijoz qabul/rad etadi (ACCEPTED/REJECTED) →
 //       to'lovdan keyin Order'ga aylanadi (ORDERED).
 
+import { randomInt } from 'crypto';
+
 import {
   DEFAULT_GLOBAL_CONFIG,
   parseSourcingLink,
@@ -51,12 +53,38 @@ function assertOperator(user: CurrentUser): asserts user is { id: string; roles:
   }
 }
 
-function generateRequestNumber(): string {
-  const year = 2026; // statik — server timezone'iga bog'lanmaymiz (orders-server bilan bir xil qoida)
-  const rand = Math.floor(Math.random() * 99_999_999)
-    .toString()
-    .padStart(8, '0');
+/** Nechta urinishda bo'sh zayavka raqami izlanadi. */
+const REQUEST_NUMBER_ATTEMPTS = 5;
+
+function requestNumberCandidate(): string {
+  // Yil Toshkent kalendaridan (Asia/Tashkent = UTC+5, DST yo'q) — server
+  // timezone'iga bog'liq emas. Avval `2026` statik edi: 2027-yildan boshlab
+  // barcha raqamlar noto'g'ri yil bilan chiqardi (orders-server bilan bir xil qoida).
+  const OFFSET_MS = 5 * 60 * 60 * 1000;
+  const year = new Date(Date.now() + OFFSET_MS).getUTCFullYear();
+  // randomInt — CSPRNG va bir tekis (Math.random() emas).
+  const rand = randomInt(0, 100_000_000).toString().padStart(8, '0');
   return `SRQ-${year}-${rand}`;
+}
+
+/**
+ * Bo'sh zayavka raqamini qaytaradi. `SourcingRequest.number` UNIQUE —
+ * to'qnashuvda Prisma P2002 tashlaydi va mijoz 500 oladi.
+ */
+async function generateRequestNumber(): Promise<string> {
+  for (let attempt = 0; attempt < REQUEST_NUMBER_ATTEMPTS; attempt++) {
+    const candidate = requestNumberCandidate();
+    const taken = await prisma.sourcingRequest.findUnique({
+      where: { number: candidate },
+      select: { id: true },
+    });
+    if (!taken) return candidate;
+  }
+  throw new SourcingError(
+    503,
+    'REQUEST_NUMBER_UNAVAILABLE',
+    'Zayavka raqamini ajratib bo`lmadi. Birozdan keyin urinib ko`ring.',
+  );
 }
 
 // ===================================================================
@@ -203,7 +231,7 @@ export async function createSourcingRequest(
 
   const created = await prisma.sourcingRequest.create({
     data: {
-      number: generateRequestNumber(),
+      number: await generateRequestNumber(),
       userId: currentUser.id,
       sourceUrl: input.url.trim().slice(0, 2000),
       normalizedUrl: link.normalizedUrl,
