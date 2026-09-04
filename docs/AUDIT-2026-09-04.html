@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sellobay Audit Hisoboti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ── Tokens: to'liq yorug' palitra bare :root da ───────────────── */
+  :root {
+    --bg:        #EFF1F3;
+    --surface:   #FBFCFD;
+    --surface-2: #E7EAEE;
+    --ink:       #14181D;
+    --ink-2:     #333B45;
+    --muted:     #5A6472;   /* ko'k tomon egilgan kulrang — tanlangan, meros emas */
+    --line:      #D3D8DE;
+    --line-soft: #E2E6EB;
+    --accent:    #0F6E6E;
+    --accent-ink:#0B5252;
+    --accent-wash:#DDEDEC;
+
+    --crit:      #B3261E;
+    --crit-wash: #F7E2E0;
+    --high:      #8F5100;
+    --high-wash: #F8EBD8;
+    --med:       #1F5FA8;
+    --med-wash:  #E0EAF6;
+    --ok:        #1E6E42;
+    --ok-wash:   #DFEEE5;
+
+    --shadow: 0 1px 2px rgba(20, 24, 29, .05), 0 8px 24px -16px rgba(20, 24, 29, .18);
+
+    --sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --serif: 'IBM Plex Serif', ui-serif, Georgia, 'Times New Roman', serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+
+  /* Sistema "dark" (hech qanday stamp yo'q) — faqat tokenlar qayta ta'riflanadi */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #101317;
+      --surface:   #171B21;
+      --surface-2: #1E242B;
+      --ink:       #E7EAEE;
+      --ink-2:     #C2C9D2;
+      --muted:     #8D97A5;
+      --line:      #2A313A;
+      --line-soft: #232A32;
+      --accent:    #4BC8C0;
+      --accent-ink:#7FD9D3;
+      --accent-wash:#14302F;
+
+      --crit:      #FF8A80;
+      --crit-wash: #3A1D1B;
+      --high:      #E8B473;
+      --high-wash: #352714;
+      --med:       #8CB8EA;
+      --med-wash:  #16263A;
+      --ok:        #7FD3A1;
+      --ok-wash:   #142E21;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.7);
+    }
+  }
+
+  /* Aniq "dark" tanlovi — ikki yo'nalishda ham toggle ustun bo'lsin */
+  :root[data-theme="dark"] {
+    --bg:        #101317;
+    --surface:   #171B21;
+    --surface-2: #1E242B;
+    --ink:       #E7EAEE;
+    --ink-2:     #C2C9D2;
+    --muted:     #8D97A5;
+    --line:      #2A313A;
+    --line-soft: #232A32;
+    --accent:    #4BC8C0;
+    --accent-ink:#7FD9D3;
+    --accent-wash:#14302F;
+
+    --crit:      #FF8A80;
+    --crit-wash: #3A1D1B;
+    --high:      #E8B473;
+    --high-wash: #352714;
+    --med:       #8CB8EA;
+    --med-wash:  #16263A;
+    --ok:        #7FD3A1;
+    --ok-wash:   #142E21;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);          /* aniq ko'rsatilgan — host ground'ini olmaydi */
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1.1rem, 4vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  /* ── Sarlavha ──────────────────────────────────────────────────── */
+  header { display: flex; flex-direction: column; gap: 1.35rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
+  }
+  .eyebrow .tick { width: 1.6rem; height: 1px; background: var(--accent); display: inline-block; }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.05rem, 5.2vw, 3.1rem);
+    line-height: 1.08;
+    letter-spacing: -.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede {
+    font-size: clamp(1rem, 1.6vw, 1.11rem);
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.5rem;
+    font-family: var(--mono); font-size: .78rem; color: var(--muted);
+    border-top: 1px solid var(--line); padding-top: 1rem;
+  }
+  .meta b { color: var(--ink-2); font-weight: 500; }
+
+  /* ── Tekshiruv paneli ──────────────────────────────────────────── */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 1px;
+    background: var(--line-soft);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .cell { background: var(--surface); padding: .95rem 1.05rem; display: flex; flex-direction: column; gap: .3rem; }
+  .cell .k { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .cell .v { font-family: var(--mono); font-size: 1.32rem; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
+  .cell .n { font-size: .76rem; color: var(--muted); }
+  .cell .v.pass { color: var(--ok); }
+
+  /* ── Bo'limlar ─────────────────────────────────────────────────── */
+  section { display: flex; flex-direction: column; gap: 1.2rem; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.42rem;
+    letter-spacing: -.01em;
+    margin: 0;
+    padding-bottom: .55rem;
+    border-bottom: 2px solid var(--ink);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  }
+  h2 .count {
+    font-family: var(--mono); font-size: .78rem; font-weight: 400;
+    color: var(--muted); letter-spacing: .06em; white-space: nowrap;
+  }
+  .sec-note { color: var(--muted); font-size: .92rem; margin: -.35rem 0 0; max-width: 66ch; }
+
+  /* ── Topilma kartasi ───────────────────────────────────────────── */
+  .find {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--sev, var(--line));
+    border-radius: 3px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: .7rem;
+  }
+  .find.crit { --sev: var(--crit); }
+  .find.high { --sev: var(--high); }
+  .find.med  { --sev: var(--med);  }
+  .find.info { --sev: var(--accent); }
+
+  .find-top { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+
+  .chip {
+    font-family: var(--mono); font-size: .66rem; font-weight: 500;
+    letter-spacing: .09em; text-transform: uppercase;
+    padding: .2rem .5rem; border-radius: 2px; white-space: nowrap;
+  }
+  .chip.crit { background: var(--crit-wash); color: var(--crit); }
+  .chip.high { background: var(--high-wash); color: var(--high); }
+  .chip.med  { background: var(--med-wash);  color: var(--med);  }
+  .chip.ok   { background: var(--ok-wash);   color: var(--ok);   }
+  .chip.acc  { background: var(--accent-wash); color: var(--accent-ink); }
+
+  .find h3 {
+    font-family: var(--sans); font-weight: 600; font-size: 1.03rem;
+    margin: 0; line-height: 1.35; flex: 1 1 18rem; text-wrap: balance;
+  }
+  .find p { margin: 0; color: var(--ink-2); }
+  .find p + p { margin-top: -.1rem; }
+  .find .label {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: .12rem;
+  }
+  .path {
+    font-family: var(--mono); font-size: .78rem; color: var(--muted);
+    word-break: break-all; border-top: 1px dashed var(--line); padding-top: .6rem;
+  }
+  .path b { color: var(--accent-ink); font-weight: 500; }
+
+  /* Ketma-ketlik (buzilish zanjiri) */
+  .chain {
+    list-style: none; margin: 0; padding: .75rem .9rem;
+    background: var(--surface-2); border-radius: 3px;
+    display: flex; flex-direction: column; gap: .3rem;
+    font-family: var(--mono); font-size: .78rem; color: var(--ink-2);
+    overflow-x: auto;
+  }
+  .chain li { display: flex; gap: .55rem; align-items: flex-start; }
+  .chain li::before { content: '→'; color: var(--crit); flex: none; }
+  .chain li:first-child::before { content: '·'; color: var(--muted); }
+
+  .stack { display: flex; flex-direction: column; gap: .85rem; }
+
+  /* ── Toza chiqqan tekshiruvlar ─────────────────────────────────── */
+  .clean { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px;
+           grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+           background: var(--line-soft); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .clean li { background: var(--surface); padding: .8rem .95rem; display: flex; gap: .6rem; align-items: flex-start; font-size: .91rem; }
+  .clean li::before { content: '✓'; color: var(--ok); font-weight: 600; flex: none; }
+  .clean b { font-weight: 600; }
+
+  /* ── Kod ───────────────────────────────────────────────────────── */
+  .code {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 3px; padding: .85rem 1rem;
+    font-family: var(--mono); font-size: .8rem; line-height: 1.65;
+    color: var(--ink-2); overflow-x: auto; margin: 0;
+    white-space: pre;
+  }
+  .code .c { color: var(--muted); }
+
+  /* ── Keyingi qadamlar ──────────────────────────────────────────── */
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .9rem; counter-reset: s; }
+  .steps > li {
+    counter-increment: s;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 3px;
+    padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: .55rem;
+  }
+  .steps > li > .hd { display: flex; gap: .7rem; align-items: baseline; }
+  .steps > li > .hd::before {
+    content: counter(s); font-family: var(--mono); font-size: .78rem; font-weight: 500;
+    color: var(--accent-ink); background: var(--accent-wash);
+    border-radius: 2px; padding: .1rem .45rem; flex: none;
+  }
+  .steps > li > .hd > span { font-weight: 600; }
+
+  footer {
+    border-top: 1px solid var(--line); padding-top: 1.2rem;
+    font-family: var(--mono); font-size: .76rem; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: .4rem 1.4rem;
+  }
+
+  a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body style="margin:0">
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow"><span class="tick"></span>Sellobay · to'liq audit · 2026-09-04</div>
+    <h1>Sellobay audit hisoboti</h1>
+    <p class="lede">
+      Monorepo to'liq tekshirildi: tip xavfsizligi, avtorizatsiya, pul oqimi, poyga holatlari
+      (race condition) va to'qima ma'lumot. Sakkiz haqiqiy nuqson topildi — oltitasi tuzatildi,
+      bittasi haqiqiy backend bilan qayta qurildi, bittasi migratsiya sifatida tayyorlandi.
+      Eng jiddiylari uchtasi pul yo'lida edi.
+    </p>
+    <div class="meta">
+      <span><b>Qamrov:</b> 517 fayl · ~56 000 satr</span>
+      <span><b>Branch:</b> fix/audit-tolov-va-guruh-xaridi</span>
+      <span><b>Commit:</b> 6 ta</span>
+      <span><b>Baza:</b> tegilmagan</span>
+    </div>
+  </header>
+
+  <!-- ── Tekshiruv natijalari ──────────────────────────────────── -->
+  <section>
+    <h2>Tekshiruv holati <span class="count">hammasi yashil</span></h2>
+    <div class="board">
+      <div class="cell"><span class="k">typecheck</span><span class="v pass">16/16</span><span class="n">xato yo'q</span></div>
+      <div class="cell"><span class="k">test</span><span class="v pass">149</span><span class="n">+24 yangi</span></div>
+      <div class="cell"><span class="k">lint</span><span class="v pass">0</span><span class="n">error</span></div>
+      <div class="cell"><span class="k">build</span><span class="v pass">✓</span><span class="n">web compiled</span></div>
+      <div class="cell"><span class="k">prisma</span><span class="v pass">✓</span><span class="n">schema valid</span></div>
+      <div class="cell"><span class="k">i18n</span><span class="v pass">950</span><span class="n">uz/ru/en · 0 farq</span></div>
+    </div>
+    <p class="sec-note">
+      Guruh xaridining ishlashini <em>jonli</em> tekshirib bo'lmadi: <code>DATABASE_URL</code> Neon
+      (production) ga qaragan va lokal Postgres uchun Docker yo'q. Shu sababli migratsiya
+      qo'llanmadi — pastdagi «Keyingi qadamlar» ga qaralsin.
+    </p>
+  </section>
+
+  <!-- ── Tuzatilgan nuqsonlar ──────────────────────────────────── -->
+  <section>
+    <h2>Tuzatilgan nuqsonlar <span class="count">6 ta · commit qilingan</span></h2>
+
+    <div class="stack">
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Bekor qilingan buyurtma Payme orqali qayta «to'langan» bo'lib qolardi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          Payme <code>PerformTransaction</code> buyurtma holatini qayta tekshirmasdi. Holat faqat
+          <code>CheckPerformTransaction</code> va <code>CreateTransaction</code> da tekshirilardi —
+          ya'ni tranzaksiya yaratilgandan <em>keyin</em> buyurtma o'zgarsa, hech kim sezmasdi.</p>
+        <ul class="chain">
+          <li>buyurtma PENDING · Payme CreateTransaction o'tdi</li>
+          <li>mijoz buyurtmani bekor qildi</li>
+          <li>zaxira omborga qaytdi · Sello Coins qaytarildi · promokod bo'shatildi</li>
+          <li>Payme PerformTransaction chaqirdi</li>
+          <li>buyurtma majburan PAID — pul olindi, lekin tovar allaqachon boshqaga sotilishi mumkin</li>
+        </ul>
+        <p><span class="label">Nega bu nuqson, qaror emas</span>
+          Click webhook'ida aynan shu himoya bor edi (<code>ERR_TRANS_CANCELLED</code>), Payme'da
+          yo'q edi. Ikki qo'shni implementatsiya orasidagi asimmetriya — e'tibordan chetda qolgani
+          aniq.</p>
+        <p class="path"><b>apps/web/src/app/api/payments/payme/route.ts</b> — <code>PAYABLE_STATUSES</code> tekshiruvi Perform ichiga qo'shildi</p>
+      </article>
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Onlayn to'langan har bir buyurtmada <code>paidTotal</code> nol bo'lib qolardi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          Click va Payme webhook'lari faqat <code>status</code> va <code>paidAt</code> yozardi.
+          <code>Order.paidTotal</code> ga tegmasdi — natijada bazada buyurtma PAID, lekin
+          «qancha pul tushdi» maydoni <code>0</code>. <code>refundedTotal</code> esa loyihada
+          umuman hech qachon yozilmagan.</p>
+        <p><span class="label">Nega bu muhim</span>
+          Admin qo'lda tasdiqlash oqimi va COD oqimi <code>paidTotal</code> ni to'g'ri to'ldiradi.
+          Ya'ni bir xil maydon to'lov usuliga qarab turlicha ishlatilardi — bu maydonni o'qigan
+          har qanday moliyaviy hisobot onlayn tushumni nol deb ko'rsatadi. Hozir uni o'qiydigan
+          hisobot yo'q, shuning uchun xato hali «tashqariga chiqmagan» — lekin ma'lumot
+          allaqachon buzuq yozilardi.</p>
+        <p class="path"><b>payments/click/route.ts</b> · <b>payments/payme/route.ts</b> — <code>paidTotal</code> yoziladi; Payme bekor qilishda <code>refundedTotal</code> to'ldiriladi va <code>paidTotal</code> nolga tushadi</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">O'rta-yuqori</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Buyurtma raqamida yil qotib qolgan, to'qnashuv himoyasi esa yo'q edi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          <code>const year = 2026</code> — statik yozilgan. 2027-yil 1-yanvardan boshlab barcha
+          buyurtmalar <code>ORD-2026-…</code> bo'lib chiqardi. Ikkinchisi: <code>Order.number</code>
+          va <code>SourcingRequest.number</code> <code>UNIQUE</code>, lekin raqam
+          <code>Math.random()</code> bilan tanlanib, bandligi tekshirilmasdi — to'qnashganda
+          Prisma <code>P2002</code> tashlaydi va mijoz <em>checkout'da</em> 500 oladi.</p>
+        <p><span class="label">Endi qanday</span>
+          Yil Toshkent kalendaridan olinadi (UTC+5, DST yo'q) — statik yozishning asl sababi,
+          server timezone'iga bog'lanmaslik, saqlanadi. Raqam <code>randomInt</code> (CSPRNG) bilan
+          tanlanadi va yozishdan oldin bo'shligi tekshiriladi; 5 urinishdan keyin tushunarli 503.</p>
+        <p class="path"><b>lib/orders-server.ts</b> · <b>lib/sourcing-server.ts</b></p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">O'rta-yuqori</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Mobil ilova production'da to'qima «global» mahsulot ko'rsatardi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          <code>fetchProduct()</code> da <code>g-</code> bilan boshlanadigan slug mock ro'yxatdan
+          qaytarilardi va bu qator <code>__DEV__</code> bilan o'ralmagan edi — yonidagi
+          <code>fetchProducts()</code> esa to'g'ri o'ralgan. Mijoz bunday havolani ochsa,
+          o'ylab chiqarilgan narx, reyting 4.6, 3 400 sharh va 12 000 «sotilgan» ko'rardi.</p>
+        <p><span class="label">Qo'shimcha zarar</span>
+          Bu mahsulotlarning id'si UUID emas (<code>g1</code>) — savatga qo'shilsa, checkout uni
+          rad etardi. Bu loyihada avval ham ko'rilgan «Invalid uuid» muammosining ayni manbai.</p>
+        <p class="path"><b>apps/mobile/src/lib/api/catalog.ts</b> — <code>__DEV__</code> bilan o'raldi</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Admin va sotuvchi panellari middleware'da rolni tekshirmasdi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          Uchta ilova (web, admin, seller) ayni <code>JWT_SECRET</code> va ayni cookie nomidan
+          (<code>sb_at</code>) foydalanadi. Middleware faqat <code>jwtVerify()</code> qilib,
+          payload ichidagi rollarga qaramasdi — ya'ni oddiy xaridorning storefront tokeni
+          admin panelining middleware tekshiruvidan o'tib ketardi.</p>
+        <p><span class="label">Haqiqiy ta'siri — cheklangan</span>
+          Ma'lumot oshkor bo'lmagan: barcha admin/seller API route'larida rol tekshiruvi bor
+          (<code>global/*</code> esa server qatlamida <code>assertOperator</code> qiladi), va panel
+          sahifalari client component — ma'lumotni o'sha himoyalangan API'dan oladi. Shu sababli
+          bu ikkinchi himoya qatlami. Lekin «barcha yo'llar himoyalangan» deb yozilgan middleware
+          uchun tekshiruvning o'zi noto'g'ri edi.</p>
+        <p class="path"><b>apps/admin/src/middleware.ts</b> · <b>apps/seller/src/middleware.ts</b> — ruxsat etilgan rollar login route'laridagi ro'yxat bilan bir xil</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>To'lov imzosi va kaliti doimiy vaqtda taqqoslanmasdi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          Click imzosi <code>expected !== signString</code>, Payme kaliti
+          <code>decoded === "Paycom:" + key</code> bilan tekshirilardi. Oddiy taqqoslash birinchi
+          farqli baytda to'xtaydi — javob vaqtidagi farq orqali imzoni bayt-bayt topish
+          (timing attack) nazariy jihatdan mumkin.</p>
+        <p><span class="label">Endi qanday</span>
+          Ikkalasi ham <code>crypto.timingSafeEqual</code> ga o'tkazildi; uzunlik farq qilsa
+          darhol <code>false</code>.</p>
+        <p class="path"><b>payments/click/route.ts</b> · <b>payments/payme/route.ts</b></p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ── Guruh xaridi ──────────────────────────────────────────── -->
+  <section>
+    <h2>Guruh xaridi: to'qimadan haqiqiy backend'ga <span class="count">qayta qurildi</span></h2>
+
+    <article class="find crit">
+      <div class="find-top">
+        <span class="chip crit">Jiddiy</span>
+        <span class="chip acc">Backend qurildi</span>
+        <h3><code>/group-buy</code> sahifasi butunlay o'ylab chiqarilgan edi</h3>
+      </div>
+      <p><span class="label">Nima bo'lgan</span>
+        Sahifa mijozlarga ochiq edi — footer va promo-banner'dan havola bor. Lekin ortida
+        hech narsa yo'q edi:</p>
+      <ul class="chain">
+        <li>bazada <code>GroupBuy</code> modeli umuman yo'q edi</li>
+        <li>qatnashchilar soni qo'lda yozilgan: 3/5, 7/10, 14/20</li>
+        <li>chegirmalar 25–50% — o'ylab chiqarilgan, mock mahsulot narxidan hisoblangan</li>
+        <li>taymer <code>Date.now() + hoursLeft</code> — har sahifa yangilanganda 21:00:00 ga qaytardi</li>
+        <li>«Qo'shilish» tugmasi faqat local state o'zgartirardi — hech qayerga saqlanmasdi</li>
+      </ul>
+      <p>Ya'ni mijozga soxta chegirma, soxta tanqislik va soxta ijtimoiy dalil ko'rsatilardi;
+        tugma esa «qo'shildingiz» deb yolg'on aytardi — refresh'da hammasi yo'qolardi.</p>
+      <p><span class="label">Endi qanday ishlaydi</span>
+        Sizning qaroringizga ko'ra sahifa olib tashlanmadi, balki ostiga haqiqiy backend qurildi:</p>
+      <ul class="chain">
+        <li><b>Domen</b> — <code>@ecom/core-domain/group-buy</code>: sof qoidalar (<code>canJoin</code>, <code>statusAfterJoin</code>, <code>effectiveStatus</code>…). Vaqt parametr sifatida olinadi, <code>Date.now()</code> ga yashirin bog'lanish yo'q. 24 test.</li>
+        <li><b>Baza</b> — <code>GroupBuy</code> + <code>GroupBuyMember</code>. Narxlar snapshot: guruh ochilgandan keyin katalogda narx o'zgarsa ham a'zolar ko'rgan narx o'zgarmaydi.</li>
+        <li><b>Servis</b> — qatnashchilar soni <code>GroupBuyMember</code> dan <em>sanaladi</em>. Qo'shilish atomik <code>$transaction</code>; oxirgi joy to'lsa status COMPLETED. Ikki marta bosish <code>@@unique([groupBuyId, userId])</code> bilan DB darajasida to'xtaydi.</li>
+        <li><b>API</b> — <code>GET /api/group-buy</code> (auth ixtiyoriy), <code>POST/DELETE /api/group-buy/:id/join</code> (login majburiy, rate-limit).</li>
+        <li><b>UI</b> — taymer serverdan kelgan <code>expiresAt</code> dan hisoblanadi. Tugma haqiqiy API chaqiradi va sonni serverdan kelgan qiymat bilan yangilaydi. Guruh bo'lmasa «hozircha faol guruh yo'q» — mock fallback yo'q.</li>
+        <li><b>Seed</b> — guruh narxi mahsulotning haqiqiy <code>basePrice</code> idan hisoblanadi; qatnashchilar soni seed qilinmaydi, noldan boshlanadi.</li>
+      </ul>
+      <p class="path"><b>packages/core-domain/src/group-buy.ts</b> · <b>apps/web/src/lib/group-buy-server.ts</b> · <b>apps/web/src/app/api/group-buy/…</b> · i18n uz/ru/en</p>
+    </article>
+  </section>
+
+  <!-- ── Migratsiya ────────────────────────────────────────────── -->
+  <section>
+    <h2>Tayyorlangan, qo'llanmagan <span class="count">migratsiya · siz ishga tushirasiz</span></h2>
+
+    <article class="find med">
+      <div class="find-top">
+        <span class="chip med">O'rta</span>
+        <span class="chip high">Kutilmoqda</span>
+        <h3><code>Payment.externalId</code> da UNIQUE cheklov yo'q edi</h3>
+      </div>
+      <p><span class="label">Nima bo'lgan</span>
+        Faqat oddiy index bor edi (<code>@@index([provider, externalId])</code>). Ketma-ket
+        qayta chaqiruvlar kod darajasida allaqachon himoyalangan, lekin <em>parallel</em>
+        webhook chaqiruvlari (Click Complete retry, Payme <code>CreateTransaction</code>) bitta
+        to'lov uchun ikki <code>Payment</code> qatori yaratishi mumkin edi.</p>
+      <p><span class="label">Nega muhim</span>
+        Bu Payme idempotentligini va <code>GetStatement</code> hisobotini buzadi — Payme
+        sertifikatsiyasi aynan shu ikkisini tekshiradi.</p>
+      <p><span class="label">Holati</span>
+        Schema o'zgartirildi va migratsiya fayli yaratildi, lekin <b>bazaga qo'llanmadi</b>.
+        <code>migration.sql</code> boshida ogohlantirish bor: bazada takrorlangan
+        <code>(provider, externalId)</code> juftligi bo'lsa unique index xato beradi.
+        <code>NULL</code> qiymatlar (COD, qo'lda karta) cheklovga tushmaydi.</p>
+      <p class="path"><b>packages/database/prisma/migrations/20260904000000_group_buy_and_payment_unique/</b><br>
+      Baselining commit'ida tushib qolgan <b>migration_lock.toml</b> ham qo'shildi — u bo'lmasa <code>prisma migrate diff</code> ishlamaydi.</p>
+    </article>
+  </section>
+
+  <!-- ── Keyingi qadamlar ──────────────────────────────────────── -->
+  <section>
+    <h2>Keyingi qadamlar <span class="count">sizning tomondan</span></h2>
+    <p class="sec-note">Migratsiya bazani o'zgartiradi, shuning uchun uni o'zingiz ishga tushirasiz. Tartib muhim: avval dublikat tekshiruvi.</p>
+    <ol class="steps">
+      <li>
+        <div class="hd"><span>Dublikat bor-yo'qligini tekshiring</span></div>
+        <p>Natija bo'sh bo'lsa — migratsiya xavfsiz. Qator chiqsa, avval qaysi biri haqiqiy to'lov ekanini <code>rawPayload</code> va <code>paidAt</code> bo'yicha aniqlab, keraksizini o'chirish kerak.</p>
+        <pre class="code">SELECT provider, "externalId", COUNT(*)
+FROM "Payment"
+WHERE "externalId" IS NOT NULL
+GROUP BY provider, "externalId"
+HAVING COUNT(*) &gt; 1;</pre>
+      </li>
+      <li>
+        <div class="hd"><span>Migratsiyani qo'llang</span></div>
+        <p>GroupBuy jadvallari va Payment UNIQUE indeksi birga keladi.</p>
+        <pre class="code">pnpm db:migrate:deploy</pre>
+      </li>
+      <li>
+        <div class="hd"><span>Seed'ni yangilang</span></div>
+        <p>Uchta haqiqiy guruh xaridi yaratiladi (narx mahsulotning <code>basePrice</code> idan; qatnashchilar noldan). Seed idempotent.</p>
+        <pre class="code">pnpm db:seed</pre>
+      </li>
+      <li>
+        <div class="hd"><span>Merge request oching</span></div>
+        <p>Branch GitLab'ga push qilingan. Uydagi kompyuterda: <code>git fetch && git checkout fix/audit-tolov-va-guruh-xaridi</code></p>
+        <pre class="code">gitlab.com/jalold0/Sellobay/-/merge_requests/new
+  ?merge_request[source_branch]=fix/audit-tolov-va-guruh-xaridi</pre>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── Toza chiqqan joylar ───────────────────────────────────── -->
+  <section>
+    <h2>Tekshirildi va toza chiqdi <span class="count">signal emas — dalil</span></h2>
+    <p class="sec-note">Auditda «xato topilmadi» ham natija. Quyidagilar maxsus tekshirildi va to'g'ri ishlaydi — kelgusida qayta tekshirishga hojat yo'q.</p>
+    <ul class="clean">
+      <li><span><b>Pul har doim Decimal.</b> Schema'da barcha pul maydonlari <code>Decimal(14,2)</code>; <code>createOrder</code> <code>Prisma.Decimal</code> bilan hisoblaydi. Hech qayerda <code>float</code> yo'q.</span></li>
+      <li><span><b>Klient narxiga ishonilmaydi.</b> <code>createOrder</code> narxni bazadagi <code>basePrice</code> dan qayta hisoblaydi — narx bilan o'ynash mumkin emas.</span></li>
+      <li><span><b>Oversell himoyasi to'g'ri.</b> Shartli <code>UPDATE … WHERE quantityOnHand &gt;= qty</code> — Postgres qatorni lock qiladi, oxirgi donani ikki kishi olmaydi.</span></li>
+      <li><span><b>Bekor qilish/qaytarish atomik.</b> Holat o'tishi <code>updateMany</code> + <code>count === 0</code> tekshiruvi bilan — double-restock va double-refund oldini oladi.</span></li>
+      <li><span><b>Refresh token JWT emas.</b> Opaque tasodifiy token, bazada SHA-256 hash bilan; rotatsiyada eskisi revoke qilinadi. Token turini almashtirish (type confusion) mumkin emas.</span></li>
+      <li><span><b>Sirlar kodda yo'q.</b> Hardcode qilingan fallback topilmadi; <code>requireEnv</code> qo'riqlaydi.</span></li>
+      <li><span><b>Admin API rol tekshiruvi to'liq.</b> 22 route tekshirildi; <code>global/*</code> route'lari server qatlamida <code>assertOperator</code> qiladi (route faylida ko'rinmaydi, lekin bor).</span></li>
+      <li><span><b>Katalog mock fallback'i dev'ga bog'langan.</b> <code>ALLOW_MOCK_FALLBACK</code> production'da o'chiq — bo'sh baza bo'sh ro'yxat beradi, to'qima mahsulot emas.</span></li>
+      <li><span><b>Tip xavfsizligi kuchli.</b> 16/16 typecheck; butun kod bazasida faqat 3 ta haqiqiy <code>any</code>; <code>@ts-ignore</code> yo'q.</span></li>
+      <li><span><b>i18n locale pariteti mukammal.</b> uz/ru/en — 950 kalit, 0 farq.</span></li>
+      <li><span><b>Mehmon uchun chek yuklash himoyalangan.</b> Auth yo'q, lekin rate-limit + yopiq saqlash + magic-byte tekshiruvi bor. Bu ataylab qilingan qaror, izohlangan.</span></li>
+      <li><span><b>Payme bekor qilishda loyalty qaytariladi.</b> <code>reverseOrderLoyalty</code> tranzaksiya ichida chaqiriladi.</span></li>
+    </ul>
+  </section>
+
+  <!-- ── Qolgan ishlar ─────────────────────────────────────────── -->
+  <section>
+    <h2>Tuzatilmadi — ongli ravishda <span class="count">3 ta · backlog</span></h2>
+    <p class="sec-note">Bular haqiqiy kamchilik, lekin ularni «tuzatish» audit doirasidan chiqadi: har biri alohida loyiha. Qamrovni o'zim qisqartirmadim — qaror sizniki.</p>
+
+    <div class="stack">
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">Muhim</span>
+          <span class="chip med">Backlog</span>
+          <h3>Ilovalarda test umuman yo'q — 149 testning hammasi <code>packages/*</code> da</h3>
+        </div>
+        <p><code>apps/web</code>, <code>apps/admin</code>, <code>apps/seller</code>,
+          <code>apps/mobile</code> — to'rttasida ham <code>test</code> script'i yo'q. Ya'ni
+          37 API route, <code>orders-server</code>, to'lov webhook'lari va ombor logikasi
+          testsiz. Bu hisobotdagi eng jiddiy uch nuqsonning hammasi aynan shu testsiz
+          qatlamda edi.</p>
+        <p><span class="label">Tavsiya</span>
+          Eng katta foyda: to'lov webhook'lari uchun integratsiya testlari (bekor qilingan
+          buyurtmaga Perform, takroriy Complete, noto'g'ri imzo) va <code>createOrder</code>
+          uchun narx/zaxira testlari.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip med">Backlog</span>
+          <h3>21 statik sahifa i18n'dan tashqarida</h3>
+        </div>
+        <p>Locale fayllari mukammal (950 kalit, 0 farq), lekin
+          <code>about</code>, <code>terms</code>, <code>privacy</code>, <code>faq</code>,
+          <code>help</code>, <code>delivery</code>, <code>returns</code>, <code>careers</code>
+          va boshqa 13 sahifa <code>useTranslations</code> ni umuman ishlatmaydi — matn to'g'ridan-to'g'ri
+          JSX ichida.</p>
+        <p><span class="label">Nega tuzatmadim</span>
+          Bu yuzlab satr huquqiy va marketing matnini uch tilga o'girish kerak degani.
+          Tarjimani o'zim to'qib yozmaganim to'g'ri — ayniqsa <code>terms</code> va
+          <code>privacy</code> uchun. Loyiha bu ishni bosqichma-bosqich qilib kelgan
+          (oxirgi commit har sahifada ko'rinadigan komponentlarni o'tkazgan).</p>
+      </article>
+
+      <article class="find info">
+        <div class="find-top">
+          <span class="chip acc">Kichik</span>
+          <span class="chip med">Backlog</span>
+          <h3>O'lik konfiguratsiya: <code>REFRESH_SECRET</code> va <code>signRefreshToken</code></h3>
+        </div>
+        <p>Refresh token JWT emas (opaque + DB hash), shuning uchun
+          <code>packages/auth/src/jwt.ts</code> dagi <code>signRefreshToken</code> va
+          <code>constants.ts</code> dagi <code>REFRESH_SECRET</code> hech qayerda
+          ishlatilmaydi. Zarari yo'q, lekin o'quvchini chalg'itadi — kimdir
+          <code>JWT_REFRESH_SECRET</code> ni sozlashga urinishi mumkin.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    <span>6 commit · fix/audit-tolov-va-guruh-xaridi</span>
+    <span>typecheck 16/16 · test 149 · lint 0 error · build ✓</span>
+    <span>baza o'zgartirilmadi</span>
+  </footer>
+
+</div>
+</body>
+</html>
