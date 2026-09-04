@@ -38,3 +38,14 @@ export function applyDiscount(price: number, discountPercent: number): number {
   if (discountPercent <= 0) return price;
   return Math.max(0, price - (price * discountPercent) / 100);
 }
+
+/**
+ * Chegirma foizi. Karta va mahsulot sahifasi bir xil son ko'rsatishi uchun
+ * hisob BITTA joyda — ilgari u @ecom/ui ichida takrorlangan edi.
+ *
+ * Eski narx yo'q yoki yangisidan katta bo'lmasa — chegirma yo'q (0).
+ */
+export function discountPercent(price: number, oldPrice?: number | null): number {
+  if (!oldPrice || oldPrice <= price) return 0;
+  return Math.round(100 - (price / oldPrice) * 100);
+}

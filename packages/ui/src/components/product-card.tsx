@@ -1,6 +1,8 @@
 import { Eye, Heart, ShoppingBag, Star, Truck } from 'lucide-react';
 import * as React from 'react';
 
+import { discountPercent, formatMoney, type CurrencyCode } from '@ecom/utils';
+
 import { cn } from '../lib/cn';
 
 // UI paketi i18n kontekstiga ega emas — barcha user-facing matn chaqiruvchidan keladi
@@ -20,7 +22,7 @@ export interface ProductCardProps {
   href: string;
   price: number;
   oldPrice?: number;
-  currency?: string;
+  currency?: CurrencyCode;
   locale?: string;
   rating?: number;
   reviewCount?: number;
@@ -56,16 +58,10 @@ const BADGE_CFG: Record<NonNullable<ProductCardProps['badge']>, { label: string;
   TOP: { label: 'TOP', cls: 'bg-brand-gold text-brand-crimson-deep' },
 };
 
-// Deterministik price format — chiziqli eski narx + crimson yangi narx
-function formatPrice(value: number, currency = 'UZS'): string {
-  const fixed = Math.abs(Math.trunc(value)).toString();
-  const grouped = fixed.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  const num = value < 0 ? `-${grouped}` : grouped;
-  if (currency === 'UZS') return `${num} so'm`;
-  if (currency === 'USD') return `$${num}`;
-  if (currency === 'EUR') return `€${num}`;
-  return `${num} ${currency}`;
-}
+// Narx formatlash va chegirma foizi @ecom/utils da — savat, mahsulot sahifasi
+// va karta BIR XIL satr chiqarishi uchun. Ilgari bu yerda alohida nusxa turardi
+// va u oddiy probel ishlatardi (utils esa uzilmas probel), ya'ni kartada narx
+// satr oxirida bo'linib ketishi mumkin edi.
 
 const NativeLink = (props: { href: string; className?: string; children: React.ReactNode }) => (
   <a href={props.href} className={props.className}>
@@ -123,7 +119,7 @@ export function ProductCard({
   LinkComponent = NativeLink,
   ImageComponent = NativeImage,
 }: ProductCardProps) {
-  const discountPct = oldPrice && oldPrice > price ? Math.round(100 - (price / oldPrice) * 100) : 0;
+  const discountPct = discountPercent(price, oldPrice);
   const badgeCfg = badge ? BADGE_CFG[badge] : null;
   const lowStock = stockLeft !== undefined && stockLeft > 0 && stockLeft <= 5;
   const stockBarPct = stockLeft !== undefined ? Math.min(100, (stockLeft / 20) * 100) : 0;
@@ -230,11 +226,11 @@ export function ProductCard({
               discounted ? 'text-primary' : 'text-brand-ink',
             )}
           >
-            {formatPrice(price, currency)}
+            {formatMoney(price, currency)}
           </span>
           {discounted && (
             <span className="text-[12.5px] text-[#9a9aa2] line-through">
-              {formatPrice(oldPrice as number, currency)}
+              {formatMoney(oldPrice as number, currency)}
             </span>
           )}
         </div>
