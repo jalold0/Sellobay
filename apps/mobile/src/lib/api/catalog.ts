@@ -104,9 +104,14 @@ export async function fetchProducts(params: FetchProductsParams = {}): Promise<M
 
 /** Bitta mahsulot — slug bo'yicha. */
 export async function fetchProduct(slug: string): Promise<MockProduct | null> {
-  // Global demo katalogi (slug 'g-') — API'da yo'q, to'g'ridan-to'g'ri mock'dan
-  const global = globalProducts.find((p) => p.slug === slug);
-  if (global) return global;
+  // Global demo katalogi (slug 'g-') — FAQAT dev. Ilgari bu qator prod'da ham
+  // ishlagan: mijoz 'g-' havolasini ochsa to'qima mahsulot (soxta narx, reyting,
+  // sotilgan soni) ko'rsatilardi va uning id'si UUID emasligi uchun savatga
+  // qo'shilgan tovar checkout'da rad etilardi.
+  if (__DEV__) {
+    const global = globalProducts.find((p) => p.slug === slug);
+    if (global) return global;
+  }
   try {
     const p = await getJson<ApiProduct & { description?: LocalizedText }>(`/api/products/${slug}`);
     return toMockProduct(p);
