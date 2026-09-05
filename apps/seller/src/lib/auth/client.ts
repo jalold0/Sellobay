@@ -46,3 +46,31 @@ export function logoutSeller() {
 export function meSeller() {
   return api<{ user: SellerUser }>('/api/auth/me');
 }
+
+/** Mahsulot nomi — DB'da Json, shakli { uz, ru?, en? }. */
+export type LocalizedName = Partial<Record<'uz' | 'ru' | 'en', string>>;
+
+export interface InventoryRow {
+  id: string;
+  sku: string;
+  name: LocalizedName;
+  basePrice: number;
+  imageUrl: string;
+  stock: number;
+  reserved: number;
+  variantCount: number;
+  /** Ko'p variantli mahsulotda umumiy sonni bitta qiymatga yozib bo'lmaydi. */
+  editable: boolean;
+}
+
+export function listInventory() {
+  return api<{ items: InventoryRow[] }>('/api/inventory');
+}
+
+/** Zaxirani yangilaydi. `quantity` — yakuniy son (ayirma emas). */
+export function updateInventory(updates: Array<{ productId: string; quantity: number }>) {
+  return api<{ updated: number; skipped: string[] }>('/api/inventory', {
+    method: 'PATCH',
+    body: JSON.stringify({ updates }),
+  });
+}
