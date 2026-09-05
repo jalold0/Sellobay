@@ -4,7 +4,6 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-  Button,
   Card,
   CardContent,
   CardHeader,
@@ -14,21 +13,28 @@ import {
   PageHeader,
   Separator,
   StatusBadge,
+  toast,
   type StatusTone,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
-import { ArrowDownToLine, Banknote, FileText, Receipt, Wallet } from 'lucide-react';
+import { Banknote, Receipt, Wallet } from 'lucide-react';
+import * as React from 'react';
 
-import { formatDate, formatMoney, formatNumber } from '../../lib/format';
-import { sellerPayouts, type SellerPayout } from '../../lib/mock';
+import { getSellerStats, type SellerStats } from '../../lib/auth/client';
+import { formatDate, formatMoney } from '../../lib/format';
 
-const STATUS_CFG: Record<SellerPayout['status'], { label: string; tone: StatusTone }> = {
+type Payout = SellerStats['finance']['payouts'][number];
+
+// PaymentStatus enum'i (baza) — payout uchun amalda uchraydiganlari.
+const STATUS_CFG: Record<string, { label: string; tone: StatusTone }> = {
   PENDING: { label: 'Kutilmoqda', tone: 'warning' },
-  PAID: { label: "To`langan", tone: 'success' },
+  PAID: { label: 'To`langan', tone: 'success' },
   FAILED: { label: 'Xato', tone: 'danger' },
+  CANCELLED: { label: 'Bekor qilingan', tone: 'muted' },
+  REFUNDED: { label: 'Qaytarilgan', tone: 'muted' },
 };
 
-const columns: ColumnDef<SellerPayout>[] = [
+const columns: ColumnDef<Payout>[] = [
   {
     accessorKey: 'periodStart',
     header: 'Davr',
@@ -39,102 +45,141 @@ const columns: ColumnDef<SellerPayout>[] = [
     ),
   },
   {
-    accessorKey: 'ordersCount',
-    header: () => <div className="text-right">Buyurtmalar</div>,
-    cell: ({ row }) => <div className="text-right">{formatNumber(row.original.ordersCount)}</div>,
-  },
-  {
-    accessorKey: 'grossAmount',
-    header: () => <div className="text-right">Brutto</div>,
-    cell: ({ row }) => <div className="text-right">{formatMoney(row.original.grossAmount)}</div>,
-  },
-  {
-    accessorKey: 'commission',
-    header: () => <div className="text-right">Komissiya</div>,
+    accessorKey: 'amount',
+    header: () => <div className="text-right">Summa</div>,
     cell: ({ row }) => (
-      <div className="text-right text-red-600">-{formatMoney(row.original.commission)}</div>
+      <div className="text-right font-semibold">{formatMoney(row.original.amount)}</div>
     ),
-  },
-  {
-    accessorKey: 'netAmount',
-    header: () => <div className="text-right">Netto</div>,
-    cell: ({ row }) => <div className="text-right font-semibold">{formatMoney(row.original.netAmount)}</div>,
   },
   {
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => {
-      const cfg = STATUS_CFG[row.original.status];
+      const cfg = STATUS_CFG[row.original.status] ?? { label: row.original.status, tone: 'muted' };
       return <StatusBadge tone={cfg.tone}>{cfg.label}</StatusBadge>;
     },
   },
   {
-    id: 'actions',
-    header: '',
-    cell: () => (
-      <div className="flex justify-end">
-        <Button variant="ghost" size="sm">
-          <FileText className="mr-1 h-3 w-3" /> Invoice
-        </Button>
-      </div>
+    accessorKey: 'paidAt',
+    header: 'To`langan sana',
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-xs">
+        {row.original.paidAt ? formatDate(row.original.paidAt) : '—'}
+      </span>
+    ),
+  },
+  {
+    accessorKey: 'reference',
+    header: 'Referens',
+    cell: ({ row }) => (
+      <span className="text-muted-foreground font-mono text-xs">
+        {row.original.reference ?? '—'}
+      </span>
     ),
   },
 ];
 
 export default function SellerFinancePage() {
-  const totalNet = sellerPayouts.reduce((s, p) => s + p.netAmount, 0);
-  const pending = sellerPayouts.find((p) => p.status === 'PENDING');
-  const paid = sellerPayouts.filter((p) => p.status === 'PAID').reduce((s, p) => s + p.netAmount, 0);
-  const totalCommission = sellerPayouts.reduce((s, p) => s + p.commission, 0);
+  const [stats, setStats] = React.useState<SellerStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    void getSellerStats().then((res) => {
+      if (!alive) return;
+      if (res.success) setStats(res.data);
+      else toast({ title: res.error.message, variant: 'destructive' });
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="text-muted-foreground py-20 text-center text-sm">Yuklanmoqda...</div>;
+  }
+  if (!stats) {
+    return (
+      <div className="text-muted-foreground py-20 text-center text-sm">
+        Ma`lumotni yuklab bo`lmadi
+      </div>
+    );
+  }
+
+  const { finance, kpi } = stats;
+  const payouts = finance.payouts;
+  const paid = payouts.filter((p) => p.status === 'PAID').reduce((s, p) => s + p.amount, 0);
+  const pending = payouts.find((p) => p.status === 'PENDING');
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Moliya"
-        description="Payouts, komissiya, invoice"
-        actions={
-          <Button variant="outline" size="sm">
-            <ArrowDownToLine className="mr-2 h-4 w-4" /> Yillik hisobot
-          </Button>
-        }
-      />
+      {/*
+        "Yillik hisobot" tugmasi olib tashlandi — u onClick'siz edi va hisobot
+        yaratadigan kod yo'q.
+      */}
+      <PageHeader title="Moliya" description="To`lovlar va komissiya" />
 
       {pending ? (
         <Alert variant="info">
           <Wallet className="h-4 w-4" />
-          <AlertTitle>Kutilayotgan payout: {formatMoney(pending.netAmount)}</AlertTitle>
+          <AlertTitle>Kutilayotgan to`lov: {formatMoney(pending.amount)}</AlertTitle>
           <AlertDescription>
-            {formatDate(pending.periodEnd)} sanasidan keyin 3 ish kuni ichida bank hisobiga o`tkaziladi.
+            Davr: {formatDate(pending.periodStart)} — {formatDate(pending.periodEnd)}
           </AlertDescription>
         </Alert>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Umumiy daromad (netto)" value={formatMoney(totalNet)} icon={Banknote} accent="success" />
-        <KpiCard label="To`langan" value={formatMoney(paid)} icon={Receipt} accent="info" />
-        <KpiCard label="Kutilmoqda" value={formatMoney(pending?.netAmount ?? 0)} icon={Wallet} accent="warning" />
-        <KpiCard label="Komissiya" value={formatMoney(totalCommission)} accent="danger" />
+        <KpiCard
+          label={`Davr daromadi (${kpi.windowDays}k)`}
+          value={formatMoney(finance.periodGross)}
+          icon={Banknote}
+          accent="success"
+        />
+        <KpiCard
+          label="Komissiyadan keyin"
+          value={formatMoney(finance.periodNet)}
+          icon={Receipt}
+          accent="primary"
+        />
+        <KpiCard label="To`langan (jami)" value={formatMoney(paid)} icon={Receipt} accent="info" />
+        <KpiCard
+          label="Kutilmoqda"
+          value={formatMoney(pending?.amount ?? 0)}
+          icon={Wallet}
+          accent="warning"
+        />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Komissiya tuzilmasi</CardTitle>
+          <CardTitle>Komissiya</CardTitle>
+          <p className="text-muted-foreground text-xs">
+            Sizning shartnomangizdagi stavka (Seller.commissionRate)
+          </p>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3 md:divide-x">
+          {/*
+            Ilgari bu yerda "Asosiy komissiya 10%" qotib yozilgan edi — har bir
+            sotuvchining stavkasi shartnomaga qarab har xil bo'lishi mumkin.
+            Endi bazadagi haqiqiy qiymat ko'rsatiladi. "Yetkazib berish 20 000"
+            va "Saqlash 0" olib tashlandi: bunday to'lovlar bazada yo'q.
+          */}
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">Asosiy komissiya</div>
-            <div className="text-2xl font-bold">10%</div>
-            <p className="text-xs text-muted-foreground">Har bir buyurtmadan</p>
+            <div className="text-muted-foreground text-xs">Komissiya stavkasi</div>
+            <div className="text-2xl font-bold">{finance.commissionRate}%</div>
+            <p className="text-muted-foreground text-xs">Har bir buyurtmadan</p>
           </div>
           <div className="space-y-1 md:pl-4">
-            <div className="text-xs text-muted-foreground">Yetkazib berish</div>
-            <div className="text-2xl font-bold">{formatMoney(20_000)}</div>
-            <p className="text-xs text-muted-foreground">Express buyurtmadan</p>
+            <div className="text-muted-foreground text-xs">Davr komissiyasi</div>
+            <div className="text-2xl font-bold">{formatMoney(finance.periodCommission)}</div>
+            <p className="text-muted-foreground text-xs">Oxirgi {kpi.windowDays} kun</p>
           </div>
           <div className="space-y-1 md:pl-4">
-            <div className="text-xs text-muted-foreground">Saqlash</div>
-            <div className="text-2xl font-bold">{formatMoney(0)}</div>
-            <p className="text-xs text-muted-foreground">Hozircha bepul</p>
+            <div className="text-muted-foreground text-xs">Buyurtmalar</div>
+            <div className="text-2xl font-bold">{kpi.ordersCount}</div>
+            <p className="text-muted-foreground text-xs">Oxirgi {kpi.windowDays} kun</p>
           </div>
         </CardContent>
       </Card>
@@ -142,7 +187,13 @@ export default function SellerFinancePage() {
       <Separator />
 
       <Card className="p-1">
-        <DataTable columns={columns} data={sellerPayouts} searchPlaceholder="Davr yoki summa..." />
+        {payouts.length === 0 ? (
+          <div className="text-muted-foreground p-10 text-center text-sm">
+            Hozircha to`lov tarixi yo`q.
+          </div>
+        ) : (
+          <DataTable columns={columns} data={payouts} searchPlaceholder="Davr yoki summa..." />
+        )}
       </Card>
     </div>
   );

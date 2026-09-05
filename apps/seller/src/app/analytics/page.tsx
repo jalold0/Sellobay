@@ -1,105 +1,138 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  KpiCard,
-  PageHeader,
-} from '@ecom/ui';
-import { Eye, Percent, Star, TrendingUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, KpiCard, PageHeader, toast } from '@ecom/ui';
+import { Star, TrendingUp } from 'lucide-react';
+import * as React from 'react';
 
 import { RevenueChart } from '../../components/charts/revenue-chart';
+import { getSellerStats, type SellerStats } from '../../lib/auth/client';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
-import { sellerProducts, sellerRevenueSeries } from '../../lib/mock';
+
+/** Ikki davr orasidagi foiz o'zgarish; oldingi davr bo'sh bo'lsa ko'rsatilmaydi. */
+function deltaPct(current: number, previous: number): number | undefined {
+  if (previous <= 0) return undefined;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
 
 export default function SellerAnalyticsPage() {
-  const revenue30 = sellerRevenueSeries.reduce((s, p) => s + p.revenue, 0);
-  const orders30 = sellerRevenueSeries.reduce((s, p) => s + p.orders, 0);
-  const top = [...sellerProducts].sort((a, b) => b.soldCount - a.soldCount).slice(0, 6);
-  const aov = revenue30 / Math.max(orders30, 1);
+  // Barcha ko'rsatkich BAZADAN. Ilgari "Daromad +9.4%", "Konversiya 3.8%",
+  // "Reyting 4.8" va "Karta ko'rishlari" (Web 12 450 / Mobil 8 430 /
+  // Telegram 4 720) kodga yozib qo'yilgan sonlar edi.
+  const [stats, setStats] = React.useState<SellerStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    void getSellerStats().then((res) => {
+      if (!alive) return;
+      if (res.success) setStats(res.data);
+      else toast({ title: res.error.message, variant: 'destructive' });
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="text-muted-foreground py-20 text-center text-sm">Yuklanmoqda...</div>;
+  }
+  if (!stats) {
+    return (
+      <div className="text-muted-foreground py-20 text-center text-sm">
+        Ma`lumotni yuklab bo`lmadi
+      </div>
+    );
+  }
+
+  const { kpi, revenueSeries, topProducts } = stats;
 
   return (
     <div className="space-y-6">
       <PageHeader title="Analitika" description="Sotuvlaringiz va mahsulot samaradorligi" />
 
+      {/*
+        "Konversiya" olib tashlandi — uni hisoblash uchun mahsulot sahifasi
+        ko'rishlari kerak, bazada esa ko'rish kuzatuvi YO'Q edi (ko'rsatkich
+        "3.8%" deb yozib qo'yilgandi).
+      */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Daromad (30k)" value={formatMoney(revenue30)} delta={9.4} icon={TrendingUp} accent="success" />
-        <KpiCard label="Konversiya" value="3.8%" delta={0.4} icon={Percent} accent="info" />
-        <KpiCard label="O`rtacha chek" value={formatMoney(aov)} delta={2.1} accent="primary" />
-        <KpiCard label="Reyting" value="4.8" icon={Star} accent="warning" />
+        <KpiCard
+          label={`Daromad (${kpi.windowDays}k)`}
+          value={formatMoney(kpi.revenue)}
+          delta={deltaPct(kpi.revenue, kpi.revenuePrev)}
+          icon={TrendingUp}
+          accent="success"
+        />
+        <KpiCard
+          label={`Buyurtmalar (${kpi.windowDays}k)`}
+          value={formatNumber(kpi.ordersCount)}
+          delta={deltaPct(kpi.ordersCount, kpi.ordersPrev)}
+          accent="info"
+        />
+        <KpiCard label="O`rtacha chek" value={formatMoney(kpi.avgCheck)} accent="primary" />
+        <KpiCard
+          label="Reyting"
+          value={kpi.rating == null ? '—' : String(kpi.rating)}
+          icon={Star}
+          accent="warning"
+        />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Daromad dinamikasi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RevenueChart data={sellerRevenueSeries} height={280} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Karta ko`rishlari</CardTitle>
-            <p className="text-xs text-muted-foreground">Kanal bo`yicha</p>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {[
-              { name: 'Web', views: 12450, color: '#0ea5e9' },
-              { name: 'Mobil', views: 8430, color: '#8b5cf6' },
-              { name: 'Telegram', views: 4720, color: '#22c55e' },
-            ].map((c) => {
-              const max = 12450;
-              const pct = (c.views / max) * 100;
-              return (
-                <div key={c.name}>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />
-                      {c.name}
-                    </span>
-                    <span className="font-medium">{formatNumber(c.views)}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c.color }} />
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Daromad dinamikasi</CardTitle>
+          <p className="text-muted-foreground text-xs">
+            Oxirgi {kpi.windowDays} kun · faqat sizning mahsulotlaringiz bo`yicha
+          </p>
+        </CardHeader>
+        <CardContent>
+          <RevenueChart data={revenueSeries} height={280} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Top mahsulotlar (sotuv bo`yicha)</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <ul className="divide-y">
-            {top.map((p, i) => (
-              <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold">
-                  {i + 1}
-                </span>
-                <div className="h-9 w-9 shrink-0 overflow-hidden rounded">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                  <div className="text-xs text-muted-foreground">{p.sku}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold">{formatNumber(p.soldCount)}</div>
-                  <div className="text-xs text-muted-foreground">
-                    <Eye className="inline h-3 w-3" /> {formatNumber(p.reviewCount * 30)}
+          {topProducts.length === 0 ? (
+            <div className="text-muted-foreground p-10 text-center text-sm">
+              Hozircha mahsulot yo`q.
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {topProducts.map((p, i) => (
+                <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
+                  <span className="bg-muted grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold">
+                    {i + 1}
+                  </span>
+                  <div className="bg-muted h-9 w-9 shrink-0 overflow-hidden rounded">
+                    {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : null}
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{pickLocalized(p.name)}</div>
+                    <div className="text-muted-foreground text-xs">{p.sku}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold">{formatNumber(p.soldCount)}</div>
+                    {/*
+                      Ilgari bu yerda "ko'rishlar" `reviewCount * 30` formulasi
+                      bilan YASALARDI — bu son hech qanday haqiqiy ko'rsatkich
+                      emas edi. O'rniga haqiqiy sharh soni.
+                    */}
+                    <div className="text-muted-foreground text-xs">
+                      <Star className="inline h-3 w-3" /> {p.rating.toFixed(1)} ·{' '}
+                      {formatNumber(p.reviewCount)} sharh
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>
