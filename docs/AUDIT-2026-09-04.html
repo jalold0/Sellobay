@@ -295,18 +295,19 @@
 <div class="wrap">
 
   <header>
-    <div class="eyebrow"><span class="tick"></span>Sellobay · to'liq audit · 2026-09-04</div>
+    <div class="eyebrow"><span class="tick"></span>Sellobay · to'liq audit · 2026-09-04 → 09-05</div>
     <h1>Sellobay audit hisoboti</h1>
     <p class="lede">
-      Monorepo to'liq tekshirildi: tip xavfsizligi, avtorizatsiya, pul oqimi, poyga holatlari
-      (race condition) va to'qima ma'lumot. Sakkiz haqiqiy nuqson topildi — oltitasi tuzatildi,
-      bittasi haqiqiy backend bilan qayta qurildi, bittasi migratsiya sifatida tayyorlandi.
-      Eng jiddiylari uchtasi pul yo'lida edi.
+      Ikki bosqichda o'tkazildi. <b>1-bosqich</b> — tip xavfsizligi, avtorizatsiya, pul oqimi va
+      to'qima ma'lumot. <b>2-bosqich</b> — tizim bo'ylab «uzulish» qidiruvi: klient bilan server
+      orasidagi bog'lanmagan joylar. Ikkinchisi og'irroq chiqdi: yozilgan va ishlab turgan
+      backend'ga klient umuman ulanmagan holatlar topildi — jumladan promokod, onlayn to'lov va
+      sessiya yangilash.
     </p>
     <div class="meta">
       <span><b>Qamrov:</b> 517 fayl · ~56 000 satr</span>
       <span><b>Branch:</b> fix/audit-tolov-va-guruh-xaridi</span>
-      <span><b>Commit:</b> 6 ta</span>
+      <span><b>Commit:</b> 21 ta</span>
       <span><b>Baza:</b> tegilmagan</span>
     </div>
   </header>
@@ -318,20 +319,231 @@
       <div class="cell"><span class="k">typecheck</span><span class="v pass">16/16</span><span class="n">xato yo'q</span></div>
       <div class="cell"><span class="k">test</span><span class="v pass">149</span><span class="n">+24 yangi</span></div>
       <div class="cell"><span class="k">lint</span><span class="v pass">0</span><span class="n">error</span></div>
-      <div class="cell"><span class="k">build</span><span class="v pass">✓</span><span class="n">web compiled</span></div>
+      <div class="cell"><span class="k">build</span><span class="v pass">✓</span><span class="n">4 ilova</span></div>
       <div class="cell"><span class="k">prisma</span><span class="v pass">✓</span><span class="n">schema valid</span></div>
-      <div class="cell"><span class="k">i18n</span><span class="v pass">950</span><span class="n">uz/ru/en · 0 farq</span></div>
+      <div class="cell"><span class="k">i18n</span><span class="v pass">955</span><span class="n">uz/ru/en · 0 farq</span></div>
     </div>
     <p class="sec-note">
-      Guruh xaridining ishlashini <em>jonli</em> tekshirib bo'lmadi: <code>DATABASE_URL</code> Neon
-      (production) ga qaragan va lokal Postgres uchun Docker yo'q. Shu sababli migratsiya
-      qo'llanmadi — pastdagi «Keyingi qadamlar» ga qaralsin.
+      Yuqoridagilar <code>.gitlab-ci.yml</code> dagi AYNI ketma-ketlik bo'yicha lokalda
+      ishlatildi: <code>db:generate → lint → typecheck → turbo run test → turbo run build</code>.
+      Jonli baza tekshiruvi qilinmadi: <code>DATABASE_URL</code> Neon (production) ga qaragan va
+      lokal Postgres uchun Docker yo'q. Shu sababli migratsiya ham qo'llanmadi — pastdagi
+      «Keyingi qadamlar» ga qaralsin.
     </p>
+  </section>
+
+  <!-- ── 2-bosqich: uzulishlar ──────────────────────────────────── -->
+  <section>
+    <h2>2-bosqich: uzulishlar <span class="count">55 topilma · 13 tuzatildi</span></h2>
+    <p class="sec-note">
+      Butun tizim bo'ylab 10 yo'nalish skanerlandi: klient↔server shartnomasi (web, mobil, admin,
+      seller), i18n, o'lik havolalar, muhit o'zgaruvchilari, CI/deploy, ma'lumot oqimi.
+      Quyidagilar tekshirilgan va tuzatilganlari.
+    </p>
+
+    <div class="stack">
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Promokod soxta edi — mijoz chegirmani ko'rib to'liq narxda to'lardi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          Butun promokod backend'i yozilgan va ishlab turgan, lekin web klient unga umuman
+          ulanmagan edi. Savatda chegirma klientda qotib yozilgan: <code>WELCOME10</code> →
+          subtotal'ning 10%, <code>FREESHIP</code> → yetkazish narxi.
+          <code>/api/promo/validate</code> hech qachon chaqirilmasdi.</p>
+        <ul class="chain">
+          <li>mijoz savatda kod kiritadi va «−10%» ni ko'radi</li>
+          <li>kod faqat sahifaning lokal state'ida turadi</li>
+          <li>checkout'ga o'tishda yo'qoladi — payload'da <code>promoCode</code> maydoni yo'q edi</li>
+          <li>server promokod haqida bilmaydi → TO'LIQ narxda hisoblaydi</li>
+        </ul>
+        <p><span class="label">Endi</span>
+          Kod serverda tekshiriladi, savat store'ida saqlanadi va checkout'da haqiqiy yetkazish
+          narxi bilan QAYTA tekshiriladi (punkt/express tanlanganda FREESHIP qiymati o'zgaradi).
+          Yaroqsiz bo'lib qolsa jim qoldirilmaydi — olib tashlanadi va sababi aytiladi.
+          Mobil ilova buni allaqachon to'g'ri qilardi.</p>
+        <p class="path"><b>components/cart/cart-view.tsx</b> · <b>store/cart.ts</b> · <b>components/checkout/checkout-flow.tsx</b></p>
+      </article>
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3><code>JWT_SECRET</code> bo'lmasa avtorizatsiya jim ochiq qolardi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          <code>ACCESS_SECRET = process.env.JWT_SECRET ?? ''</code> — kalit yo'q bo'lsa bo'sh satr.
+          Buni tekshirish uchun yozilgan <code>assertAuthEnv()</code> uch ilovada ham mavjud, lekin
+          HECH QAYERDA chaqirilmasdi. jose esa bo'sh kalitni rad etmaydi — lokalda tekshirdim:
+          HS256 tokenini ham imzoladi, ham tasdiqladi.</p>
+        <p><span class="label">Oqibati</span>
+          Imzo kaliti hammaga ma'lum (bo'sh satr) bo'lgani uchun istalgan odam
+          <code>roles: ['ADMIN']</code> tokenini o'zi yasab, admin sifatida kirishi mumkin edi.
+          Hech qanday ogohlantirish chiqmasdi.</p>
+        <p><span class="label">Endi</span>
+          Kalit yo'q yoki 32 belgidan qisqa bo'lsa xato tashlanadi (modul yuklanganda emas,
+          ishlatilganda — CI'da <code>JWT_SECRET</code> yo'q va build modullarni import qiladi).
+          Middleware esa YOPIQ tomonga yiqiladi: kalit yo'q → token yaroqsiz → login.</p>
+        <p class="path"><b>apps/{web,admin,seller}/src/lib/auth/constants.ts</b> · middleware.ts</p>
+      </article>
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Mobil: Click/Payme tanlagan mijozdan pul olinmasdi</h3>
+        </div>
+        <p><span class="label">Nima bo'lgan</span>
+          Mobil checkout buyurtma yaratgach darhol «Buyurtma qabul qilindi!» deb yozib,
+          muvaffaqiyat ekraniga o'tardi. Onlayn to'lovni boshlash qadami umuman yo'q edi:
+          <code>/api/payments/create</code> chaqirilmasdi, Click/Payme sahifasi ochilmasdi.
+          Mijoz to'ladim deb o'ylardi, pul olinmagan, buyurtma PENDING bo'lib qolardi.
+          Web bu qadamni allaqachon bajarardi.</p>
+        <p class="path"><b>apps/mobile/app/checkout/index.tsx</b> · <b>src/lib/api/orders.ts</b></p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">O'rta-yuqori</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Sotuvchi «Stok yangilandi» xabarini olardi, zaxira esa saqlanmasdi</h3>
+        </div>
+        <p>Inventar sahifasi mock ro'yxat ko'rsatardi va «Saqlash» faqat yashil toast
+          chiqarardi — birorta so'rov ketmasdi. Mahsulot yaratilgandan keyin zaxirani
+          o'zgartirishning boshqa yo'li ham yo'q edi. Endi haqiqiy
+          <code>GET/PATCH /api/inventory</code> bor: IDOR himoyasi (faqat o'z mahsuloti),
+          bitta tranzaksiyada zaxira + <code>StockMovement</code> audit yozuvi, ko'p variantli
+          mahsulot jim o'zgartirilmaydi.</p>
+        <p class="path"><b>apps/seller/src/app/api/inventory/route.ts</b> (yangi) · inventory/page.tsx</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">O'rta-yuqori</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Web'da sessiya 15 daqiqada uzilardi</h3>
+        </div>
+        <p><code>/api/auth/refresh</code> yozilgan va ishlab turgan, lekin apps/web'da uni hech kim
+          chaqirmasdi. Access JWT 15 daqiqada tugaydi, refresh cookie esa 30 kun yashaydi —
+          foydalanuvchi amaldagi sessiyasi bilan login'ga uloqtirilardi. Middleware Edge'da
+          ishlagani uchun (Prisma yo'q) rotatsiya yangi <code>GET /api/auth/refresh</code>
+          (nodejs) ga topshirildi; <code>next</code> parametri open redirect uchun tekshiriladi.</p>
+        <p class="path"><b>apps/web/src/middleware.ts</b> · <b>app/api/auth/refresh/route.ts</b></p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">O'rta-yuqori</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Sozlanmagan prod'da mijozga soxta TEST kartasi ko'rsatilardi</h3>
+        </div>
+        <p><code>MANUAL_PAYMENT_CARDS</code> qo'yilmasa dev fallback SHARTSIZ ishlardi va mijoz
+          <code>8600 0000 0000 0000 / SELLOBAY TEST</code> raqamiga pul o'tkazishga urinardi.
+          Endi production'da bo'sh ro'yxat qaytadi, checkout bu usulni umuman taklif qilmaydi va
+          server ham uni rad etadi.</p>
+        <p class="path"><b>apps/web/src/lib/manual-payment.ts</b> · orders-server.ts · payment-section.tsx</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">O'rta-yuqori</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Kodda o'qiladigan 8 muhit o'zgaruvchisi <code>.env.example</code> da yo'q edi</h3>
+        </div>
+        <p>Eng muhimi <code>NEXT_PUBLIC_SITE_URL</code> — 8 joyda o'qiladi (sitemap, robots.txt,
+          canonical, OG rasm, structured data) va qo'yilmasa hammasi
+          <code>http://localhost:3000</code> bo'lib qoladi, Google shuni indekslaydi. Shuningdek
+          Sentry source map kalitlari, ilova yuklab olish havolalari va hujjatlashtirilmagan
+          <code>SELLER_PRODUCT_AUTOAPPROVE</code> (moderatsiyani chetlab o'tadi).</p>
+        <p><code>.gitignore</code> dagi <code>.env*</code> naqshi <code>.env.example</code>
+          shablonlarini ham qamrab olardi — yangi <code>apps/&lt;app&gt;/.env.example</code>
+          jimgina ignor bo'lib ketardi.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Admin mijoz kartochkasi har doim «Topilmadi» berardi</h3>
+        </div>
+        <p>Ro'yxat real Prisma UUID'iga link qilardi, detal sahifasi esa <code>mockCustomers</code>
+          dan qidirardi (id'lari <code>cu-1</code>...). Postgres <code>uuid</code> ustuni bunday
+          qiymatni saqlay ham olmaydi — ya'ni mos kelish printsipial jihatdan mumkin emas edi.
+          Sabab: yarim ko'chirish — ro'yxat real bazaga o'tkazilgan, detal sahifasi o'sha
+          commit'ga kirmagan. Endi <code>GET /api/customers/:id</code> bor.</p>
+        <p class="path"><b>apps/admin/src/app/api/customers/[id]/route.ts</b> (yangi) · customers/[id]/page.tsx</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Mobil: tugagan tovar «sotuvda bor» ko'rinardi</h3>
+        </div>
+        <p>Adapter <code>inStock: true</code> ni qotib yozardi, holbuki server haqiqiy
+          <code>inStock</code>/<code>stock</code> qiymatini qaytaradi — tovar savatga qo'shilardi
+          va checkout'da <code>STOCK_INSUFFICIENT</code> bilan yiqilardi. <code>soldCount</code>
+          ham tashlab yuborilardi. Bundan tashqari mobil <code>sort=popularity</code> yuborardi,
+          server esa <code>popular</code> ni biladi — «Ommabop» tanlanganda jimgina eng yangilar
+          qaytardi.</p>
+        <p class="path"><b>apps/mobile/src/lib/api/catalog.ts</b></p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Admin sozlamalari va o'lik boshqaruvlar</h3>
+        </div>
+        <p>Profil tab'ida «Demo Admin / admin@example.uz» qotib yozilgan edi va «Saqlash» faqat
+          toast chiqarardi — <code>PATCH /api/auth/me</code> esa allaqachon ishlab turgan edi.
+          Endi profil sessiyadan yuklanadi va haqiqatan saqlanadi. «Umumiy» tab (jumladan
+          Maintenance rejimi) uchun backend yo'q — yolg'on tasdiq o'rniga boshqaruvlar
+          o'chirildi va sabab yozildi.</p>
+        <p>Shuningdek: admin va seller'da <code>/products/{id}</code> ga olib boradigan
+          havolalar (sahifa mavjud emas — 404), handler'siz «Arxivlash»/«O'chirish» tugmalari va
+          admin sidebar'idagi <code>/help</code> havolasi olib tashlandi.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>CI feature branch'da umuman ishga tushmasdi</h3>
+        </div>
+        <p><code>workflow.rules</code> faqat <code>main</code>/<code>develop</code>, MR va tag'ga
+          ruxsat berardi — feature branch'ga push qilgan dasturchi MR ochmaguncha CI'dan hech
+          qanday signal olmasdi. Endi har qanday branch tekshiriladi; branch'da ochiq MR bo'lsa
+          dublikat pipeline ishga tushmaydi.</p>
+        <p class="path"><b>.gitlab-ci.yml</b></p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Guruh xaridi narxi checkout'ga yetib bormasdi</h3>
+        </div>
+        <p>1-bosqichda qurilgan backend yarim ulangan edi: mijoz guruhga qo'shilardi, guruh
+          to'lardi, lekin <code>groupPrice</code> savat va checkout'ga umuman yetib bormasdi —
+          buyurtma baribir <code>basePrice</code> bo'yicha yaratilardi.
+          <code>GroupBuyMember.orderId</code> ham hech qachon yozilmasdi.</p>
+        <p>Endi <code>createOrder</code> mijozning to'lgan guruhlaridagi a'zoligini hisobga oladi
+          va narxni qo'llaydi (faqat katalog narxidan past bo'lsa), a'zolikni buyurtmaga
+          bog'laydi. Sahifadagi «Guruh boshlang» matni ham to'g'rilandi — mijoz guruh ocha
+          olmaydi, guruhlar hozircha faqat platforma tomonidan ochiladi.</p>
+        <p class="path"><b>apps/web/src/lib/orders-server.ts</b> · i18n groupBuy</p>
+      </article>
+
+    </div>
   </section>
 
   <!-- ── Tuzatilgan nuqsonlar ──────────────────────────────────── -->
   <section>
-    <h2>Tuzatilgan nuqsonlar <span class="count">6 ta · commit qilingan</span></h2>
+    <h2>1-bosqich: tuzatilgan nuqsonlar <span class="count">6 ta · pul va xavfsizlik</span></h2>
 
     <div class="stack">
 
@@ -574,10 +786,68 @@ HAVING COUNT(*) &gt; 1;</pre>
 
   <!-- ── Qolgan ishlar ─────────────────────────────────────────── -->
   <section>
-    <h2>Tuzatilmadi — ongli ravishda <span class="count">3 ta · backlog</span></h2>
-    <p class="sec-note">Bular haqiqiy kamchilik, lekin ularni «tuzatish» audit doirasidan chiqadi: har biri alohida loyiha. Qamrovni o'zim qisqartirmadim — qaror sizniki.</p>
+    <h2>Tuzatilmadi — ongli ravishda <span class="count">backlog · qaror sizniki</span></h2>
+    <p class="sec-note">
+      Bular haqiqiy kamchilik, lekin ularni «tuzatish» audit doirasidan chiqadi: har biri alohida
+      loyiha (yangi ma'lumot modeli, yangi ekranlar yoki uch tilli kontent). Qamrovni o'zim
+      qisqartirmadim — nima birinchi qilinishini siz hal qilasiz.
+    </p>
 
     <div class="stack">
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">Muhim</span>
+          <span class="chip med">Backlog</span>
+          <h3>Admin va sotuvchi panellarining bir qismi hali mock ustida</h3>
+        </div>
+        <p><span class="label">Qayerda</span>
+          Admin: bosh sahifa (Dashboard) va Analitika — KPI'lar, o'sish foizlari va konversiya
+          mock ma'lumotdan hisoblanadi; «Daromad» o'sishi doim bir xil chiqadi, chunki u
+          <code>revenue30 × 0.88</code> koeffitsiyentidan olinadi. Brendlar, Kategoriyalar va
+          Marketing bo'limlarida yaratish tugmalari handler'siz va ortida API yo'q.
+          Seller: Analitika va Moliya bo'limlari ham mock.</p>
+        <p><span class="label">Nega tuzatmadim</span>
+          Dashboard'ni ulash uchun agregat endpoint (<code>prisma.order.groupBy</code> asosida)
+          kerak; Brendlar/Kategoriyalar/Marketing uchun esa to'liq CRUD (GET/POST/PATCH/DELETE)
+          va moderatsiya qoidalari. Bu — bir necha kunlik funksional ish, xato tuzatish emas.</p>
+        <p><span class="label">Oraliq chora</span>
+          Eng kam xarajatli qadam: bu sahifalar tepasiga «namuna ma'lumot» bannerini qo'yish yoki
+          <code>nav.ts</code> dan vaqtincha olib turish — hozir ular ishlaydigan bo'lim
+          taassurotini beradi.</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">Muhim</span>
+          <span class="chip med">Backlog</span>
+          <h3>Qaytarishlar (Return) uchun ma'lumot modeli umuman yo'q</h3>
+        </div>
+        <p>Sotuvchi «Qaytarishlar» sahifasida REQUESTED → APPROVED/REJECTED oqimi ko'rsatiladi va
+          «Tasdiqlash»/«Rad» tugmalari bor, lekin ular faqat toast chiqaradi. Sabab chuqurroq:
+          schema'da <code>Return</code> modeli YO'Q — qaytarish faqat
+          <code>Order.status</code> orqali ishlaydi (<code>/api/orders/[id]/return</code>,
+          RETURNED → REFUNDED), ya'ni sahifa mavjud bo'lmagan tushunchani modellashtiradi.</p>
+        <p><span class="label">Nega tuzatmadim</span>
+          To'g'ri yechim — <code>Return</code> domenini loyihalash (model + migratsiya + tasdiqlash
+          oqimi + pul qaytarish bilan bog'lash). Bu arxitektura qarori, ADR talab qiladi.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip med">Backlog</span>
+          <h3>Mobil ilovada server bilan sinxronlanmaydigan holatlar</h3>
+        </div>
+        <p>Savat va sevimlilar faqat telefonda saqlanadi — <code>/api/cart</code> va
+          <code>/api/wishlist</code> chaqirilmaydi, ya'ni boshqa qurilmada yo'qoladi. Mijoz
+          tanlagan o'lcham/rang serverga uzatilmaydi (buyurtma standart variantga yoziladi).
+          <code>Idempotency-Key</code> yuboriladi, lekin server uni o'qimaydi — qayta urinishda
+          ikkinchi buyurtma yaratilishi mumkin. Chiqishda refresh token bekor qilinmaydi.
+          Guruh xaridi mobilda umuman yo'q.</p>
+        <p>Bularning har biri alohida, kichik-o'rta ish; eng muhimi
+          <code>Idempotency-Key</code> (pul yo'liga tegadi).</p>
+      </article>
+
       <article class="find high">
         <div class="find-top">
           <span class="chip high">Muhim</span>
@@ -629,9 +899,9 @@ HAVING COUNT(*) &gt; 1;</pre>
   </section>
 
   <footer>
-    <span>6 commit · fix/audit-tolov-va-guruh-xaridi</span>
-    <span>typecheck 16/16 · test 149 · lint 0 error · build ✓</span>
-    <span>baza o'zgartirilmadi</span>
+    <span>21 commit · fix/audit-tolov-va-guruh-xaridi</span>
+    <span>typecheck 16/16 · test 149 · lint 0 error · build 4/4 · i18n 955 (0 farq)</span>
+    <span>baza o'zgartirilmadi — migratsiya kutmoqda</span>
   </footer>
 
 </div>
