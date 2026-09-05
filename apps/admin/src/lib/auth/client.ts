@@ -224,6 +224,120 @@ export function getStats() {
   return api<AdminStats>('/api/stats');
 }
 
+// ── Brendlar ──────────────────────────────────────────────────────
+export interface AdminBrand {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+  isActive: boolean;
+  productsCount: number;
+  createdAt: string;
+}
+
+export function listBrands() {
+  return api<{ items: AdminBrand[] }>('/api/brands');
+}
+
+export function createBrand(input: { name: string; slug?: string; logoUrl?: string | null }) {
+  return api<{ brand: AdminBrand }>('/api/brands', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ── Kategoriyalar ─────────────────────────────────────────────────
+export interface AdminCategory {
+  id: string;
+  parentId: string | null;
+  slug: string;
+  name: LocalizedName;
+  iconUrl: string | null;
+  position: number;
+  isActive: boolean;
+  productsCount: number;
+  childrenCount: number;
+}
+
+export function listCategories() {
+  return api<{ items: AdminCategory[] }>('/api/categories');
+}
+
+export function createCategory(input: {
+  name: { uz: string; ru?: string; en?: string };
+  slug?: string;
+  parentId?: string | null;
+}) {
+  return api<{ category: AdminCategory }>('/api/categories', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ── Promokodlar ───────────────────────────────────────────────────
+export type AdminPromoType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
+
+export interface AdminPromoCode {
+  id: string;
+  code: string;
+  type: AdminPromoType;
+  value: number;
+  minOrderTotal: number | null;
+  maxDiscount: number | null;
+  usageLimit: number | null;
+  usagePerUser: number;
+  usedCount: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export function listPromoCodes() {
+  return api<{ items: AdminPromoCode[] }>('/api/promo-codes');
+}
+
+export function createPromoCode(input: {
+  code: string;
+  type: AdminPromoType;
+  value: number;
+  minOrderTotal?: number | null;
+  maxDiscount?: number | null;
+  usageLimit?: number | null;
+  usagePerUser?: number;
+  endsAt?: string | null;
+}) {
+  return api<{ promo: AdminPromoCode }>('/api/promo-codes', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ── Ombor (faqat o'qish; zaxirani sotuvchi boshqaradi) ────────────
+export interface AdminInventoryRow {
+  id: string;
+  sku: string;
+  name: LocalizedName;
+  status: string;
+  basePrice: number;
+  imageUrl: string;
+  sellerName: string | null;
+  stock: number;
+  reserved: number;
+}
+
+export interface AdminInventorySummary {
+  totalStock: number;
+  inventoryValue: number;
+  lowStock: number;
+  outOfStock: number;
+  threshold: number;
+}
+
+export function listInventory() {
+  return api<{ items: AdminInventoryRow[]; summary: AdminInventorySummary }>('/api/inventory');
+}
+
 // Buyurtmalar ro'yxati (admin)
 export function listOrders(status?: string) {
   const qs = status && status !== 'all' ? `?status=${status}` : '';

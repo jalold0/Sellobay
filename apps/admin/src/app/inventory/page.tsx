@@ -1,90 +1,117 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  KpiCard,
-  PageHeader,
-} from '@ecom/ui';
+import { Card, CardContent, CardHeader, CardTitle, KpiCard, PageHeader, toast } from '@ecom/ui';
 import { AlertTriangle, Box, Boxes, Warehouse } from 'lucide-react';
+import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
+import {
+  listInventory,
+  type AdminInventoryRow,
+  type AdminInventorySummary,
+} from '../../lib/auth/client';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
-import { mockProducts } from '../../lib/mock';
 
 export default function AdminInventoryPage() {
-  const totalStock = mockProducts.reduce((s, p) => s + p.stock, 0);
-  const inventoryValue = mockProducts.reduce((s, p) => s + p.stock * p.basePrice, 0);
-  const lowStock = mockProducts.filter((p) => p.stock > 0 && p.stock <= 10).length;
-  const outOfStock = mockProducts.filter((p) => p.stock === 0).length;
+  const [items, setItems] = React.useState<AdminInventoryRow[]>([]);
+  const [summary, setSummary] = React.useState<AdminInventorySummary | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    void listInventory().then((res) => {
+      if (!alive) return;
+      if (res.success) {
+        setItems(res.data.items);
+        setSummary(res.data.summary);
+      } else {
+        toast({ title: res.error.message, variant: 'destructive' });
+      }
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const lowStockItems = items
+    .filter((p) => p.status === 'ACTIVE' && p.stock <= (summary?.threshold ?? 10))
+    .sort((a, b) => a.stock - b.stock)
+    .slice(0, 12);
 
   return (
     <div className="space-y-6">
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Inventar"
-        description="Stok darajalari va omborlar bo`yicha"
+        description="Platforma bo`yicha stok holati"
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Jami stok" value={formatNumber(totalStock)} icon={Boxes} accent="primary" />
-        <KpiCard label="Inventar qiymati" value={formatMoney(inventoryValue)} icon={Box} accent="success" />
-        <KpiCard label="Quyi-stok" value={formatNumber(lowStock)} icon={AlertTriangle} accent="warning" />
-        <KpiCard label="Tugagan" value={formatNumber(outOfStock)} icon={Warehouse} accent="danger" />
+        <KpiCard
+          label="Jami stok"
+          value={formatNumber(summary?.totalStock ?? 0)}
+          icon={Boxes}
+          accent="primary"
+        />
+        <KpiCard
+          label="Inventar qiymati"
+          value={formatMoney(summary?.inventoryValue ?? 0)}
+          icon={Box}
+          accent="success"
+        />
+        <KpiCard
+          label="Quyi-stok"
+          value={formatNumber(summary?.lowStock ?? 0)}
+          icon={AlertTriangle}
+          accent="warning"
+        />
+        <KpiCard
+          label="Tugagan"
+          value={formatNumber(summary?.outOfStock ?? 0)}
+          icon={Warehouse}
+          accent="danger"
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Omborlar</CardTitle>
-          <p className="text-xs text-muted-foreground">3 ta faol ombor</p>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
-          {[
-            { code: 'WH-TAS-01', name: 'Toshkent markaz', stock: 18_240, value: 2_850_000_000 },
-            { code: 'WH-SAM-01', name: 'Samarqand', stock: 5_120, value: 940_000_000 },
-            { code: 'WH-NUK-01', name: 'Nukus', stock: 2_840, value: 420_000_000 },
-          ].map((w) => (
-            <div key={w.code} className="rounded-md border p-4">
-              <div className="flex items-center justify-between">
-                <Warehouse className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-mono text-muted-foreground">{w.code}</span>
-              </div>
-              <div className="mt-2 font-medium">{w.name}</div>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <div className="text-xs text-muted-foreground">Stok</div>
-                  <div className="font-semibold">{formatNumber(w.stock)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Qiymat</div>
-                  <div className="font-semibold">{formatMoney(w.value)}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {/*
+        "Omborlar" bloki olib tashlandi: u uchta ombor va ularning stok/qiymat
+        raqamlarini kodga yozib qo'ygan edi (WH-TAS-01 18 240 dona, WH-SAM-01
+        va WH-NUK-01) — bazada esa MVP'da bitta ombor bor
+        (WH-TASHKENT-MAIN) va u raqamlarning hech biri haqiqiy emas edi.
+        Ko'p omborli hisob qo'shilganda qaytariladi.
+      */}
 
       <Card>
         <CardHeader>
           <CardTitle>Quyi-stok ogohlantirish</CardTitle>
+          <p className="text-muted-foreground text-xs">
+            {summary?.threshold ?? 10} dona va undan kam qolgan sotuvdagi tovarlar
+          </p>
         </CardHeader>
         <CardContent className="p-0">
-          <ul className="divide-y">
-            {mockProducts
-              .filter((p) => p.stock <= 10 && p.status !== 'ARCHIVED')
-              .slice(0, 12)
-              .map((p) => (
+          {loading ? (
+            <div className="text-muted-foreground p-10 text-center text-sm">Yuklanmoqda...</div>
+          ) : lowStockItems.length === 0 ? (
+            <div className="text-muted-foreground p-10 text-center text-sm">
+              Hammasi joyida — quyi-stok tovar yo`q.
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {lowStockItems.map((p) => (
                 <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                  <div className="h-9 w-9 shrink-0 overflow-hidden rounded">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                  <div className="bg-muted h-9 w-9 shrink-0 overflow-hidden rounded">
+                    {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                    <div className="truncate text-xs text-muted-foreground">{p.sku}</div>
+                    <div className="text-muted-foreground truncate text-xs">
+                      {p.sku}
+                      {p.sellerName ? ` · ${p.sellerName}` : ''}
+                    </div>
                   </div>
                   <span
                     className={
@@ -97,7 +124,8 @@ export default function AdminInventoryPage() {
                   </span>
                 </li>
               ))}
-          </ul>
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>
