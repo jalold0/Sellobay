@@ -3,19 +3,12 @@ import { NextResponse } from 'next/server';
 import { COOKIE_REFRESH } from '@/lib/auth/constants';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { clearCookies, rotateRefresh, rotateRefreshTokens } from '@/lib/auth/session';
+import { safeInternalPath } from '@/lib/safe-redirect';
 
 import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-/** `next` faqat ayni sayt ichidagi yo'l bo'lishi mumkin (open redirect'dan himoya). */
-function safeNext(raw: string | null): string {
-  if (!raw) return '/';
-  // Tashqi manzil, protokol-nisbiy (`//evil.com`) va backslash hiylalarini rad etamiz.
-  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/';
-  return raw;
-}
 
 /**
  * GET /api/auth/refresh?next=/uz/profile — SESSIYANI YANGILAB, kelgan yo'lga qaytaradi.
@@ -30,7 +23,7 @@ function safeNext(raw: string | null): string {
  * o'z yo'liga qaytariladi.
  */
 export async function GET(req: NextRequest) {
-  const next = safeNext(req.nextUrl.searchParams.get('next'));
+  const next = safeInternalPath(req.nextUrl.searchParams.get('next'));
   const cookieRaw = req.cookies.get(COOKIE_REFRESH)?.value;
 
   const failed = () => {
