@@ -550,3 +550,25 @@ export function cancelGroupBuy(id: string) {
     body: JSON.stringify({ action: 'cancel' }),
   });
 }
+
+/** Admin orqali mahsulot yaratish (platforma mahsuloti — sellerId null). */
+export function createProduct(input: {
+  nameUz: string;
+  nameRu?: string;
+  nameEn?: string;
+  descriptionUz?: string;
+  sku: string;
+  slug?: string;
+  basePrice: number;
+  compareAtPrice?: number | null;
+  stock: number;
+  weightGrams?: number | null;
+  categoryId: string;
+  brandId?: string | null;
+  status?: 'DRAFT' | 'ACTIVE';
+}) {
+  return api<{ product: { id: string; slug: string; sku: string; status: string } }>(
+    '/api/products/create',
+    { method: 'POST', body: JSON.stringify(input) },
+  );
+}
