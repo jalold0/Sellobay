@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { scopeWhere, type CatalogScope } from '../../../lib/catalog';
 import { prisma } from '../../../lib/db';
 
+import type { Prisma } from '@ecom/database';
 import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs'; // Prisma edge'da hali to'liq qo'llab-quvvatlanmaydi
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    const orderBy: any =
+    const orderBy: Prisma.ProductOrderByWithRelationInput =
       sort === 'price-asc'
         ? { basePrice: 'asc' }
         : sort === 'price-desc'

@@ -26,6 +26,9 @@ interface ApiProduct {
   brand: { id: string; slug: string; name: string } | null;
   imageUrl: string | null;
   category: { slug: string; name: LocalizedText } | null;
+  /** Ombordagi umumiy zaxira (variantlar yig'indisi). Server hisoblab beradi. */
+  stock?: number;
+  inStock?: boolean;
 }
 
 interface ProductsResponse {
@@ -63,7 +66,16 @@ function toMockProduct(p: ApiProduct): MockProduct {
     // shu sababli telefonda faqat seed rasmlari ko'rinardi.
     imageUrl: isRealProductImageUrl(p.imageUrl) ? (p.imageUrl ?? undefined) : undefined,
     badge: deriveBadge(p),
-    inStock: true,
+    // Serverning HAQIQIY zaxira holati. Ilgari bu yerda `inStock: true` qotib
+    // yozilgan edi — omborda tugagan tovar mobilda "sotuvda bor" ko'rinardi,
+    // savatga qo'shilardi va checkout'da STOCK_INSUFFICIENT bilan yiqilardi.
+    // Server maydonni bermasa (eski javob) — savdoni to'xtatib qo'ymaslik
+    // uchun `true` deb qabul qilamiz, lekin bergan qiymatini hech qachon
+    // e'tiborsiz qoldirmaymiz.
+    inStock: p.inStock ?? true,
+    // Sotuv soni ham tashlab yuborilardi — "Eng ko'p sotilgan" bloki shu
+    // maydonga tayanadi.
+    soldCount: p.soldCount,
   };
 }
 
@@ -76,13 +88,30 @@ export interface FetchProductsParams {
   limit?: number;
 }
 
+/**
+ * Mobil UI saralash nomlarini SERVER kutgan nomlarga o'giradi.
+ *
+ * Mobil ekranda kalit `popularity`, server esa `popular` ni biladi va
+ * tanimagan qiymatni jimgina `publishedAt desc` (eng yangi) deb qabul
+ * qiladi. Ya'ni "Ommabop" tanlaganda server eng yangilarni qaytarardi —
+ * xato ko'rinmasdi, chunki mobil keyin ro'yxatni o'zi ham saralaydi;
+ * lekin qaysi 48 mahsulot kelishi noto'g'ri edi.
+ */
+const SORT_TO_API: Record<string, string> = {
+  popularity: 'popular',
+  'price-asc': 'price-asc',
+  'price-desc': 'price-desc',
+  rating: 'rating',
+  newest: 'newest',
+};
+
 /** Mahsulotlar ro'yxati — DB'dan, dev'da xato bo'lsa mock fallback. */
 export async function fetchProducts(params: FetchProductsParams = {}): Promise<MockProduct[]> {
   const qs = new URLSearchParams();
   if (params.category) qs.set('category', params.category);
   if (params.brand) qs.set('brand', params.brand);
   if (params.q) qs.set('q', params.q);
-  if (params.sort) qs.set('sort', params.sort);
+  if (params.sort) qs.set('sort', SORT_TO_API[params.sort] ?? params.sort);
   if (params.featured) qs.set('featured', 'true');
   qs.set('limit', String(params.limit ?? 48));
 
