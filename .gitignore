@@ -74,6 +74,10 @@ android/app/build/
 
 .vercel
 .env*
+# ...lekin shablonlar commit qilinishi KERAK. `.env*` ularni ham qamrab olardi,
+# ya'ni yangi apps/<app>/.env.example jimgina ignor bo'lib ketardi.
+!.env.example
+!**/.env.example
 
 # Lokal dizayn/tahlil arxivlari (root'dagi zip bundle'lar)
 /*.zip
