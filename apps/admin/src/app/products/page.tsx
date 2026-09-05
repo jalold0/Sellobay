@@ -22,18 +22,7 @@ import {
   toast,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
-import {
-  Archive,
-  CheckCircle2,
-  Copy,
-  Filter,
-  MoreHorizontal,
-  Package,
-  Pencil,
-  Plus,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle2, Copy, Filter, MoreHorizontal, Package, Plus, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -132,12 +121,13 @@ export default function AdminProductsPage() {
               <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
             </div>
             <div className="min-w-0">
-              <Link
-                href={`/products/${row.original.id}`}
-                className="block truncate font-medium hover:underline"
-              >
-                {pickLocalized(row.original.name)}
-              </Link>
+              {/*
+                Ilgari bu yerda `/products/{id}` ga link bor edi, lekin admin'da
+                bunday sahifa mavjud emas (products/ ostida faqat global/ va new/)
+                — har bir mahsulot nomini bosish 404 bilan tugardi. Sahifa
+                qo'shilmaguncha oddiy matn ko'rsatamiz.
+              */}
+              <div className="truncate font-medium">{pickLocalized(row.original.name)}</div>
               <div className="text-muted-foreground truncate text-xs">{row.original.sku}</div>
             </div>
           </div>
@@ -237,11 +227,6 @@ export default function AdminProductsPage() {
                     <DropdownMenuSeparator />
                   </>
                 ) : null}
-                <DropdownMenuItem asChild>
-                  <Link href={`/products/${row.original.id}`}>
-                    <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     void navigator.clipboard?.writeText(row.original.sku);
@@ -249,13 +234,6 @@ export default function AdminProductsPage() {
                   }}
                 >
                   <Copy className="mr-2 h-4 w-4" /> SKU nusxalash
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Archive className="mr-2 h-4 w-4" /> Arxivlash
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
-                  <Trash2 className="mr-2 h-4 w-4" /> O`chirish
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -355,16 +333,15 @@ export default function AdminProductsPage() {
           <div className="text-sm">
             <span className="font-medium">{selectedCount}</span> ta mahsulot tanlandi
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Archive className="mr-2 h-4 w-4" /> Arxivga
-            </Button>
-            <Button variant="outline" size="sm">
-              Status o`zgartirish
-            </Button>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="mr-2 h-4 w-4" /> O`chirish
-            </Button>
+          {/*
+            Arxivga / Status o'zgartirish / O'chirish tugmalari onClick'siz edi:
+            bosilganda mutlaqo hech nima bo'lmasdi va sabab ham aytilmasdi.
+            Backend'da ham mos amal yo'q (/api/products/[id] faqat
+            approve|reject qabul qiladi). Ommaviy amal yozilmaguncha bo'sh
+            tugma qoldirmaymiz.
+          */}
+          <div className="text-muted-foreground text-xs">
+            Ommaviy amallar hali ulanmagan — mahsulotni alohida moderatsiya qiling
           </div>
         </Card>
       ) : null}
