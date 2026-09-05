@@ -298,16 +298,22 @@
     <div class="eyebrow"><span class="tick"></span>Sellobay · to'liq audit · 2026-09-04 → 09-05</div>
     <h1>Sellobay audit hisoboti</h1>
     <p class="lede">
-      Ikki bosqichda o'tkazildi. <b>1-bosqich</b> — tip xavfsizligi, avtorizatsiya, pul oqimi va
-      to'qima ma'lumot. <b>2-bosqich</b> — tizim bo'ylab «uzulish» qidiruvi: klient bilan server
-      orasidagi bog'lanmagan joylar. Ikkinchisi og'irroq chiqdi: yozilgan va ishlab turgan
-      backend'ga klient umuman ulanmagan holatlar topildi — jumladan promokod, onlayn to'lov va
-      sessiya yangilash.
+      Uch bosqich. <b>1</b> — tip xavfsizligi, avtorizatsiya, pul oqimi, to'qima ma'lumot.
+      <b>2</b> — tizim bo'ylab «uzulish» qidiruvi: klient bilan server orasidagi bog'lanmagan
+      joylar. <b>3</b> — backlog'ni yopish: admin va sotuvchi panellarini haqiqiy ma'lumotga
+      o'tkazish, yetishmagan API'larni qurish, testlar.
+    </p>
+    <p class="lede">
+      Butun audit bo'ylab takrorlangan asosiy naqsh: <b>backend yozilgan va ishlab turgan, lekin
+      klient unga ulanmagan</b> — promokod, onlayn to'lov, sessiya yangilash, admin profil
+      saqlash. Ikkinchi naqsh: <b>ishlaydigandek ko'rinadigan, lekin hech nima qilmaydigan
+      boshqaruvlar</b> — soxta «Saqlandi» xabarlari, 404 beradigan havolalar, handler'siz
+      tugmalar va to'qima raqamlar.
     </p>
     <div class="meta">
       <span><b>Qamrov:</b> 517 fayl · ~56 000 satr</span>
       <span><b>Branch:</b> fix/audit-tolov-va-guruh-xaridi</span>
-      <span><b>Commit:</b> 21 ta</span>
+      <span><b>Commit:</b> 32 ta</span>
       <span><b>Baza:</b> tegilmagan</span>
     </div>
   </header>
@@ -317,11 +323,11 @@
     <h2>Tekshiruv holati <span class="count">hammasi yashil</span></h2>
     <div class="board">
       <div class="cell"><span class="k">typecheck</span><span class="v pass">16/16</span><span class="n">xato yo'q</span></div>
-      <div class="cell"><span class="k">test</span><span class="v pass">149</span><span class="n">+24 yangi</span></div>
+      <div class="cell"><span class="k">test</span><span class="v pass">183</span><span class="n">+58 yangi</span></div>
       <div class="cell"><span class="k">lint</span><span class="v pass">0</span><span class="n">error</span></div>
       <div class="cell"><span class="k">build</span><span class="v pass">✓</span><span class="n">4 ilova</span></div>
       <div class="cell"><span class="k">prisma</span><span class="v pass">✓</span><span class="n">schema valid</span></div>
-      <div class="cell"><span class="k">i18n</span><span class="v pass">955</span><span class="n">uz/ru/en · 0 farq</span></div>
+      <div class="cell"><span class="k">i18n</span><span class="v pass">1005</span><span class="n">uz/ru/en · 0 farq</span></div>
     </div>
     <p class="sec-note">
       Yuqoridagilar <code>.gitlab-ci.yml</code> dagi AYNI ketma-ketlik bo'yicha lokalda
@@ -667,6 +673,124 @@
     </div>
   </section>
 
+  <!-- ── 3-bosqich ─────────────────────────────────────────────── -->
+  <section>
+    <h2>3-bosqich: backlog yopildi <span class="count">11 commit</span></h2>
+    <p class="sec-note">
+      2-bosqichda «alohida loyiha» deb qoldirilgan ishlar. Asosiy natija: admin va sotuvchi
+      panellarida <b>bironta sahifa mock ma'lumot ustida turmaydi</b> — auditning boshida
+      13 tasi turardi.
+    </p>
+
+    <div class="stack">
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3><code>Idempotency-Key</code> server tomonida o'qilmasdi — takroriy buyurtma</h3>
+        </div>
+        <p>Mobil ilova bu sarlavhani allaqachon yuborardi, lekin server uni UMUMAN o'qimasdi.
+          Tarmoq uzilib qayta urinilganda ikkinchi buyurtma yaratilardi: zaxira ikki marta
+          kamayardi, Sello Coins ikki marta sarflanardi, promokod ikki marta hisoblanardi.</p>
+        <p><span class="label">Muhim tafsilot</span>
+          Kalit XOM holda saqlanmaydi — server uni buyurtma egasi (userId yoki mehmon telefoni)
+          bilan birga hash qiladi. Aks holda ustun global UNIQUE bo'lgani uchun ikki xil mijozning
+          bir xil kaliti to'qnashardi va birov boshqasining kalitini taxmin qilib uning
+          buyurtmasini ko'rishi mumkin edi.</p>
+        <p class="path"><b>lib/orders-server.ts</b> · <b>lib/idempotency.ts</b> (yangi) · migratsiya</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">Muhim</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Admin va sotuvchi panellari mock ustida turardi — 13 sahifa</h3>
+        </div>
+        <p><span class="label">Eng chalg'ituvchisi</span>
+          Admin bosh sahifasi o'zini «real-time KPI» deb atardi, lekin o'sish foizi
+          <code>revenue30 × 0.88</code> dan hisoblanardi — ya'ni ma'lumot qanday bo'lishidan
+          qat'i nazar HAR DOIM +13.64% chiqardi.</p>
+        <p><span class="label">Qurilgan API'lar</span>
+          <code>/api/stats</code> (admin va seller uchun alohida), <code>/api/brands</code>,
+          <code>/api/categories</code>, <code>/api/promo-codes</code>,
+          <code>/api/inventory</code> (admin: o'qish; seller: o'qish+yozish),
+          <code>/api/admin-users</code>, <code>/api/returns</code>,
+          <code>/api/products/create</code>, <code>/api/group-buy</code>.</p>
+        <p><span class="label">Ko'rsatib bo'lmaydigani olib tashlandi</span>
+          Kanal taqsimoti (manba kuzatuvi yo'q), konversiya (tashrif kuzatuvi yo'q),
+          CLV median, «Push CTR 14.2%», «Email 32.7%», uchta soxta ombor, kampaniyalar va
+          segmentlar ro'yxati. O'ylab topilmadi — yo'qligi aytildi.</p>
+        <p><span class="label">Tuzatilgan NOTO'G'RI ma'lumot</span>
+          Marketing sahifasida sodiqlik qoidasi «Har 10 000 UZS — 100 ball» deb yozilgan edi.
+          Haqiqiy qoida: 1 000 so'mga 1 coin, 1 coin = 10 so'm. Admin shu matnga qarab mijozga
+          noto'g'ri ma'lumot berishi mumkin edi.</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">Muhim</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Tanlangan rang/o'lcham yo'qolardi — noto'g'ri variant zaxirasi kamayardi</h3>
+        </div>
+        <p>Mijoz rang va o'lcham tanlaydi, lekin buyurtmaga <code>variantId</code> yozilmasdi:
+          savatga faqat yorliqlar tushardi va server STANDART variantni olardi. Ombor hisobi
+          asta-sekin haqiqatdan uzoqlashardi.</p>
+        <p>Mobilda bundan yomonroq edi: ranglar (Qora/Bordo/Ko'k/Qum) va o'lchamlar (XS..XL,
+          38..44) KODGA YOZIB QO'YILGAN edi — bazadagi variantlarga aloqasi yo'q. Sabab
+          zanjirning boshida: <code>/api/products/[slug]</code> variantlarni umuman
+          qaytarmasdi.</p>
+        <p class="path">Endi kombinatsiya topilmasa yoki omborda bo'lmasa — buyurtma jim standart variantga YOZILMAYDI, mijozga aytiladi.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Guruh xaridini YARATADIGAN yo'l yo'q edi</h3>
+        </div>
+        <p>1-bosqichda backend qurilgan edi, lekin guruh faqat seed'da yaratilardi — ya'ni
+          production'da <code>/group-buy</code> sahifasi abadiy bo'sh qolardi, holbuki bosh
+          sahifa banneri va footer unga havola beradi. Endi admin panelida «Guruh xaridi»
+          bo'limi bor; guruh narxi katalog narxidan past bo'lishi tekshiriladi.</p>
+        <p>Yana ikkita bo'shliq: mijoz guruhdan CHIQA OLMASDI
+          (<code>leaveDeal</code> o'lik kod edi), va to'lgan guruh ro'yxatdan hech qachon
+          chiqmasdi (endi 7 kun ko'rinadi).</p>
+      </article>
+
+      <article class="find info">
+        <div class="find-top">
+          <span class="chip acc">Sifat</span>
+          <span class="chip ok">Qo'shildi</span>
+          <h3><code>apps/web</code> uchun test harness — 34 test</h3>
+        </div>
+        <p>Auditda topilgan bo'shliq: 149 testning hammasi <code>packages/*</code> da edi,
+          to'rtta ilovaning birortasida ham <code>test</code> skripti yo'q. Holbuki eng jiddiy
+          nuqsonlar aynan shu testsiz qatlamda edi.</p>
+        <p>Testlangani — eng qimmatli sof mantiq: <code>evaluatePromo</code> (pul hisobi,
+          17 test), <code>scopeIdempotencyKey</code> (xavfsizlik xossasi: turli egalarning
+          kalitlari to'qnashmaydi), <code>safeInternalPath</code> (open redirect himoyasi).
+          CI'da endi 183 test ishlaydi.</p>
+      </article>
+
+      <article class="find info">
+        <div class="find-top">
+          <span class="chip acc">Qaror</span>
+          <span class="chip med">ADR 0008</span>
+          <h3>Qaytarish oqimi: sotuvchi tasdig'i QO'SHILMADI</h3>
+        </div>
+        <p>Sotuvchi «Qaytarishlar» sahifasi REQUESTED → APPROVED/REJECTED bosqichlarini
+          ko'rsatardi, lekin bazada <code>Return</code> modeli umuman yo'q. Amaldagi oqim
+          boshqacha: qaytarishni mijoz boshlaydi va u DARHOL amalga oshadi (zaxira qaytadi,
+          coinlar qaytadi), keyin operator pulni qaytaradi.</p>
+        <p>Ya'ni sotuvchi «tasdiqlaydigan» paytga kelib hammasi allaqachon bajarilgan bo'ladi.
+          Bunday bosqichni qo'shish mavjud oqimni butunlay qayta qurishni talab qiladi va bu
+          mahsulot qarori — shuning uchun UI haqiqatga moslashtirildi va sabab ADR'da yozildi.</p>
+      </article>
+
+    </div>
+  </section>
+
   <!-- ── Guruh xaridi ──────────────────────────────────────────── -->
   <section>
     <h2>Guruh xaridi: to'qimadan haqiqiy backend'ga <span class="count">qayta qurildi</span></h2>
@@ -749,6 +873,8 @@ HAVING COUNT(*) &gt; 1;</pre>
         <div class="hd"><span>Migratsiyani qo'llang</span></div>
         <p>GroupBuy jadvallari va Payment UNIQUE indeksi birga keladi.</p>
         <pre class="code">pnpm db:migrate:deploy</pre>
+        <p>Ikkala migratsiya ham shu buyruq bilan tartib bo'yicha qo'llanadi:
+        GroupBuy + Payment UNIQUE, keyin Order.idempotencyKey.</p>
       </li>
       <li>
         <div class="hd"><span>Seed'ni yangilang</span></div>
@@ -786,121 +912,78 @@ HAVING COUNT(*) &gt; 1;</pre>
 
   <!-- ── Qolgan ishlar ─────────────────────────────────────────── -->
   <section>
-    <h2>Tuzatilmadi — ongli ravishda <span class="count">backlog · qaror sizniki</span></h2>
+    <h2>Qolgan ishlar <span class="count">qaror sizniki</span></h2>
     <p class="sec-note">
-      Bular haqiqiy kamchilik, lekin ularni «tuzatish» audit doirasidan chiqadi: har biri alohida
-      loyiha (yangi ma'lumot modeli, yangi ekranlar yoki uch tilli kontent). Qamrovni o'zim
-      qisqartirmadim — nima birinchi qilinishini siz hal qilasiz.
+      Auditning boshida bu ro'yxatda 3 ta yirik band bor edi; ikkitasi yopildi
+      (panellardagi mock, testlar). Qolganlari — kod xatosi emas, alohida loyiha.
     </p>
 
     <div class="stack">
       <article class="find high">
         <div class="find-top">
-          <span class="chip high">Muhim</span>
-          <span class="chip med">Backlog</span>
-          <h3>Admin va sotuvchi panellarining bir qismi hali mock ustida</h3>
+          <span class="chip high">Kutilmoqda</span>
+          <span class="chip med">Siz ishga tushirasiz</span>
+          <h3>Ikkita migratsiya bazaga qo'llanmagan</h3>
         </div>
-        <p><span class="label">Qayerda</span>
-          Admin: bosh sahifa (Dashboard) va Analitika — KPI'lar, o'sish foizlari va konversiya
-          mock ma'lumotdan hisoblanadi; «Daromad» o'sishi doim bir xil chiqadi, chunki u
-          <code>revenue30 × 0.88</code> koeffitsiyentidan olinadi. Brendlar, Kategoriyalar va
-          Marketing bo'limlarida yaratish tugmalari handler'siz va ortida API yo'q.
-          Seller: Analitika va Moliya bo'limlari ham mock.</p>
-        <p><span class="label">Nega tuzatmadim</span>
-          Dashboard'ni ulash uchun agregat endpoint (<code>prisma.order.groupBy</code> asosida)
-          kerak; Brendlar/Kategoriyalar/Marketing uchun esa to'liq CRUD (GET/POST/PATCH/DELETE)
-          va moderatsiya qoidalari. Bu — bir necha kunlik funksional ish, xato tuzatish emas.</p>
-        <p><span class="label">Oraliq chora</span>
-          Eng kam xarajatli qadam: bu sahifalar tepasiga «namuna ma'lumot» bannerini qo'yish yoki
-          <code>nav.ts</code> dan vaqtincha olib turish — hozir ular ishlaydigan bo'lim
-          taassurotini beradi.</p>
-      </article>
-
-      <article class="find high">
-        <div class="find-top">
-          <span class="chip high">Muhim</span>
-          <span class="chip med">Backlog</span>
-          <h3>Qaytarishlar (Return) uchun ma'lumot modeli umuman yo'q</h3>
-        </div>
-        <p>Sotuvchi «Qaytarishlar» sahifasida REQUESTED → APPROVED/REJECTED oqimi ko'rsatiladi va
-          «Tasdiqlash»/«Rad» tugmalari bor, lekin ular faqat toast chiqaradi. Sabab chuqurroq:
-          schema'da <code>Return</code> modeli YO'Q — qaytarish faqat
-          <code>Order.status</code> orqali ishlaydi (<code>/api/orders/[id]/return</code>,
-          RETURNED → REFUNDED), ya'ni sahifa mavjud bo'lmagan tushunchani modellashtiradi.</p>
-        <p><span class="label">Nega tuzatmadim</span>
-          To'g'ri yechim — <code>Return</code> domenini loyihalash (model + migratsiya + tasdiqlash
-          oqimi + pul qaytarish bilan bog'lash). Bu arxitektura qarori, ADR talab qiladi.</p>
+        <p>Butun audit davomida bazaga TEGILMADI. Ikki migratsiya fayl sifatida tayyor:</p>
+        <ul class="chain">
+          <li><code>20260904000000_group_buy_and_payment_unique</code> — GroupBuy jadvallari +
+            <code>Payment(provider, externalId)</code> UNIQUE</li>
+          <li><code>20260905000000_order_idempotency_key</code> —
+            <code>Order.idempotencyKey</code> UNIQUE</li>
+        </ul>
+        <p>Birinchisidan oldin dublikat tekshiruvi shart (pastdagi «Keyingi qadamlar»).
+          Migratsiyasiz guruh xaridi va takroriy-so'rov himoyasi ishlamaydi — sahifa bo'sh
+          ko'rinadi, xato esa Sentry'ga ketadi (500 bermaydi).</p>
       </article>
 
       <article class="find med">
         <div class="find-top">
           <span class="chip med">O'rta</span>
           <span class="chip med">Backlog</span>
-          <h3>Mobil ilovada server bilan sinxronlanmaydigan holatlar</h3>
+          <h3>19 statik sahifa hali i18n'dan tashqarida</h3>
+        </div>
+        <p>Yetkazish va Qaytarish sahifalari o'tkazildi (eng ko'p ochiladigan «muammo bo'lganda»
+          sahifalari). Qolgani ~420 satr matn × 2 til.</p>
+        <p><span class="label">Muhim ajratish</span>
+          <code>terms</code>, <code>privacy</code>, <code>offer</code>, <code>cookies</code>,
+          <code>seller-rules</code> — HUQUQIY matn (~113 satr). Uni mashina tarjimasi bilan
+          chiqarish xavfli: noto'g'ri tarjima qilingan shartnoma ham yuridik kuchga ega bo'ladi.
+          Bu sahifalar uchun tarjimani yurist ko'rib chiqishi kerak.</p>
+        <p>Qolganlari (about, faq, help, contacts, sell, download va h.k.) — marketing/yordam
+          kontenti, ularni bemalol o'tkazish mumkin.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip med">Backlog</span>
+          <h3>Mobil ilovadagi sinxronizatsiya bo'shliqlari</h3>
         </div>
         <p>Savat va sevimlilar faqat telefonda saqlanadi — <code>/api/cart</code> va
-          <code>/api/wishlist</code> chaqirilmaydi, ya'ni boshqa qurilmada yo'qoladi. Mijoz
-          tanlagan o'lcham/rang serverga uzatilmaydi (buyurtma standart variantga yoziladi).
-          <code>Idempotency-Key</code> yuboriladi, lekin server uni o'qimaydi — qayta urinishda
-          ikkinchi buyurtma yaratilishi mumkin. Chiqishda refresh token bekor qilinmaydi.
-          Guruh xaridi mobilda umuman yo'q.</p>
-        <p>Bularning har biri alohida, kichik-o'rta ish; eng muhimi
-          <code>Idempotency-Key</code> (pul yo'liga tegadi).</p>
-      </article>
-
-      <article class="find high">
-        <div class="find-top">
-          <span class="chip high">Muhim</span>
-          <span class="chip med">Backlog</span>
-          <h3>Ilovalarda test umuman yo'q — 149 testning hammasi <code>packages/*</code> da</h3>
-        </div>
-        <p><code>apps/web</code>, <code>apps/admin</code>, <code>apps/seller</code>,
-          <code>apps/mobile</code> — to'rttasida ham <code>test</code> script'i yo'q. Ya'ni
-          37 API route, <code>orders-server</code>, to'lov webhook'lari va ombor logikasi
-          testsiz. Bu hisobotdagi eng jiddiy uch nuqsonning hammasi aynan shu testsiz
-          qatlamda edi.</p>
-        <p><span class="label">Tavsiya</span>
-          Eng katta foyda: to'lov webhook'lari uchun integratsiya testlari (bekor qilingan
-          buyurtmaga Perform, takroriy Complete, noto'g'ri imzo) va <code>createOrder</code>
-          uchun narx/zaxira testlari.</p>
-      </article>
-
-      <article class="find med">
-        <div class="find-top">
-          <span class="chip med">O'rta</span>
-          <span class="chip med">Backlog</span>
-          <h3>21 statik sahifa i18n'dan tashqarida</h3>
-        </div>
-        <p>Locale fayllari mukammal (950 kalit, 0 farq), lekin
-          <code>about</code>, <code>terms</code>, <code>privacy</code>, <code>faq</code>,
-          <code>help</code>, <code>delivery</code>, <code>returns</code>, <code>careers</code>
-          va boshqa 13 sahifa <code>useTranslations</code> ni umuman ishlatmaydi — matn to'g'ridan-to'g'ri
-          JSX ichida.</p>
-        <p><span class="label">Nega tuzatmadim</span>
-          Bu yuzlab satr huquqiy va marketing matnini uch tilga o'girish kerak degani.
-          Tarjimani o'zim to'qib yozmaganim to'g'ri — ayniqsa <code>terms</code> va
-          <code>privacy</code> uchun. Loyiha bu ishni bosqichma-bosqich qilib kelgan
-          (oxirgi commit har sahifada ko'rinadigan komponentlarni o'tkazgan).</p>
+          <code>/api/wishlist</code> chaqirilmaydi, ya'ni boshqa qurilmada yo'qoladi.
+          Chiqishda refresh token bekor qilinmaydi. Guruh xaridi mobilda yo'q.</p>
+        <p>Eng muhimi — <code>Idempotency-Key</code> — bu bosqichda yopildi (pul yo'liga
+          tegardi). Qolganlari qulaylik masalasi.</p>
       </article>
 
       <article class="find info">
         <div class="find-top">
           <span class="chip acc">Kichik</span>
           <span class="chip med">Backlog</span>
-          <h3>O'lik konfiguratsiya: <code>REFRESH_SECRET</code> va <code>signRefreshToken</code></h3>
+          <h3>Rol o'zgartirish va mahsulot tahrirlash API'lari</h3>
         </div>
-        <p>Refresh token JWT emas (opaque + DB hash), shuning uchun
-          <code>packages/auth/src/jwt.ts</code> dagi <code>signRefreshToken</code> va
-          <code>constants.ts</code> dagi <code>REFRESH_SECRET</code> hech qayerda
-          ishlatilmaydi. Zarari yo'q, lekin o'quvchini chalg'itadi — kimdir
-          <code>JWT_REFRESH_SECRET</code> ni sozlashga urinishi mumkin.</p>
+        <p>Bir nechta handler'siz tugma UI'dan olib tashlandi (yolg'on tasdiq bermasligi
+          uchun), lekin ular ortidagi funksiya ham yozilmagan: admin xodim rolini
+          o'zgartirish, mahsulotni tahrirlash/arxivlash, brendni yoqish/o'chirish,
+          ommaviy amallar. Kerak bo'lganda qo'shiladi.</p>
       </article>
     </div>
   </section>
 
   <footer>
-    <span>21 commit · fix/audit-tolov-va-guruh-xaridi</span>
-    <span>typecheck 16/16 · test 149 · lint 0 error · build 4/4 · i18n 955 (0 farq)</span>
+    <span>32 commit · fix/audit-tolov-va-guruh-xaridi</span>
+    <span>typecheck 16/16 · test 183 · lint 0 error · build 4/4 · i18n 1005 (0 farq)</span>
     <span>baza o'zgartirilmadi — migratsiya kutmoqda</span>
   </footer>
 
