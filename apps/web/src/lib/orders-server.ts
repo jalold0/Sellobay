@@ -220,6 +220,31 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   const productById = new Map(products.map((p) => [p.id, p]));
   const productName = (name: unknown): string => (name as { uz?: string })?.uz ?? 'Mahsulot';
 
+  // GURUH XARIDI NARXI. Mijoz to'lgan (COMPLETED) guruhning a'zosi bo'lsa, o'sha
+  // mahsulotni guruh narxida oladi — sahifadagi "Guruh to'lganda hamma arzon
+  // narxda xarid qiladi" va'dasi shu yerda bajariladi. Ilgari bu bog'lanish
+  // yo'q edi: guruh to'lardi-yu, groupPrice checkout'ga umuman yetib bormasdi.
+  //
+  // Narx SNAPSHOT: guruh ochilganda yozilgan groupPrice ishlatiladi, katalog
+  // narxi keyin o'zgarsa ham a'zolar ko'rgan narx o'zgarmaydi.
+  const groupPriceByProduct = new Map<string, Prisma.Decimal>();
+  if (currentUser) {
+    const memberships = await prisma.groupBuyMember.findMany({
+      where: {
+        userId: currentUser.id,
+        groupBuy: { status: 'COMPLETED', productId: { in: productIds } },
+      },
+      select: { groupBuy: { select: { productId: true, groupPrice: true } } },
+    });
+    for (const m of memberships) {
+      const prev = groupPriceByProduct.get(m.groupBuy.productId);
+      // Bir mahsulot bo'yicha bir nechta to'lgan guruh bo'lsa — eng arzoni.
+      if (!prev || m.groupBuy.groupPrice.lessThan(prev)) {
+        groupPriceByProduct.set(m.groupBuy.productId, m.groupBuy.groupPrice);
+      }
+    }
+  }
+
   // 2. Subtotal + varyant/ombor aniqlash (pre-check). Har bir satr uchun sotiladigan
   //    varyantni topamiz (aniq berilgan variantId yoki mahsulotning default varyanti),
   //    inventar qatorini olamiz va zaxirani tez tekshiramiz. Yakuniy (race'siz) himoya
@@ -279,7 +304,10 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       );
     }
 
-    const unitPrice = p.basePrice;
+    // Guruh narxi faqat katalog narxidan PAST bo'lsa qo'llanadi — aks holda
+    // eski snapshot mijozga zarar keltirmasin.
+    const groupPrice = groupPriceByProduct.get(p.id);
+    const unitPrice = groupPrice && groupPrice.lessThan(p.basePrice) ? groupPrice : p.basePrice;
     const totalPrice = unitPrice.mul(it.quantity);
     subtotal = subtotal.add(totalPrice);
     orderItemsData.push({
@@ -450,6 +478,23 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       //      Yetmasa InsufficientStockError tashlanadi → butun tx rollback
       //      (buyurtma, coin, promo — hech biri commit bo'lmaydi). Oversell'ning oldi olinadi.
       await deductStockForOrder(tx, stockLines, orderNumber);
+
+      // 5b″. Guruh xaridi — a'zolikni shu buyurtmaga bog'laymiz. `orderId`
+      //      ilgari hech qachon yozilmasdi: guruh to'lgani bilan uning
+      //      qaysi buyurtmaga aylangani ma'lum bo'lmasdi.
+      if (currentUser && groupPriceByProduct.size > 0) {
+        await tx.groupBuyMember.updateMany({
+          where: {
+            userId: currentUser.id,
+            orderId: null,
+            groupBuy: {
+              status: 'COMPLETED',
+              productId: { in: [...groupPriceByProduct.keys()] },
+            },
+          },
+          data: { orderId: created.id },
+        });
+      }
 
       // 5c. Promokod hisoblagichlari — usedCount va UserCoupon redeemedAt
       if (promoApplied && promoId) {
