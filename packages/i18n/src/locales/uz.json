@@ -850,7 +850,8 @@
       "referral": "Do'st taklifi bonusi",
       "discount": "Chegirmaga ishlatildi",
       "daysAgo": "{days} kun oldin",
-      "empty": "Hali coin tarixi yo'q — birinchi xaridingizni qiling!"
+      "empty": "Hali coin tarixi yo'q — birinchi xaridingizni qiling!",
+      "checkin": "Kunlik kirish bonusi"
     }
   },
   "sale": {
