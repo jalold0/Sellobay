@@ -161,6 +161,19 @@ export interface AdminCustomer {
   registeredAt: string;
 }
 
+export interface AdminCustomerOrder {
+  id: string;
+  number: string;
+  status: AdminOrderStatus;
+  grandTotal: number;
+  placedAt: string;
+}
+
+/** Bitta mijoz kartochkasi + oxirgi buyurtmalari. */
+export function getCustomer(id: string) {
+  return api<{ customer: AdminCustomer; orders: AdminCustomerOrder[] }>(`/api/customers/${id}`);
+}
+
 // Buyurtmalar ro'yxati (admin)
 export function listOrders(status?: string) {
   const qs = status && status !== 'all' ? `?status=${status}` : '';
