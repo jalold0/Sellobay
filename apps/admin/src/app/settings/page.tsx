@@ -30,16 +30,20 @@ import { Key, Lock, Plus, ShieldCheck, User2, Webhook } from 'lucide-react';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
-import { meAdmin, updateAdminProfile } from '../../lib/auth/client';
+import {
+  listAdminUsers,
+  meAdmin,
+  updateAdminProfile,
+  type AdminStaffUser,
+} from '../../lib/auth/client';
 import { formatRelative, initials } from '../../lib/format';
-import { mockAdminUsers } from '../../lib/mock';
 
 const ROLES = [
   { key: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Barcha huquqlar' },
   { key: 'ADMIN', label: 'Admin', desc: 'Asosiy boshqaruv' },
   { key: 'MARKETING_MANAGER', label: 'Marketing menejeri', desc: 'Kampaniyalar, promo' },
   { key: 'FINANCE_MANAGER', label: 'Moliya menejeri', desc: 'Hisob, payout' },
-  { key: 'SUPPORT_AGENT', label: "Qo`llab-quvvatlash", desc: 'Tikets, mijoz' },
+  { key: 'SUPPORT_AGENT', label: 'Qo`llab-quvvatlash', desc: 'Tikets, mijoz' },
   { key: 'WAREHOUSE_STAFF', label: 'Ombor xodimi', desc: 'WMS, inventar' },
 ];
 
@@ -69,6 +73,24 @@ export default function AdminSettingsPage() {
         });
       }
       setLoadingProfile(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Panel xodimlari HAQIQIY bazadan. Ilgari bu yerda to'qima ismlar va
+  // rollar ko'rsatilardi — admin kimda qanday huquq borligini bilish uchun
+  // kirsa, haqiqatga aloqasi yo'q ro'yxatni ko'rardi.
+  const [staff, setStaff] = React.useState<AdminStaffUser[]>([]);
+  const [loadingStaff, setLoadingStaff] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    void listAdminUsers().then((res) => {
+      if (!alive) return;
+      if (res.success) setStaff(res.data.items);
+      setLoadingStaff(false);
     });
     return () => {
       alive = false;
@@ -194,37 +216,48 @@ export default function AdminSettingsPage() {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <ul className="divide-y">
-                {mockAdminUsers.map((u) => (
-                  <li key={u.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={u.avatarUrl} />
-                      <AvatarFallback className="text-[10px]">
-                        {initials(`${u.firstName} ${u.lastName}`)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium">
-                        {u.firstName} {u.lastName}
+              {loadingStaff ? (
+                <div className="text-muted-foreground p-10 text-center text-sm">Yuklanmoqda...</div>
+              ) : staff.length === 0 ? (
+                <div className="text-muted-foreground p-10 text-center text-sm">
+                  Panelga kirish huquqi bor xodim topilmadi.
+                </div>
+              ) : (
+                <ul className="divide-y">
+                  {staff.map((u) => (
+                    <li key={u.id} className="flex items-center gap-3 px-6 py-3 text-sm">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={u.avatarUrl ?? undefined} />
+                        <AvatarFallback className="text-[10px]">
+                          {initials(`${u.firstName} ${u.lastName}`.trim()) || '—'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">
+                          {`${u.firstName} ${u.lastName}`.trim() || u.email || u.phone}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {u.email ?? u.phone ?? '—'}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">{u.email}</div>
-                    </div>
-                    <div className="hidden gap-1 md:flex">
-                      {u.roles.map((r) => (
-                        <StatusBadge key={r} tone="info" dot={false}>
-                          {r}
-                        </StatusBadge>
-                      ))}
-                    </div>
-                    <div className="hidden text-xs text-muted-foreground md:block">
-                      {u.lastLoginAt ? formatRelative(u.lastLoginAt) : '—'}
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      Tahrirlash
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+                      <div className="hidden gap-1 md:flex">
+                        {u.roles.map((r) => (
+                          <StatusBadge key={r} tone="info" dot={false}>
+                            {r}
+                          </StatusBadge>
+                        ))}
+                      </div>
+                      <div className="text-muted-foreground hidden text-xs md:block">
+                        {u.lastLoginAt ? formatRelative(u.lastLoginAt) : 'hech qachon'}
+                      </div>
+                      {/*
+                        "Tahrirlash" tugmasi olib tashlandi — u onClick'siz edi
+                        va rol o'zgartirish API'si hali yo'q.
+                      */}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -234,8 +267,9 @@ export default function AdminSettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Rol va huquqlar (RBAC)</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Har bir rolga tegishli huquqlarni boshqaring. O`zgarishlar real-time foydalanuvchilarga tatbiq qilinadi.
+              <p className="text-muted-foreground text-xs">
+                Har bir rolga tegishli huquqlarni boshqaring. O`zgarishlar real-time
+                foydalanuvchilarga tatbiq qilinadi.
               </p>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -246,7 +280,7 @@ export default function AdminSettingsPage() {
                 >
                   <div>
                     <div className="font-medium">{r.label}</div>
-                    <div className="text-xs text-muted-foreground">{r.desc}</div>
+                    <div className="text-muted-foreground text-xs">{r.desc}</div>
                   </div>
                   <Button variant="outline" size="sm">
                     Huquqlar
@@ -288,14 +322,16 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div>
                     <div className="font-medium">SMS-OTP</div>
-                    <div className="text-xs text-muted-foreground">+998 90 *** ** 00</div>
+                    <div className="text-muted-foreground text-xs">+998 90 *** ** 00</div>
                   </div>
                   <Switch defaultChecked />
                 </div>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div>
                     <div className="font-medium">TOTP (Authenticator)</div>
-                    <div className="text-xs text-muted-foreground">Google/Microsoft authenticator</div>
+                    <div className="text-muted-foreground text-xs">
+                      Google/Microsoft authenticator
+                    </div>
                   </div>
                   <Switch />
                 </div>
@@ -303,7 +339,7 @@ export default function AdminSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-medium">Aktiv sessiyalar</div>
-                    <div className="text-xs text-muted-foreground">3 ta qurilma</div>
+                    <div className="text-muted-foreground text-xs">3 ta qurilma</div>
                   </div>
                   <Button variant="outline" size="sm">
                     <Key className="mr-2 h-4 w-4" /> Boshqarish
@@ -329,10 +365,13 @@ export default function AdminSettingsPage() {
                 { name: 'Telegram Bot', status: 'connected', desc: 'Mijoz xabarlari' },
                 { name: 'Sentry', status: 'connected', desc: 'Xato monitoring' },
               ].map((i) => (
-                <div key={i.name} className="flex items-center justify-between rounded-md border p-3">
+                <div
+                  key={i.name}
+                  className="flex items-center justify-between rounded-md border p-3"
+                >
                   <div>
                     <div className="font-medium">{i.name}</div>
-                    <div className="text-xs text-muted-foreground">{i.desc}</div>
+                    <div className="text-muted-foreground text-xs">{i.desc}</div>
                   </div>
                   {i.status === 'connected' ? (
                     <StatusBadge tone="success">Ulangan</StatusBadge>
@@ -399,8 +438,8 @@ export default function AdminSettingsPage() {
                 o'rniga boshqaruvlar o'chirilgan va sabab ochiq aytilgan.
               */}
               <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                Bu bo`lim hali bazaga ulanmagan — sozlamalar saqlanmaydi. Til va valyuta
-                hozircha kodda belgilanadi. Kargo tarifi va kurs uchun{' '}
+                Bu bo`lim hali bazaga ulanmagan — sozlamalar saqlanmaydi. Til va valyuta hozircha
+                kodda belgilanadi. Kargo tarifi va kurs uchun{' '}
                 <span className="font-medium">Sozlamalar → Global</span> bo`limidan foydalaning.
               </div>
             </CardContent>

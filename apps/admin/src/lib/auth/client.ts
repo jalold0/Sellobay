@@ -572,3 +572,21 @@ export function createProduct(input: {
     { method: 'POST', body: JSON.stringify(input) },
   );
 }
+
+// ── Panel xodimlari ───────────────────────────────────────────────
+export interface AdminStaffUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+  status: string;
+  roles: string[];
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export function listAdminUsers() {
+  return api<{ items: AdminStaffUser[] }>('/api/admin-users');
+}
