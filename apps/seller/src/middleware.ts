@@ -4,7 +4,7 @@
 import { jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { COOKIE_ACCESS } from '@/lib/auth/constants';
+import { COOKIE_ACCESS, accessSecretOrNull } from '@/lib/auth/constants';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_PREFIXES = ['/api/auth/', '/_next/', '/favicon', '/icon', '/apple-icon', '/manifest'];
@@ -20,7 +20,10 @@ const ALLOWED_ROLES = ['SELLER', 'ADMIN', 'SUPER_ADMIN'];
 
 async function isValidAccess(token: string): Promise<boolean> {
   try {
-    const { payload } = await jwtVerify(token, encoder.encode(process.env.JWT_SECRET ?? ''));
+    const secret = accessSecretOrNull();
+    // Kalit yo'q/juda qisqa bo'lsa hech qanday token qabul qilinmaydi.
+    if (!secret) return false;
+    const { payload } = await jwtVerify(token, encoder.encode(secret));
     const roles = Array.isArray(payload.roles) ? (payload.roles as string[]) : [];
     return roles.some((r) => ALLOWED_ROLES.includes(r));
   } catch {

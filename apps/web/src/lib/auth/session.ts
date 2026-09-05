@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { signAccessToken, verifyToken, type AccessPayload } from '@ecom/auth';
 import { prisma } from '@/lib/db';
 import {
-  ACCESS_SECRET,
+  requireAccessSecret,
   ACCESS_TTL,
   COOKIE_ACCESS,
   COOKIE_REFRESH,
@@ -54,7 +54,7 @@ export async function createSession(
 
   const access = await signAccessToken(
     { sub: userId, roles, sid: session.id },
-    { secret: ACCESS_SECRET, expiresIn: ACCESS_TTL, issuer: 'sellobay' },
+    { secret: requireAccessSecret(), expiresIn: ACCESS_TTL, issuer: 'sellobay' },
   );
 
   const refreshRaw = generateOpaqueToken();
@@ -141,7 +141,7 @@ export async function rotateRefreshTokens(refreshRaw: string): Promise<SessionTo
   const roles = await fetchUserRoles(current.userId);
   const access = await signAccessToken(
     { sub: current.userId, roles },
-    { secret: ACCESS_SECRET, expiresIn: ACCESS_TTL, issuer: 'sellobay' },
+    { secret: requireAccessSecret(), expiresIn: ACCESS_TTL, issuer: 'sellobay' },
   );
 
   return { access, refresh: newRaw };
@@ -177,7 +177,7 @@ export async function getCurrentUser() {
   const token = cookieToken ?? bearerToken;
   if (!token) return null;
   try {
-    const payload = await verifyToken<AccessPayload>(token, ACCESS_SECRET);
+    const payload = await verifyToken<AccessPayload>(token, requireAccessSecret());
     if (!payload.sub) return null;
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },

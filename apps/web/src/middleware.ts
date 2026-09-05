@@ -1,7 +1,7 @@
 import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { COOKIE_ACCESS } from '@/lib/auth/constants';
+import { COOKIE_ACCESS, accessSecretOrNull } from '@/lib/auth/constants';
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
 type Locale = (typeof LOCALES)[number];
@@ -43,7 +43,10 @@ const encoder = new TextEncoder();
 
 async function isValidAccess(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, encoder.encode(process.env.JWT_SECRET ?? ''));
+    const secret = accessSecretOrNull();
+    // Kalit yo'q/juda qisqa bo'lsa hech qanday token qabul qilinmaydi.
+    if (!secret) return false;
+    await jwtVerify(token, encoder.encode(secret));
     return true;
   } catch {
     return false;
