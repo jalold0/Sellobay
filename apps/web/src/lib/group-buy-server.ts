@@ -106,14 +106,25 @@ function toView(row: DealRow, joinedIds: Set<string>, now: Date): GroupDealView 
  * (COMPLETED) guruhlar ko'rsatiladi. Bo'sh bo'lsa — BO'SH massiv qaytadi
  * (mock ko'rsatilmaydi: sahifa "hozircha guruh yo'q" holatini chiqaradi).
  */
+/** To'lgan guruh ro'yxatda shu muddat davomida ko'rinib turadi. */
+const COMPLETED_VISIBLE_DAYS = 7;
+
 export async function listActiveDeals(userId: string | null): Promise<GroupDealView[]> {
   const now = new Date();
+  // Ilgari `status: 'COMPLETED'` shartsiz turardi — ya'ni to'lgan guruh
+  // ro'yxatdan HECH QACHON chiqmasdi va sahifa vaqt o'tishi bilan eski
+  // guruhlar bilan to'lib borardi (kod izohi esa "endigina to'lgan" deb
+  // da'vo qilardi).
+  const completedSince = new Date(now.getTime() - COMPLETED_VISIBLE_DAYS * 24 * 60 * 60 * 1000);
 
   let rows: DealRow[];
   try {
     rows = await prisma.groupBuy.findMany({
       where: {
-        OR: [{ status: 'OPEN', expiresAt: { gt: now } }, { status: 'COMPLETED' }],
+        OR: [
+          { status: 'OPEN', expiresAt: { gt: now } },
+          { status: 'COMPLETED', completedAt: { gte: completedSince } },
+        ],
         product: { status: 'ACTIVE', deletedAt: null },
       },
       // Tugashiga eng kam vaqt qolgani birinchi — mijoz uchun eng dolzarbi.

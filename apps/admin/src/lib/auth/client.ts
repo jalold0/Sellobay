@@ -510,3 +510,43 @@ export interface PendingSeller {
     status: string;
   };
 }
+
+// ── Guruh xaridi ──────────────────────────────────────────────────
+export interface AdminGroupBuy {
+  id: string;
+  productId: string;
+  productSlug: string;
+  name: LocalizedName;
+  imageUrl: string;
+  soloPrice: number;
+  groupPrice: number;
+  targetSize: number;
+  currentSize: number;
+  status: 'OPEN' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt: string;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export function listGroupBuys() {
+  return api<{ items: AdminGroupBuy[] }>('/api/group-buy');
+}
+
+export function createGroupBuy(input: {
+  productId: string;
+  groupPrice: number;
+  targetSize: number;
+  durationDays: number;
+}) {
+  return api<{ groupBuy: { id: string; expiresAt: string } }>('/api/group-buy', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function cancelGroupBuy(id: string) {
+  return api<{ id: string; status: string; affectedMembers: number }>(`/api/group-buy/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'cancel' }),
+  });
+}

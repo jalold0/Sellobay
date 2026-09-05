@@ -86,6 +86,36 @@ export function GroupBuyCard({ deal, isLoggedIn }: { deal: GroupDealView; isLogg
     }
   };
 
+  /**
+   * Guruhdan chiqish. Ilgari `DELETE /api/group-buy/:id/join` yozilgan edi,
+   * lekin uni chaqiradigan joy yo'q edi — mijoz qo'shilgach guruhdan
+   * CHIQA OLMASDI.
+   */
+  const onLeave = async () => {
+    if (!joined || complete || pending) return;
+    setPending(true);
+    try {
+      const res = await fetch(`/api/group-buy/${deal.id}/join`, { method: 'DELETE' });
+      const body = (await res.json().catch(() => null)) as {
+        success: boolean;
+        data?: { deal: GroupDealView };
+        error?: { message: string };
+      } | null;
+      if (!res.ok || !body?.success || !body.data) {
+        toast({ title: body?.error?.message ?? t('leaveFailed'), variant: 'destructive' });
+        return;
+      }
+      setJoined(false);
+      setCurrent(body.data.deal.currentSize);
+      toast({ title: t('leftGroup'), variant: 'success' });
+      router.refresh();
+    } catch {
+      toast({ title: t('leaveFailed'), variant: 'destructive' });
+    } finally {
+      setPending(false);
+    }
+  };
+
   const onShare = async () => {
     const url = `${window.location.origin}/${locale}/group-buy#${deal.id}`;
     try {
@@ -165,22 +195,37 @@ export function GroupBuyCard({ deal, isLoggedIn }: { deal: GroupDealView; isLogg
         </div>
 
         <div className="mt-auto flex gap-2">
-          <Button
-            onClick={onJoin}
-            disabled={joined || complete || pending || expired}
-            className="flex-1"
-            variant={joined ? 'outline' : 'default'}
-          >
-            {joined ? (
-              <>
-                <Check size={15} className="mr-1" /> {t('youJoined')}
-              </>
-            ) : pending ? (
-              t('joining')
-            ) : (
-              t('join')
-            )}
-          </Button>
+          {joined && !complete && !expired ? (
+            // Qo'shilgan, lekin guruh hali to'lmagan — chiqish mumkin.
+            // To'lgan guruhdan chiqish boshqalarning kelishilgan narxini
+            // buzadi, shuning uchun u holatda tugma o'chiriladi.
+            <Button
+              onClick={() => void onLeave()}
+              disabled={pending}
+              className="flex-1"
+              variant="outline"
+            >
+              <Check size={15} className="mr-1" />
+              {pending ? t('leaving') : t('leaveGroup')}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => void onJoin()}
+              disabled={joined || complete || pending || expired}
+              className="flex-1"
+              variant={joined ? 'outline' : 'default'}
+            >
+              {joined ? (
+                <>
+                  <Check size={15} className="mr-1" /> {t('youJoined')}
+                </>
+              ) : pending ? (
+                t('joining')
+              ) : (
+                t('join')
+              )}
+            </Button>
+          )}
           <Button variant="outline" size="icon" onClick={onShare} aria-label={t('share')}>
             <Share2 size={16} />
           </Button>

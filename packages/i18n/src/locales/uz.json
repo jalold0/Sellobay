@@ -806,7 +806,11 @@
     "emptyText": "Yangi guruh xaridlari tez orada qo'shiladi. Keyinroq qarab turing.",
     "expired": "Muddat tugadi",
     "joining": "Qo'shilmoqda...",
-    "joinFailed": "Guruhga qo'shilib bo'lmadi. Birozdan keyin urinib ko'ring."
+    "joinFailed": "Guruhga qo'shilib bo'lmadi. Birozdan keyin urinib ko'ring.",
+    "leaveGroup": "Guruhdan chiqish",
+    "leaving": "Chiqilmoqda...",
+    "leftGroup": "Guruhdan chiqdingiz",
+    "leaveFailed": "Guruhdan chiqib bo`lmadi. Birozdan keyin urinib ko`ring."
   },
   "loyalty": {
     "title": "Sello Coins",
