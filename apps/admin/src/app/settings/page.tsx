@@ -26,9 +26,11 @@ import {
   TabsTrigger,
   toast,
 } from '@ecom/ui';
-import { Key, Lock, Mail, Plus, ShieldCheck, User2, Webhook } from 'lucide-react';
+import { Key, Lock, Plus, ShieldCheck, User2, Webhook } from 'lucide-react';
+import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
+import { meAdmin, updateAdminProfile } from '../../lib/auth/client';
 import { formatRelative, initials } from '../../lib/format';
 import { mockAdminUsers } from '../../lib/mock';
 
@@ -42,6 +44,55 @@ const ROLES = [
 ];
 
 export default function AdminSettingsPage() {
+  // Profil HAQIQIY sessiyadan yuklanadi. Ilgari bu yerda qotib qolgan
+  // "Demo Admin / admin@example.uz" turardi va "Saqlash" hech nima qilmasdi.
+  const [profile, setProfile] = React.useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
+  const [loadingProfile, setLoadingProfile] = React.useState(true);
+  const [savingProfile, setSavingProfile] = React.useState(false);
+
+  React.useEffect(() => {
+    let alive = true;
+    void meAdmin().then((res) => {
+      if (!alive) return;
+      if (res.success) {
+        const u = res.data.user;
+        setProfile({
+          firstName: u.firstName ?? '',
+          lastName: u.lastName ?? '',
+          email: u.email ?? '',
+          phone: u.phone ?? '',
+        });
+      }
+      setLoadingProfile(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const onSaveProfile = async () => {
+    if (savingProfile) return;
+    setSavingProfile(true);
+    const res = await updateAdminProfile({
+      firstName: profile.firstName.trim() || null,
+      lastName: profile.lastName.trim() || null,
+      email: profile.email.trim() || null,
+      phone: profile.phone.trim() || null,
+    });
+    setSavingProfile(false);
+    // Muvaffaqiyat xabari FAQAT server tasdiqlagach.
+    if (res.success) {
+      toast({ title: 'Profil saqlandi', variant: 'success' });
+    } else {
+      toast({ title: res.error.message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -79,33 +130,54 @@ export default function AdminSettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarFallback>DA</AvatarFallback>
+                  <AvatarFallback>
+                    {initials(`${profile.firstName} ${profile.lastName}`.trim()) || '—'}
+                  </AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="sm">
-                  Rasm yuklash
-                </Button>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <Label>Ism</Label>
-                  <Input defaultValue="Demo" />
+                  <Label htmlFor="firstName">Ism</Label>
+                  <Input
+                    id="firstName"
+                    value={profile.firstName}
+                    disabled={loadingProfile}
+                    onChange={(e) => setProfile((p) => ({ ...p, firstName: e.target.value }))}
+                  />
                 </div>
                 <div>
-                  <Label>Familiya</Label>
-                  <Input defaultValue="Admin" />
+                  <Label htmlFor="lastName">Familiya</Label>
+                  <Input
+                    id="lastName"
+                    value={profile.lastName}
+                    disabled={loadingProfile}
+                    onChange={(e) => setProfile((p) => ({ ...p, lastName: e.target.value }))}
+                  />
                 </div>
                 <div>
-                  <Label>Email</Label>
-                  <Input type="email" defaultValue="admin@example.uz" />
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile.email}
+                    disabled={loadingProfile}
+                    onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+                  />
                 </div>
                 <div>
-                  <Label>Telefon</Label>
-                  <Input defaultValue="+998 90 000 00 00" />
+                  <Label htmlFor="phone">Telefon</Label>
+                  <Input
+                    id="phone"
+                    value={profile.phone}
+                    disabled={loadingProfile}
+                    placeholder="+998XXXXXXXXX"
+                    onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                  />
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button onClick={() => toast({ title: 'Saqlandi', variant: 'success' })}>
-                  Saqlash
+                <Button onClick={onSaveProfile} disabled={loadingProfile || savingProfile}>
+                  {savingProfile ? 'Saqlanmoqda...' : 'Saqlash'}
                 </Button>
               </div>
             </CardContent>
@@ -282,7 +354,7 @@ export default function AdminSettingsPage() {
             <CardContent className="space-y-4">
               <div>
                 <Label>Asosiy til</Label>
-                <Select defaultValue="uz">
+                <Select defaultValue="uz" disabled>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -295,7 +367,7 @@ export default function AdminSettingsPage() {
               </div>
               <div>
                 <Label>Asosiy valyuta</Label>
-                <Select defaultValue="UZS">
+                <Select defaultValue="UZS" disabled>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -306,23 +378,31 @@ export default function AdminSettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center justify-between rounded-md border p-3">
+              <div className="flex items-center justify-between rounded-md border p-3 opacity-60">
                 <div>
                   <div className="text-sm font-medium">Maintenance rejimi</div>
-                  <div className="text-xs text-muted-foreground">Sayt vaqtinchalik o`chiriladi</div>
+                  <div className="text-muted-foreground text-xs">Sayt vaqtinchalik o`chiriladi</div>
                 </div>
-                <Switch />
+                <Switch disabled />
               </div>
-              <div className="flex items-center justify-between rounded-md border p-3">
+              <div className="flex items-center justify-between rounded-md border p-3 opacity-60">
                 <div>
                   <div className="text-sm font-medium">Email bildirishnomalar</div>
-                  <div className="text-xs text-muted-foreground">Yangi buyurtma, payout</div>
+                  <div className="text-muted-foreground text-xs">Yangi buyurtma, payout</div>
                 </div>
-                <Switch defaultChecked />
+                <Switch disabled />
               </div>
-              <Button onClick={() => toast({ title: 'Saqlandi', variant: 'success' })}>
-                <Mail className="mr-2 h-4 w-4" /> Saqlash
-              </Button>
+              {/*
+                Bu bo'lim uchun backend hali yo'q. Ilgari "Saqlash" tugmasi
+                "Saqlandi" deb yozardi — admin maintenance rejimini yoqdim deb
+                o'ylardi, sayt esa ishlab turardi. Yolg'on tasdiq berish
+                o'rniga boshqaruvlar o'chirilgan va sabab ochiq aytilgan.
+              */}
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                Bu bo`lim hali bazaga ulanmagan — sozlamalar saqlanmaydi. Til va valyuta
+                hozircha kodda belgilanadi. Kargo tarifi va kurs uchun{' '}
+                <span className="font-medium">Sozlamalar → Global</span> bo`limidan foydalaning.
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

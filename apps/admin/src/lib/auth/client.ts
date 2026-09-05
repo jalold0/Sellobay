@@ -47,6 +47,20 @@ export function meAdmin() {
   return api<{ user: AdminUser }>('/api/auth/me');
 }
 
+/** Admin o'z profilini yangilaydi (PATCH /api/auth/me allaqachon mavjud edi,
+ *  lekin sozlamalar sahifasi uni chaqirmasdi — faqat "Saqlandi" deb yozardi). */
+export function updateAdminProfile(input: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}) {
+  return api<{ user: AdminUser }>('/api/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 // Sotuvchi tasdiq APIs
 export function listPendingSellers() {
   return api<{ items: PendingSeller[] }>('/api/sellers/pending');
