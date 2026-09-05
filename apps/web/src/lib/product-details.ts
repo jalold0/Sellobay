@@ -3,6 +3,8 @@
 
 import { findById, type LocalizedText, type MockProduct, products } from './mock-data';
 
+import type { ProductVariantRow } from './catalog';
+
 export interface ProductGalleryImage {
   seed: string;
   /** Haqiqiy rasm URL (DB'dan). Bo'lsa seed placeholder o'rniga shu ko'rsatiladi. */
@@ -57,6 +59,12 @@ export interface ProductFullDetail {
   gallery: ProductGalleryImage[];
   colors: ProductVariantColor[];
   sizes: ProductVariantSize[];
+  /**
+   * DB variantlari (id bilan). Savatga qo'shishda tanlangan rang/o'lchamga
+   * mos variant shu ro'yxatdan topiladi — buyurtma aynan o'sha variantga
+   * yoziladi. Mock rejimda bo'sh (id yo'q).
+   */
+  variants: ProductVariantRow[];
   specs: ProductSpec[];
   reviews: ProductReview[];
   questions: ProductQuestion[];
@@ -142,6 +150,8 @@ export interface ProductDetailRealExtras {
   description?: LocalizedText | null;
   /** Tasdiqlangan sharhlar. Bo'sh bo'lsa sahifada sharh ko'rsatilmaydi. */
   reviews?: ProductReview[];
+  /** DB variantlari (id bilan) — savatga to'g'ri variant qo'shish uchun. */
+  variants?: ProductVariantRow[];
 }
 
 // Keng tarqalgan rang nomlari → hex (variant rang tanlagichi uchun)
@@ -248,6 +258,8 @@ export function buildProductDetail(
     gallery,
     colors,
     sizes,
+    // Mock rejimda variant id'lari yo'q — tanlov faqat yorliq bo'lib qoladi.
+    variants: real?.variants ?? [],
     // Xususiyatlar jadvalida FAQAT bazada bor maydonlar qoldi.
     //
     // Olib tashlanganlari va sababi:

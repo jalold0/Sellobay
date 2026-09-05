@@ -23,8 +23,30 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
         categories: {
           include: { category: { select: { slug: true, name: true } } },
         },
-        // Ombor: zaxira = varyantlar inventarining yig'indisi
-        variants: { select: { inventory: { select: { quantityOnHand: true } } } },
+        // Ombor: zaxira = varyantlar inventarining yig'indisi.
+        // Variantning O'ZI ham qaytariladi: mijoz rang/o'lchamni tanlaganda
+        // klient aynan qaysi variantni buyurtma qilishini bilishi kerak.
+        // Ilgari bu yerda faqat `inventory` bor edi — natijada mobil ilova
+        // rang va o'lcham ro'yxatini KODGA YOZIB QO'YGAN edi (bazadagi
+        // haqiqiy variantlarga aloqasi yo'q) va buyurtma har doim standart
+        // variantga tushardi, ya'ni boshqa variantning zaxirasi kamayardi.
+        variants: {
+          where: { isActive: true },
+          orderBy: { position: 'asc' },
+          select: {
+            id: true,
+            sku: true,
+            price: true,
+            position: true,
+            inventory: { select: { quantityOnHand: true } },
+            attributes: {
+              select: {
+                valueString: true,
+                attribute: { select: { slug: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -36,6 +58,29 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
       (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
       0,
     );
+
+    /** Atribut qiymatini oladi (option bo'lsa undan, aks holda valueString'dan). */
+    const attrValue = (
+      attrs: (typeof product.variants)[number]['attributes'],
+      slug: string,
+    ): string | null => {
+      const found = attrs.find((a) => a.attribute.slug === slug);
+      return found?.valueString ?? null;
+    };
+
+    const variants = product.variants.map((v) => {
+      const variantStock = v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0);
+      return {
+        id: v.id,
+        sku: v.sku,
+        // Variant o'z narxiga ega bo'lmasa mahsulotning asosiy narxi.
+        price: (v.price ?? product.basePrice).toString(),
+        color: attrValue(v.attributes, 'color'),
+        size: attrValue(v.attributes, 'size'),
+        stock: variantStock,
+        inStock: variantStock > 0,
+      };
+    });
 
     // Decimal va boshqa types'ni JSON-friendly qilish
     return NextResponse.json({
@@ -59,6 +104,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
       categories: product.categories.map((c: (typeof product.categories)[number]) => c.category),
       stock,
       inStock: stock > 0,
+      variants,
     });
   } catch (err) {
     console.error('[api/products/[slug]] error:', err);

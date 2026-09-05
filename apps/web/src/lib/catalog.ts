@@ -251,10 +251,26 @@ export async function fetchProductBySlug(slug: string): Promise<MockProduct | nu
  * Bu tuzilma o'sib borishi kerak, kamayishi emas: sahifa qancha ko'p maydonni
  * bazadan olsa, shuncha kam narsa to'qib chiqariladi.
  */
+/** Bitta variant — rang/o'lcham kombinatsiyasi, id va zaxirasi bilan. */
+export interface ProductVariantRow {
+  id: string;
+  color: string | null;
+  size: string | null;
+  stock: number;
+  inStock: boolean;
+}
+
 export interface ProductDetailExtras {
   galleryUrls: string[]; // haqiqiy rasm URL'lari (placeholder emas), position tartibida
   colors: string[]; // variantlardagi noyob ranglar
   sizes: { label: string; inStock: boolean }[]; // variantlardagi noyob o'lchamlar
+  /**
+   * Variantlarning O'ZI — id bilan. Ilgari faqat rang/o'lcham YORLIQLARI
+   * chiqarilardi, ya'ni savatga qo'shishda qaysi variant tanlanganini
+   * bilib bo'lmasdi va buyurtma standart variantga yozilardi (boshqa
+   * variantning zaxirasi kamayardi).
+   */
+  variants: ProductVariantRow[];
   sku: string; // haqiqiy SKU (ilgari `ECM-<id>` deb to'qib chiqarilardi)
   weightGrams: number | null;
   description: LocalizedText | null; // sotuvchi yozgan tavsif
@@ -314,6 +330,7 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
           where: { isActive: true },
           orderBy: { position: 'asc' },
           select: {
+            id: true,
             inventory: { select: { quantityOnHand: true } },
             attributes: {
               select: { valueString: true, attribute: { select: { slug: true } } },
@@ -329,22 +346,30 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
 
     const colors: string[] = [];
     const sizeMap = new Map<string, boolean>();
+    const variants: ProductVariantRow[] = [];
     for (const v of row.variants) {
-      const inStock = v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0) > 0;
+      const stock = v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0);
+      const inStock = stock > 0;
+      let color: string | null = null;
+      let size: string | null = null;
       for (const a of v.attributes) {
         if (!a.valueString) continue;
-        if (a.attribute.slug === 'color' && !colors.includes(a.valueString)) {
-          colors.push(a.valueString);
+        if (a.attribute.slug === 'color') {
+          color = a.valueString;
+          if (!colors.includes(a.valueString)) colors.push(a.valueString);
         }
         if (a.attribute.slug === 'size') {
+          size = a.valueString;
           sizeMap.set(a.valueString, (sizeMap.get(a.valueString) ?? false) || inStock);
         }
       }
+      variants.push({ id: v.id, color, size, stock, inStock });
     }
     return {
       galleryUrls,
       colors,
       sizes: Array.from(sizeMap.entries()).map(([label, inStock]) => ({ label, inStock })),
+      variants,
       sku: row.sku,
       weightGrams: row.weightGrams,
       description: (row.description as LocalizedText | null) ?? null,

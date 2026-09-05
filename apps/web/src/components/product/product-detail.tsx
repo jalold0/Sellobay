@@ -66,6 +66,17 @@ export function ProductDetail({ detail, locale }: Props) {
   const toggleWishlist = useWishlist((s) => s.toggle);
 
   const selectedColor = colors.find((c) => c.id === color);
+
+  // Tanlangan rang/o'lchamga mos HAQIQIY variant. Ilgari savatga faqat
+  // yorliqlar (color/size matni) qo'shilardi va buyurtma standart variantga
+  // yozilardi — ya'ni boshqa variantning zaxirasi kamayardi.
+  const variants = detail.variants ?? [];
+  const selectedVariant =
+    variants.find(
+      (v) =>
+        (colors.length === 0 || v.color === selectedColor?.label) &&
+        (sizes.length === 0 || v.size === selectedSize?.label),
+    ) ?? (variants.length === 1 ? variants[0] : undefined);
   const selectedSize = sizes.find((s) => s.id === size);
   const discount = discountPercent(product.price, product.oldPrice);
 
@@ -92,6 +103,8 @@ export function ProductDetail({ detail, locale }: Props) {
       isGlobal: product.isGlobal,
       color: selectedColor?.label,
       size: selectedSize?.label,
+      variantId: selectedVariant?.id,
+      maxQuantity: selectedVariant?.stock,
     });
     toast({
       title: t('addedToCart'),

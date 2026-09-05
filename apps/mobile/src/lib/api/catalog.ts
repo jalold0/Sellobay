@@ -29,6 +29,16 @@ interface ApiProduct {
   /** Ombordagi umumiy zaxira (variantlar yig'indisi). Server hisoblab beradi. */
   stock?: number;
   inStock?: boolean;
+  /** Faqat mahsulot detalida keladi (/api/products/[slug]). */
+  variants?: Array<{
+    id: string;
+    sku: string;
+    price: string;
+    color: string | null;
+    size: string | null;
+    stock: number;
+    inStock: boolean;
+  }>;
 }
 
 interface ProductsResponse {
@@ -76,6 +86,16 @@ function toMockProduct(p: ApiProduct): MockProduct {
     // Sotuv soni ham tashlab yuborilardi — "Eng ko'p sotilgan" bloki shu
     // maydonga tayanadi.
     soldCount: p.soldCount,
+    // Variantlar faqat mahsulot detalida keladi.
+    variants: p.variants?.map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      price: Number(v.price) || 0,
+      color: v.color,
+      size: v.size,
+      stock: v.stock,
+      inStock: v.inStock,
+    })),
   };
 }
 
