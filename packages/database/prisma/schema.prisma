@@ -678,6 +678,12 @@ model Order {
   locale          String         @default("uz")
   notes           String?
   promoCode       String?
+  /// Takroriy yuborishdan himoya. Klient bergan `Idempotency-Key` XOM holda
+  /// saqlanmaydi: server uni buyurtma egasi (userId yoki mehmon telefoni)
+  /// bilan birga hash qiladi. Shu sababli ikki xil mijoz bir xil kalit
+  /// yuborsa ham to'qnashmaydi va birov boshqasining buyurtmasini
+  /// ko'ra olmaydi.
+  idempotencyKey  String?        @unique
   shippingAddressId String?      @db.Uuid
   pickupPointId   String?        @db.Uuid
   deliveryMethod  DeliveryMethod @default(HOME_DELIVERY)

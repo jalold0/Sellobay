@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
+import { orderOwnerKey, scopeIdempotencyKey } from '@/lib/idempotency';
 import { getGlobalSettings } from '@/lib/global-settings';
 import {
   deductStockForOrder,
@@ -121,7 +122,78 @@ async function generateOrderNumber(): Promise<string> {
   );
 }
 
-export async function createOrder(input: CreateOrderInput, currentUser: CurrentUser) {
+/** Idempotentlik kaliti uchun oldindan qaytariladigan buyurtma ko'rinishi. */
+const replaySelect = {
+  id: true,
+  number: true,
+  status: true,
+  grandTotal: true,
+  placedAt: true,
+  discountTotal: true,
+  promoCode: true,
+} as const;
+
+/**
+ * Takroriy so'rovga birinchi buyurtmaning natijasini qaytaradi.
+ *
+ * Chegirma va promokod buyurtmaning o'zida saqlanadi, shuning uchun ular
+ * aniq. Sello Coins raqamlari esa qayta hisoblanmaydi (ular
+ * LoyaltyTransaction'da, buyurtma qatorida emas) — `replayed` bayrog'i
+ * klientga shuni bildiradi: bu yangi hisob emas, avvalgi natija.
+ */
+function replayResponse(row: {
+  id: string;
+  number: string;
+  status: string;
+  grandTotal: Prisma.Decimal;
+  placedAt: Date;
+  discountTotal: Prisma.Decimal;
+  promoCode: string | null;
+}) {
+  return {
+    order: {
+      id: row.id,
+      number: row.number,
+      status: row.status,
+      grandTotal: row.grandTotal.toString(),
+      placedAt: row.placedAt.toISOString(),
+      coinsEarned: 0,
+      coinsRedeemed: 0,
+      discountSom: Number(row.discountTotal),
+      promoDiscountSom: 0,
+      appliedPromoCode: row.promoCode,
+    },
+    replayed: true as const,
+  };
+}
+
+export async function createOrder(
+  input: CreateOrderInput,
+  currentUser: CurrentUser,
+  /** `Idempotency-Key` sarlavhasi (ixtiyoriy). Mobil ilova uni yuboradi. */
+  clientIdempotencyKey?: string,
+) {
+  // TAKRORIY YUBORISH TEKSHIRUVI. Mobil ilova `Idempotency-Key` yuborardi,
+  // lekin server uni umuman o'qimasdi — tarmoq uzilib qayta urinilganda
+  // ikkinchi buyurtma yaratilardi (zaxira ikki marta kamayardi, Sello Coins
+  // ikki marta sarflanardi).
+  const ownerKey = orderOwnerKey(currentUser?.id, input.phone);
+  const idempotencyKey = clientIdempotencyKey?.trim()
+    ? scopeIdempotencyKey(clientIdempotencyKey.trim(), ownerKey)
+    : null;
+
+  if (idempotencyKey) {
+    const existing = await prisma.order.findUnique({
+      where: { idempotencyKey },
+      select: replaySelect,
+    });
+    if (existing) {
+      // Ayni so'rov allaqachon bajarilgan — yangi buyurtma yaratmaymiz,
+      // birinchisining natijasini qaytaramiz.
+      return replayResponse(existing);
+    }
+  }
+
   // Karta orqali qo'lda to'lov (UZCARD) — chek majburiy va to'g'ri formatda bo'lishi shart.
   // Chek TRANZAKSIYADAN OLDIN saqlanadi: fayl yuklash tarmoq amali, uni bazaga
   // yozish tranzaksiyasi ichida bajarish tranzaksiyani keraksiz uzoq ushlab turadi.
@@ -432,6 +504,7 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       const created = await tx.order.create({
         data: {
           number: orderNumber,
+          idempotencyKey,
           userId: currentUser?.id ?? null,
           guestEmail: null, // hozir guest uchun email yo'q
           guestPhone: currentUser ? null : input.phone,
@@ -567,8 +640,32 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       // Ombor yetmasa — buyurtma (va barcha yon ta'sirlar) rollback bo'ladi.
       // Sentinel qaytaramiz (409 uchun); boshqa xatolar odatdagidek yuqoriga.
       if (e instanceof InsufficientStockError) return { stockError: e } as const;
+      // Ayni kalit bilan PARALLEL so'rov bizdan oldin ulgurgan (yuqoridagi
+      // tekshiruv — read-then-write, oraliq bor). UNIQUE cheklov ikkinchisini
+      // to'xtatadi; bu xato emas — birinchisining natijasini qaytaramiz.
+      if (
+        idempotencyKey &&
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        return { duplicateKey: true } as const;
+      }
       throw e;
     });
+
+  if ('duplicateKey' in txResult) {
+    const winner = await prisma.order.findUnique({
+      where: { idempotencyKey: idempotencyKey as string },
+      select: replaySelect,
+    });
+    if (winner) return replayResponse(winner);
+    // Kalit band, lekin qator topilmadi — bu kutilmagan holat.
+    throw new OrderError(
+      409,
+      'DUPLICATE_REQUEST',
+      'Buyurtma allaqachon yuborilgan. Buyurtmalar bo`limini tekshiring.',
+    );
+  }
 
   if ('stockError' in txResult) {
     const e = txResult.stockError;

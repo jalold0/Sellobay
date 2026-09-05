@@ -106,6 +106,11 @@ export function CheckoutFlow() {
   // boshqa usulga o'tamiz — foydalanuvchi 503 xatoga urilib qolmasin.
   const [cardsChecked, setCardsChecked] = React.useState(false);
 
+  // Takroriy yuborishdan himoya: kalit bir marta hosil qilinadi va shu
+  // checkout davomida o'zgarmaydi. Tarmoq uzilib qayta urinilsa server
+  // ikkinchi buyurtma yaratmaydi, birinchisini qaytaradi.
+  const idempotencyKeyRef = React.useRef<string>(crypto.randomUUID());
+
   React.useEffect(() => {
     if (cardsChecked) return;
     let active = true;
@@ -368,7 +373,10 @@ export function CheckoutFlow() {
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKeyRef.current,
+        },
         credentials: 'same-origin',
         body: JSON.stringify(payload),
       });
