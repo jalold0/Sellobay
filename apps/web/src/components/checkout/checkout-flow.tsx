@@ -101,19 +101,32 @@ export function CheckoutFlow() {
   const [paymentNote, setPaymentNote] = React.useState('');
   const [copiedCard, setCopiedCard] = React.useState<string | null>(null);
 
+  // Platforma kartalari sozlanmagan bo'lsa (MANUAL_PAYMENT_CARDS yo'q) bu usul
+  // ishlamaydi: server buyurtmani rad etadi. Shuning uchun ro'yxat bo'sh kelsa
+  // boshqa usulga o'tamiz — foydalanuvchi 503 xatoga urilib qolmasin.
+  const [cardsChecked, setCardsChecked] = React.useState(false);
+
   React.useEffect(() => {
-    if (payment !== 'UZCARD' || cards.length > 0) return;
+    if (cardsChecked) return;
     let active = true;
     fetch('/api/payment-cards', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
-        if (active && res?.success && res.data) setCards(res.data.cards as PaymentCardDTO[]);
+        if (!active) return;
+        const list = res?.success && res.data ? (res.data.cards as PaymentCardDTO[]) : [];
+        setCards(list);
+        setCardsChecked(true);
+        if (list.length === 0) {
+          setPayment((current) => (current === 'UZCARD' ? 'CLICK' : current));
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setCardsChecked(true);
+      });
     return () => {
       active = false;
     };
-  }, [payment, cards.length]);
+  }, [cardsChecked]);
 
   const onReceiptFile = async (file: File | undefined) => {
     if (!file) return;
@@ -231,7 +244,13 @@ export function CheckoutFlow() {
         });
         const body = (await res.json().catch(() => null)) as {
           success?: boolean;
-          data?: { valid: boolean; code?: string; type?: string; discount?: number; message?: string };
+          data?: {
+            valid: boolean;
+            code?: string;
+            type?: string;
+            discount?: number;
+            message?: string;
+          };
         } | null;
         if (!alive || !res.ok || !body?.success || !body.data) return;
         const result = body.data;

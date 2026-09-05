@@ -28,6 +28,7 @@ import { settleOrderLoyalty } from '@/lib/loyalty-server';
 import {
   MANUAL_CARD_PROVIDER,
   ReceiptError,
+  isManualCardAvailable,
   parseReceipt,
   storeReceipt,
 } from '@/lib/manual-payment';
@@ -126,6 +127,16 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   // yozish tranzaksiyasi ichida bajarish tranzaksiyani keraksiz uzoq ushlab turadi.
   let receiptPath: string | null = null;
   if (input.paymentProvider === MANUAL_CARD_PROVIDER) {
+    // Karta sozlanmagan bo'lsa bu usul umuman taklif qilinmasligi kerak edi.
+    // Klient baribir yuborsa — buyurtmani qabul qilmaymiz: mijoz qayerga pul
+    // o'tkazishini bilmaydi va chek tasdiqlanmaydi.
+    if (!isManualCardAvailable()) {
+      throw new OrderError(
+        503,
+        'MANUAL_CARD_UNAVAILABLE',
+        'Karta orqali to`lov hozir mavjud emas. Boshqa usulni tanlang.',
+      );
+    }
     const parsed = parseReceipt(input.paymentReceipt);
     if (!parsed.ok) throw new OrderError(400, 'RECEIPT_REQUIRED', parsed.error);
     try {

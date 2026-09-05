@@ -23,7 +23,16 @@ const DEV_FALLBACK_CARDS: PaymentCard[] = [
   { number: '9860 0000 0000 0000', holder: 'SELLOBAY TEST', bank: 'Humo' },
 ];
 
-/** Platforma to'lov kartalari (env yoki dev fallback). */
+/**
+ * Platforma to'lov kartalari.
+ *
+ * PRODUCTION'da sozlanmagan bo'lsa — BO'SH ro'yxat qaytadi, dev namunasi EMAS.
+ * Ilgari fallback shartsiz ishlardi: MANUAL_PAYMENT_CARDS qo'yilmagan prod'da
+ * mijozga "8600 0000 0000 0000 / SELLOBAY TEST" ko'rsatilardi va u shu raqamga
+ * pul o'tkazishga urinardi. Bo'sh ro'yxatda esa checkout karta to'lovini
+ * umuman taklif qilmaydi — jim yolg'on ko'rsatgandan ko'ra ochiq yo'qligi
+ * yaxshiroq.
+ */
 export function getPaymentCards(): PaymentCard[] {
   const raw = process.env.MANUAL_PAYMENT_CARDS?.trim();
   if (raw) {
@@ -36,10 +45,16 @@ export function getPaymentCards(): PaymentCard[] {
         if (clean.length > 0) return clean;
       }
     } catch {
-      // noto'g'ri JSON — fallback'ga o'tamiz
+      // noto'g'ri JSON — pastdagi qoidaga o'tamiz
     }
   }
+  if (process.env.NODE_ENV === 'production') return [];
   return DEV_FALLBACK_CARDS;
+}
+
+/** Qo'lda karta to'lovi hozir mumkinmi (karta sozlanganmi). */
+export function isManualCardAvailable(): boolean {
+  return getPaymentCards().length > 0;
 }
 
 // ─── Chek (kvitansiya) rasmi ────────────────────────────────────────────
