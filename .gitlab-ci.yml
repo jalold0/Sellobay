@@ -6,13 +6,23 @@ stages:
   - deploy
   - docker
 
-# GitHub'dagi `on: push [main, develop]` + `on: pull_request` ekvivalenti.
+# Pipeline QACHON ishga tushadi.
+#
+# Ilgari bu yerda faqat main/develop va MR turardi — ya'ni feature branch'ga
+# push qilgan dasturchi MR ochmaguncha CI'dan hech qanday signal olmasdi.
+# Xato faqat MR ochilganda ko'rinardi. Endi har qanday branch tekshiriladi.
+#
+# Ikkinchi qoida dublikatning oldini oladi: branch'da ochiq MR bo'lsa, GitLab
+# aks holda ikkita pipeline (branch + MR) ishga tushirardi va CI daqiqalari
+# ikki barobar sarflanardi.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
     - if: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "web"
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH
 
 variables:
   # Prisma client generatsiyasi va Next build vaqtidagi schema validatsiyasi uchun
@@ -27,11 +37,14 @@ lint-typecheck-build:
   image: node:20-bookworm-slim
   # GitHub'dagi `concurrency: cancel-in-progress` ekvivalenti
   interruptible: true
-  # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags)
+  # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags).
+  # Qaysi pipeline umuman ochilishi yuqoridagi workflow:rules bilan hal qilinadi —
+  # bu yerda shu ro'yxatni takrorlaymiz, aks holda job branch pipeline'ida tushib qolardi.
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH
   cache:
     key:
       files:
