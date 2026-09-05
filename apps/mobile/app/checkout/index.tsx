@@ -2,6 +2,7 @@
 // Seksiya UI'lari src/components/checkout/* da (delivery/payment/review/footer/modal).
 import { SHIPPING_FEE, EXPRESS_FEE, FREE_SHIPPING_THRESHOLD } from '@ecom/core-domain';
 import * as ImagePicker from 'expo-image-picker';
+import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
 import { Package } from 'lucide-react-native';
 import * as React from 'react';
@@ -28,6 +29,8 @@ import {
   fetchAddresses,
   fetchLoyalty,
   fetchPaymentCards,
+  isOnlinePaymentProvider,
+  startPayment,
   validatePromo,
   type ApiAddress,
   type PaymentCard,
@@ -361,8 +364,48 @@ export default function CheckoutScreen() {
     }
 
     const orderNumber = result.order.number;
-    haptics.success();
+    const orderId = result.order.id;
     clear();
+
+    // ONLAYN TO'LOV. Ilgari bu qadam umuman yo'q edi: Click/Payme tanlagan
+    // mijozga darhol "Buyurtma qabul qilindi!" deyilardi, lekin pul olinmasdi
+    // va buyurtma PENDING bo'lib qolardi. Web allaqachon shunday qiladi.
+    if (isOnlinePaymentProvider(payment)) {
+      const pay = await startPayment(orderId, payment);
+      if (pay.success && pay.checkoutUrl) {
+        haptics.success();
+        toast({
+          title: 'Buyurtma yaratildi',
+          description: "To'lov sahifasi ochilmoqda...",
+          variant: 'success',
+          duration: 3000,
+        });
+        try {
+          await Linking.openURL(pay.checkoutUrl);
+        } catch {
+          toast({
+            title: "To'lov sahifasini ochib bo'lmadi",
+            description: 'Buyurtmalar bo`limidan to`lovni davom ettiring',
+            variant: 'destructive',
+          });
+        }
+        router.replace(`/order-success?number=${orderNumber}&pending=1` as never);
+        return;
+      }
+      // To'lovni boshlab bo'lmadi — buyurtma yaratilgan, lekin TO'LANMAGAN.
+      // Buni muvaffaqiyat deb ko'rsatmaymiz.
+      haptics.error();
+      toast({
+        title: "Buyurtma yaratildi, lekin to'lov boshlanmadi",
+        description: pay.error?.message ?? 'Buyurtmalar bo`limidan qayta urinib ko`ring',
+        variant: 'destructive',
+        duration: 5000,
+      });
+      router.replace(`/order-success?number=${orderNumber}&pending=1` as never);
+      return;
+    }
+
+    haptics.success();
     toast({
       title: 'Buyurtma qabul qilindi!',
       description: `№ ${orderNumber}`,
