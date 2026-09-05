@@ -17,6 +17,10 @@ interface Props {
   items: CartItem[];
   subtotal: number;
   shippingFee: number;
+  /** Qo'llanilgan promokod (server tasdiqlagan). Yo'q bo'lsa null. */
+  promoCode: string | null;
+  /** Serverda hisoblangan promo chegirmasi (so'm). */
+  promoDiscount: number;
   coinDiscount: number;
   total: number;
   redeemableCoins: number;
@@ -30,6 +34,8 @@ export function OrderSummary({
   items,
   subtotal,
   shippingFee,
+  promoCode,
+  promoDiscount,
   coinDiscount,
   total,
   redeemableCoins,
@@ -107,6 +113,16 @@ export function OrderSummary({
             <span>{t('summaryItemsCount', { count: items.length })}</span>
             <span className="text-brand-ink font-semibold">{formatMoney(subtotal)}</span>
           </div>
+          {promoCode && promoDiscount > 0 && (
+            <div className="flex justify-between">
+              <span>
+                {t('promoDiscount')} · <span className="font-mono text-xs">{promoCode}</span>
+              </span>
+              <span className="font-semibold text-emerald-600">
+                − {formatMoney(promoDiscount)}
+              </span>
+            </div>
+          )}
           {coinDiscount > 0 && (
             <div className="flex justify-between">
               <span>{t('coinDiscount')}</span>

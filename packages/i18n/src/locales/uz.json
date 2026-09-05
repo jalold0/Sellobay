@@ -385,7 +385,9 @@
     "groupGlobal": "Global (Xitoydan)",
     "mixedNote": "Global tovarlar 15-17 kunda kargo bilan keladi, shuning uchun ular alohida buyurtma qilinadi. Ikkalasini ham buyurtma qilsangiz bo‘ladi.",
     "checkoutLocal": "Sellobay tovarlarini buyurtma qilish · {amount}",
-    "checkoutGlobal": "Global tovarlarni buyurtma qilish · {amount}"
+    "checkoutGlobal": "Global tovarlarni buyurtma qilish · {amount}",
+    "promoPlaceholder": "Promokod",
+    "promoChecking": "Tekshirilmoqda..."
   },
   "checkout": {
     "title": "Buyurtmani rasmiylashtirish",
@@ -519,8 +521,10 @@
       "required": "Majburiy maydonlarni to'ldiring",
       "network": "Tarmoq xatosi",
       "failed": "Buyurtma yaratilmadi",
-      "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing."
-    }
+      "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing.",
+      "promoNoLongerValid": "Promokod bu buyurtma uchun yaroqli emas — olib tashlandi"
+    },
+    "promoDiscount": "Promokod chegirmasi"
   },
   "auth": {
     "loginRequired": "Buyurtma berish uchun ro'yxatdan o'ting",

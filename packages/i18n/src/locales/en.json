@@ -378,7 +378,9 @@
     "groupGlobal": "Global (from China)",
     "mixedNote": "Global items arrive by cargo in 15-17 days, so they are ordered separately. You can place both orders.",
     "checkoutLocal": "Order Sellobay items · {amount}",
-    "checkoutGlobal": "Order global items · {amount}"
+    "checkoutGlobal": "Order global items · {amount}",
+    "promoPlaceholder": "Promo code",
+    "promoChecking": "Checking..."
   },
   "checkout": {
     "title": "Checkout",
@@ -502,7 +504,8 @@
       "required": "Please fill required fields",
       "network": "Network error",
       "failed": "Order not created",
-      "staleItems": "Some items in your cart are outdated and were removed. Please add them again."
+      "staleItems": "Some items in your cart are outdated and were removed. Please add them again.",
+      "promoNoLongerValid": "Promo code no longer applies to this order — removed"
     },
     "securePayment": "Secure payment",
     "summaryTitle": "Order · {count} items",
@@ -513,7 +516,8 @@
     "promoAppliedChip": "{code} applied ✓",
     "premiumPoints": "You'll earn +{points} points on this order — Sellobay Premium",
     "pcs": "{count} pcs",
-    "newAddress": "+ New address"
+    "newAddress": "+ New address",
+    "promoDiscount": "Promo discount"
   },
   "auth": {
     "loginRequired": "Please sign in to place an order",

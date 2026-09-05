@@ -48,6 +48,9 @@ export function CheckoutFlow() {
   const allItems = useCart((s) => s.items);
   const clear = useCart((s) => s.clear);
   const removeItem = useCart((s) => s.removeItem);
+  const appliedPromo = useCart((s) => s.appliedPromo);
+  const setAppliedPromo = useCart((s) => s.setPromo);
+  const clearAppliedPromo = useCart((s) => s.clearPromo);
 
   // Savatda lokal va global tovar bo'lsa, ular ALOHIDA buyurtma qilinadi
   // (turli muddat va yetkazish). Savat sahifasi qaysi guruh checkout qilinayotganini
@@ -199,11 +202,58 @@ export function CheckoutFlow() {
         : subtotal >= FREE_SHIPPING_THRESHOLD
           ? 0
           : SHIPPING_FEE;
-  const baseTotal = subtotal + shippingFee;
+  // Promokod chegirmasi. Savatdagi hisob checkout'dagidan farq qilishi mumkin
+  // (yetkazish usuli o'zgargan bo'lsa), shuning uchun pastdagi effekt kodni
+  // haqiqiy shippingFee bilan serverda QAYTA tekshiradi — ko'rsatilgan summa
+  // olinadigan summaga teng bo'lishi kerak.
+  const promoDiscount = Math.min(appliedPromo?.discount ?? 0, subtotal + shippingFee);
+  const baseTotal = Math.max(0, subtotal + shippingFee - promoDiscount);
   const redeemableCoins = Math.min(coinBalance, Math.floor(baseTotal / COIN_VALUE_SOM));
   const coinsToRedeem = useCoins ? redeemableCoins : 0;
   const coinDiscount = coinsToRedeem * COIN_VALUE_SOM;
   const total = baseTotal - coinDiscount;
+
+  // Promokodni haqiqiy checkout summasi bilan qayta tekshiramiz. Savatda
+  // yetkazish narxi boshqacha bo'lgan bo'lishi mumkin (punkt/express), va
+  // FREESHIP turidagi kod aynan shu summaga bog'liq. Kod endi yaroqsiz bo'lsa
+  // (minimal summa yetmadi, limit tugadi) — jim qoldirmaymiz, olib tashlaymiz.
+  const promoCode = appliedPromo?.code ?? null;
+  React.useEffect(() => {
+    if (!promoCode) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const res = await fetch('/api/promo/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ code: promoCode, subtotal, shippingFee }),
+        });
+        const body = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          data?: { valid: boolean; code?: string; type?: string; discount?: number; message?: string };
+        } | null;
+        if (!alive || !res.ok || !body?.success || !body.data) return;
+        const result = body.data;
+        if (!result.valid) {
+          clearAppliedPromo();
+          toast({ title: result.message ?? t('errors.promoNoLongerValid'), variant: 'warning' });
+          return;
+        }
+        setAppliedPromo({
+          code: result.code ?? promoCode,
+          discount: result.discount ?? 0,
+          type: result.type ?? 'UNKNOWN',
+        });
+      } catch {
+        // Tarmoq xatosi — kodni olib tashlamaymiz; yakuniy hisob serverda.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [promoCode, subtotal, shippingFee]);
 
   if (!mounted) return <div className="h-96" aria-hidden />;
 
@@ -287,6 +337,7 @@ export function CheckoutFlow() {
       paymentReceipt: payment === 'UZCARD' ? receiptPath : undefined,
       paymentNote: payment === 'UZCARD' && paymentNote.trim() ? paymentNote.trim() : undefined,
       notes: address.notes.trim() || undefined,
+      promoCode: appliedPromo?.code ?? undefined,
       redeemCoins: coinsToRedeem,
     };
 
@@ -428,6 +479,8 @@ export function CheckoutFlow() {
           items={items}
           subtotal={subtotal}
           shippingFee={shippingFee}
+          promoCode={appliedPromo?.code ?? null}
+          promoDiscount={promoDiscount}
           coinDiscount={coinDiscount}
           total={total}
           redeemableCoins={redeemableCoins}
