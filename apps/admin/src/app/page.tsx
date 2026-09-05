@@ -1,5 +1,7 @@
 'use client';
 
+import * as React from 'react';
+
 import {
   Avatar,
   AvatarFallback,
@@ -13,51 +15,54 @@ import {
   KpiCard,
   PageHeader,
 } from '@ecom/ui';
-import {
-  AlertTriangle,
-  ArrowRight,
-  Boxes,
-  DollarSign,
-  ShoppingCart,
-  Users,
-} from 'lucide-react';
+import { AlertTriangle, ArrowRight, Boxes, DollarSign, ShoppingCart, Users } from 'lucide-react';
 import Link from 'next/link';
 
-import { ChannelPie } from '../components/charts/channel-pie';
 import { OrdersChart } from '../components/charts/orders-chart';
 import { RevenueChart } from '../components/charts/revenue-chart';
 import { OrderStatusBadge } from '../components/status/order-status-badge';
 import { formatDate, formatMoney, formatNumber, initials, pickLocalized } from '../lib/format';
-import {
-  mockChannelBreakdown,
-  mockCustomers,
-  mockOrders,
-  mockProducts,
-  mockRevenueSeries,
-} from '../lib/mock';
+import { getStats, type AdminStats } from '../lib/auth/client';
+
+/**
+ * Ikki davr orasidagi foiz o'zgarish. Oldingi davr bo'sh bo'lsa `undefined` —
+ * KpiCard delta'ni umuman ko'rsatmaydi. Nolga bo'lish yoki soxta "+100%"
+ * chiqarmaymiz.
+ */
+function deltaPct(current: number, previous: number): number | undefined {
+  if (previous <= 0) return undefined;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
 
 export default function DashboardPage() {
-  const revenue30 = mockRevenueSeries.reduce((s, p) => s + p.revenue, 0);
-  const revenuePrev = revenue30 * 0.88;
-  const revenueDelta = ((revenue30 - revenuePrev) / revenuePrev) * 100;
+  // Barcha ko'rsatkich BAZADAN. Ilgari bu sahifa butunlay mock ustida edi va
+  // o'sish foizi `revenue30 * 0.88` dan hisoblanib, ma'lumotdan qat'i nazar
+  // har doim +13.64% chiqardi.
+  const [stats, setStats] = React.useState<AdminStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const ordersTotal = mockOrders.length;
-  const newCustomers = mockCustomers.filter(
-    (c) => Date.now() - new Date(c.registeredAt).getTime() < 30 * 86_400_000,
-  ).length;
-  const avgCheck = revenue30 / Math.max(ordersTotal, 1);
+  React.useEffect(() => {
+    let alive = true;
+    void getStats().then((res) => {
+      if (!alive) return;
+      if (res.success) setStats(res.data);
+      else setError(res.error.message);
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const lowStock = mockProducts
-    .filter((p) => p.stock <= 10 && p.status === 'ACTIVE')
-    .slice(0, 5);
+  if (loading) {
+    return <div className="text-muted-foreground py-20 text-center text-sm">Yuklanmoqda...</div>;
+  }
+  if (error || !stats) {
+    return <div className="py-20 text-center text-sm">{error ?? 'Ma`lumotni yuklab bo`lmadi'}</div>;
+  }
 
-  const recentOrders = [...mockOrders]
-    .sort((a, b) => +new Date(b.placedAt) - +new Date(a.placedAt))
-    .slice(0, 6);
-
-  const topProducts = [...mockProducts]
-    .sort((a, b) => b.soldCount - a.soldCount)
-    .slice(0, 5);
+  const { kpi, revenueSeries, lowStock, recentOrders, topProducts } = stats;
 
   return (
     <div className="space-y-6">
@@ -76,33 +81,38 @@ export default function DashboardPage() {
 
       {/* KPI */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/*
+          delta faqat HAQIQIY solishtirish bo'lganda ko'rsatiladi. Ilgari
+          "Buyurtmalar +6.2%", "Yangi mijozlar −2.1%" va "O'rtacha chek +3.4%"
+          kodga yozib qo'yilgan sonlar edi — ular hech qachon o'zgarmasdi.
+          Oldingi davrda ma'lumot bo'lmasa delta umuman berilmaydi.
+        */}
         <KpiCard
-          label="Oxirgi 30 kun daromad"
-          value={formatMoney(revenue30)}
-          delta={revenueDelta}
+          label={`Oxirgi ${kpi.windowDays} kun daromad`}
+          value={formatMoney(kpi.revenue)}
+          delta={kpi.revenueDelta ?? undefined}
           icon={DollarSign}
           accent="success"
           hint="oldingi davrga nisbatan"
         />
         <KpiCard
           label="Buyurtmalar"
-          value={formatNumber(ordersTotal)}
-          delta={6.2}
+          value={formatNumber(kpi.ordersCount)}
+          delta={deltaPct(kpi.ordersCount, kpi.ordersPrev)}
           icon={ShoppingCart}
           accent="info"
+          hint={`oxirgi ${kpi.windowDays} kun`}
         />
         <KpiCard
           label="Yangi mijozlar"
-          value={formatNumber(newCustomers)}
-          delta={-2.1}
+          value={formatNumber(kpi.newCustomers)}
           icon={Users}
           accent="warning"
-          hint="oxirgi 30 kun"
+          hint={`oxirgi ${kpi.windowDays} kun`}
         />
         <KpiCard
           label="O`rtacha chek"
-          value={formatMoney(avgCheck)}
-          delta={3.4}
+          value={formatMoney(kpi.avgCheck)}
           icon={Boxes}
           accent="primary"
         />
@@ -114,7 +124,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <div>
               <CardTitle>Daromad dinamikasi</CardTitle>
-              <p className="text-xs text-muted-foreground">Oxirgi 30 kun, kunlik UZS</p>
+              <p className="text-muted-foreground text-xs">Oxirgi 30 kun, kunlik UZS</p>
             </div>
             <div className="flex gap-1">
               {(['7K', '30K', '90K', '1Y'] as const).map((p, i) => (
@@ -130,17 +140,36 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <RevenueChart data={mockRevenueSeries} />
+            <RevenueChart data={revenueSeries} />
           </CardContent>
         </Card>
 
+        {/*
+          "Kanal taqsimoti" olib tashlandi: buyurtma qaysi kanaldan
+          (organik/reklama/ijtimoiy tarmoq) kelganini bazada HECH NARSA
+          yozmaydi — diagramma butunlay to'qima edi. Manba kuzatuvi
+          qo'shilgach qaytariladi.
+        */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Kanal taqsimoti</CardTitle>
-            <p className="text-xs text-muted-foreground">Bu oyga ko`ra savdo manbalari</p>
+            <CardTitle>Davr taqqoslash</CardTitle>
+            <p className="text-muted-foreground text-xs">Oldingi {kpi.windowDays} kun bilan</p>
           </CardHeader>
-          <CardContent>
-            <ChannelPie data={mockChannelBreakdown} />
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Joriy davr</span>
+              <span className="font-semibold">{formatMoney(kpi.revenue)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Oldingi davr</span>
+              <span className="font-semibold">{formatMoney(kpi.revenuePrev)}</span>
+            </div>
+            <div className="flex items-center justify-between border-t pt-3">
+              <span className="text-muted-foreground">Buyurtmalar</span>
+              <span className="font-semibold">
+                {formatNumber(kpi.ordersCount)} / {formatNumber(kpi.ordersPrev)}
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -151,7 +180,7 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <div>
               <CardTitle>So`nggi buyurtmalar</CardTitle>
-              <p className="text-xs text-muted-foreground">Eng yangi 6 ta</p>
+              <p className="text-muted-foreground text-xs">Eng yangi 6 ta</p>
             </div>
             <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
               <Link href="/orders">
@@ -164,10 +193,12 @@ export default function DashboardPage() {
               {recentOrders.map((o) => (
                 <li
                   key={o.id}
-                  className="flex items-center gap-3 px-6 py-3 text-sm hover:bg-muted/40"
+                  className="hover:bg-muted/40 flex items-center gap-3 px-6 py-3 text-sm"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-[10px]">{initials(o.customerName)}</AvatarFallback>
+                    <AvatarFallback className="text-[10px]">
+                      {initials(o.customerName)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -179,13 +210,11 @@ export default function DashboardPage() {
                       </Link>
                       <OrderStatusBadge status={o.status} />
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {o.customerName} · {o.itemsCount} ta mahsulot
-                    </div>
+                    <div className="text-muted-foreground truncate text-xs">{o.customerName}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold">{formatMoney(o.grandTotal)}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(o.placedAt)}</div>
+                    <div className="text-muted-foreground text-xs">{formatDate(o.placedAt)}</div>
                   </div>
                 </li>
               ))}
@@ -199,7 +228,7 @@ export default function DashboardPage() {
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               Quyi-stok ogohlantirish
             </CardTitle>
-            <p className="text-xs text-muted-foreground">10 dan kam qoldi</p>
+            <p className="text-muted-foreground text-xs">10 dan kam qoldi</p>
           </CardHeader>
           <CardContent className="p-0">
             {lowStock.length === 0 ? (
@@ -210,13 +239,13 @@ export default function DashboardPage() {
               <ul className="divide-y">
                 {lowStock.map((p) => (
                   <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-muted">
+                    <div className="bg-muted h-9 w-9 shrink-0 overflow-hidden rounded">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                      <div className="truncate text-xs text-muted-foreground">{p.sku}</div>
+                      <div className="text-muted-foreground truncate text-xs">{p.sku}</div>
                     </div>
                     <Badge variant="destructive">{p.stock}</Badge>
                   </li>
@@ -237,16 +266,16 @@ export default function DashboardPage() {
             <ul className="divide-y">
               {topProducts.map((p, i) => (
                 <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold">
+                  <span className="bg-muted grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold">
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                    <div className="text-xs text-muted-foreground">{p.brandName}</div>
+                    <div className="text-muted-foreground text-xs">{p.brandName}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold">{formatNumber(p.soldCount)}</div>
-                    <div className="text-xs text-muted-foreground">sotilgan</div>
+                    <div className="text-muted-foreground text-xs">sotilgan</div>
                   </div>
                 </li>
               ))}
@@ -259,7 +288,7 @@ export default function DashboardPage() {
             <CardTitle>Kunlik buyurtmalar</CardTitle>
           </CardHeader>
           <CardContent>
-            <OrdersChart data={mockRevenueSeries} />
+            <OrdersChart data={revenueSeries} />
           </CardContent>
         </Card>
       </div>

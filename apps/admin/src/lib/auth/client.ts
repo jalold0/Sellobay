@@ -174,6 +174,56 @@ export function getCustomer(id: string) {
   return api<{ customer: AdminCustomer; orders: AdminCustomerOrder[] }>(`/api/customers/${id}`);
 }
 
+// ── Dashboard statistikasi ────────────────────────────────────────
+
+/** Mahsulot nomi — DB'da Json, shakli { uz, ru?, en? }. */
+export type LocalizedName = Partial<Record<'uz' | 'ru' | 'en', string>>;
+export interface AdminStats {
+  kpi: {
+    revenue: number;
+    revenuePrev: number;
+    /** Foiz o'zgarish; oldingi davrda daromad bo'lmasa `null`. */
+    revenueDelta: number | null;
+    ordersCount: number;
+    ordersPrev: number;
+    newCustomers: number;
+    avgCheck: number;
+    /** Takroriy xarid ulushi (%); xaridor bo'lmasa `null`. */
+    repeatRate: number | null;
+    buyers: number;
+    windowDays: number;
+  };
+  revenueSeries: Array<{ date: string; revenue: number; orders: number }>;
+  lowStock: Array<{
+    id: string;
+    name: LocalizedName;
+    sku: string;
+    imageUrl: string;
+    stock: number;
+  }>;
+  recentOrders: Array<{
+    id: string;
+    number: string;
+    status: AdminOrderStatus;
+    grandTotal: number;
+    placedAt: string;
+    customerName: string;
+  }>;
+  topProducts: Array<{
+    id: string;
+    name: LocalizedName;
+    sku: string;
+    brandName: string | null;
+    soldCount: number;
+    basePrice: number;
+    imageUrl: string;
+  }>;
+}
+
+export function getStats() {
+  return api<AdminStats>('/api/stats');
+}
+
 // Buyurtmalar ro'yxati (admin)
 export function listOrders(status?: string) {
   const qs = status && status !== 'all' ? `?status=${status}` : '';
