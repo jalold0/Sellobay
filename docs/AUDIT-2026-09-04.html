@@ -177,7 +177,10 @@
     margin: 0;
     padding-bottom: .55rem;
     border-bottom: 2px solid var(--ink);
+    /* wrap: tor ekranda yorliq ikkinchi qatorga tushadi, aks holda h2 sahifadan chiqib
+       ketardi (.count da white-space: nowrap bor) */
     display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap;
   }
   h2 .count {
     font-family: var(--mono); font-size: .78rem; font-weight: 400;
@@ -320,7 +323,7 @@
 
   <!-- ── Tekshiruv natijalari ──────────────────────────────────── -->
   <section>
-    <h2>Tekshiruv holati <span class="count">hammasi yashil</span></h2>
+    <h2>Tekshiruv holati <span class="count">lokal + CI · yashil</span></h2>
     <div class="board">
       <div class="cell"><span class="k">typecheck</span><span class="v pass">16/16</span><span class="n">xato yo'q</span></div>
       <div class="cell"><span class="k">test</span><span class="v pass">183</span><span class="n">+58 yangi</span></div>
@@ -328,6 +331,7 @@
       <div class="cell"><span class="k">build</span><span class="v pass">✓</span><span class="n">4 ilova</span></div>
       <div class="cell"><span class="k">prisma</span><span class="v pass">✓</span><span class="n">schema valid</span></div>
       <div class="cell"><span class="k">i18n</span><span class="v pass">1005</span><span class="n">uz/ru/en · 0 farq</span></div>
+      <div class="cell"><span class="k">GitLab CI</span><span class="v pass">✓</span><span class="n">#2823992074 · 04:53</span></div>
     </div>
     <p class="sec-note">
       Yuqoridagilar <code>.gitlab-ci.yml</code> dagi AYNI ketma-ketlik bo'yicha lokalda
@@ -336,6 +340,92 @@
       lokal Postgres uchun Docker yo'q. Shu sababli migratsiya ham qo'llanmadi — pastdagi
       «Keyingi qadamlar» ga qaralsin.
     </p>
+    <p class="sec-note">
+      <span class="label">Muhim aniqlik</span>
+      Bu hisobot ilgari faqat shu lokal natijalarni ko'rsatardi va shu bilan hammasi yashil
+      degan taassurot berardi. Aslida GitLab CI o'sha paytda QIZIL edi — 10 pipeline ketma-ket.
+      Sabab lokalda ko'rinmaydigan muhit farqi edi; pastdagi bo'limda yozilgan va tuzatilgan.
+    </p>
+  </section>
+
+  <!-- ── GitLab CI ─────────────────────────────────────────────── -->
+  <section>
+    <h2>GitLab CI: nega qizil edi <span class="count">3 commit · tuzatildi</span></h2>
+    <p class="sec-note">
+      Lokalda hamma tekshiruv o'tardi, GitLab'da esa pipeline yiqilardi. Farq muhitda edi,
+      shuning uchun lokal tasdiqlash uni ko'rsatmagan.
+    </p>
+
+    <div class="stack">
+
+      <article class="find crit">
+        <div class="find-top">
+          <span class="chip crit">Jiddiy</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>CI obrazida <code>openssl</code> yo'q — Prisma engine yuklanmasdi</h3>
+        </div>
+        <p><span class="label">Diqqat qiling</span>
+          Job <code>@ecom/web#test</code> da yiqilardi, lekin testlarning HAMMASI o'tgan edi:</p>
+        <ul class="chain">
+          <li><code>Test Files 3 passed (3)</code></li>
+          <li><code>Tests 34 passed (34)</code></li>
+          <li><code>Errors 1 error</code> — job aynan shundan yiqilgan</li>
+        </ul>
+        <p>Xato testda emas, Prisma'ning yuklanmagan engine'ida:
+          <code>libssl.so.1.1: cannot open shared object file</code>.
+          <code>node:20-bookworm-slim</code> openssl paketisiz keladi, shuning uchun Prisma
+          libssl versiyasini aniqlay olmaydi va jim ravishda «openssl-1.1.x» ga qaytadi —
+          bookworm'da esa OpenSSL 3.x, ya'ni o'sha nomdagi kutubxona mavjud emas.</p>
+        <p><span class="label">Nuqson boshidan bor edi</span>
+          Prisma buni eng birinchi <code>pnpm install</code> dan boshlab log'da ochiq
+          ogohlantirgan, lekin hech nima yiqilmagan: lint, typecheck va build query engine'ni
+          hech qachon YUKLAMAYDI. Uni birinchi bo'lib apps/web testlari ochib berdi —
+          engine'ni haqiqatan ko'targan yagona qadam. Pipeline tarixi shuni aniq ko'rsatadi:
+          qizil aynan <code>test(web): apps/web uchun test harness</code> commit'idan boshlangan,
+          undan oldingilari yashil.</p>
+        <p><span class="label">Eng muhim natija</span>
+          <code>migrate-deploy</code> job'i ham xuddi shu obrazda ishlaydi. Ya'ni kutilayotgan
+          migratsiya ham aynan shu xato bilan yiqilardi — buni oldindan topib bo'ldi.</p>
+        <p class="path">openssl <code>pnpm install</code> dan OLDIN o'rnatiladi: engine binari postinstall'da yuklanadi, aniqlash o'sha paytda to'g'ri bo'lishi kerak.</p>
+      </article>
+
+      <article class="find high">
+        <div class="find-top">
+          <span class="chip high">Muhim</span>
+          <span class="chip ok">Tuzatildi</span>
+          <h3>Sof mantiq testi DB drayverini ko'tarardi</h3>
+        </div>
+        <p>Ikkinchi, chuqurroq sabab. <code>@ecom/database</code> bitta barrel'dan ham
+          <code>export * from '@prisma/client'</code>, ham <code>export { prisma }</code>
+          beradi, klient esa modul yuklanishida yaratilardi. Natijada undan FAQAT
+          <code>Prisma.Decimal</code> olgan fayl ham yon ta'sir sifatida Postgres query
+          engine'ini (native <code>.so</code>) ko'tarardi.</p>
+        <p>Ya'ni bazaga umuman tegmaydigan narx-hisob testi DB drayveri yuklanishiga bog'liq
+          edi. Endi <code>prisma</code> — Proxy: klient birinchi murojaatda yaratiladi.
+          22 ta chaqiruv joyi o'zgarmadi.</p>
+        <p class="path">Tasdiqlash: import'dan keyin <code>global.__prisma</code> — undefined, <code>prisma.order</code> ga murojaatdan keyin — object.</p>
+      </article>
+
+      <article class="find med">
+        <div class="find-top">
+          <span class="chip med">O'rta</span>
+          <span class="chip ok">Tuzatildi</span>
+          <span class="chip med">Tasdiqlanmagan</span>
+          <h3>Xuddi shu sabab 4 ta Dockerfile'da ham bor edi</h3>
+        </div>
+        <p>Image'lar <code>node:20-alpine</code> ustida va faqat <code>libc6-compat</code>
+          o'rnatadi. Alpine'da Prisma uchun <code>openssl</code> shart, aks holda birinchi
+          so'rovda xuddi shu «cannot find libssl» chiqadi. web, admin, seller va telegram-bot
+          tuzatildi; telegram-mini-app tegilmadi — u Prisma ishlatmaydi.</p>
+        <p><span class="label">Rostini aytish kerak</span>
+          Bu tuzatish TEKSHIRILMAGAN: bu mashinada Docker yo'q, <code>docker-build-push</code>
+          job'i esa faqat versiya tegida yoki qo'lda ishga tushadi — ya'ni bu image'lar
+          hozirgacha umuman qurilmagan. Sayt Vercel'da deploy bo'lgani uchun hozirgi
+          production'ga ta'sir qilmaydi. Tekshirmoqchi bo'lsangiz:
+          CI/CD → Pipelines → Run pipeline.</p>
+      </article>
+
+    </div>
   </section>
 
   <!-- ── 2-bosqich: uzulishlar ──────────────────────────────────── -->
@@ -982,8 +1072,8 @@ HAVING COUNT(*) &gt; 1;</pre>
   </section>
 
   <footer>
-    <span>32 commit · fix/audit-tolov-va-guruh-xaridi</span>
-    <span>typecheck 16/16 · test 183 · lint 0 error · build 4/4 · i18n 1005 (0 farq)</span>
+    <span>36 commit · fix/audit-tolov-va-guruh-xaridi</span>
+    <span>lokal: typecheck 16/16 · test 183 · lint 0 error · build 5/5 · i18n 1005 · GitLab CI: yashil</span>
     <span>baza o'zgartirilmadi — migratsiya kutmoqda</span>
   </footer>
 
