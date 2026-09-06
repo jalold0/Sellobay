@@ -54,9 +54,7 @@ export function PaymentSection({
 
   return (
     <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">
-      <h2 className="text-brand-ink mb-[18px] font-serif text-xl font-semibold">
-        {t('payment.methodTitle')}
-      </h2>
+      <h2 className="text-brand-ink mb-[18px] text-xl font-bold">{t('payment.methodTitle')}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/*
           Karta o'tkazmasi FAQAT platforma kartasi sozlangan bo'lsa ko'rsatiladi.

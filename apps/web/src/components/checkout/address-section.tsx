@@ -27,7 +27,7 @@ export function AddressSection({
 
   return (
     <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">
-      <h2 className="text-brand-ink mb-5 font-serif text-xl font-semibold">{t('address.title')}</h2>
+      <h2 className="text-brand-ink mb-5 text-xl font-bold">{t('address.title')}</h2>
 
       {homeOutsideTashkent && (
         <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3">

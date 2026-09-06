@@ -1,4 +1,4 @@
-import { Eye, Heart, ShoppingBag, Star } from 'lucide-react';
+import { Eye, Heart, ShoppingBag, Star, Truck } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from '../lib/cn';
@@ -10,6 +10,7 @@ export interface ProductCardLabels {
   addToCart: string;
   onlyLeft: string; // chaqiruvchi count bilan formatlab beradi
   wishlist: string; // aria-label
+  freeShipping: string;
 }
 
 export interface ProductCardProps {
@@ -26,6 +27,8 @@ export interface ProductCardProps {
   badge?: 'NEW' | 'SALE' | 'TOP';
   inStock?: boolean;
   stockLeft?: number; // low-stock indikator — TZ §5
+  /** Narx bepul yetkazish chegarasidan oshganda — chaqiruvchi hisoblaydi (core-domain). */
+  freeShipping?: boolean;
   labels: ProductCardLabels;
   className?: string;
   onAddToCart?: () => void;
@@ -46,7 +49,7 @@ export interface ProductCardProps {
   }>;
 }
 
-// Badge pill'lari — redesign: SALE=crimson/oq, TOP=gold/crimson-deep, NEW=ink/gold-light
+// Badge pill'lari — SALE=crimson/oq, TOP=gold/crimson-deep, NEW=ink/gold-light
 const BADGE_CFG: Record<NonNullable<ProductCardProps['badge']>, { label: string; cls: string }> = {
   NEW: { label: 'NEW', cls: 'bg-brand-ink text-brand-gold-light' },
   SALE: { label: 'SALE', cls: 'bg-primary text-white' },
@@ -86,6 +89,17 @@ const NativeImage = (props: {
   />
 );
 
+/**
+ * Marketpleys uslubidagi mahsulot kartasi.
+ *
+ * Tartib ATAYLAB shunday: rasm -> NARX -> nom -> reyting -> yetkazish -> tugma.
+ * Butik saytlarida odatda nom narxdan oldin turadi, lekin marketpleysda
+ * xaridor birinchi navbatda narxni solishtiradi (Uzum, Ozon, Wildberries —
+ * uchalasida ham narx nomdan yuqorida). Skanerlash tezligi shundan oshadi.
+ *
+ * "Savatga qo'shish" hover'da EMAS, doim ko'rinadi: hover sensorli ekranda
+ * umuman yo'q, ya'ni telefonda tugma topilmay qolardi.
+ */
 export function ProductCard({
   name,
   brand,
@@ -99,6 +113,7 @@ export function ProductCard({
   badge,
   inStock = true,
   stockLeft,
+  freeShipping = false,
   labels,
   className,
   onAddToCart,
@@ -112,7 +127,7 @@ export function ProductCard({
   const badgeCfg = badge ? BADGE_CFG[badge] : null;
   const lowStock = stockLeft !== undefined && stockLeft > 0 && stockLeft <= 5;
   const stockBarPct = stockLeft !== undefined ? Math.min(100, (stockLeft / 20) * 100) : 0;
-  const discounted = Boolean(oldPrice && oldPrice > price);
+  const discounted = discountPct > 0;
 
   return (
     <div
@@ -124,13 +139,14 @@ export function ProductCard({
         className,
       )}
     >
-      {/* Image — 4/5, soft fon */}
-      <LinkComponent href={href} className="bg-soft relative block aspect-[4/5] overflow-hidden">
+      {/* Rasm — kvadrat. Katalog zichligi 4/5 dan yuqori: bir ekranda ko'proq
+          mahsulot ko'rinadi va qatorlar bir tekis tushadi. */}
+      <LinkComponent href={href} className="bg-soft relative block aspect-square overflow-hidden">
         <ImageComponent
           src={imageUrl}
           alt={name}
           width={400}
-          height={500}
+          height={400}
           className="duration-400 h-full w-full object-cover transition-transform ease-out group-hover:scale-[1.05]"
         />
 
@@ -146,7 +162,7 @@ export function ProductCard({
               {badgeCfg.label}
             </span>
           )}
-          {discountPct > 0 && (
+          {discounted && (
             <span className="bg-primary rounded-full px-2.5 py-[5px] text-[10px] font-extrabold tracking-[0.1em] text-white">
               −{discountPct}%
             </span>
@@ -174,7 +190,7 @@ export function ProductCard({
           </button>
         )}
 
-        {/* Hover: tez ko'rish */}
+        {/* Hover: tez ko'rish (ixtiyoriy — faqat onQuickView berilganda) */}
         {inStock && onQuickView && (
           <button
             type="button"
@@ -202,59 +218,15 @@ export function ProductCard({
             </div>
           </div>
         )}
-
-        {/* Hover: pastdan chiquvchi "Savatga qo'shish" */}
-        {onAddToCart && inStock && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onAddToCart();
-            }}
-            className={cn(
-              'absolute inset-x-0 bottom-0 flex items-center justify-center gap-2',
-              'bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-lg',
-              'translate-y-full transition-transform duration-300 ease-out',
-              'group-hover:translate-y-0',
-            )}
-          >
-            <ShoppingBag size={15} />
-            {labels.addToCart}
-          </button>
-        )}
       </LinkComponent>
 
-      {/* Card body — 16px padding */}
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
-        {brand && (
-          <div className="text-muted-foreground text-[10.5px] font-bold uppercase tracking-[0.14em]">
-            {brand}
-          </div>
-        )}
-        <LinkComponent
-          href={href}
-          className="text-brand-ink hover:text-primary line-clamp-2 text-sm font-semibold leading-[1.4] transition"
-        >
-          {name}
-        </LinkComponent>
-
-        {/* Reyting FAQAT haqiqiy sharh bo'lganda ko'rsatiladi.
-            Sharhsiz "0.0 ★ (0)" yozish mahsulotni yomon baholangandek
-            ko'rsatadi — aslida uni hali hech kim baholamagan. */}
-        {rating !== undefined && (reviewCount ?? 0) > 0 && (
-          <div className="flex items-center gap-[5px] text-xs">
-            <Star size={12} className="fill-brand-gold text-brand-gold" />
-            <span className="text-brand-ink font-bold">{rating.toFixed(1)}</span>
-            <span className="text-[#9a9aa2]">({reviewCount ?? 0})</span>
-          </div>
-        )}
-
-        {/* Narx — chegirmada crimson + chiziqli eski narx */}
-        <div className="mt-auto flex items-baseline gap-2 pt-1">
+      {/* Karta tanasi */}
+      <div className="flex flex-1 flex-col gap-1.5 p-3.5">
+        {/* 1. NARX — eng katta va eng yuqorida */}
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
             className={cn(
-              'text-[15.5px] font-extrabold leading-tight',
+              'text-[17px] font-extrabold leading-tight tracking-[-0.01em]',
               discounted ? 'text-primary' : 'text-brand-ink',
             )}
           >
@@ -267,9 +239,41 @@ export function ProductCard({
           )}
         </div>
 
-        {/* Low-stock progress bar — "Faqat X ta qoldi!" */}
+        {/* 2. Brend + nom */}
+        {brand && (
+          <div className="text-muted-foreground text-[10.5px] font-bold uppercase tracking-[0.14em]">
+            {brand}
+          </div>
+        )}
+        <LinkComponent
+          href={href}
+          className="text-brand-ink hover:text-primary line-clamp-2 text-[13.5px] font-medium leading-[1.35] transition"
+        >
+          {name}
+        </LinkComponent>
+
+        {/* 3. Reyting FAQAT haqiqiy sharh bo'lganda ko'rsatiladi.
+            Sharhsiz "0.0 ★ (0)" yozish mahsulotni yomon baholangandek
+            ko'rsatadi — aslida uni hali hech kim baholamagan. */}
+        {rating !== undefined && (reviewCount ?? 0) > 0 && (
+          <div className="flex items-center gap-[5px] text-xs">
+            <Star size={12} className="fill-brand-gold text-brand-gold" />
+            <span className="text-brand-ink font-bold">{rating.toFixed(1)}</span>
+            <span className="text-[#9a9aa2]">({reviewCount ?? 0})</span>
+          </div>
+        )}
+
+        {/* 4. Bepul yetkazish — chegara core-domain'dan, to'qima emas */}
+        {freeShipping && (
+          <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-700">
+            <Truck size={13} strokeWidth={2} />
+            {labels.freeShipping}
+          </div>
+        )}
+
+        {/* 5. Low-stock progress bar — "Faqat X ta qoldi!" */}
         {lowStock && inStock && (
-          <div className="mt-1 space-y-1">
+          <div className="space-y-1">
             <div className="flex items-center justify-between text-[10px] font-medium">
               <span className="text-primary">{labels.onlyLeft}</span>
             </div>
@@ -280,6 +284,26 @@ export function ProductCard({
               />
             </div>
           </div>
+        )}
+
+        {/* 6. Savatga qo'shish — doim ko'rinadi (hover sensorli ekranda yo'q) */}
+        {onAddToCart && inStock && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onAddToCart();
+            }}
+            className={cn(
+              'mt-auto flex items-center justify-center gap-2 rounded-xl pt-0',
+              'bg-chip text-brand-ink hover:bg-primary px-4 py-2.5 text-[13px] font-bold hover:text-white',
+              'transition-colors duration-200',
+            )}
+          >
+            <ShoppingBag size={15} />
+            {labels.addToCart}
+          </button>
         )}
       </div>
     </div>

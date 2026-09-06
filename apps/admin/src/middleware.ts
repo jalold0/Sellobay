@@ -38,6 +38,24 @@ export async function middleware(req: NextRequest) {
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
+  // Sir yo`qligi "kirilmagan" degani EMAS — server sozlanmagan degani.
+  // Ilgari ikkalasi bir xil ishlangani uchun JWT_SECRET qo`yilmagan muhitda
+  // kirgan foydalanuvchi ham har safar /login ga qaytarilaverardi va sabab
+  // hech qayerda ko`rinmasdi.
+  if (!accessSecretOrNull()) {
+    console.error('[auth] JWT_SECRET qo`yilmagan — panelga kirib bo`lmaydi.');
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: 'AUTH_NOT_CONFIGURED',
+          message: 'Server auth sozlamasi to`liq emas (JWT_SECRET).',
+        },
+      },
+      { status: 503 },
+    );
+  }
+
   const token = req.cookies.get(COOKIE_ACCESS)?.value;
   const validAccess = token ? await isValidAccess(token) : false;
 

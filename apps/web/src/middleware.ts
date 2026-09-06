@@ -9,9 +9,13 @@ type Locale = (typeof LOCALES)[number];
 // Auth talab qiladigan yo'llar (locale prefix tashlangandan keyin)
 // /checkout — guest checkout uchun OCHIQ (login majburiy emas, faqat telefon yetadi).
 // Orders API guest buyurtmani qo'llab-quvvatlaydi (userId null, guestPhone bilan).
-const PROTECTED_PREFIXES = ['/profile', '/orders'];
-// Lekin /orders/success ochiq qoladi (buyurtmadan keyingi sahifa)
-const PROTECTED_EXCLUDES = ['/orders/success'];
+const PROTECTED_PREFIXES = ['/profile'];
+// /orders — buyurtmani kuzatish sahifasi. ATAYLAB OCHIQ: checkout login
+// talab qilmaydi (mehmon telefon bilan buyurtma bera oladi), demak bunday
+// mijozda kabinet yo'q va kuzatishning boshqa yo'li ham yo'q. Sahifa o'zi
+// hech narsa ko'rsatmaydi — ma'lumot /api/orders/track dan, raqam VA telefon
+// mos kelgandagina keladi.
+const PROTECTED_EXCLUDES: string[] = [];
 
 const intlMiddleware = createIntlMiddleware({
   locales: LOCALES as unknown as string[],
@@ -58,6 +62,19 @@ export default async function middleware(req: NextRequest) {
   const localeFreePath = stripLocale(pathname);
 
   if (isProtected(localeFreePath)) {
+    // Sir yo`qligi "kirilmagan" degani EMAS — server sozlanmagan degani.
+    // Ilgari ikkalasi bir xil ishlangani uchun JWT_SECRET qo`yilmagan muhitda
+    // kirgan foydalanuvchi ham har safar /login ga qaytarilaverardi va sabab
+    // hech qayerda ko`rinmasdi.
+    if (!accessSecretOrNull()) {
+      console.error(
+        '[auth] JWT_SECRET qo`yilmagan yoki juda qisqa — himoyalangan sahifalar ochilmaydi.',
+      );
+      return new NextResponse('Server auth sozlamasi to`liq emas (JWT_SECRET).', {
+        status: 503,
+        headers: { 'content-type': 'text/plain; charset=utf-8' },
+      });
+    }
     const token = req.cookies.get(COOKIE_ACCESS)?.value;
     const ok = token ? await isValidAccess(token) : false;
     if (!ok) {

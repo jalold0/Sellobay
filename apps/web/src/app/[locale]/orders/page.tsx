@@ -1,80 +1,125 @@
 'use client';
 
 import { Button, Card, Input, StatusBadge } from '@ecom/ui';
-import { CheckCircle2, MapPin, Package, Phone, Search, Truck } from 'lucide-react';
+import { CheckCircle2, Loader2, Package, Phone, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
-import { ORDER_STATUS_TONE } from '../../../lib/order-status';
-import { formatDateTime } from '../../../lib/format';
+import { type CurrencyCode } from '@ecom/utils';
 
-// Mock — order tracking endpointi backend tayyor bo'lganda
-function findOrder(query: string) {
-  if (!query) return null;
-  const q = query.toUpperCase();
-  if (q.startsWith('ORD-')) {
-    return {
-      number: q,
-      status: 'OUT_FOR_DELIVERY' as const,
-      placedAt: '2026-06-04T08:00:00Z',
-      timeline: [
-        { status: 'PENDING' as const, at: '2026-06-04T08:00:00Z' },
-        { status: 'CONFIRMED' as const, at: '2026-06-04T08:30:00Z' },
-        { status: 'PAID' as const, at: '2026-06-04T08:32:00Z' },
-        { status: 'PROCESSING' as const, at: '2026-06-04T14:00:00Z' },
-        { status: 'PACKED' as const, at: '2026-06-05T09:00:00Z' },
-        { status: 'SHIPPED' as const, at: '2026-06-05T15:00:00Z' },
-        { status: 'OUT_FOR_DELIVERY' as const, at: '2026-06-06T07:30:00Z' },
-      ],
-      courier: { name: 'Bekzod A.', phone: '+998 90 123 45 67', vehicle: 'Mototsikl' },
-      destination: "Toshkent sh., Yunusobod, Mustaqillik ko'chasi 12",
-    };
-  }
-  return null;
+import { formatDateTime, formatMoney } from '../../../lib/format';
+import { ORDER_STATUS_TONE, type OrderStatus } from '../../../lib/order-status';
+
+/**
+ * Buyurtmani kuzatish.
+ *
+ * Ilgari bu sahifa MOCK edi: `ORD-` bilan boshlanadigan ISTALGAN raqamga
+ * to'qima buyurtma qaytarardi — o'ylab topilgan holat, kuryer ismi
+ * ("Bekzod A.") va telefon raqami bilan. Mijoz mavjud bo'lmagan buyurtmani
+ * "yo'lda" deb ko'rardi.
+ *
+ * Endi /api/orders/track ga so'rov ketadi: raqam + telefon mos kelsa —
+ * bazadagi haqiqiy holat va vaqt chizig'i, aks holda "topilmadi".
+ */
+interface TrackedOrder {
+  number: string;
+  status: OrderStatus;
+  placedAt: string;
+  total: string;
+  currency: CurrencyCode;
+  deliveryMethod: string;
+  itemCount: number;
+  timeline: { status: OrderStatus; at: string }[];
 }
 
 export default function OrderTrackerPage() {
   const t = useTranslations('tracking');
   const tStatus = useTranslations('order.status');
   const tc = useTranslations('common');
-  const [query, setQuery] = React.useState('');
-  const [result, setResult] = React.useState<ReturnType<typeof findOrder>>(null);
-  const [searched, setSearched] = React.useState(false);
 
-  const onSearch = (e: React.FormEvent) => {
+  const [number, setNumber] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [result, setResult] = React.useState<TrackedOrder | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const onSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSearched(true);
-    setResult(findOrder(query.trim()));
+    if (!number.trim() || !phone.trim()) return;
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch('/api/orders/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ number: number.trim(), phone: phone.trim() }),
+      });
+      if (res.status === 429) {
+        setError(t('tooMany'));
+        return;
+      }
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        setError(t('notFound'));
+        return;
+      }
+      setResult(json.data.order as TrackedOrder);
+    } catch {
+      setError(t('notFound'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+        <h1 className="text-brand-ink text-2xl font-bold tracking-tight md:text-3xl">
+          {t('title')}
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">{t('subtitle')}</p>
       </div>
 
-      <form onSubmit={onSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ORD-2026-00001234"
-            className="pl-9"
-          />
+      <form onSubmit={onSearch} className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <Input
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              placeholder="ORD-2026-00001234"
+              aria-label={t('orderNumber')}
+              className="pl-9"
+            />
+          </div>
+          <div className="relative flex-1">
+            <Phone className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+998 90 123 45 67"
+              aria-label={t('phone')}
+              inputMode="tel"
+              className="pl-9"
+            />
+          </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            {loading ? t('searching') : tc('search')}
+          </Button>
         </div>
-        <Button type="submit">{tc('search')}</Button>
+        <p className="text-muted-foreground text-xs">{t('phoneHint')}</p>
       </form>
 
-      {searched && !result && (
+      {error ? (
         <Card className="p-6 text-center">
           <Package className="text-muted-foreground mx-auto h-10 w-10" />
-          <p className="text-muted-foreground mt-3 text-sm">{t('notFound')}</p>
+          <p className="text-muted-foreground mt-3 text-sm">{error}</p>
         </Card>
-      )}
+      ) : null}
 
-      {result && (
+      {result ? (
         <Card className="overflow-hidden">
           <div className="bg-secondary/40 border-b p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -88,6 +133,21 @@ export default function OrderTrackerPage() {
                 {tStatus(result.status)}
               </StatusBadge>
             </div>
+
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-muted-foreground text-xs">{t('placedAt')}</dt>
+                <dd className="font-medium">{formatDateTime(result.placedAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs">{t('items')}</dt>
+                <dd className="font-medium">{t('itemCount', { count: result.itemCount })}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs">{t('total')}</dt>
+                <dd className="font-semibold">{formatMoney(result.total, result.currency)}</dd>
+              </div>
+            </dl>
           </div>
 
           <div className="p-5">
@@ -95,7 +155,7 @@ export default function OrderTrackerPage() {
               {result.timeline.map((step, i) => {
                 const isLast = i === result.timeline.length - 1;
                 return (
-                  <li key={i} className="relative">
+                  <li key={`${step.status}-${step.at}`} className="relative">
                     <span
                       className={`absolute -left-[31px] grid h-6 w-6 place-items-center rounded-full border ${
                         isLast
@@ -114,35 +174,8 @@ export default function OrderTrackerPage() {
               })}
             </ol>
           </div>
-
-          {result.courier && (
-            <div className="bg-secondary/30 border-t p-5">
-              <div className="text-muted-foreground text-xs uppercase tracking-wide">
-                {t('courier')}
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <div className="bg-primary/10 text-primary grid h-10 w-10 place-items-center rounded-full">
-                  <Truck size={18} />
-                </div>
-                <div>
-                  <div className="font-medium">{result.courier.name}</div>
-                  <div className="text-muted-foreground text-xs">{result.courier.vehicle}</div>
-                </div>
-                <a
-                  href={`tel:${result.courier.phone.replace(/\s/g, '')}`}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 ml-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
-                >
-                  <Phone size={14} /> {result.courier.phone}
-                </a>
-              </div>
-              <div className="mt-3 flex items-start gap-2 text-sm">
-                <MapPin size={14} className="text-muted-foreground mt-0.5 shrink-0" />
-                <span>{result.destination}</span>
-              </div>
-            </div>
-          )}
         </Card>
-      )}
+      ) : null}
 
       <Card className="p-5 text-sm">
         <div className="font-semibold">{t('helpTitle')}</div>

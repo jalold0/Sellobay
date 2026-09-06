@@ -9,7 +9,7 @@ import * as React from 'react';
 import { SellobayMark } from '../brand/sellobay-mark';
 import { AnimatedSearch } from './animated-search';
 import { AuthMenu } from './auth-menu';
-import { CartBadge } from './cart-badge';
+import { CartBadge, WishlistBadge } from './cart-badge';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 
@@ -97,10 +97,11 @@ export function Header({ categories }: Props) {
           <div className="ml-auto flex items-center gap-5 md:gap-7">
             <Link
               href="/profile/wishlist"
-              className="hidden flex-col items-center gap-[3px] md:flex"
+              className="relative hidden flex-col items-center gap-[3px] md:flex"
               aria-label={nav('wishlist')}
             >
               <Heart size={22} strokeWidth={1.8} className="text-brand-ink" />
+              <WishlistBadge />
               <span className="text-[10.5px] font-semibold text-[#55555c]">{nav('wishlist')}</span>
             </Link>
             <Link
@@ -126,7 +127,7 @@ export function Header({ categories }: Props) {
 
       {/* Category nav — 48px, SALE crimson, o'ngda Premium */}
       <nav className="hidden border-b bg-white md:block">
-        <div className="container flex h-12 items-center gap-8 overflow-x-auto text-[13.5px] font-semibold text-[#3a3a40]">
+        <div className="container flex h-12 items-center gap-8 text-[13.5px] font-semibold text-[#3a3a40]">
           <Link
             href="/catalog"
             className="text-brand-ink hover:text-primary flex shrink-0 items-center gap-2"
@@ -134,21 +135,23 @@ export function Header({ categories }: Props) {
             <Menu size={16} strokeWidth={2} />
             {nav('catalog')}
           </Link>
-          {categories.map((c) => (
+          <div className="flex items-center gap-8 overflow-x-auto">
+            {categories.map((c) => (
+              <Link
+                key={c.id}
+                href={`/catalog?category=${c.slug}`}
+                className="hover:text-brand-ink whitespace-nowrap"
+              >
+                {pickLocalized(c.name, locale as Locale)}
+              </Link>
+            ))}
             <Link
-              key={c.id}
-              href={`/catalog?category=${c.slug}`}
-              className="hover:text-brand-ink whitespace-nowrap"
+              href="/sale"
+              className="text-primary whitespace-nowrap font-extrabold tracking-[0.04em]"
             >
-              {pickLocalized(c.name, locale as Locale)}
+              SALE
             </Link>
-          ))}
-          <Link
-            href="/sale"
-            className="text-primary whitespace-nowrap font-extrabold tracking-[0.04em]"
-          >
-            SALE
-          </Link>
+          </div>
           <Link
             href="/profile/loyalty"
             className="text-brand-gold-text ml-auto flex shrink-0 items-center gap-1.5 font-semibold"
