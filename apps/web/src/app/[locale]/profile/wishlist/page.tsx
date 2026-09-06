@@ -1,55 +1,15 @@
 'use client';
 
 import { Button, EmptyState, Skeleton } from '@ecom/ui';
-import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
+import { fetchProductsByIds } from '../../../../lib/api-products';
 import { type Locale, type MockProduct } from '../../../../lib/mock-data';
 import { useWishlist } from '../../../../store/wishlist';
-
-interface ApiProduct {
-  id: string;
-  slug: string;
-  name: { uz?: string; ru?: string; en?: string } | string;
-  price: string;
-  oldPrice: string | null;
-  currency: string;
-  rating: number;
-  reviewCount: number;
-  isFeatured: boolean;
-  brand: { id: string; slug: string; name: string } | null;
-  imageUrl: string | null;
-  category: { slug: string; name: { uz?: string; ru?: string; en?: string } | string } | null;
-}
-
-function toMockProduct(p: ApiProduct): MockProduct {
-  return {
-    id: p.id,
-    slug: p.slug,
-    name:
-      typeof p.name === 'string'
-        ? { uz: p.name, ru: p.name, en: p.name }
-        : (p.name as MockProduct['name']),
-    brand: p.brand?.name ?? 'Sellobay',
-    brandId: p.brand?.slug ?? '',
-    categoryId: p.category?.slug ?? '',
-    price: Number(p.price),
-    oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
-    currency: 'UZS',
-    rating: p.rating,
-    reviewCount: p.reviewCount,
-    imageSeed: picsumSeed(p.imageUrl) ?? p.slug,
-    // Sotuvchi yuklagan haqiqiy rasm — ilgari bu yerda uzatilmasdi va sevimlilar
-    // ro'yxatida seed rasm ko'rinardi.
-    imageUrl: isRealProductImageUrl(p.imageUrl) ? (p.imageUrl ?? undefined) : undefined,
-    badge: p.oldPrice ? 'SALE' : p.isFeatured ? 'TOP' : undefined,
-    inStock: true,
-  };
-}
 
 export default function WishlistPage() {
   const locale = useLocale() as Locale;
@@ -68,17 +28,23 @@ export default function WishlistPage() {
       return;
     }
     setLoading(true);
-    fetch(`/api/products?ids=${ids.join(',')}&limit=100`)
-      .then((r) => r.json())
-      .then((data: { items?: ApiProduct[] }) => {
-        const list = (data.items ?? []).map(toMockProduct);
-        // Wishlist order'iga moslash
+    let cancelled = false;
+    fetchProductsByIds(ids)
+      .then((list) => {
+        if (cancelled) return;
+        // Sevimlilarga qo'shilgan tartibga moslash
         const order = new Map(ids.map((id, idx) => [id, idx]));
-        list.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
-        setItems(list);
+        setItems([...list].sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)));
       })
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [mounted, ids]);
 
   if (!mounted) {
