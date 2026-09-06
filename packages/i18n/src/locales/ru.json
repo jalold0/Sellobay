@@ -94,14 +94,14 @@
     "editorial": {
       "eyebrow": "Избранная коллекция",
       "titleLine1": "Осенний гардероб:",
-      "titleLine2": "25 базовых вещей",
+      "titleLine2": "избранные вещи",
       "link": "Открыть коллекцию",
       "womenTitle": "Для женщин",
       "womenCount": "Новая коллекция",
-      "saleEyebrow": "Только 48 часов",
+      "saleEyebrow": "Скидки",
       "saleTitleLine1": "Сезонный SALE",
-      "saleTitleLine2": "до −50%",
-      "saleCta": "К скидкам"
+      "saleCta": "К скидкам",
+      "saleDiscount": "до −{percent}%"
     },
     "sellerCta": {
       "eyebrow": "Для продавцов",
@@ -135,7 +135,8 @@
       "new": "Новые поступления",
       "flash": "Флеш-скидки",
       "secure": "Безопасная оплата"
-    }
+    },
+    "brandsCount": "{count} брендов"
   },
   "featured": {
     "eyebrow": "Edit · Premium",

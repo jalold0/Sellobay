@@ -94,14 +94,14 @@
     "editorial": {
       "eyebrow": "Curated collection",
       "titleLine1": "Autumn wardrobe:",
-      "titleLine2": "25 essential pieces",
+      "titleLine2": "curated pieces",
       "link": "Open the collection",
       "womenTitle": "For women",
       "womenCount": "New collection",
-      "saleEyebrow": "48 hours only",
+      "saleEyebrow": "Discounts",
       "saleTitleLine1": "Seasonal SALE",
-      "saleTitleLine2": "up to −50%",
-      "saleCta": "Shop the sale"
+      "saleCta": "Shop the sale",
+      "saleDiscount": "up to −{percent}%"
     },
     "sellerCta": {
       "eyebrow": "For sellers",
@@ -135,7 +135,8 @@
       "new": "New arrivals",
       "flash": "Flash deals",
       "secure": "Secure payment"
-    }
+    },
+    "brandsCount": "{count} brands"
   },
   "featured": {
     "eyebrow": "Edit · Premium",

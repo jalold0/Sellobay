@@ -101,14 +101,14 @@
     "editorial": {
       "eyebrow": "Tanlangan kolleksiya",
       "titleLine1": "Kuz garderobi:",
-      "titleLine2": "25 ta asosiy buyum",
+      "titleLine2": "tanlangan buyumlar",
       "link": "Kolleksiyani ochish",
       "womenTitle": "Ayollar uchun",
       "womenCount": "Yangi kolleksiya",
-      "saleEyebrow": "Faqat 48 soat",
+      "saleEyebrow": "Chegirmalar",
       "saleTitleLine1": "Mavsumiy SALE",
-      "saleTitleLine2": "−50% gacha",
-      "saleCta": "Chegirmalarga o'tish"
+      "saleCta": "Chegirmalarga o'tish",
+      "saleDiscount": "−{percent}% gacha"
     },
     "sellerCta": {
       "eyebrow": "Sotuvchilar uchun",
@@ -142,7 +142,8 @@
       "new": "Yangi tushganlar",
       "flash": "Flash chegirmalar",
       "secure": "Xavfsiz to'lov"
-    }
+    },
+    "brandsCount": "{count} brend"
   },
   "featured": {
     "eyebrow": "Edit · Premium",

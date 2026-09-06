@@ -2,19 +2,31 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { type Locale, type MockProduct } from '../../lib/mock-data';
+import { type MockProduct } from '../../lib/mock-data';
 
 interface Props {
-  locale: Locale;
-  products: MockProduct[];
-  title?: string;
-  subtitle?: string;
+  /** Chegirmadagi mahsulotlar — o'ng pastdagi kartadagi foiz shundan hisoblanadi. */
+  saleProducts: MockProduct[];
   ctaHref?: string;
 }
 
 // Redesign: editorial split — 1.4fr/1fr, katta kampaniya kartasi + 2 kichik karta
-export function FeaturedCollection({ ctaHref = '/catalog?featured=true' }: Props) {
+//
+// Bu blok ataylab dekorativ (rasmlar — editorial banner), lekin ilgari unda
+// ikkita to'qima DA'VO bor edi: katta kartada "25 ta asosiy buyum"
+// (kolleksiyada bunday son yo'q) va SALE kartasida "Faqat 48 soat / −50%
+// gacha" (na 48 soatlik oyna, na 50% chegirma mavjud edi). Raqamli da'volar
+// olib tashlandi, chegirma foizi esa mahsulotlardan hisoblanadi.
+//
+// Ilgari komponent `locale`, `products`, `title`, `subtitle` proplarini ham
+// qabul qilardi va ularning BIRORTASINI ishlatmasdi — olib tashlandi.
+export function FeaturedCollection({ saleProducts, ctaHref = '/catalog?featured=true' }: Props) {
   const t = useTranslations('home');
+
+  const maxDiscount = saleProducts.reduce((max, p) => {
+    if (!p.oldPrice || p.oldPrice <= p.price) return max;
+    return Math.max(max, Math.round(100 - (p.price / p.oldPrice) * 100));
+  }, 0);
 
   return (
     <section>
@@ -80,8 +92,12 @@ export function FeaturedCollection({ ctaHref = '/catalog?featured=true' }: Props
             </div>
             <div className="mt-2 font-serif text-[26px] font-semibold leading-[1.2] text-white">
               {t('editorial.saleTitleLine1')}
-              <br />
-              {t('editorial.saleTitleLine2')}
+              {maxDiscount > 0 ? (
+                <>
+                  <br />
+                  {t('editorial.saleDiscount', { percent: maxDiscount })}
+                </>
+              ) : null}
             </div>
             <div className="text-primary mt-4 inline-flex self-start rounded-full bg-white px-[22px] py-2.5 text-[13px] font-bold">
               {t('editorial.saleCta')}
