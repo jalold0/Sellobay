@@ -32,6 +32,30 @@ variables:
   TURBO_TELEMETRY_DISABLED: '1'
   NEXT_TELEMETRY_DISABLED: '1'
 
+# Node ishlatadigan har ikki job uchun umumiy tayyorgarlik.
+#
+# `apt-get install openssl` NEGA KERAK: Prisma query engine'i libssl'ga bog'liq,
+# `node:20-bookworm-slim` esa openssl paketisiz keladi. Bo'lmasa Prisma versiyani
+# ANIQLAY OLMAYDI va jim ravishda "openssl-1.1.x" ga qaytadi, keyin engine .so
+# faylini yuklashda yiqiladi (bookworm'da OpenSSL 3.x, libssl.so.1.1 yo'q).
+#
+# Bu nuqson boshidan bor edi, lekin JIM edi: lint/typecheck/build Prisma engine'ini
+# hech qachon yuklamaydi, shuning uchun ogohlantirish faqat log'da qolardi. Uni
+# birinchi bo'lib apps/web testlari ochib berdi (engine'ni haqiqatan ko'targan
+# yagona qadam). migrate-deploy job'i ham xuddi shu obrazda ishlaydi, ya'ni
+# migratsiya ham shu xato bilan yiqilardi.
+#
+# `pnpm install`dan OLDIN turishi SHART: engine binari postinstall'da yuklab
+# olinadi, ya'ni aniqlash aynan o'sha paytda to'g'ri bo'lishi kerak.
+.node-setup: &node-setup
+  - apt-get update -y
+  - apt-get install -y --no-install-recommends openssl ca-certificates
+  - rm -rf /var/lib/apt/lists/*
+  - corepack enable
+  - corepack prepare pnpm@9.15.9 --activate
+  - pnpm config set store-dir "$PNPM_STORE"
+  - pnpm install --frozen-lockfile
+
 lint-typecheck-build:
   stage: verify
   image: node:20-bookworm-slim
@@ -51,11 +75,7 @@ lint-typecheck-build:
         - pnpm-lock.yaml
     paths:
       - .pnpm-store
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@9.15.9 --activate
-    - pnpm config set store-dir "$PNPM_STORE"
-    - pnpm install --frozen-lockfile
+  before_script: *node-setup
   script:
     # Prisma client typecheck va build uchun kerak (DB'ga ulanmaydi)
     - pnpm db:generate
@@ -82,11 +102,7 @@ migrate-deploy:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
-  before_script:
-    - corepack enable
-    - corepack prepare pnpm@9.15.9 --activate
-    - pnpm config set store-dir "$PNPM_STORE"
-    - pnpm install --frozen-lockfile
+  before_script: *node-setup
   script:
     - test -n "$DATABASE_URL" || (echo "DATABASE_URL CI ozgaruvchisi qoyilmagan" && exit 1)
     - pnpm --filter @ecom/database exec prisma migrate status
