@@ -42,6 +42,16 @@ export interface MockProduct {
   imageUrl?: string;
   badge?: 'NEW' | 'SALE' | 'TOP';
   inStock: boolean;
+  /**
+   * Omborda qolgan HAQIQIY son (barcha variantlar yig'indisi).
+   *
+   * `inStock` faqat "bor/yo'q" deydi, bu esa aniq sonni beradi va past zaxira
+   * ogohlantirishi ("Faqat N ta qoldi") uchun ishlatiladi. Ilgari o'sha
+   * ogohlantirish massivdagi tartib raqamidan yasalardi — mijozga soxta
+   * tanqislik ko'rsatilardi. To'qima demo ma'lumotida bu maydon yo'q, shu
+   * sababli ixtiyoriy: aniqlanmagan bo'lsa ogohlantirish ko'rsatilmaydi.
+   */
+  stock?: number;
   /** Sotuvchi tasdiqlangan (ACTIVE) yoki platform-rasmiy mahsulot. `false` bo'lsa "Tasdiqlangan"
    *  chip ko'rsatilmaydi. Aniqlanmagan (mock demo) = rasmiy deb hisoblanadi. */
   sellerVerified?: boolean;

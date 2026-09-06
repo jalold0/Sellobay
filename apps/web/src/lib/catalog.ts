@@ -17,6 +17,7 @@ import { prisma } from './db';
 import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
 
 export const CATALOG_CACHE_TAG = 'products';
+export const CATEGORIES_CACHE_TAG = 'categories';
 const CATALOG_REVALIDATE_SECONDS = 120;
 
 // Mock/demo mahsulotlar (p1..p12) faqat DEV fallback uchun — ular UUID emas va
@@ -82,6 +83,9 @@ function toMockProduct(p: DbProductRow): MockProduct {
     imageUrl: isRealProductImageUrl(imageUrl) ? imageUrl : undefined,
     badge: deriveBadge(p),
     inStock: stock > 0,
+    // Aniq son ham uzatiladi: ilgari u shu yerda hisoblanib, keyin tashlab
+    // yuborilardi va past-zaxira ogohlantirishi o'ylab topilgan sondan chiqardi.
+    stock,
     // Verified: seller yo'q (platform-rasmiy) yoki seller ACTIVE holatda
     sellerVerified: !p.seller || p.seller.status === 'ACTIVE',
     isGlobal: p.globalSource !== null,
@@ -407,6 +411,63 @@ export async function fetchHomeProducts(): Promise<{
     sale: sale.length >= 4 ? sale : items.slice(0, 8),
     source,
   };
+}
+
+// ─── Kategoriyalar ──────────────────────────────────────────────
+
+export interface CategorySummary {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  iconUrl: string | null;
+  /** Shu kategoriyadagi mahsulotlarning HAQIQIY soni. */
+  productCount: number;
+}
+
+const cachedQueryCategories = unstable_cache(
+  async (): Promise<CategorySummary[]> => {
+    const rows = await prisma.category.findMany({
+      where: { isActive: true, parentId: null },
+      orderBy: { position: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        iconUrl: true,
+        _count: { select: { products: true } },
+      },
+    });
+    return rows.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name as LocalizedText,
+      iconUrl: c.iconUrl,
+      productCount: c._count.products,
+    }));
+  },
+  ['categories'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATEGORIES_CACHE_TAG] },
+);
+
+/**
+ * Yuqori darajadagi kategoriyalar — mahsulotlarning HAQIQIY soni bilan.
+ *
+ * Ilgari bosh sahifadagi kategoriya to'ri `mock-data.ts` dagi qotib yozilgan
+ * ro'yxatdan o'qirdi va "Kiyim-kechak — 1 280+ mahsulot" deb ko'rsatardi,
+ * holbuki katalogda bir necha mahsulot bor edi. `/api/categories` esa
+ * `_count` bilan haqiqiy sonni allaqachon qaytarardi — UI shunchaki uni
+ * chaqirmasdi. Endi ikkalasi ham shu funksiyadan foydalanadi.
+ *
+ * DB xatosida bo'sh ro'yxat qaytadi (to'r ko'rsatilmaydi) — to'qima sonlarga
+ * qaytish yo'q.
+ */
+export async function fetchTopCategories(): Promise<CategorySummary[]> {
+  try {
+    return await cachedQueryCategories();
+  } catch (err) {
+    console.error('[catalog] fetchTopCategories DB xato:', err);
+    return [];
+  }
 }
 
 // ─── Mock fallback filtering (DB'siz rejim) ──────────────────────

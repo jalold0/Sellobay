@@ -2,14 +2,30 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { categories, pickLocale, productImage, type Locale } from '../../lib/mock-data';
+import { pickLocale, productImage, type Locale } from '../../lib/mock-data';
+
+import type { CategorySummary } from '../../lib/catalog';
 
 interface Props {
   locale: Locale;
+  /**
+   * Bazadagi haqiqiy kategoriyalar. Ilgari bu komponent `mock-data.ts` dagi
+   * qotib yozilgan ro'yxatni import qilardi va "1 280+ mahsulot" kabi
+   * to'qima sonlarni ko'rsatardi.
+   */
+  categories: CategorySummary[];
 }
 
-export function CategoryGrid({ locale }: Props) {
+export function CategoryGrid({ locale, categories }: Props) {
   const t = useTranslations('home');
+
+  // Bo'sh kategoriya ko'rsatilmaydi: mijoz uni bosib bo'sh katalogga tushadi.
+  // (API esa to'liq ro'yxatni beradi — admin bo'sh kategoriyani ko'rishi kerak.)
+  const visible = categories.filter((c) => c.productCount > 0);
+
+  // Baza bo'sh yoki xato bergan bo'lsa — bo'lim umuman ko'rsatilmaydi.
+  // To'qima ro'yxatga qaytish yo'q.
+  if (visible.length === 0) return null;
 
   return (
     <section>
@@ -32,7 +48,7 @@ export function CategoryGrid({ locale }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {categories.map((c) => (
+        {visible.map((c) => (
           <Link
             key={c.id}
             href={`/catalog?category=${c.slug}`}
@@ -40,7 +56,9 @@ export function CategoryGrid({ locale }: Props) {
           >
             <div className="bg-soft relative aspect-square overflow-hidden rounded-2xl">
               <Image
-                src={productImage(c.imageSeed, 400)}
+                // Kategoriyaning o'z ikonkasi bo'lmasa — slug'dan barqaror
+                // placeholder (har yuklanishda bir xil rasm chiqadi).
+                src={c.iconUrl ?? productImage(c.slug, 400)}
                 alt={pickLocale(c.name, locale)}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"

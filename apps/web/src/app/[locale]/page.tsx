@@ -10,7 +10,7 @@ import { SaleSection } from '../../components/layout/sale-section';
 import { SellerBanner } from '../../components/layout/seller-banner';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
-import { fetchHomeProducts } from '../../lib/catalog';
+import { fetchHomeProducts, fetchTopCategories } from '../../lib/catalog';
 import { brands, type Locale } from '../../lib/mock-data';
 
 // ISR — har 2 daqiqada DB'dan yangilanadi (Neon serverless'ni tejaydi)
@@ -18,7 +18,11 @@ export const revalidate = 120;
 
 export default async function HomePage() {
   const locale = (await getLocale()) as Locale;
-  const { featured, collection, sale } = await fetchHomeProducts();
+  // Ikki so'rov parallel — kategoriyalar mahsulotlarni kutib turmaydi.
+  const [{ featured, collection, sale }, categories] = await Promise.all([
+    fetchHomeProducts(),
+    fetchTopCategories(),
+  ]);
   const t = await getTranslations('home');
 
   return (
@@ -59,7 +63,7 @@ export default async function HomePage() {
       </section>
 
       {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
-      <CategoryGrid locale={locale} />
+      <CategoryGrid locale={locale} categories={categories} />
 
       {/* 5. Featured collection — editorial 3-image showcase */}
       <FeaturedCollection locale={locale} products={collection} />
