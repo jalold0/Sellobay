@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   const scopeParam = (url.searchParams.get('scope') ?? 'LOCAL').toUpperCase();
   const scope: CatalogScope =
     scopeParam === 'GLOBAL' ? 'GLOBAL' : scopeParam === 'ALL' ? 'ALL' : 'LOCAL';
+  const scopeAsked = url.searchParams.has('scope');
 
   // Aniq ID'lar bo'yicha so'rov (wishlist, recent viewed, etc.)
   const ids = idsParam
@@ -37,12 +38,21 @@ export async function GET(req: NextRequest) {
     : null;
 
   try {
+    const byIds = Boolean(ids && ids.length > 0);
+
+    // Aniq ID so'ralganda standart qamrov filtri QO'LLANMAYDI: mijoz mahsulotni
+    // nomma-nom so'radi (sevimlilar, savat sinxroni, oxirgi ko'rilganlar).
+    // Ilgari `scope` standart LOKAL bo'lgani uchun global tovar id bo'yicha
+    // so'ralganda ham qaytmasdi — sevimlilar ro'yxatidan jimgina yo'qolardi.
+    // `?scope=` aniq berilgan bo'lsa — hurmat qilinadi.
+    const applyScope = !byIds || scopeAsked;
+
     const where: any = {
       status: 'ACTIVE',
       deletedAt: null,
-      ...scopeWhere(scope),
+      ...(applyScope ? scopeWhere(scope) : {}),
     };
-    if (ids && ids.length > 0) where.id = { in: ids };
+    if (byIds) where.id = { in: ids };
     if (featured === 'true') where.isFeatured = true;
     if (brand) where.brand = { slug: brand };
     if (category) {
