@@ -1023,6 +1023,34 @@ model Campaign {
   segment     CustomerSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
 }
 
+// Footer'dagi obuna formasi shu jadvalga yozadi.
+//
+// Ilgari forma HECH QAYERGA yozmasdi: 600ms kutib, "rahmat" xabarini
+// chiqarardi va emailni tashlab yuborardi. Ya'ni mijoz obuna bo'ldim deb
+// o'ylardi, ro'yxat esa yig'ilmasdi.
+//
+// Ataylab MINIMAL: ikki qadamli tasdiq (double opt-in) yo'q, chunki hozircha
+// email yuborish tizimi ham yo'q. Shuning uchun "tasdiqlandi" deb aytilmaydi —
+// faqat "qabul qilindi".
+model NewsletterSubscriber {
+  id    String @id @default(uuid()) @db.Uuid
+  email String @unique
+
+  /// Obuna bo'lgan paytdagi til — keyinchalik xat shu tilda ketadi.
+  locale String? @db.VarChar(5)
+  /// Qaysi sahifadan obuna bo'lgani (footer, kampaniya sahifasi va h.k.).
+  source String? @db.VarChar(40)
+
+  /// Obunani bekor qilgan vaqti. null = faol obunachi.
+  unsubscribedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([unsubscribedAt])
+}
+
 // ===================================================================
 // CRM: Segments, Tickets, Communications
 // ===================================================================

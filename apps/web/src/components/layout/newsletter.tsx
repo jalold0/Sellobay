@@ -2,11 +2,27 @@
 
 import { Button, toast } from '@ecom/ui';
 import { Loader2, Mail } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
+/**
+ * Footer'dagi obuna formasi.
+ *
+ * Ilgari bu forma serverga UMUMAN murojaat qilmasdi:
+ *
+ *     await new Promise((r) => setTimeout(r, 600));   // tarmoqqa taqlid
+ *     toast({ title: t('thanks'), variant: 'success' });
+ *
+ * Ya'ni 600ms kutib "Rahmat! Email tasdiqlandi" deb yozardi va emailni
+ * tashlab yuborardi. Mijoz obuna bo'ldim deb o'ylardi, ro'yxat esa
+ * yig'ilmasdi.
+ *
+ * Endi `/api/newsletter` ga yoziladi va XATO JIM O'TMAYDI — muvaffaqiyat
+ * xabari faqat server qabul qilganda chiqadi.
+ */
 export function NewsletterForm() {
   const t = useTranslations('footer.newsletter');
+  const locale = useLocale();
   const [email, setEmail] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -16,15 +32,35 @@ export function NewsletterForm() {
       toast({ title: t('invalid'), variant: 'warning' });
       return;
     }
+
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitting(false);
-    toast({
-      title: t('thanks'),
-      variant: 'success',
-      duration: 4000,
-    });
-    setEmail('');
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email, locale, source: 'footer' }),
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: { message?: string };
+      } | null;
+
+      if (!res.ok || !json?.success) {
+        // Server bergan xabarni ko'rsatamiz (masalan chastota cheklovi),
+        // bo'lmasa umumiy xato matni.
+        toast({ title: json?.error?.message ?? t('error'), variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: t('thanks'), variant: 'success', duration: 4000 });
+      setEmail('');
+    } catch {
+      // Tarmoq yo'q — bu ham xato, muvaffaqiyat emas.
+      toast({ title: t('error'), variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

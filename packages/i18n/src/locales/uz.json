@@ -57,13 +57,7 @@
     "user": "Foydalanuvchi"
   },
   "categories": {
-    "title": "Kategoriyalar",
-    "clothing": "Kiyim-kechak",
-    "shoes": "Poyabzal",
-    "perfume": "Atirlar",
-    "cosmetics": "Kosmetika",
-    "beauty": "Go'zallik",
-    "accessories": "Aksessuarlar"
+    "title": "Kategoriyalar"
   },
   "hero": {
     "eyebrow": "Yangi mavsum · 2026",
@@ -168,7 +162,7 @@
   },
   "footer": {
     "newsletterTitle": "Yangi tushgandan birinchi xabardor bo'ling",
-    "newsletterSubtitle": "Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling. Spam yo'q — faqat yangiliklar.",
+    "newsletterSubtitle": "Yangi mahsulotlar va chegirmalar haqida xabar beramiz. Spam yo'q.",
     "tagline": "O'zbekiston uchun multi-vendor marketplace. Tekshirilgan sotuvchilar, original mahsulotlar.",
     "address": "Toshkent sh., Mirzo Ulug'bek tumani",
     "paymentMethods": "To'lov usullari:",
@@ -203,8 +197,9 @@
     "newsletter": {
       "placeholder": "Email manzilingiz",
       "submit": "Obuna bo'lish",
-      "thanks": "Rahmat! Email tasdiqlandi.",
-      "invalid": "Email noto'g'ri"
+      "thanks": "Rahmat! Obuna qabul qilindi.",
+      "invalid": "Email noto'g'ri",
+      "error": "Obuna qabul qilinmadi. Keyinroq qayta urinib ko'ring."
     }
   },
   "search": {

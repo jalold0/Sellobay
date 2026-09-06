@@ -50,13 +50,7 @@
     "user": "User"
   },
   "categories": {
-    "title": "Categories",
-    "clothing": "Clothing",
-    "shoes": "Shoes",
-    "perfume": "Perfumes",
-    "cosmetics": "Cosmetics",
-    "beauty": "Beauty",
-    "accessories": "Accessories"
+    "title": "Categories"
   },
   "hero": {
     "eyebrow": "New season · 2026",
@@ -161,7 +155,7 @@
   },
   "footer": {
     "newsletterTitle": "Be the first to know about new arrivals",
-    "newsletterSubtitle": "Leave your email and get a 10% discount coupon. No spam — only news.",
+    "newsletterSubtitle": "We'll let you know about new arrivals and discounts. No spam.",
     "tagline": "A multi-vendor marketplace for Uzbekistan. Verified sellers, original products.",
     "address": "Tashkent, Mirzo Ulugbek district",
     "paymentMethods": "Payment methods:",
@@ -196,8 +190,9 @@
     "newsletter": {
       "placeholder": "Your email",
       "submit": "Subscribe",
-      "thanks": "Thanks! Email confirmed.",
-      "invalid": "Invalid email"
+      "thanks": "Thanks! You're subscribed.",
+      "invalid": "Invalid email",
+      "error": "Couldn't subscribe. Please try again later."
     }
   },
   "search": {
