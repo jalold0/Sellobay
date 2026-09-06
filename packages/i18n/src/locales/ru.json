@@ -79,7 +79,7 @@
     "recentlyViewed": "Вы недавно смотрели",
     "bestSellersSubtitle": "Наши бестселлеры — самые популярные товары",
     "popularBrands": "Популярные бренды",
-    "productCount": "{count}+ товаров",
+    "productCount": "{count} товаров",
     "view": "Смотреть",
     "stats": {
       "sellers": "Активных продавцов",
@@ -853,31 +853,28 @@
   },
   "sale": {
     "metaTitle": "Акции",
-    "metaDescription": "Лучшие скидки и акции — ограниченное время!",
+    "metaDescription": "Товары со скидкой — лучшие цены",
     "badge": "АКЦИЯ",
-    "title": "Летняя акция",
-    "titleWithDiscount": "Летняя акция — скидки до {percent}%",
-    "subtitle": "На этой неделе — лучшие цены. Ограниченное количество, торопитесь!",
-    "endsIn": "До конца",
-    "countdown": "До конца акции: 3 дня 14 часов 22 минуты",
+    "title": "Скидки",
+    "titleWithDiscount": "Скидки до {percent}%",
+    "subtitle": "Товары, на которые сейчас действует скидка",
     "discountUpTo": "Скидка до {percent}%",
     "stats": {
       "items": "Товаров со скидкой",
       "itemsValue": "{count} шт.",
       "maxDiscount": "Макс. скидка",
-      "totalSaved": "Общая экономия",
-      "winners": "Победителей среди клиентов"
+      "totalSaved": "Общая экономия"
     },
     "allSales": "Все акции",
     "flashSale": "Flash Sale",
     "homeTitle": "🔥 Распродажа",
-    "limitedTime": "Ограниченное время — скидки до 70%",
+    "limitedTime": "Товары со скидкой",
     "viewAll": "Смотреть все",
-    "limitedTimeShort": "Ограниченное время",
-    "bannerHeadline1": "−70%",
     "bannerHeadline2": "скидки до",
-    "bannerSubtitle": "Лучшие бренды — самые низкие цены. Ограниченное количество — торопитесь!",
-    "bannerCta": "Смотреть акцию"
+    "bannerSubtitle": "Лучшие бренды — со скидкой. Посмотрите весь список.",
+    "bannerCta": "Смотреть акцию",
+    "emptyTitle": "Сейчас нет товаров со скидкой",
+    "emptyDesc": "Новые скидки появятся здесь. А пока посмотрите каталог."
   },
   "order": {
     "status": {

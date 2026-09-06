@@ -79,7 +79,7 @@
     "recentlyViewed": "Recently viewed",
     "bestSellersSubtitle": "Our bestsellers — most popular products",
     "popularBrands": "Popular brands",
-    "productCount": "{count}+ products",
+    "productCount": "{count} products",
     "view": "View",
     "stats": {
       "sellers": "Active sellers",
@@ -853,31 +853,28 @@
   },
   "sale": {
     "metaTitle": "Sale",
-    "metaDescription": "Best discounts and sales — limited time!",
+    "metaDescription": "Discounted products — best prices",
     "badge": "SALE",
-    "title": "Summer sale",
-    "titleWithDiscount": "Summer sale — up to {percent}% off",
-    "subtitle": "This week — the best prices. Limited quantity, hurry up!",
-    "endsIn": "Ends in",
-    "countdown": "Sale ends in: 3 days 14 hours 22 minutes",
+    "title": "Discounts",
+    "titleWithDiscount": "Up to {percent}% off",
+    "subtitle": "Products currently discounted",
     "discountUpTo": "Up to {percent}% off",
     "stats": {
       "items": "Sale items",
       "itemsValue": "{count} pcs",
       "maxDiscount": "Max discount",
-      "totalSaved": "Total saved",
-      "winners": "Customer winners"
+      "totalSaved": "Total saved"
     },
     "allSales": "All sales",
     "flashSale": "Flash Sale",
     "homeTitle": "🔥 On sale",
-    "limitedTime": "Limited time — up to 70% off",
+    "limitedTime": "Products currently discounted",
     "viewAll": "View all",
-    "limitedTimeShort": "Limited time",
-    "bannerHeadline1": "−70%",
     "bannerHeadline2": "up to off",
-    "bannerSubtitle": "Best brands — lowest prices. Limited stock — hurry!",
-    "bannerCta": "Shop the sale"
+    "bannerSubtitle": "Top brands, discounted. Browse the full list.",
+    "bannerCta": "Shop the sale",
+    "emptyTitle": "Nothing is discounted right now",
+    "emptyDesc": "New discounts will show up here. Browse the catalogue meanwhile."
   },
   "order": {
     "status": {

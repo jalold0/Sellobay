@@ -89,7 +89,7 @@
     "recentlyViewed": "Yaqinda ko'rilgan",
     "bestSellersSubtitle": "Bizning bestseller'larimiz — eng ko'p tanlangan mahsulotlar",
     "popularBrands": "Mashhur brendlar",
-    "productCount": "{count}+ mahsulot",
+    "productCount": "{count} mahsulot",
     "view": "Ko'rish",
     "stats": {
       "sellers": "Faol sotuvchilar",
@@ -860,31 +860,28 @@
   },
   "sale": {
     "metaTitle": "Aksiyalar",
-    "metaDescription": "Eng yaxshi chegirmalar va aksiyalar — cheklangan vaqt!",
+    "metaDescription": "Chegirmada turgan mahsulotlar — eng yaxshi narxlar",
     "badge": "AKSIYA",
-    "title": "Yozgi aksiya",
-    "titleWithDiscount": "Yozgi aksiya — {percent}% gacha chegirma",
-    "subtitle": "Ushbu hafta — eng yaxshi narxlar. Cheklangan miqdor, shoshiling!",
-    "endsIn": "Tugashiga qoldi",
-    "countdown": "Aksiya tugashiga: 3 kun 14 soat 22 daqiqa",
+    "title": "Chegirmalar",
+    "titleWithDiscount": "{percent}% gacha chegirma",
+    "subtitle": "Hozir chegirmada turgan mahsulotlar",
     "discountUpTo": "{percent}% gacha chegirma",
     "stats": {
       "items": "Chegirmadagi mahsulot",
       "itemsValue": "{count} ta",
       "maxDiscount": "Maks. chegirma",
-      "totalSaved": "Umumiy iqtisod",
-      "winners": "Mijozlar yutishi"
+      "totalSaved": "Umumiy iqtisod"
     },
     "allSales": "Barcha aksiyalar",
     "flashSale": "Flash Sale",
     "homeTitle": "🔥 Aksiyada",
-    "limitedTime": "Cheklangan vaqt — chegirma 70%gacha",
+    "limitedTime": "Chegirmada turgan mahsulotlar",
     "viewAll": "Barchasini ko'rish",
-    "limitedTimeShort": "Cheklangan vaqt",
-    "bannerHeadline1": "−70%",
     "bannerHeadline2": "gacha chegirma",
-    "bannerSubtitle": "Eng yaxshi brendlar — eng past narxlar. Cheklangan miqdor — shoshiling!",
-    "bannerCta": "Aksiyani ko'rish"
+    "bannerSubtitle": "Eng yaxshi brendlar — chegirma bilan. Barchasini ko'rib chiqing.",
+    "bannerCta": "Aksiyani ko'rish",
+    "emptyTitle": "Hozir chegirmada mahsulot yo'q",
+    "emptyDesc": "Yangi chegirmalar chiqqanda shu yerda ko'rinadi. Katalogni ko'rib turing."
   },
   "order": {
     "status": {
