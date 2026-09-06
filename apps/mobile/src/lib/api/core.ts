@@ -57,9 +57,11 @@ async function doRefresh(): Promise<boolean> {
       body: JSON.stringify({ refresh }),
     });
     if (res.status === 401) {
-      // Refresh ham yaroqsiz/muddati o'tgan (30 kun) — sessiyani tozalaymiz
+      // Refresh ham yaroqsiz/muddati o'tgan (30 kun) — sessiyani tozalaymiz.
+      // revoke: false — server bu tokenni allaqachon rad etdi, bekor qilishga
+      // yuborish keraksiz so'rov bo'lardi.
       const { useSession } = await import('../../store/session');
-      void useSession.getState().signOut();
+      void useSession.getState().signOut({ revoke: false });
       return false;
     }
     if (!res.ok) return false;
