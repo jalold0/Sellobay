@@ -1,9 +1,13 @@
-import type { MetadataRoute } from 'next';
+import { fetchBrands, fetchProducts, fetchTopCategories } from '../lib/catalog';
 
-import { brands, categories, products } from '../lib/mock-data';
+import type { MetadataRoute } from 'next';
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+// Sitemap uchun butun katalog kerak. Hozircha katalog kichik, shu sababli
+// bitta so'rov kifoya; o'sganda bu yerga sahifalash qo'shiladi.
+const SITEMAP_PRODUCT_LIMIT = 1000;
 
 const STATIC_ROUTES = [
   '',
@@ -27,7 +31,19 @@ const STATIC_ROUTES = [
   '/offer',
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * Sitemap.
+ *
+ * Ilgari mahsulot, kategoriya va brend havolalari `mock-data.ts` dagi demo
+ * ro'yxatlardan qurilardi. Ya'ni Google'ga MAVJUD BO'LMAGAN sahifalar
+ * yuborilardi: mock slug'lar bazada yo'q, demak crawler 404 oladi va bu
+ * saytning indekslanishiga zarar qiladi. Bir vaqtda bazadagi haqiqiy
+ * mahsulotlar sitemap'ga umuman tushmasdi.
+ *
+ * Endi hammasi bazadan. Baza xato bersa statik yo'llar baribir qaytadi —
+ * sitemap butunlay bo'sh bo'lib qolmaydi.
+ */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [];
 
@@ -39,12 +55,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: route === '' ? 'daily' : 'weekly',
       priority: route === '' ? 1 : 0.7,
       alternates: {
-        languages: Object.fromEntries(
-          LOCALES.map((l) => [l, `${SITE_URL}/${l}${route}`]),
-        ),
+        languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE_URL}/${l}${route}`])),
       },
     });
   }
+
+  // `scope: 'ALL'` — global (Xitoy) tovarlarning ham o'z sahifasi bor.
+  const [{ items: products }, categories, brands] = await Promise.all([
+    fetchProducts({ limit: SITEMAP_PRODUCT_LIMIT, scope: 'ALL' }),
+    fetchTopCategories(),
+    fetchBrands(),
+  ]);
 
   // Mahsulot sahifalari
   for (const p of products) {
@@ -61,8 +82,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     });
   }
 
-  // Kategoriya
+  // Kategoriya — bo'shini qo'shmaymiz, u indeksga arzimaydi.
   for (const c of categories) {
+    if (c.productCount === 0) continue;
     entries.push({
       url: `${SITE_URL}/uz/catalog?category=${c.slug}`,
       lastModified: now,
