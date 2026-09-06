@@ -1,6 +1,14 @@
 import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../lib/catalog';
 
+import type { BrandSummary, CategorySummary } from '../lib/catalog';
+import type { MockProduct } from '../lib/mock-data';
+
 import type { MetadataRoute } from 'next';
+
+// Sitemap ISR bilan yangilanadi. Aks holda u build paytidagi katalog
+// holatida muzlab qolardi: keyin qo'shilgan mahsulotlar keyingi deploy'gacha
+// sitemap'ga tushmasdi.
+export const revalidate = 3600;
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -60,12 +68,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // `scope: 'ALL'` — global (Xitoy) tovarlarning ham o'z sahifasi bor.
-  const [{ items: products }, categories, brands] = await Promise.all([
-    fetchProducts({ limit: SITEMAP_PRODUCT_LIMIT, scope: 'ALL' }),
-    fetchStorefrontCategories(),
-    fetchBrands(),
-  ]);
+  let products: MockProduct[] = [];
+  let categories: CategorySummary[] = [];
+  let brands: BrandSummary[] = [];
+
+  try {
+    // `scope: 'ALL'` — global (Xitoy) tovarlarning ham o'z sahifasi bor.
+    const [productsResult, categoriesResult, brandsResult] = await Promise.all([
+      fetchProducts({ limit: SITEMAP_PRODUCT_LIMIT, scope: 'ALL' }),
+      fetchStorefrontCategories(),
+      fetchBrands(),
+    ]);
+    products = productsResult.items;
+    categories = categoriesResult;
+    brands = brandsResult;
+  } catch (err) {
+    // Bazaga yetib bo'lmasa sitemap BUTUNLAY yiqilmasligi kerak — statik
+    // yo'llar baribir qaytadi.
+    //
+    // Bu shart, chunki `fetchProducts` production'da DB xatosini yuqoriga
+    // uzatadi (sahifalarda bu TO'G'RI: soxta mock ko'rsatib checkout'ni
+    // buzmaydi). Lekin sitemap build vaqtida statik generatsiya qilinadi va
+    // CI'da `DATABASE_URL` — placeholder, ya'ni ushlanmagan xato BUTUN
+    // build'ni yiqitardi.
+    console.error('[sitemap] katalogni o`qib bo`lmadi, faqat statik yo`llar:', err);
+  }
 
   // Mahsulot sahifalari
   for (const p of products) {
