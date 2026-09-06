@@ -1,20 +1,30 @@
 'use client';
 
 import { Sheet, SheetContent, SheetTrigger } from '@ecom/ui';
+import { pickLocalized, type Locale } from '@ecom/i18n';
 import { ChevronRight, Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
-type CatSlug = 'clothing' | 'shoes' | 'perfume' | 'cosmetics' | 'beauty' | 'accessories';
-const CATEGORIES: { slug: CatSlug; emoji: string }[] = [
-  { slug: 'clothing', emoji: '👕' },
-  { slug: 'shoes', emoji: '👟' },
-  { slug: 'perfume', emoji: '🌸' },
-  { slug: 'cosmetics', emoji: '💄' },
-  { slug: 'beauty', emoji: '✨' },
-  { slug: 'accessories', emoji: '👜' },
-];
+import type { CategorySummary } from '../../lib/catalog';
+
+/**
+ * Emoji — FAQAT bezak, ma'lumot manbasi emas.
+ *
+ * Kategoriyalar ro'yxatining o'zi bazadan keladi; bu jadval shunchaki
+ * tanish slug'larga ikonka beradi. Yangi kategoriya bu yerda bo'lmasa
+ * standart ikonka ishlatiladi — ro'yxatdan tushib qolmaydi.
+ */
+const CATEGORY_EMOJI: Record<string, string> = {
+  clothing: '👕',
+  shoes: '👟',
+  perfume: '🌸',
+  cosmetics: '💄',
+  beauty: '✨',
+  accessories: '👜',
+};
+const DEFAULT_CATEGORY_EMOJI = '🏷️';
 
 type NavKey = 'profile' | 'wishlist' | 'myOrders';
 const QUICK_LINKS: { href: string; key: NavKey; icon: typeof User }[] = [
@@ -33,9 +43,15 @@ const SUPPORT_LINKS: { href: string; key: SupportKey; emoji?: string }[] = [
   { href: '/sell', key: 'becomeSeller' },
 ];
 
-export function MobileNav() {
+interface Props {
+  /** Bazadagi kategoriyalar — server layout'dan Header orqali keladi. */
+  categories: CategorySummary[];
+}
+
+export function MobileNav({ categories }: Props) {
   const [open, setOpen] = React.useState(false);
   const close = () => setOpen(false);
+  const locale = useLocale();
   const nav = useTranslations('nav');
   const common = useTranslations('common');
   const cat = useTranslations('categories');
@@ -105,15 +121,17 @@ export function MobileNav() {
             {cat('title')}
           </div>
           <div className="space-y-0.5">
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <Link
-                key={c.slug}
+                key={c.id}
                 href={`/catalog?category=${c.slug}`}
                 onClick={close}
                 className="hover:bg-accent flex items-center gap-3 rounded-md px-3 py-2 text-sm"
               >
-                <span className="text-base">{c.emoji}</span>
-                <span>{cat(c.slug)}</span>
+                <span className="text-base">
+                  {CATEGORY_EMOJI[c.slug] ?? DEFAULT_CATEGORY_EMOJI}
+                </span>
+                <span>{pickLocalized(c.name, locale as Locale)}</span>
                 <ChevronRight size={14} className="text-muted-foreground ml-auto" />
               </Link>
             ))}

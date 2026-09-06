@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../components/product/product-card-client';
-import { fetchBrands, fetchProducts, fetchTopCategories } from '../../../lib/catalog';
+import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../../../lib/catalog';
 import { findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
 
 interface CatalogPageProps {
@@ -35,9 +35,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   // variantni bosgan mijoz esa bo'sh natija olardi.
   //
   // Bo'sh kategoriya ko'rsatilmaydi — u filtr sifatida foydasiz.
-  const [allCategories, allBrands] = await Promise.all([fetchTopCategories(), fetchBrands()]);
-  const categories = allCategories.filter((c) => c.productCount > 0);
-  const brands = allBrands;
+  const [categories, brands] = await Promise.all([fetchStorefrontCategories(), fetchBrands()]);
 
   const { items: list } = await fetchProducts({
     category: searchParams.category,

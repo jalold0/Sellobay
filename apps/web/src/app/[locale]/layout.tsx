@@ -11,6 +11,7 @@ import { getMessages } from 'next-intl/server';
 import { CookieBanner } from '../../components/layout/cookie-banner';
 import { Footer } from '../../components/layout/footer';
 import { Header } from '../../components/layout/header';
+import { fetchStorefrontCategories } from '../../lib/catalog';
 import { ScrollToTop } from '../../components/layout/scroll-to-top';
 import { SkipLink } from '../../components/layout/skip-link';
 import { InstallPrompt } from '../../components/pwa/install-prompt';
@@ -92,7 +93,12 @@ export default async function LocaleLayout({
   // /favicon.ico kabi statik so'rovlar [locale] segmentiga tushmasin —
   // noto'g'ri locale NextIntlClientProvider'ga o'tsa Intl RangeError beradi
   if (!(locales as readonly string[]).includes(locale)) notFound();
-  const messages = await getMessages();
+
+  // Navigatsiya kategoriyalari BAZADAN. Ilgari Header va MobileNav o'zlarida
+  // 6 ta slug'ni qotib saqlardi: admin yangi kategoriya qo'shsa menyuda
+  // ko'rinmasdi, bo'sh kategoriya esa ko'rinib turardi va mijoz uni bosib
+  // bo'sh katalogga tushardi.
+  const [messages, navCategories] = await Promise.all([getMessages(), fetchStorefrontCategories()]);
   return (
     <html
       lang={locale}
@@ -108,7 +114,7 @@ export default async function LocaleLayout({
               <StoreSync />
               <SkipLink />
               <div className="flex min-h-screen flex-col">
-                <Header />
+                <Header categories={navCategories} />
                 <main id="main" className="container flex-1 py-6 md:py-10">
                   {children}
                 </main>

@@ -1,4 +1,4 @@
-import { fetchBrands, fetchProducts, fetchTopCategories } from '../lib/catalog';
+import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../lib/catalog';
 
 import type { MetadataRoute } from 'next';
 
@@ -63,7 +63,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // `scope: 'ALL'` — global (Xitoy) tovarlarning ham o'z sahifasi bor.
   const [{ items: products }, categories, brands] = await Promise.all([
     fetchProducts({ limit: SITEMAP_PRODUCT_LIMIT, scope: 'ALL' }),
-    fetchTopCategories(),
+    fetchStorefrontCategories(),
     fetchBrands(),
   ]);
 
@@ -82,9 +82,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // Kategoriya — bo'shini qo'shmaymiz, u indeksga arzimaydi.
+  // Kategoriya — `fetchStorefrontCategories()` bo'shini allaqachon chiqarib
+  // tashlagan (bo'sh kategoriya indeksga arzimaydi).
   for (const c of categories) {
-    if (c.productCount === 0) continue;
     entries.push({
       url: `${SITE_URL}/uz/catalog?category=${c.slug}`,
       lastModified: now,

@@ -19,13 +19,10 @@ interface Props {
 export function CategoryGrid({ locale, categories }: Props) {
   const t = useTranslations('home');
 
-  // Bo'sh kategoriya ko'rsatilmaydi: mijoz uni bosib bo'sh katalogga tushadi.
-  // (API esa to'liq ro'yxatni beradi — admin bo'sh kategoriyani ko'rishi kerak.)
-  const visible = categories.filter((c) => c.productCount > 0);
-
   // Baza bo'sh yoki xato bergan bo'lsa — bo'lim umuman ko'rsatilmaydi.
-  // To'qima ro'yxatga qaytish yo'q.
-  if (visible.length === 0) return null;
+  // To'qima ro'yxatga qaytish yo'q. Bo'sh kategoriyalarni chiqarib tashlash
+  // `fetchStorefrontCategories()` ning ishi.
+  if (categories.length === 0) return null;
 
   return (
     <section>
@@ -48,7 +45,7 @@ export function CategoryGrid({ locale, categories }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        {visible.map((c) => (
+        {categories.map((c) => (
           <Link
             key={c.id}
             href={`/catalog?category=${c.slug}`}

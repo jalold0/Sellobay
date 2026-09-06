@@ -10,7 +10,7 @@ import { SaleSection } from '../../components/layout/sale-section';
 import { SellerBanner } from '../../components/layout/seller-banner';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
-import { fetchBrands, fetchHomeProducts, fetchTopCategories } from '../../lib/catalog';
+import { fetchBrands, fetchHomeProducts, fetchStorefrontCategories } from '../../lib/catalog';
 
 import type { Locale } from '../../lib/mock-data';
 
@@ -22,7 +22,7 @@ export default async function HomePage() {
   // Ikki so'rov parallel — kategoriyalar mahsulotlarni kutib turmaydi.
   const [{ featured, sale }, categories, brands] = await Promise.all([
     fetchHomeProducts(),
-    fetchTopCategories(),
+    fetchStorefrontCategories(),
     fetchBrands(),
   ]);
   const t = await getTranslations('home');

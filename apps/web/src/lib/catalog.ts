@@ -471,6 +471,21 @@ export async function fetchTopCategories(): Promise<CategorySummary[]> {
   }
 }
 
+/**
+ * Mijoz ko'radigan kategoriyalar — mahsuloti BORLARI.
+ *
+ * `fetchTopCategories()` to'liq ro'yxatni beradi (admin bo'sh kategoriyani
+ * ko'rishi kerak, `/api/categories` ham shuni qaytaradi). Storefront esa
+ * bo'shini ko'rsatmasligi kerak: mijoz uni bosib bo'sh katalogga tushadi.
+ *
+ * Shu filtr ilgari uch joyda alohida yozilgan edi (bosh sahifa to'ri,
+ * katalog yon paneli, header navigatsiyasi) — bitta joyga yig'ildi.
+ */
+export async function fetchStorefrontCategories(): Promise<CategorySummary[]> {
+  const all = await fetchTopCategories();
+  return all.filter((c) => c.productCount > 0);
+}
+
 // ─── Brendlar ───────────────────────────────────────────────────
 
 export interface BrandSummary {
