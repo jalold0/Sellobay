@@ -19,6 +19,7 @@ import { ErrorBoundary } from '../src/components/error-boundary';
 import { UpdateBanner } from '../src/components/update-banner';
 import { storage } from '../src/lib/storage';
 import { useSession } from '../src/store/session';
+import { useStoreSync } from '../src/store/store-sync';
 import { Toaster } from '../src/ui/toaster';
 
 // Online holatini NetInfo bilan boshqaramiz — offline'da refetch to'xtaydi,
@@ -100,6 +101,10 @@ export default function RootLayout() {
     });
     return () => sub.remove();
   }, []);
+
+  // Savat va sevimlilar serverga sinxronlanadi — boshqa qurilmada ham
+  // ko'rinishi uchun. Web'da bu allaqachon bor edi, mobilda yo'q edi.
+  useStoreSync();
 
   if (loading || !fontsLoaded) {
     return (

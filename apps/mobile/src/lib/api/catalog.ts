@@ -1,7 +1,7 @@
 // Katalog — mahsulotlar ro'yxati/detali + ApiProduct→MockProduct adapter.
 // DB xatosida dev rejimda mock fallback (ilova hech qachon yiqilmaydi).
 
-import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
+import { isRealProductImageUrl, onlyUuids, picsumSeed } from '@ecom/utils';
 
 import {
   globalProducts,
@@ -200,4 +200,38 @@ function filterMock(params: FetchProductsParams): MockProduct[] {
       list.sort((a, b) => b.reviewCount - a.reviewCount);
   }
   return list.slice(0, params.limit ?? 48);
+}
+
+/**
+ * Aniq ID'lar bo'yicha mahsulotlar.
+ *
+ * Sevimlilar va savat sinxroni uchun kerak. Ilgari sevimlilar ekrani birinchi
+ * 48 mahsulot ro'yxatidan filtrlardi — o'sha 48 talikka kirmagan sevimli
+ * mahsulot ekranda KO'RINMASDI (ro'yxat esa bo'sh emasdek turardi, chunki
+ * sanoq boshqa joydan olinardi). Server `?ids=` filtrini allaqachon
+ * qo'llab-quvvatlaydi.
+ */
+export async function fetchProductsByIds(ids: readonly string[]): Promise<MockProduct[]> {
+  const unique = onlyUuids(ids);
+  if (unique.length === 0) return [];
+
+  // Server bir so'rovda 100 tagacha beradi — kattaroq ro'yxatni bo'lib so'raymiz.
+  const CHUNK = 50;
+  const out: MockProduct[] = [];
+
+  for (let i = 0; i < unique.length; i += CHUNK) {
+    const chunk = unique.slice(i, i + CHUNK);
+    try {
+      const data = await getJson<ProductsResponse>(
+        `/api/products?ids=${chunk.join(',')}&limit=${chunk.length}`,
+      );
+      out.push(...(data.items ?? []).map(toMockProduct));
+    } catch (err) {
+      // Bir bo'lak kelmasa qolganini baribir qaytaramiz — ro'yxat butunlay
+      // bo'sh chiqib ketmasin.
+      console.warn('[api] fetchProductsByIds xato:', String(err));
+    }
+  }
+
+  return out;
 }
