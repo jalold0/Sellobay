@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { fetchBrandBySlug, fetchProducts } from '../../../../lib/catalog';
+import { notFoundMetadata } from '../../../../lib/seo';
 
 import type { Locale } from '../../../../lib/mock-data';
 import type { Metadata } from 'next';
@@ -17,7 +18,7 @@ export const revalidate = 120;
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const t = await getTranslations('brand');
   const brand = await fetchBrandBySlug(params.slug);
-  if (!brand) return { title: t('notFound') };
+  if (!brand) return notFoundMetadata(t('notFound'));
   return { title: brand.name, description: t('metaDescription', { name: brand.name }) };
 }
 
