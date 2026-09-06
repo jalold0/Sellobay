@@ -18,6 +18,7 @@ import { products as mockProducts, type LocalizedText, type MockProduct } from '
 
 export const CATALOG_CACHE_TAG = 'products';
 export const CATEGORIES_CACHE_TAG = 'categories';
+export const BRANDS_CACHE_TAG = 'brands';
 const CATALOG_REVALIDATE_SECONDS = 120;
 
 // Mock/demo mahsulotlar (p1..p12) faqat DEV fallback uchun — ular UUID emas va
@@ -468,6 +469,52 @@ export async function fetchTopCategories(): Promise<CategorySummary[]> {
     console.error('[catalog] fetchTopCategories DB xato:', err);
     return [];
   }
+}
+
+// ─── Brendlar ───────────────────────────────────────────────────
+
+export interface BrandSummary {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+const cachedQueryBrands = unstable_cache(
+  async (): Promise<BrandSummary[]> => {
+    const rows = await prisma.brand.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, slug: true, name: true, logoUrl: true },
+    });
+    return rows;
+  },
+  ['brands'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [BRANDS_CACHE_TAG] },
+);
+
+/**
+ * Aktiv brendlar.
+ *
+ * Ilgari bosh sahifadagi brend paneli, katalog filtri va brend sahifasi
+ * `mock-data.ts` dagi 8 ta qotib yozilgan brenddan o'qirdi. Natijada:
+ * bazadagi haqiqiy brend katalog filtrida umuman ko'rinmasdi, mock brend
+ * esa bosilganda bo'sh natija berardi. `/api/brands` haqiqiy ro'yxatni
+ * allaqachon qaytarardi — UI shunchaki uni chaqirmasdi.
+ */
+export async function fetchBrands(): Promise<BrandSummary[]> {
+  try {
+    return await cachedQueryBrands();
+  } catch (err) {
+    console.error('[catalog] fetchBrands DB xato:', err);
+    return [];
+  }
+}
+
+/** Bitta brend — slug bo'yicha. Topilmasa null (sahifa 404 beradi). */
+export async function fetchBrandBySlug(slug: string): Promise<BrandSummary | null> {
+  const all = await fetchBrands();
+  return all.find((b) => b.slug === slug) ?? null;
 }
 
 // ─── Mock fallback filtering (DB'siz rejim) ──────────────────────
