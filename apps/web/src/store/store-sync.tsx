@@ -5,9 +5,14 @@
 // - Keyin har bir lokal o'zgarish (debounced 800ms) → server'ga PUT
 // - Logout'da sinxron to'xtaydi (lokal saqlanadi, server'ga yozilmaydi)
 
+import { pickLocalized } from '@ecom/i18n';
+import { isUuid } from '@ecom/utils';
+import { useLocale } from 'next-intl';
 import * as React from 'react';
 
+import { fetchProductsByIds } from '../lib/api-products';
 import { me } from '../lib/auth/client';
+import { type Locale } from '../lib/mock-data';
 import { useCart, type CartItem } from './cart';
 import { useWishlist } from './wishlist';
 
@@ -59,12 +64,12 @@ async function syncCart(
   }
 }
 
-// Mahalliy cart item'ni server payload'ga o'tkazish
+// Mahalliy cart item'ni server payload'ga o'tkazish.
+// Faqat haqiqiy UUID'lar ketadi: mock katalog id'si bo'lsa server
+// `z.string().uuid()` bilan BUTUN so'rovni rad etardi.
 function toCartPayload(items: CartItem[]): CartItemPayload[] {
-  // UUID validation (faqat real productId'lar serverga yuboriladi, mock'lar emas)
-  const uuidRe = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
   return items
-    .filter((it) => uuidRe.test(it.productId))
+    .filter((it) => isUuid(it.productId))
     .map((it) => ({
       productId: it.productId,
       variantId: it.variantId ?? null,
@@ -72,7 +77,13 @@ function toCartPayload(items: CartItem[]): CartItemPayload[] {
     }));
 }
 
+/** Sinxron kaliti — server faqat mahsulot va variantni biladi. */
+function keyOf(productId: string, variantId?: string | null): string {
+  return `${productId}|${variantId ?? ''}`;
+}
+
 export function StoreSync() {
+  const locale = useLocale() as Locale;
   const [authed, setAuthed] = React.useState<boolean | null>(null);
   const cartItems = useCart((s) => s.items);
   const wishlistIds = useWishlist((s) => s.ids);
@@ -95,30 +106,69 @@ export function StoreSync() {
         useWishlist.setState({ ids: merged });
       }
 
-      const localCart = toCartPayload(useCart.getState().items);
-      const serverCart = await syncCart(localCart, 'merge');
+      const localItems = useCart.getState().items;
+      const serverCart = await syncCart(toCartPayload(localItems), 'merge');
       if (serverCart && !cancelled) {
-        // Server qaytarganidan local cart'ni qayta tuzamiz (UUID + qty)
-        // Eslatma: bizning CartItem ko'p meta-data saqlaydi (name, brand, image) —
-        // server faqat ID + qty bilan keladi. Shuning uchun MAHALLIY itemlarni
-        // saqlab, faqat qty'ni server qiymatiga moslaymiz (yoki yetishmayotgan itemni qoldiramiz).
-        const serverMap = new Map(
-          serverCart.map((s) => [`${s.productId}|${s.variantId ?? ''}`, s.quantity]),
-        );
+        const serverMap = new Map(serverCart.map((s) => [keyOf(s.productId, s.variantId), s]));
+
+        // 1) Mavjud satrlarning sonini server bilan tenglashtiramiz.
+        //    CartItem ko'p meta-ma'lumot saqlaydi (nom, brend, rasm), server
+        //    esa faqat id va son beradi — shu sababli satrning o'zi saqlanadi.
         useCart.setState({
           items: useCart.getState().items.map((it) => {
-            const key = `${it.productId}|${it.variantId ?? ''}`;
-            const serverQty = serverMap.get(key);
-            if (serverQty == null) return it;
-            return { ...it, quantity: serverQty };
+            const match = serverMap.get(keyOf(it.productId, it.variantId));
+            return match ? { ...it, quantity: match.quantity } : it;
           }),
         });
+
+        // 2) FAQAT serverda bor satrlar — boshqa qurilmada qo'shilganlar.
+        //
+        // Bu qadam shart edi va yo'q edi. Ilgari bunday satr ro'yxatga
+        // TUSHMASDAN qolardi, keyingi o'zgarishdagi 'replace' esa uni
+        // serverdan ham O'CHIRIB tashlardi — ya'ni telefonda qo'shilgan
+        // tovar kompyuterga kirilgach yo'qolardi. Meta-ma'lumot uchun
+        // mahsulotlarni id bo'yicha olib kelamiz.
+        const localKeys = new Set(localItems.map((it) => keyOf(it.productId, it.variantId)));
+        const missing = serverCart.filter(
+          (sc) => !localKeys.has(keyOf(sc.productId, sc.variantId)),
+        );
+
+        if (missing.length > 0) {
+          const products = await fetchProductsByIds(missing.map((m) => m.productId));
+          const byId = new Map(products.map((pr) => [pr.id, pr]));
+          const addItem = useCart.getState().addItem;
+
+          for (const item of missing) {
+            const product = byId.get(item.productId);
+            // Mahsulot o'chirilgan yoki sotuvdan olingan bo'lsa qo'shmaymiz.
+            if (!product || cancelled) continue;
+            addItem({
+              productId: product.id,
+              variantId: item.variantId ?? undefined,
+              name: pickLocalized(product.name, locale),
+              brand: product.brand,
+              slug: product.slug,
+              imageSeed: product.imageSeed,
+              imageUrl: product.imageUrl,
+              // Narx — serverdagi snapshot (qo'shilgan paytdagi narx).
+              unitPrice: Number(item.unitPrice) || product.price,
+              oldPrice: product.oldPrice,
+              currency: product.currency,
+              quantity: item.quantity,
+              // Rang/o'lcham yorliqlari server javobida yo'q (u faqat
+              // variantId ni biladi) — tiklangan satrda ko'rsatilmaydi.
+            });
+          }
+        }
       }
       initialMergeDone.current = true;
     });
     return () => {
       cancelled = true;
     };
+    // `locale` ataylab bog'liqlikda emas — u faqat tiklangan satr nomini
+    // tanlash uchun, til almashtirilganda qayta birlashtirish kerak emas.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 2. Wishlist o'zgarganda debounced PUT

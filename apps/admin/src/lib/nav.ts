@@ -69,6 +69,7 @@ export const adminNav: NavItem[] = [
     group: 'CRM',
     badgeKey: 'pendingSellers',
   },
+  { href: '/group-buy', label: 'Guruh xaridi', icon: Users, group: 'O`sish' },
   { href: '/marketing', label: 'Marketing', icon: Megaphone, group: 'O`sish' },
   { href: '/analytics', label: 'Analitika', icon: BarChart3, group: 'O`sish' },
   { href: '/inventory', label: 'Inventar', icon: Boxes, group: 'Operatsiyalar' },

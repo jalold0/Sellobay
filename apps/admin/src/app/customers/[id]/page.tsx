@@ -21,10 +21,12 @@ import {
 } from '@ecom/ui';
 import { ArrowLeft, CalendarDays, Crown, Mail, Phone, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
 import { OrderStatusBadge } from '../../../components/status/order-status-badge';
+import { getCustomer, type AdminCustomer, type AdminCustomerOrder } from '../../../lib/auth/client';
 import {
   formatDate,
   formatMoney,
@@ -32,16 +34,54 @@ import {
   formatRelative,
   initials,
 } from '../../../lib/format';
-import { mockCustomers, mockOrders } from '../../../lib/mock';
 
 export default function CustomerDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
-  const customer = mockCustomers.find((c) => c.id === id);
-  if (!customer) return notFound();
 
-  const fullName = `${customer.firstName} ${customer.lastName}`;
-  const customerOrders = mockOrders.slice(0, Math.min(customer.ordersCount, 8));
+  // Ma'lumot HAQIQIY API'dan. Ilgari bu yerda mockCustomers'dan qidirilardi
+  // (id'lari `cu-1`...), ro'yxat esa real UUID'ga link qilardi — natijada
+  // istalgan mijozni bosish har doim notFound() bilan tugardi.
+  const [customer, setCustomer] = React.useState<AdminCustomer | null>(null);
+  const [customerOrders, setCustomerOrders] = React.useState<AdminCustomerOrder[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!id) return;
+    let alive = true;
+    void getCustomer(id).then((res) => {
+      if (!alive) return;
+      if (res.success) {
+        setCustomer(res.data.customer);
+        setCustomerOrders(res.data.orders);
+      } else {
+        setError(res.error.message);
+      }
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return <div className="text-muted-foreground py-20 text-center text-sm">Yuklanmoqda...</div>;
+  }
+  if (error || !customer) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-sm font-medium">{error ?? 'Mijoz topilmadi'}</p>
+        <Button variant="outline" size="sm" className="mt-4" asChild>
+          <Link href="/customers">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Mijozlar ro`yxati
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const fullName = `${customer.firstName} ${customer.lastName}`.trim() || 'Mijoz';
 
   return (
     <div className="space-y-6">
@@ -62,7 +102,7 @@ export default function CustomerDetailPage() {
       <Card>
         <CardContent className="flex items-center gap-4 p-6">
           <Avatar className="h-16 w-16">
-            <AvatarImage src={customer.avatarUrl} />
+            <AvatarImage src={customer.avatarUrl ?? undefined} />
             <AvatarFallback>{initials(fullName)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">

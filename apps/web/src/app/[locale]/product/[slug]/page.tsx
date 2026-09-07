@@ -13,6 +13,7 @@ import {
   fetchProducts,
 } from '../../../../lib/catalog';
 import { type Locale, type MockProduct, pickLocale, productImage } from '../../../../lib/mock-data';
+import { notFoundMetadata } from '../../../../lib/seo';
 import {
   buildProductDetail,
   getProductDetail,
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const detail = dbProduct ? buildProductDetail(dbProduct) : getProductDetail(params.slug);
   if (!detail) {
     const t = await getTranslations('product');
-    return { title: t('notFound') };
+    return notFoundMetadata(t('notFound'));
   }
   const { product, description } = detail;
   const name = pickLocale(product.name, params.locale);

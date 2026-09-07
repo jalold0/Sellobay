@@ -39,11 +39,15 @@ export default function LoyaltyScreen() {
   const router = useRouter();
   const { t } = useT();
 
+  // Serverdagi REASON_TO_KEY bilan to'liq mos bo'lishi kerak
+  // (apps/web/src/lib/loyalty-server.ts). `checkin` tushib qolgan edi va
+  // kunlik kirish bonusi "Buyurtmadan" deb noto'g'ri yorliqlanardi.
   const REASON_LABEL: Record<string, string> = {
     orderEarn: t('loyalty.history.orderEarn'),
     discount: t('loyalty.history.discount'),
     review: t('loyalty.history.review'),
     referral: t('loyalty.history.referral'),
+    checkin: t('loyalty.history.checkin'),
   };
 
   const [coins, setCoins] = React.useState(MOCK_LOYALTY.coins);
@@ -60,12 +64,15 @@ export default function LoyaltyScreen() {
         setCoins(data.coins);
         setSpent(data.spentSom);
         setHistory(
-          data.history.map((t) => ({
-            id: t.id,
-            type: t.amount >= 0 ? 'earn' : 'spend',
-            amount: t.amount,
-            reason: REASON_LABEL[t.reasonKey] ?? 'Buyurtmadan',
-            daysAgo: t.daysAgo,
+          // `tx` deb nomlandi: ilgari parametr `t` edi va tarjima funksiyasini
+          // soyalab qo'yardi — shu sababli yorliq qotib yozilgan o'zbekcha
+          // matn bo'lib qolgan edi.
+          data.history.map((tx) => ({
+            id: tx.id,
+            type: tx.amount >= 0 ? 'earn' : 'spend',
+            amount: tx.amount,
+            reason: REASON_LABEL[tx.reasonKey] ?? t('loyalty.history.orderEarn'),
+            daysAgo: tx.daysAgo,
           })),
         );
         setCheckedIn(Boolean(data.checkedInToday));

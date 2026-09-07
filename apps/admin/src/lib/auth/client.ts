@@ -47,6 +47,20 @@ export function meAdmin() {
   return api<{ user: AdminUser }>('/api/auth/me');
 }
 
+/** Admin o'z profilini yangilaydi (PATCH /api/auth/me allaqachon mavjud edi,
+ *  lekin sozlamalar sahifasi uni chaqirmasdi — faqat "Saqlandi" deb yozardi). */
+export function updateAdminProfile(input: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}) {
+  return api<{ user: AdminUser }>('/api/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 // Sotuvchi tasdiq APIs
 export function listPendingSellers() {
   return api<{ items: PendingSeller[] }>('/api/sellers/pending');
@@ -145,6 +159,183 @@ export interface AdminCustomer {
   totalSpent: number;
   loyaltyPoints: number;
   registeredAt: string;
+}
+
+export interface AdminCustomerOrder {
+  id: string;
+  number: string;
+  status: AdminOrderStatus;
+  grandTotal: number;
+  placedAt: string;
+}
+
+/** Bitta mijoz kartochkasi + oxirgi buyurtmalari. */
+export function getCustomer(id: string) {
+  return api<{ customer: AdminCustomer; orders: AdminCustomerOrder[] }>(`/api/customers/${id}`);
+}
+
+// ── Dashboard statistikasi ────────────────────────────────────────
+
+/** Mahsulot nomi — DB'da Json, shakli { uz, ru?, en? }. */
+export type LocalizedName = Partial<Record<'uz' | 'ru' | 'en', string>>;
+export interface AdminStats {
+  kpi: {
+    revenue: number;
+    revenuePrev: number;
+    /** Foiz o'zgarish; oldingi davrda daromad bo'lmasa `null`. */
+    revenueDelta: number | null;
+    ordersCount: number;
+    ordersPrev: number;
+    newCustomers: number;
+    avgCheck: number;
+    /** Takroriy xarid ulushi (%); xaridor bo'lmasa `null`. */
+    repeatRate: number | null;
+    buyers: number;
+    windowDays: number;
+  };
+  revenueSeries: Array<{ date: string; revenue: number; orders: number }>;
+  lowStock: Array<{
+    id: string;
+    name: LocalizedName;
+    sku: string;
+    imageUrl: string;
+    stock: number;
+  }>;
+  recentOrders: Array<{
+    id: string;
+    number: string;
+    status: AdminOrderStatus;
+    grandTotal: number;
+    placedAt: string;
+    customerName: string;
+  }>;
+  topProducts: Array<{
+    id: string;
+    name: LocalizedName;
+    sku: string;
+    brandName: string | null;
+    soldCount: number;
+    basePrice: number;
+    imageUrl: string;
+  }>;
+}
+
+export function getStats() {
+  return api<AdminStats>('/api/stats');
+}
+
+// ── Brendlar ──────────────────────────────────────────────────────
+export interface AdminBrand {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+  isActive: boolean;
+  productsCount: number;
+  createdAt: string;
+}
+
+export function listBrands() {
+  return api<{ items: AdminBrand[] }>('/api/brands');
+}
+
+export function createBrand(input: { name: string; slug?: string; logoUrl?: string | null }) {
+  return api<{ brand: AdminBrand }>('/api/brands', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ── Kategoriyalar ─────────────────────────────────────────────────
+export interface AdminCategory {
+  id: string;
+  parentId: string | null;
+  slug: string;
+  name: LocalizedName;
+  iconUrl: string | null;
+  position: number;
+  isActive: boolean;
+  productsCount: number;
+  childrenCount: number;
+}
+
+export function listCategories() {
+  return api<{ items: AdminCategory[] }>('/api/categories');
+}
+
+export function createCategory(input: {
+  name: { uz: string; ru?: string; en?: string };
+  slug?: string;
+  parentId?: string | null;
+}) {
+  return api<{ category: AdminCategory }>('/api/categories', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ── Promokodlar ───────────────────────────────────────────────────
+export type AdminPromoType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
+
+export interface AdminPromoCode {
+  id: string;
+  code: string;
+  type: AdminPromoType;
+  value: number;
+  minOrderTotal: number | null;
+  maxDiscount: number | null;
+  usageLimit: number | null;
+  usagePerUser: number;
+  usedCount: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export function listPromoCodes() {
+  return api<{ items: AdminPromoCode[] }>('/api/promo-codes');
+}
+
+export function createPromoCode(input: {
+  code: string;
+  type: AdminPromoType;
+  value: number;
+  minOrderTotal?: number | null;
+  maxDiscount?: number | null;
+  usageLimit?: number | null;
+  usagePerUser?: number;
+  endsAt?: string | null;
+}) {
+  return api<{ promo: AdminPromoCode }>('/api/promo-codes', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ── Ombor (faqat o'qish; zaxirani sotuvchi boshqaradi) ────────────
+export interface AdminInventoryRow {
+  id: string;
+  sku: string;
+  name: LocalizedName;
+  status: string;
+  basePrice: number;
+  imageUrl: string;
+  sellerName: string | null;
+  stock: number;
+  reserved: number;
+}
+
+export interface AdminInventorySummary {
+  totalStock: number;
+  inventoryValue: number;
+  lowStock: number;
+  outOfStock: number;
+  threshold: number;
+}
+
+export function listInventory() {
+  return api<{ items: AdminInventoryRow[]; summary: AdminInventorySummary }>('/api/inventory');
 }
 
 // Buyurtmalar ro'yxati (admin)
@@ -318,6 +509,86 @@ export interface PendingSeller {
     lastName: string | null;
     status: string;
   };
+}
+
+// ── Guruh xaridi ──────────────────────────────────────────────────
+export interface AdminGroupBuy {
+  id: string;
+  productId: string;
+  productSlug: string;
+  name: LocalizedName;
+  imageUrl: string;
+  soloPrice: number;
+  groupPrice: number;
+  targetSize: number;
+  currentSize: number;
+  status: 'OPEN' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt: string;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export function listGroupBuys() {
+  return api<{ items: AdminGroupBuy[] }>('/api/group-buy');
+}
+
+export function createGroupBuy(input: {
+  productId: string;
+  groupPrice: number;
+  targetSize: number;
+  durationDays: number;
+}) {
+  return api<{ groupBuy: { id: string; expiresAt: string } }>('/api/group-buy', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function cancelGroupBuy(id: string) {
+  return api<{ id: string; status: string; affectedMembers: number }>(`/api/group-buy/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'cancel' }),
+  });
+}
+
+/** Admin orqali mahsulot yaratish (platforma mahsuloti — sellerId null). */
+export function createProduct(input: {
+  nameUz: string;
+  nameRu?: string;
+  nameEn?: string;
+  descriptionUz?: string;
+  sku: string;
+  slug?: string;
+  basePrice: number;
+  compareAtPrice?: number | null;
+  stock: number;
+  weightGrams?: number | null;
+  categoryId: string;
+  brandId?: string | null;
+  status?: 'DRAFT' | 'ACTIVE';
+}) {
+  return api<{ product: { id: string; slug: string; sku: string; status: string } }>(
+    '/api/products/create',
+    { method: 'POST', body: JSON.stringify(input) },
+  );
+}
+
+// ── Panel xodimlari ───────────────────────────────────────────────
+export interface AdminStaffUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+  status: string;
+  roles: string[];
+  lastLoginAt: string | null;
+  createdAt: string;
+}
+
+export function listAdminUsers() {
+  return api<{ items: AdminStaffUser[] }>('/api/admin-users');
 }
 
 // ─── Bosh sahifa ko'rsatkichlari ──────────────────────────────────

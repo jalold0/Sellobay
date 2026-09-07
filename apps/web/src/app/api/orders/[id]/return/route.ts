@@ -5,6 +5,7 @@
 //   • PUL REFUNDI — ops/qo'lda ishlanadi: bu yerda gateway'ga AVTO-REFUND YO'Q.
 //     Status RETURNED operatorlarga "refund kutilmoqda" signalini beradi (→ REFUNDED).
 
+import { RETURN_WINDOW_DAYS } from '@ecom/core-domain';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -18,7 +19,6 @@ import type { NextRequest } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const RETURN_WINDOW_DAYS = 14;
 const RETURN_WINDOW_MS = RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
 const schema = z.object({ reason: z.string().trim().max(300).optional() });

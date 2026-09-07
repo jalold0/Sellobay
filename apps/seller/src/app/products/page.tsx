@@ -4,10 +4,6 @@ import {
   Button,
   Card,
   DataTable,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
   KpiCard,
   PageHeader,
@@ -18,7 +14,7 @@ import {
   toast,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Archive, Copy, MoreHorizontal, Package, Pencil, Plus } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
@@ -53,18 +49,18 @@ const columns: ColumnDef<ProductRow>[] = [
     header: 'Mahsulot',
     cell: ({ row }) => (
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+        <div className="bg-muted h-10 w-10 shrink-0 overflow-hidden rounded-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
         </div>
         <div className="min-w-0">
-          <Link
-            href={`/products/${row.original.id}`}
-            className="block truncate font-medium hover:underline"
-          >
-            {pickLocalized(row.original.name)}
-          </Link>
-          <div className="truncate text-xs text-muted-foreground">{row.original.sku}</div>
+          {/*
+            Ilgari `/products/{id}` ga link edi, lekin seller'da bunday sahifa
+            yo'q (products/ ostida faqat new/) — nomni bosish 404 berardi.
+            Tahrirlash sahifasi qo'shilmaguncha oddiy matn.
+          */}
+          <div className="truncate font-medium">{pickLocalized(row.original.name)}</div>
+          <div className="text-muted-foreground truncate text-xs">{row.original.sku}</div>
         </div>
       </div>
     ),
@@ -109,35 +105,7 @@ const columns: ColumnDef<ProductRow>[] = [
     cell: ({ row }) => (
       <div className="text-right">
         <span>⭐ {row.original.rating}</span>
-        <span className="ml-1 text-xs text-muted-foreground">({row.original.reviewCount})</span>
-      </div>
-    ),
-  },
-  {
-    id: 'actions',
-    header: '',
-    cell: ({ row }) => (
-      <div className="flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/products/${row.original.id}`}>
-                <Pencil className="mr-2 h-4 w-4" /> Tahrirlash
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Copy className="mr-2 h-4 w-4" /> Nusxalash
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Archive className="mr-2 h-4 w-4" /> Arxiv
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <span className="text-muted-foreground ml-1 text-xs">({row.original.reviewCount})</span>
       </div>
     ),
   },

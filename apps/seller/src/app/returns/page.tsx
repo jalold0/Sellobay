@@ -1,34 +1,34 @@
 'use client';
 
 import {
-  Button,
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Card,
   DataTable,
   KpiCard,
-  MockDataNotice,
   PageHeader,
   StatusBadge,
-  type StatusTone,
   toast,
+  type StatusTone,
 } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
-import { Check, RotateCcw, X } from 'lucide-react';
+import { Info, RotateCcw } from 'lucide-react';
+import * as React from 'react';
 
+import { listReturns, type SellerReturnRow } from '../../lib/auth/client';
 import { formatDate, formatMoney, formatNumber, pickLocalized } from '../../lib/format';
-import { sellerReturns, type SellerReturn } from '../../lib/mock';
 
-const STATUS_CFG: Record<SellerReturn['status'], { label: string; tone: StatusTone }> = {
-  REQUESTED: { label: 'So`rov', tone: 'warning' },
-  APPROVED: { label: 'Tasdiqlangan', tone: 'info' },
-  REJECTED: { label: 'Rad etilgan', tone: 'danger' },
-  COMPLETED: { label: 'Yakunlangan', tone: 'success' },
+const STATUS_CFG: Record<SellerReturnRow['status'], { label: string; tone: StatusTone }> = {
+  RETURNED: { label: 'Qaytarilgan · pul kutilmoqda', tone: 'warning' },
+  REFUNDED: { label: 'Pul qaytarilgan', tone: 'success' },
 };
 
-const columns: ColumnDef<SellerReturn>[] = [
+const columns: ColumnDef<SellerReturnRow>[] = [
   {
-    accessorKey: 'orderNumber',
+    accessorKey: 'number',
     header: 'Buyurtma',
-    cell: ({ row }) => <span className="font-mono font-medium">{row.original.orderNumber}</span>,
+    cell: ({ row }) => <span className="font-mono font-medium">{row.original.number}</span>,
   },
   {
     accessorKey: 'customerName',
@@ -37,21 +37,32 @@ const columns: ColumnDef<SellerReturn>[] = [
       <div className="text-sm">
         <div>{row.original.customerName}</div>
         <div className="text-muted-foreground truncate text-xs">
-          {pickLocalized(row.original.productName)}
+          {row.original.items.map((i) => pickLocalized(i.name)).join(', ')}
         </div>
       </div>
     ),
   },
   {
-    accessorKey: 'reason',
-    header: 'Sabab',
-    cell: ({ row }) => <span className="text-sm">{row.original.reason}</span>,
+    accessorKey: 'sellerAmount',
+    header: () => <div className="text-right">Summa</div>,
+    cell: ({ row }) => (
+      <div className="text-right font-semibold">{formatMoney(row.original.sellerAmount)}</div>
+    ),
   },
   {
-    accessorKey: 'refundAmount',
-    header: () => <div className="text-right">Qaytarish summasi</div>,
+    accessorKey: 'reason',
+    header: 'Sabab',
     cell: ({ row }) => (
-      <div className="text-right font-semibold">{formatMoney(row.original.refundAmount)}</div>
+      <span className="text-muted-foreground text-xs">{row.original.reason ?? '—'}</span>
+    ),
+  },
+  {
+    accessorKey: 'returnedAt',
+    header: 'Sana',
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-xs">
+        {row.original.returnedAt ? formatDate(row.original.returnedAt) : '—'}
+      </span>
     ),
   },
   {
@@ -62,76 +73,70 @@ const columns: ColumnDef<SellerReturn>[] = [
       return <StatusBadge tone={cfg.tone}>{cfg.label}</StatusBadge>;
     },
   },
-  {
-    accessorKey: 'requestedAt',
-    header: 'Sana',
-    cell: ({ row }) => (
-      <span className="text-muted-foreground text-xs">{formatDate(row.original.requestedAt)}</span>
-    ),
-  },
-  {
-    id: 'actions',
-    header: '',
-    cell: ({ row }) => {
-      if (row.original.status !== 'REQUESTED') return null;
-      return (
-        <div className="flex justify-end gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-            onClick={() => toast({ title: 'Tasdiqlandi', variant: 'success' })}
-          >
-            <Check className="mr-1 h-3 w-3" /> Tasdiqlash
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 border-red-200 text-red-700 hover:bg-red-50"
-            onClick={() => toast({ title: 'Rad etildi', variant: 'destructive' })}
-          >
-            <X className="mr-1 h-3 w-3" /> Rad
-          </Button>
-        </div>
-      );
-    },
-  },
 ];
 
 export default function SellerReturnsPage() {
-  const totalRefund = sellerReturns.reduce((s, r) => s + r.refundAmount, 0);
-  const pending = sellerReturns.filter((r) => r.status === 'REQUESTED').length;
+  const [rows, setRows] = React.useState<SellerReturnRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let alive = true;
+    void listReturns().then((res) => {
+      if (!alive) return;
+      if (res.success) setRows(res.data.items);
+      else toast({ title: res.error.message, variant: 'destructive' });
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const awaitingRefund = rows.filter((r) => r.status === 'RETURNED').length;
+  const totalAmount = rows.reduce((s, r) => s + r.sellerAmount, 0);
 
   return (
     <div className="space-y-6">
-      <MockDataNotice description="Qaytarishlar oqimi hali qurilmagan." />
+      <PageHeader title="Qaytarishlar" description="Qaytarilgan buyurtmalaringiz" />
 
-      <PageHeader title="Qaytarishlar" description="Mijoz qaytarish so`rovlari va status" />
+      {/*
+        Ilgari bu sahifa REQUESTED → APPROVED/REJECTED oqimini ko'rsatardi va
+        "Tasdiqlash"/"Rad" tugmalari bor edi. Ular faqat toast chiqarardi —
+        chunki bunday bosqich bazada UMUMAN mavjud emas: qaytarishni mijoz
+        boshlaydi va u darhol amalga oshadi (zaxira qaytadi, Sello Coins
+        qaytadi), keyin operator pulni qaytaradi. Batafsil: docs/adr/0008.
+      */}
+      <Alert variant="info">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Qaytarish qanday ishlaydi</AlertTitle>
+        <AlertDescription>
+          Mijoz yetkazilgandan keyin 14 kun ichida buyurtmani o`zi qaytaradi — tasdiq talab
+          qilinmaydi. Tovar shu zahoti omboringizga qaytariladi. Pulni operator qaytaradi, shundan
+          keyin status «Pul qaytarilgan» bo`ladi.
+        </AlertDescription>
+      </Alert>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard
-          label="Jami so`rovlar"
-          value={formatNumber(sellerReturns.length)}
+          label="Jami qaytarish"
+          value={formatNumber(rows.length)}
           icon={RotateCcw}
           accent="primary"
         />
-        <KpiCard label="Yangi so`rov" value={formatNumber(pending)} accent="warning" />
-        <KpiCard
-          label="Tasdiqlangan"
-          value={formatNumber(
-            sellerReturns.filter((r) => r.status === 'APPROVED' || r.status === 'COMPLETED').length,
-          )}
-          accent="success"
-        />
-        <KpiCard label="Jami qaytarilgan" value={formatMoney(totalRefund)} accent="info" />
+        <KpiCard label="Pul kutilmoqda" value={formatNumber(awaitingRefund)} accent="warning" />
+        <KpiCard label="Qaytarilgan summa" value={formatMoney(totalAmount)} accent="danger" />
       </div>
 
       <Card className="p-1">
-        <DataTable
-          columns={columns}
-          data={sellerReturns}
-          searchPlaceholder="Buyurtma raqami yoki mijoz..."
-        />
+        {loading ? (
+          <div className="text-muted-foreground p-10 text-center text-sm">Yuklanmoqda...</div>
+        ) : rows.length === 0 ? (
+          <div className="text-muted-foreground p-10 text-center text-sm">
+            Hozircha qaytarish yo`q.
+          </div>
+        ) : (
+          <DataTable columns={columns} data={rows} searchPlaceholder="Buyurtma yoki mijoz..." />
+        )}
       </Card>
     </div>
   );

@@ -33,8 +33,26 @@ export interface CartItem {
   isGlobal?: boolean;
 }
 
+/**
+ * Qo'llanilgan promokod. Chegirma SERVERDA hisoblangan qiymat
+ * (/api/promo/validate) — klientda o'ylab chiqarilmaydi. Bu yerda saqlanadi,
+ * chunki savatdan checkout'ga o'tganda kod yo'qolib ketmasligi kerak:
+ * ilgari u faqat cart-view'ning lokal state'ida turardi va checkout
+ * promokod haqida umuman bilmasdi — mijoz chegirmali summani ko'rib,
+ * to'liq narxda to'lardi.
+ */
+export interface AppliedPromo {
+  code: string;
+  /** Serverning oldindan hisobi (so'm). Yakuniy summa buyurtmada qayta hisoblanadi. */
+  discount: number;
+  type: string;
+}
+
 interface CartState {
   items: CartItem[];
+  appliedPromo: AppliedPromo | null;
+  setPromo: (promo: AppliedPromo) => void;
+  clearPromo: () => void;
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, qty: number) => void;
@@ -56,6 +74,9 @@ export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      appliedPromo: null,
+      setPromo: (promo) => set({ appliedPromo: promo }),
+      clearPromo: () => set({ appliedPromo: null }),
       itemKey: (productId, variantId, color, size) => makeKey(productId, variantId, color, size),
       addItem: (input) =>
         set((state) => {
@@ -107,7 +128,7 @@ export const useCart = create<CartState>()(
             i.id === id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i,
           ),
         })),
-      clear: () => set({ items: [] }),
+      clear: () => set({ items: [], appliedPromo: null }),
       totalQuantity: () => get().items.reduce((s, i) => s + i.quantity, 0),
       subtotal: () => get().items.reduce((s, i) => s + i.unitPrice * i.quantity, 0),
     }),

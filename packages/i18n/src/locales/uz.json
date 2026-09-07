@@ -57,13 +57,7 @@
     "user": "Foydalanuvchi"
   },
   "categories": {
-    "title": "Kategoriyalar",
-    "clothing": "Kiyim-kechak",
-    "shoes": "Poyabzal",
-    "perfume": "Atirlar",
-    "cosmetics": "Kosmetika",
-    "beauty": "Go'zallik",
-    "accessories": "Aksessuarlar"
+    "title": "Kategoriyalar"
   },
   "hero": {
     "eyebrow": "Yangi mavsum · 2026",
@@ -89,7 +83,7 @@
     "recentlyViewed": "Yaqinda ko'rilgan",
     "bestSellersSubtitle": "Bizning bestseller'larimiz — eng ko'p tanlangan mahsulotlar",
     "popularBrands": "Mashhur brendlar",
-    "productCount": "{count}+ mahsulot",
+    "productCount": "{count} mahsulot",
     "view": "Ko'rish",
     "stats": {
       "sellers": "Faol sotuvchilar",
@@ -101,14 +95,14 @@
     "editorial": {
       "eyebrow": "Tanlangan kolleksiya",
       "titleLine1": "Kuz garderobi:",
-      "titleLine2": "25 ta asosiy buyum",
+      "titleLine2": "tanlangan buyumlar",
       "link": "Kolleksiyani ochish",
       "womenTitle": "Ayollar uchun",
       "womenCount": "Yangi kolleksiya",
-      "saleEyebrow": "Faqat 48 soat",
+      "saleEyebrow": "Chegirmalar",
       "saleTitleLine1": "Mavsumiy SALE",
-      "saleTitleLine2": "−50% gacha",
-      "saleCta": "Chegirmalarga o'tish"
+      "saleCta": "Chegirmalarga o'tish",
+      "saleDiscount": "−{percent}% gacha"
     },
     "sellerCta": {
       "eyebrow": "Sotuvchilar uchun",
@@ -142,7 +136,8 @@
       "new": "Yangi tushganlar",
       "flash": "Flash chegirmalar",
       "secure": "Xavfsiz to'lov"
-    }
+    },
+    "brandsCount": "{count} brend"
   },
   "featured": {
     "eyebrow": "Edit · Premium",
@@ -167,7 +162,7 @@
   },
   "footer": {
     "newsletterTitle": "Yangi tushgandan birinchi xabardor bo'ling",
-    "newsletterSubtitle": "Emailingizni qoldiring va doimiy mijoz uchun 10% chegirma kupon oling. Spam yo'q — faqat yangiliklar.",
+    "newsletterSubtitle": "Yangi mahsulotlar va chegirmalar haqida xabar beramiz. Spam yo'q.",
     "tagline": "O'zbekiston uchun multi-vendor marketplace. Tekshirilgan sotuvchilar, original mahsulotlar.",
     "address": "Toshkent sh., Mirzo Ulug'bek tumani",
     "paymentMethods": "To'lov usullari:",
@@ -202,8 +197,9 @@
     "newsletter": {
       "placeholder": "Email manzilingiz",
       "submit": "Obuna bo'lish",
-      "thanks": "Rahmat! Email tasdiqlandi.",
-      "invalid": "Email noto'g'ri"
+      "thanks": "Rahmat! Obuna qabul qilindi.",
+      "invalid": "Email noto'g'ri",
+      "error": "Obuna qabul qilinmadi. Keyinroq qayta urinib ko'ring."
     }
   },
   "search": {
@@ -386,7 +382,9 @@
     "groupGlobal": "Global (Xitoydan)",
     "mixedNote": "Global tovarlar 15-17 kunda kargo bilan keladi, shuning uchun ular alohida buyurtma qilinadi. Ikkalasini ham buyurtma qilsangiz bo‘ladi.",
     "checkoutLocal": "Sellobay tovarlarini buyurtma qilish · {amount}",
-    "checkoutGlobal": "Global tovarlarni buyurtma qilish · {amount}"
+    "checkoutGlobal": "Global tovarlarni buyurtma qilish · {amount}",
+    "promoPlaceholder": "Promokod",
+    "promoChecking": "Tekshirilmoqda..."
   },
   "checkout": {
     "title": "Buyurtmani rasmiylashtirish",
@@ -520,8 +518,10 @@
       "required": "Majburiy maydonlarni to'ldiring",
       "network": "Tarmoq xatosi",
       "failed": "Buyurtma yaratilmadi",
-      "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing."
-    }
+      "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing.",
+      "promoNoLongerValid": "Promokod bu buyurtma uchun yaroqli emas — olib tashlandi"
+    },
+    "promoDiscount": "Promokod chegirmasi"
   },
   "auth": {
     "loginRequired": "Buyurtma berish uchun ro'yxatdan o'ting",
@@ -781,12 +781,12 @@
     "title": "Birga oling — arzon oling",
     "subtitle": "Do'stlaringizni taklif qiling. Guruh to'lsa — hamma chegirmali narxda oladi.",
     "howTitle": "Qanday ishlaydi",
-    "step1Title": "Guruh boshlang",
-    "step1Desc": "Mahsulotni tanlab guruh xaridini oching",
+    "step1Title": "Guruhni tanlang",
+    "step1Desc": "Ochiq guruhlardan birini tanlab qo'shiling",
     "step2Title": "Do'stlarni taklif qiling",
     "step2Desc": "Havolani ulashing — ular guruhga qo'shilsin",
     "step3Title": "Chegirmani oling",
-    "step3Desc": "Guruh to'lganda hamma arzon narxda xarid qiladi",
+    "step3Desc": "Guruh to'lgach mahsulotni guruh narxida buyurtma qilasiz",
     "activeTitle": "Faol guruhlar",
     "soloPrice": "Yakka narx",
     "groupPrice": "Guruh narxi",
@@ -798,7 +798,16 @@
     "share": "Ulashish",
     "linkCopied": "Havola nusxalandi",
     "expiresIn": "Tugashiga",
-    "save": "{percent}% tejang"
+    "save": "{percent}% tejang",
+    "emptyTitle": "Hozircha faol guruh yo'q",
+    "emptyText": "Yangi guruh xaridlari tez orada qo'shiladi. Keyinroq qarab turing.",
+    "expired": "Muddat tugadi",
+    "joining": "Qo'shilmoqda...",
+    "joinFailed": "Guruhga qo'shilib bo'lmadi. Birozdan keyin urinib ko'ring.",
+    "leaveGroup": "Guruhdan chiqish",
+    "leaving": "Chiqilmoqda...",
+    "leftGroup": "Guruhdan chiqdingiz",
+    "leaveFailed": "Guruhdan chiqib bo`lmadi. Birozdan keyin urinib ko`ring."
   },
   "loyalty": {
     "title": "Sello Coins",
@@ -842,36 +851,34 @@
       "referral": "Do'st taklifi bonusi",
       "discount": "Chegirmaga ishlatildi",
       "daysAgo": "{days} kun oldin",
-      "empty": "Hali coin tarixi yo'q — birinchi xaridingizni qiling!"
+      "empty": "Hali coin tarixi yo'q — birinchi xaridingizni qiling!",
+      "checkin": "Kunlik kirish bonusi"
     }
   },
   "sale": {
     "metaTitle": "Aksiyalar",
-    "metaDescription": "Eng yaxshi chegirmalar va aksiyalar — cheklangan vaqt!",
+    "metaDescription": "Chegirmada turgan mahsulotlar — eng yaxshi narxlar",
     "badge": "AKSIYA",
-    "title": "Yozgi aksiya",
-    "titleWithDiscount": "Yozgi aksiya — {percent}% gacha chegirma",
-    "subtitle": "Ushbu hafta — eng yaxshi narxlar. Cheklangan miqdor, shoshiling!",
-    "endsIn": "Tugashiga qoldi",
-    "countdown": "Aksiya tugashiga: 3 kun 14 soat 22 daqiqa",
+    "title": "Chegirmalar",
+    "titleWithDiscount": "{percent}% gacha chegirma",
+    "subtitle": "Hozir chegirmada turgan mahsulotlar",
     "discountUpTo": "{percent}% gacha chegirma",
     "stats": {
       "items": "Chegirmadagi mahsulot",
       "itemsValue": "{count} ta",
       "maxDiscount": "Maks. chegirma",
-      "totalSaved": "Umumiy iqtisod",
-      "winners": "Mijozlar yutishi"
+      "totalSaved": "Umumiy iqtisod"
     },
     "allSales": "Barcha aksiyalar",
     "flashSale": "Flash Sale",
     "homeTitle": "🔥 Aksiyada",
-    "limitedTime": "Cheklangan vaqt — chegirma 70%gacha",
+    "limitedTime": "Chegirmada turgan mahsulotlar",
     "viewAll": "Barchasini ko'rish",
-    "limitedTimeShort": "Cheklangan vaqt",
-    "bannerHeadline1": "−70%",
     "bannerHeadline2": "gacha chegirma",
-    "bannerSubtitle": "Eng yaxshi brendlar — eng past narxlar. Cheklangan miqdor — shoshiling!",
-    "bannerCta": "Aksiyani ko'rish"
+    "bannerSubtitle": "Eng yaxshi brendlar — chegirma bilan. Barchasini ko'rib chiqing.",
+    "bannerCta": "Aksiyani ko'rish",
+    "emptyTitle": "Hozir chegirmada mahsulot yo'q",
+    "emptyDesc": "Yangi chegirmalar chiqqanda shu yerda ko'rinadi. Katalogni ko'rib turing."
   },
   "order": {
     "status": {
@@ -1119,5 +1126,70 @@
   },
   "localeSwitcher": {
     "label": "Til tanlash"
+  },
+  "deliveryPage": {
+    "metaTitle": "Yetkazib berish",
+    "heroTitle": "Yetkazib berish",
+    "heroDesc": "O'zbekistonning barcha 14 hududiga tezkor va xavfsiz yetkazib berish.",
+    "homeTitle": "Uyga yetkazib berish",
+    "homeDesc": "24-48 soat ichida",
+    "homeFree": "{amount} dan boshlab tekin",
+    "expressTitle": "Express",
+    "expressDesc": "Toshkent bo'yicha 3 soat ichida",
+    "expressFree": "Cheklanmagan",
+    "pickupTitle": "Olib ketish punkti",
+    "pickupDesc": "Sizga eng yaqin punktdan oling",
+    "pickupPrice": "Bepul",
+    "pickupFree": "Har doim",
+    "timesTitle": "Vaqtlar",
+    "tashkent": "Toshkent",
+    "tashkent1": "Standard: 24 soat ichida",
+    "tashkent2": "Express: 3 soat ichida (sotib olgandan keyin)",
+    "tashkent3": "Tushdan oldin buyurtma — kechqurun yetadi",
+    "regions": "Viloyatlar",
+    "regions1": "2-3 ish kuni ichida",
+    "regions2": "Express mavjud (toifaga qarab)",
+    "regions3": "SMS orqali xabardor bo'lib turasiz",
+    "zonesTitle": "Yetkazib berish hududlari",
+    "regionList": [
+      "Toshkent shahri",
+      "Toshkent viloyati",
+      "Samarqand",
+      "Buxoro",
+      "Andijon",
+      "Farg'ona",
+      "Namangan",
+      "Qashqadaryo",
+      "Surxondaryo",
+      "Jizzax",
+      "Sirdaryo",
+      "Navoiy",
+      "Xorazm",
+      "Qoraqalpog'iston"
+    ]
+  },
+  "returnsPage": {
+    "metaTitle": "Qaytarish va to'lash",
+    "heroTitle": "Qaytarish va pul qaytarish",
+    "heroDesc": "Mahsulotni yetkazib berilganda tekshirib oling — maqul kelmasa o'sha joyning o'zida qaytaring. Yoki yetkazilgandan keyin {days} kun ichida qaytarib bering.",
+    "howTitle": "Qanday qaytarish",
+    "step1Title": "Yetkazilganda tekshiring",
+    "step1Desc": "Kuryer oldida yoki punktda ochib ko'ring — maqul kelmasa o'sha joyda qaytaring",
+    "step2Title": "Mahsulotni topshiring",
+    "step2Desc": "Kuryer oladi yoki olib ketish punktiga olib boring",
+    "step3Title": "Pul qaytariladi",
+    "step3Desc": "3-5 ish kuni ichida kartangizga yoki naqd",
+    "windowTitle": "Qaytarish muddati",
+    "windowDesc": "Yetkazib berilgandan keyin {days} kun ichida buyurtmani Profil → Buyurtmalarim bo'limidan qaytarishingiz mumkin. Tovar omborga qaytadi va Sello Coins ham qaytariladi.",
+    "canTitle": "Qaytarish mumkin",
+    "can1": "Kiyim-kechak — etiketka va o'ralma bilan",
+    "can2": "Poyabzal — kiyilmagan, asl qutida",
+    "can3": "Aksessuarlar — buzilmagan holatda",
+    "can4": "Texnika — quti va hujjatlar bilan",
+    "cantTitle": "Qaytarish mumkin emas",
+    "cant1": "Atirlar — o'ralma ochilgan",
+    "cant2": "Kosmetika — sinov uchun ochilgan",
+    "cant3": "Ichki kiyim, paypoq",
+    "cant4": "Sovg'a sertifikatlari"
   }
 }

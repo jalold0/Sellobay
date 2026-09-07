@@ -1,38 +1,20 @@
 // Sellobay — Kategoriyalar API
-// GET /api/categories — barcha aktiv kategoriyalar + mahsulot soni
+// GET /api/categories — barcha aktiv top-level kategoriyalar + mahsulotning
+// haqiqiy soni.
+//
+// So'rov `lib/catalog.ts` dagi `fetchTopCategories()` da — bosh sahifadagi
+// kategoriya to'ri ham aynan shu funksiyadan o'qiydi. Ilgari to'r
+// `mock-data.ts` dagi qotib yozilgan sonlarni ko'rsatardi, bu route esa
+// haqiqiy sonni qaytarardi — ikki manba bir-biriga zid edi.
 
 import { NextResponse } from 'next/server';
 
-import { prisma } from '../../../lib/db';
+import { fetchTopCategories } from '../../../lib/catalog';
 
 export const runtime = 'nodejs';
 export const revalidate = 300; // 5 daq cache
 
 export async function GET() {
-  try {
-    const categories = await prisma.category.findMany({
-      where: { isActive: true, parentId: null }, // faqat top-level
-      orderBy: { position: 'asc' },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        iconUrl: true,
-        _count: { select: { products: true } },
-      },
-    });
-
-    return NextResponse.json({
-      items: categories.map((c: (typeof categories)[number]) => ({
-        id: c.id,
-        slug: c.slug,
-        name: c.name,
-        iconUrl: c.iconUrl,
-        productCount: c._count.products,
-      })),
-    });
-  } catch (err) {
-    console.error('[api/categories] error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  const items = await fetchTopCategories();
+  return NextResponse.json({ items });
 }

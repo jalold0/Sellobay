@@ -1,7 +1,7 @@
 import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { ACCESS_SECRET, AUTH_CONFIGURED, COOKIE_ACCESS } from '@/lib/auth/constants';
+import { COOKIE_ACCESS, COOKIE_REFRESH, accessSecretOrNull } from '@/lib/auth/constants';
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
 type Locale = (typeof LOCALES)[number];
@@ -47,7 +47,10 @@ const encoder = new TextEncoder();
 
 async function isValidAccess(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, encoder.encode(ACCESS_SECRET));
+    const secret = accessSecretOrNull();
+    // Kalit yo'q/juda qisqa bo'lsa hech qanday token qabul qilinmaydi.
+    if (!secret) return false;
+    await jwtVerify(token, encoder.encode(secret));
     return true;
   } catch {
     return false;
@@ -63,8 +66,10 @@ export default async function middleware(req: NextRequest) {
     // Ilgari ikkalasi bir xil ishlangani uchun JWT_SECRET qo`yilmagan muhitda
     // kirgan foydalanuvchi ham har safar /login ga qaytarilaverardi va sabab
     // hech qayerda ko`rinmasdi.
-    if (!AUTH_CONFIGURED) {
-      console.error('[auth] JWT_SECRET qo`yilmagan — himoyalangan sahifalar ochilmaydi.');
+    if (!accessSecretOrNull()) {
+      console.error(
+        '[auth] JWT_SECRET qo`yilmagan yoki juda qisqa — himoyalangan sahifalar ochilmaydi.',
+      );
       return new NextResponse('Server auth sozlamasi to`liq emas (JWT_SECRET).', {
         status: 503,
         headers: { 'content-type': 'text/plain; charset=utf-8' },
@@ -73,10 +78,31 @@ export default async function middleware(req: NextRequest) {
     const token = req.cookies.get(COOKIE_ACCESS)?.value;
     const ok = token ? await isValidAccess(token) : false;
     if (!ok) {
+      // Access JWT 15 daqiqada tugaydi, refresh cookie esa 30 kun yashaydi.
+      // Refresh bo'lsa — avval sessiyani yangilashga urinamiz, keyin ham
+      // bo'lmasa login'ga. Ilgari bu qadam yo'q edi: foydalanuvchi amaldagi
+      // 30 kunlik sessiyasi bilan 15 daqiqadan keyin login'ga uloqtirilardi.
+      //
+      // Rotatsiya Prisma talab qiladi, middleware esa Edge'da ishlaydi —
+      // shuning uchun ish /api/auth/refresh (nodejs) ga topshiriladi va u
+      // 302 bilan shu yo'lga qaytaradi. Cheksiz aylanish bo'lmaydi: refresh
+      // muvaffaqiyatsiz bo'lsa o'sha route cookie'larni tozalab login'ga
+      // yuboradi, ya'ni ikkinchi kelishda `hasRefresh` false bo'ladi.
+      const hasRefresh = Boolean(req.cookies.get(COOKIE_REFRESH)?.value);
+      const target = pathname + req.nextUrl.search;
+
+      if (hasRefresh) {
+        const refreshUrl = req.nextUrl.clone();
+        refreshUrl.pathname = '/api/auth/refresh';
+        refreshUrl.search = `?next=${encodeURIComponent(target)}`;
+        return NextResponse.redirect(refreshUrl);
+      }
+
       const locale = detectLocale(pathname);
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = `/${locale}/login`;
-      loginUrl.searchParams.set('next', pathname + req.nextUrl.search);
+      loginUrl.search = '';
+      loginUrl.searchParams.set('next', target);
       return NextResponse.redirect(loginUrl);
     }
   }

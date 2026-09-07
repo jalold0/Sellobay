@@ -25,8 +25,10 @@ export async function POST(req: NextRequest) {
   }
 
   const currentUser = await getCurrentUser();
+  // Takroriy yuborishdan himoya — mobil ilova bu sarlavhani yuboradi.
+  const idempotencyKey = req.headers.get('idempotency-key') ?? undefined;
   try {
-    return apiOk(await createOrder(parsed.data, currentUser));
+    return apiOk(await createOrder(parsed.data, currentUser, idempotencyKey));
   } catch (e) {
     if (e instanceof OrderError) return apiError(e.status, e.code, e.message);
     throw e;

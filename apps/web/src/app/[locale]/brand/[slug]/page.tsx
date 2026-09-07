@@ -1,27 +1,43 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
-import { brands, findBySlug, type Locale, products } from '../../../../lib/mock-data';
+import { fetchBrandBySlug, fetchProducts } from '../../../../lib/catalog';
+import { notFoundMetadata } from '../../../../lib/seo';
+
+import type { Locale } from '../../../../lib/mock-data';
+import type { Metadata } from 'next';
 
 interface PageProps {
   params: { slug: string };
 }
 
+// ISR — katalog bilan bir xil ritm.
+export const revalidate = 120;
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const t = await getTranslations('brand');
-  const brand = findBySlug(brands, params.slug);
-  if (!brand) return { title: t('notFound') };
+  const brand = await fetchBrandBySlug(params.slug);
+  if (!brand) return notFoundMetadata(t('notFound'));
   return { title: brand.name, description: t('metaDescription', { name: brand.name }) };
 }
 
+/**
+ * Brend sahifasi.
+ *
+ * Ilgari butunlay `mock-data.ts` ustida turardi: brend ham, mahsulotlar ham
+ * qotib yozilgan 8/12 talik demo ro'yxatdan olinardi. Ya'ni bazadagi
+ * haqiqiy brend uchun bu sahifa 404 berardi, mock brend esa mavjud
+ * bo'lmagan tovarlarni ko'rsatardi (ularni savatga qo'shsa checkout
+ * "Invalid uuid" bilan yiqilardi).
+ */
 export default async function BrandPage({ params }: PageProps) {
-  const brand = findBySlug(brands, params.slug);
+  const brand = await fetchBrandBySlug(params.slug);
   if (!brand) notFound();
+
   const locale = (await getLocale()) as Locale;
   const t = await getTranslations('brand');
-  const brandProducts = products.filter((p) => p.brandId === brand.id);
+  const { items: brandProducts } = await fetchProducts({ brand: params.slug, limit: 48 });
 
   return (
     <div className="space-y-8">
@@ -29,10 +45,10 @@ export default async function BrandPage({ params }: PageProps) {
         <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div
-              className="text-3xl font-black tracking-[0.3em] md:text-5xl"
+              className="text-3xl font-black uppercase tracking-[0.3em] md:text-5xl"
               style={{ letterSpacing: '0.3em' }}
             >
-              {brand.logoText}
+              {brand.name}
             </div>
             <p className="mt-3 max-w-md text-white/80">{t('heroSubtitle', { name: brand.name })}</p>
           </div>
@@ -51,7 +67,7 @@ export default async function BrandPage({ params }: PageProps) {
         ) : (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
             {brandProducts.map((p) => (
-              <ProductCardClient key={p.id} product={p} locale={locale} />
+              <ProductCardClient key={p.id} product={p} locale={locale} stockLeft={p.stock} />
             ))}
           </div>
         )}

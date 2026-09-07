@@ -1,29 +1,19 @@
 // Sellobay — Brendlar API
 // GET /api/brands — barcha aktiv brendlar
+//
+// So'rov `lib/catalog.ts` dagi `fetchBrands()` da — bosh sahifadagi brend
+// paneli, katalog filtri va brend sahifasi ham aynan shu funksiyadan
+// o'qiydi. Ilgari UI `mock-data.ts` dagi 8 ta qotib yozilgan brendni
+// ko'rsatardi, bu route esa haqiqiy ro'yxatni qaytarardi.
 
 import { NextResponse } from 'next/server';
 
-import { prisma } from '../../../lib/db';
+import { fetchBrands } from '../../../lib/catalog';
 
 export const runtime = 'nodejs';
 export const revalidate = 300;
 
 export async function GET() {
-  try {
-    const brands = await prisma.brand.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        logoUrl: true,
-      },
-    });
-
-    return NextResponse.json({ items: brands });
-  } catch (err) {
-    console.error('[api/brands] error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  const items = await fetchBrands();
+  return NextResponse.json({ items });
 }

@@ -2,9 +2,13 @@
 
 import { create } from 'zustand';
 
+import { API_BASE } from '../lib/api/core';
 import { secureStorage, storage, STORAGE_KEYS } from '../lib/storage';
 
 const USER_KEY = 'ecom_user_v1';
+
+// Chiqishda serverga so'rov 12s kutmasin — foydalanuvchi chiqishga urinayapti.
+const LOGOUT_TIMEOUT_MS = 4_000;
 
 interface User {
   id: string;
@@ -21,7 +25,8 @@ interface SessionState {
   hydrate: () => Promise<void>;
   signIn: (user: User, accessToken: string, refreshToken: string) => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
-  signOut: () => Promise<void>;
+  /** `revoke: false` — refresh token allaqachon yaroqsiz (masalan 401 dan keyin). */
+  signOut: (opts?: { revoke?: boolean }) => Promise<void>;
 }
 
 export const useSession = create<SessionState>((set) => ({
@@ -54,7 +59,35 @@ export const useSession = create<SessionState>((set) => ({
       storage.setString(USER_KEY, JSON.stringify(user));
       return { user };
     }),
-  signOut: async () => {
+  signOut: async (opts) => {
+    const refresh = await secureStorage.get(STORAGE_KEYS.refreshToken);
+
+    // Serverda BEKOR QILISH — mahalliy tozalashdan oldin, token hali qo'lda.
+    //
+    // Ilgari bu qadam umuman yo'q edi: chiqishda faqat telefondagi nusxa
+    // o'chirilardi, refresh token esa bazada 30 kun yaroqli qolardi. Telefon
+    // boshqa qo'lga o'tsa yoki zaxiradan olinsa, undan yangi access token
+    // olish mumkin edi.
+    //
+    // Xato bo'lsa ham chiqish DAVOM ETADI — tarmoq yo'qligi foydalanuvchini
+    // o'z telefonida ushlab qolish uchun sabab emas.
+    if ((opts?.revoke ?? true) && refresh) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), LOGOUT_TIMEOUT_MS);
+      try {
+        await fetch(`${API_BASE}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ refresh }),
+          signal: ctrl.signal,
+        });
+      } catch {
+        // tarmoq/timeout — jim o'tamiz
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     await secureStorage.remove(STORAGE_KEYS.accessToken);
     await secureStorage.remove(STORAGE_KEYS.refreshToken);
     storage.delete(USER_KEY);

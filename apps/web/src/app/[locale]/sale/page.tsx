@@ -1,12 +1,16 @@
-import { Badge } from '@ecom/ui';
-import { Clock, Flame } from 'lucide-react';
-import type { Metadata } from 'next';
-import { useLocale, useTranslations } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
+import { Badge, EmptyState } from '@ecom/ui';
+import { Flame } from 'lucide-react';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../components/product/product-card-client';
+import { fetchProducts } from '../../../lib/catalog';
 import { discountPercent, formatMoney } from '../../../lib/format';
-import { type Locale, products } from '../../../lib/mock-data';
+
+import type { Locale } from '../../../lib/mock-data';
+import type { Metadata } from 'next';
+
+// ISR — bosh sahifa bilan bir xil ritm.
+export const revalidate = 120;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('sale');
@@ -16,15 +20,31 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function SalePage() {
-  const locale = useLocale() as Locale;
-  const t = useTranslations('sale');
-  const saleItems = products.filter((p) => p.oldPrice || p.badge === 'SALE' || p.badge === 'TOP');
-  const biggestDiscount = Math.max(
+/**
+ * Aksiyalar sahifasi.
+ *
+ * Ilgari bu sahifa BUTUNLAY `mock-data.ts` dagi demo mahsulotlar ustida
+ * turardi: bosh sahifadagi "Chegirmalarni ko'rish" mijozni mavjud bo'lmagan
+ * tovarlar ro'yxatiga olib borardi va ularni savatga qo'shsa checkout
+ * "Invalid uuid" bilan yiqilardi (mock id'lari UUID emas).
+ *
+ * Shu bilan birga sahifada ikkita to'qima raqam bor edi: qotib yozilgan
+ * "Aksiya tugashiga: 3 kun 14 soat 22 daqiqa" va "Mijozlar yutishi 12 480".
+ * Ikkalasi ham olib tashlandi — ortida ma'lumot yo'q.
+ */
+export default async function SalePage() {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations('sale');
+
+  const { items } = await fetchProducts({ sort: 'popularity', limit: 48 });
+  // Chegirmada turgan mahsulot = eski narxi bor va u joriy narxdan yuqori.
+  const saleItems = items.filter((p) => p.oldPrice !== undefined && p.oldPrice > p.price);
+
+  const biggestDiscount = saleItems.reduce(
+    (max, p) => Math.max(max, discountPercent(p.price, p.oldPrice)),
     0,
-    ...saleItems.map((p) => discountPercent(p.price, p.oldPrice)),
   );
-  const totalSaved = saleItems.reduce((s, p) => s + (p.oldPrice ? p.oldPrice - p.price : 0), 0);
+  const totalSaved = saleItems.reduce((sum, p) => sum + ((p.oldPrice ?? p.price) - p.price), 0);
 
   return (
     <div className="space-y-8">
@@ -35,38 +55,44 @@ export default function SalePage() {
             <Flame size={12} className="mr-1" /> {t('badge')}
           </Badge>
           <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
-            {t('titleWithDiscount', { percent: biggestDiscount })}
+            {saleItems.length > 0
+              ? t('titleWithDiscount', { percent: biggestDiscount })
+              : t('title')}
           </h1>
           <p className="mt-3 text-white/90 md:text-lg">{t('subtitle')}</p>
-          <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 backdrop-blur">
-            <Clock size={16} />
-            <span className="text-sm font-medium">{t('countdown')}</span>
-          </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          { label: t('stats.items'), value: t('stats.itemsValue', { count: saleItems.length }) },
-          { label: t('stats.maxDiscount'), value: `${biggestDiscount}%` },
-          { label: t('stats.totalSaved'), value: formatMoney(totalSaved) },
-          { label: t('stats.winners'), value: '12 480' },
-        ].map((s) => (
-          <div key={s.label} className="bg-card rounded-xl border p-4">
-            <div className="text-muted-foreground text-xs">{s.label}</div>
-            <div className="mt-1 text-xl font-bold">{s.value}</div>
-          </div>
-        ))}
-      </section>
+      {saleItems.length === 0 ? (
+        <EmptyState icon={Flame} title={t('emptyTitle')} description={t('emptyDesc')} />
+      ) : (
+        <>
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            {[
+              {
+                label: t('stats.items'),
+                value: t('stats.itemsValue', { count: saleItems.length }),
+              },
+              { label: t('stats.maxDiscount'), value: `${biggestDiscount}%` },
+              { label: t('stats.totalSaved'), value: formatMoney(totalSaved) },
+            ].map((s) => (
+              <div key={s.label} className="bg-card rounded-xl border p-4">
+                <div className="text-muted-foreground text-xs">{s.label}</div>
+                <div className="mt-1 text-xl font-bold">{s.value}</div>
+              </div>
+            ))}
+          </section>
 
-      <section>
-        <h2 className="mb-4 text-2xl font-bold">{t('allSales')}</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-          {saleItems.map((p) => (
-            <ProductCardClient key={p.id} product={p} locale={locale} />
-          ))}
-        </div>
-      </section>
+          <section>
+            <h2 className="mb-4 text-2xl font-bold">{t('allSales')}</h2>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+              {saleItems.map((p) => (
+                <ProductCardClient key={p.id} product={p} locale={locale} stockLeft={p.stock} />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

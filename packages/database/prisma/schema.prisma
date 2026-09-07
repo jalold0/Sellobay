@@ -237,6 +237,7 @@ model User {
   sourcingRequests SourcingRequest[] @relation("SourcingRequester")
   sourcingQuotes   SourcingRequest[] @relation("SourcingQuotedBy")
   globalFulfillments GlobalFulfillment[] @relation("GlobalOperator")
+  groupBuyMemberships GroupBuyMember[]
 
   @@index([phone])
   @@index([email])
@@ -468,6 +469,7 @@ model Product {
   orderItems      OrderItem[]
   wishlistItems   WishlistItem[]
   globalSource    GlobalSource?
+  groupBuys       GroupBuy[]
 
   @@index([sellerId])
   @@index([brandId])
@@ -676,6 +678,12 @@ model Order {
   locale          String         @default("uz")
   notes           String?
   promoCode       String?
+  /// Takroriy yuborishdan himoya. Klient bergan `Idempotency-Key` XOM holda
+  /// saqlanmaydi: server uni buyurtma egasi (userId yoki mehmon telefoni)
+  /// bilan birga hash qiladi. Shu sababli ikki xil mijoz bir xil kalit
+  /// yuborsa ham to'qnashmaydi va birov boshqasining buyurtmasini
+  /// ko'ra olmaydi.
+  idempotencyKey  String?        @unique
   shippingAddressId String?      @db.Uuid
   pickupPointId   String?        @db.Uuid
   deliveryMethod  DeliveryMethod @default(HOME_DELIVERY)
@@ -693,6 +701,7 @@ model Order {
   pickupPoint     PickupPoint?   @relation(fields: [pickupPointId], references: [id], onDelete: SetNull)
   items           OrderItem[]
   payments        Payment[]
+  groupBuyMembers GroupBuyMember[]
   deliveries      Delivery[]
   statusHistory   OrderStatusHistory[]
   reviews         Review[]
@@ -755,7 +764,14 @@ model Payment {
   order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
-  @@index([provider, externalId])
+  // UNIQUE: bitta provayder bitta tranzaksiya id'sini faqat bir marta yozadi.
+  // Ilgari oddiy index edi — parallel webhook chaqiruvlarida (Click Complete
+  // retry, Payme CreateTransaction) bitta to'lov uchun IKKI Payment qatori
+  // paydo bo'lishi mumkin edi. Bu Payme idempotentligini va GetStatement
+  // hisobotini buzadi (sertifikatsiya shu ikkisini tekshiradi).
+  // NULL externalId (COD, qo'lda karta) cheklovga tushmaydi — Postgres'da
+  // NULL'lar unique index uchun teng hisoblanmaydi.
+  @@unique([provider, externalId])
 }
 
 model PaymentMethod {
@@ -1005,6 +1021,34 @@ model Campaign {
   metrics     Json?
   createdAt   DateTime        @default(now())
   segment     CustomerSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+}
+
+// Footer'dagi obuna formasi shu jadvalga yozadi.
+//
+// Ilgari forma HECH QAYERGA yozmasdi: 600ms kutib, "rahmat" xabarini
+// chiqarardi va emailni tashlab yuborardi. Ya'ni mijoz obuna bo'ldim deb
+// o'ylardi, ro'yxat esa yig'ilmasdi.
+//
+// Ataylab MINIMAL: ikki qadamli tasdiq (double opt-in) yo'q, chunki hozircha
+// email yuborish tizimi ham yo'q. Shuning uchun "tasdiqlandi" deb aytilmaydi —
+// faqat "qabul qilindi".
+model NewsletterSubscriber {
+  id    String @id @default(uuid()) @db.Uuid
+  email String @unique
+
+  /// Obuna bo'lgan paytdagi til — keyinchalik xat shu tilda ketadi.
+  locale String? @db.VarChar(5)
+  /// Qaysi sahifadan obuna bo'lgani (footer, kampaniya sahifasi va h.k.).
+  source String? @db.VarChar(40)
+
+  /// Obunani bekor qilgan vaqti. null = faol obunachi.
+  unsubscribedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([unsubscribedAt])
 }
 
 // ===================================================================
@@ -1345,4 +1389,66 @@ model GlobalSetting {
   updatedById String?  @db.Uuid
   updatedAt   DateTime @updatedAt
   createdAt   DateTime @default(now())
+}
+
+// ===================================================================
+// GROUP BUY (guruh xaridi) — Pinduoduo uslubidagi mexanizm
+// ===================================================================
+// Mijozlar bir mahsulotga guruh bo'lib qo'shiladi: guruh to'lsa hamma
+// chegirmali `groupPrice` bilan oladi. Ilgari bu sahifa to'liq to'qima
+// ma'lumot ko'rsatardi (qatnashchilar soni qo'lda yozilgan, taymer sahifa
+// yangilanganda qaytadan boshlanardi, "Qo'shilish" hech qayerga
+// saqlanmasdi) — endi hammasi shu jadvallardan o'qiladi.
+
+enum GroupBuyStatus {
+  OPEN      // qatnashchilar yig'ilmoqda
+  COMPLETED // targetSize to'ldi
+  EXPIRED   // muddat tugadi, guruh to'lmadi
+  CANCELLED // operator bekor qildi
+}
+
+/// Bitta guruh xaridi taklifi. Narxlar SNAPSHOT: guruh ochilganda
+/// mahsulot narxi qanday bo'lsa shunday saqlanadi, keyin katalogda narx
+/// o'zgarsa ham guruhga qo'shilganlar ko'rgan narx o'zgarmaydi.
+model GroupBuy {
+  id         String         @id @default(uuid()) @db.Uuid
+  productId  String         @db.Uuid
+  /// Oddiy (yakka) narx — guruh ochilgan paytdagi snapshot.
+  soloPrice  Decimal        @db.Decimal(14, 2)
+  /// Guruh to'lganda amal qiladigan chegirmali narx.
+  groupPrice Decimal        @db.Decimal(14, 2)
+  /// Guruh to'lishi uchun kerakli odam soni.
+  targetSize Int
+  status     GroupBuyStatus @default(OPEN)
+  /// Muddat — shu vaqtdan keyin guruh EXPIRED bo'ladi.
+  expiresAt  DateTime
+  completedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  product Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  members GroupBuyMember[]
+
+  // Faol guruhlar ro'yxati uchun: status + muddat bo'yicha filtr va tartib.
+  @@index([status, expiresAt])
+  @@index([productId])
+}
+
+/// Guruhga qo'shilgan mijoz. `@@unique([groupBuyId, userId])` — bitta mijoz
+/// bitta guruhga faqat bir marta qo'shiladi (ikki marta bosish/parallel
+/// so'rovda ikkinchisi DB darajasida rad etiladi).
+model GroupBuyMember {
+  id         String   @id @default(uuid()) @db.Uuid
+  groupBuyId String   @db.Uuid
+  userId     String   @db.Uuid
+  /// Guruh to'lgandan keyin yaratilgan buyurtma (hozircha ixtiyoriy).
+  orderId    String?  @db.Uuid
+  joinedAt   DateTime @default(now())
+
+  groupBuy GroupBuy @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order    Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([groupBuyId, userId])
+  @@index([userId])
 }

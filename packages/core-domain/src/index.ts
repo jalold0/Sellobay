@@ -8,3 +8,4 @@ export * from './global-variance.ts';
 export * from './global-settings.ts';
 export * from './loyalty.ts';
 export * from './zone.ts';
+export * from './group-buy.ts';

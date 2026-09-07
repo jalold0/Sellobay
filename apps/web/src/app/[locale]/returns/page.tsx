@@ -1,55 +1,44 @@
+import { RETURN_WINDOW_DAYS } from '@ecom/core-domain';
 import { Card } from '@ecom/ui';
-import { Check, CircleDot, MessageCircle, Package, Undo2, X } from 'lucide-react';
+import { CalendarClock, Check, CircleDot, MessageCircle, Package, Undo2, X } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 
 import { PageHero } from '../../../components/static/page-hero';
 
-export const metadata = { title: "Qaytarish va to'lash" };
+import type { Metadata } from 'next';
 
-const STEPS = [
-  {
-    icon: MessageCircle,
-    title: 'Yetkazilganda tekshiring',
-    desc: 'Kuryer oldida yoki punktda ochib ko`ring — maqul kelmasa o`sha joyda qaytaring',
-  },
-  {
-    icon: Package,
-    title: 'Mahsulotni topshiring',
-    desc: 'Kuryer oladi yoki pickup punktiga olib boring',
-  },
-  { icon: Check, title: 'Pul qaytariladi', desc: '3-5 ish kuni ichida kartangizga yoki naqd' },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('returnsPage');
+  return { title: t('metaTitle') };
+}
 
-const CAN_RETURN = [
-  'Kiyim-kechak — etiketka va o`ralma bilan',
-  'Poyabzal — kiyilmagan, asl qutida',
-  'Aksessuarlar — buzilmagan holatda',
-  'Texnika — qutiyu hujjatlar bilan',
-];
+export default async function ReturnsPage() {
+  const t = await getTranslations('returnsPage');
 
-const CANT_RETURN = [
-  'Atirlar — o`ralma ochilgan',
-  'Kosmetika — sinov uchun ochilgan',
-  'Ichki kiyim, paypoq',
-  'Sovg`a sertifikatlari',
-];
+  const steps = [
+    { icon: MessageCircle, title: t('step1Title'), desc: t('step1Desc') },
+    { icon: Package, title: t('step2Title'), desc: t('step2Desc') },
+    { icon: Check, title: t('step3Title'), desc: t('step3Desc') },
+  ];
+  const canReturn = [t('can1'), t('can2'), t('can3'), t('can4')];
+  const cantReturn = [t('cant1'), t('cant2'), t('cant3'), t('cant4')];
 
-export default function ReturnsPage() {
   return (
     <div className="space-y-10">
       <PageHero
         icon={Undo2}
-        title="Yetkazilganda tekshirib qaytarish"
-        description="Mahsulotni yetkazib berilganda tekshirib oling — maqul kelmasa o'sha joyning o'zida qaytaring va to'liq pul qaytib oling."
+        title={t('heroTitle')}
+        description={t('heroDesc', { days: RETURN_WINDOW_DAYS })}
         accent="emerald"
       />
 
       <section>
-        <h2 className="mb-4 text-2xl font-bold">Qanday qaytarish</h2>
+        <h2 className="mb-4 text-2xl font-bold">{t('howTitle')}</h2>
         <div className="grid gap-4 md:grid-cols-3">
-          {STEPS.map((s, i) => {
+          {steps.map((s, i) => {
             const Icon = s.icon;
             return (
-              <Card key={i} className="p-5">
+              <Card key={s.title} className="p-5">
                 <div className="flex items-center gap-3">
                   <div className="bg-primary text-primary-foreground grid h-10 w-10 place-items-center rounded-full font-bold">
                     {i + 1}
@@ -64,14 +53,35 @@ export default function ReturnsPage() {
         </div>
       </section>
 
+      {/*
+        Qaytarish muddati. Ilgari bu sahifada muddat UMUMAN aytilmasdi —
+        faqat "yetkazilganda tekshiring" deyilardi. Holbuki tizim mijozga
+        yetkazilgandan keyin ham {RETURN_WINDOW_DAYS} kun beradi
+        (/api/orders/[id]/return). Ya'ni foydalanuvchi o'zida bor huquqni
+        bilmasdi. Son @ecom/core-domain dan — kod bilan bir manba.
+      */}
+      <section>
+        <Card className="flex items-start gap-4 p-5">
+          <div className="bg-primary/10 text-primary grid h-10 w-10 shrink-0 place-items-center rounded-lg">
+            <CalendarClock size={20} />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold">{t('windowTitle')}</h3>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {t('windowDesc', { days: RETURN_WINDOW_DAYS })}
+            </p>
+          </div>
+        </Card>
+      </section>
+
       <section className="grid gap-4 md:grid-cols-2">
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2 text-emerald-700">
             <Check size={18} />
-            <h3 className="text-base font-semibold">Qaytarish mumkin</h3>
+            <h3 className="text-base font-semibold">{t('canTitle')}</h3>
           </div>
           <ul className="space-y-2 text-sm">
-            {CAN_RETURN.map((r) => (
+            {canReturn.map((r) => (
               <li key={r} className="flex items-start gap-2">
                 <CircleDot size={12} className="mt-1 shrink-0 text-emerald-600" />
                 <span>{r}</span>
@@ -82,10 +92,10 @@ export default function ReturnsPage() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2 text-red-700">
             <X size={18} />
-            <h3 className="text-base font-semibold">Qaytarish mumkin emas</h3>
+            <h3 className="text-base font-semibold">{t('cantTitle')}</h3>
           </div>
           <ul className="space-y-2 text-sm">
-            {CANT_RETURN.map((r) => (
+            {cantReturn.map((r) => (
               <li key={r} className="flex items-start gap-2">
                 <CircleDot size={12} className="mt-1 shrink-0 text-red-600" />
                 <span>{r}</span>

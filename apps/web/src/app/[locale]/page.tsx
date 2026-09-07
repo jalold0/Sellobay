@@ -10,15 +10,21 @@ import { SaleSection } from '../../components/layout/sale-section';
 import { SellerBanner } from '../../components/layout/seller-banner';
 import { ProductCardClient } from '../../components/product/product-card-client';
 import { InstallHeroCard } from '../../components/pwa/sticky-install-bar';
-import { fetchHomeProducts } from '../../lib/catalog';
-import { brands, type Locale } from '../../lib/mock-data';
+import { fetchBrands, fetchHomeProducts, fetchStorefrontCategories } from '../../lib/catalog';
+
+import type { Locale } from '../../lib/mock-data';
 
 // ISR — har 2 daqiqada DB'dan yangilanadi (Neon serverless'ni tejaydi)
 export const revalidate = 120;
 
 export default async function HomePage() {
   const locale = (await getLocale()) as Locale;
-  const { featured, collection, sale } = await fetchHomeProducts();
+  // Ikki so'rov parallel — kategoriyalar mahsulotlarni kutib turmaydi.
+  const [{ featured, sale }, categories, brands] = await Promise.all([
+    fetchHomeProducts(),
+    fetchStorefrontCategories(),
+    fetchBrands(),
+  ]);
   const t = await getTranslations('home');
 
   return (
@@ -59,33 +65,42 @@ export default async function HomePage() {
       </section>
 
       {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
-      <CategoryGrid locale={locale} />
+      <CategoryGrid locale={locale} categories={categories} />
 
       {/* 5. Aksiya — editorialdan OLDIN: xarid niyati bilan kelgan odam
           chegirmalarni birinchi ekrandan keyin darrov ko'rishi kerak. */}
       <SaleSection locale={locale} saleProducts={sale} />
 
       {/* 6. Editorial kolleksiya — brend hikoyasi, xariddan keyin */}
-      <FeaturedCollection locale={locale} products={collection} />
+      <FeaturedCollection saleProducts={sale} />
 
-      {/* 7. Brendlar — navigatsiya bloki, CTA'lardan oldin */}
-      <section className="space-y-5">
-        <SectionTitle title={t('popularBrands')} description={`Sellobay × ${brands.length}+`} />
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-          {brands.map((b) => (
-            <Link
-              key={b.id}
-              href={`/catalog?brand=${b.slug}`}
-              className="bg-card text-foreground hover:border-brand-bordeaux group relative grid aspect-[3/2] place-items-center overflow-hidden rounded-2xl border font-bold tracking-[0.2em] transition-all hover:-translate-y-1 hover:shadow-lg"
-            >
-              <span className="relative z-10 text-sm transition-transform group-hover:scale-110">
-                {b.logoText}
-              </span>
-              <div className="from-brand-bordeaux/0 to-brand-bordeaux/0 group-hover:from-brand-bordeaux/5 group-hover:to-brand-bordeaux/10 absolute inset-0 bg-gradient-to-br transition-colors" />
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* 7. Brendlar — navigatsiya bloki, CTA'lardan oldin.
+             Bazadagi aktiv brendlar. Ilgari bu yerda mock-data'dan 8 ta qotib
+             yozilgan brend turardi (GUCCI, PRADA...) va sarlavhada
+             "Sellobay × 8+" deb ko'rsatilardi — "+" ma'lumotni kattalashtirib
+             ko'rsatardi, bazadagi haqiqiy brend esa ro'yxatga tushmasdi. */}
+      {brands.length > 0 ? (
+        <section className="space-y-5">
+          <SectionTitle
+            title={t('popularBrands')}
+            description={t('brandsCount', { count: brands.length })}
+          />
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            {brands.map((b) => (
+              <Link
+                key={b.id}
+                href={`/catalog?brand=${b.slug}`}
+                className="bg-card text-foreground hover:border-brand-bordeaux group relative grid aspect-[3/2] place-items-center overflow-hidden rounded-2xl border px-2 text-center font-bold tracking-[0.15em] transition-all hover:-translate-y-1 hover:shadow-lg"
+              >
+                <span className="relative z-10 text-sm uppercase transition-transform group-hover:scale-110">
+                  {b.name}
+                </span>
+                <div className="from-brand-bordeaux/0 to-brand-bordeaux/0 group-hover:from-brand-bordeaux/5 group-hover:to-brand-bordeaux/10 absolute inset-0 bg-gradient-to-br transition-colors" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/*
         Mijoz fikrlari bo'limi OLIB TASHLANDI.

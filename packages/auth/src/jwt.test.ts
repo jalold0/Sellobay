@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { signAccessToken, signRefreshToken, verifyToken, type AccessPayload } from './jwt.ts';
+import { signAccessToken, verifyToken, type AccessPayload } from './jwt.ts';
 
 const CFG = { secret: 'test-sir-uzunligi-yetarli', expiresIn: '15m' };
 
@@ -14,12 +14,6 @@ describe('JWT siri', () => {
     await expect(signAccessToken({ sub: 'u1', roles: [] }, { ...CFG, secret: '' })).rejects.toThrow(
       /JWT siri bo/,
     );
-  });
-
-  it("bo'sh sir bilan refresh token imzolamaydi", async () => {
-    await expect(
-      signRefreshToken({ sub: 'u1', jti: 'j1', family: 'f1' }, { ...CFG, secret: '' }),
-    ).rejects.toThrow(/JWT siri bo/);
   });
 
   it("bo'sh sir bilan tokenni tekshirmaydi", async () => {

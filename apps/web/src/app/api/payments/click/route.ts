@@ -6,12 +6,14 @@
 // Imzo: md5(click_trans_id + service_id + SECRET_KEY + merchant_trans_id
 //          + [merchant_prepare_id] + amount + action + sign_time)
 
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 
-import { Prisma } from '@ecom/database';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
+
+import type { Prisma } from '@ecom/database';
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +32,18 @@ const AMOUNT_EPSILON = 1;
 
 function reply(data: Record<string, unknown>) {
   return NextResponse.json(data);
+}
+
+/**
+ * Imzolarni doimiy vaqtda taqqoslaydi. Oddiy `!==` birinchi farqli baytda
+ * to'xtaydi — bu javob vaqti orqali to'g'ri imzoni bayt-bayt topish
+ * (timing attack) imkonini beradi. Uzunlik farq qilsa darhol false.
+ */
+function signatureMatches(expected: string, received: string): boolean {
+  const a = Buffer.from(expected, 'utf8');
+  const b = Buffer.from(received, 'utf8');
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 export async function POST(req: NextRequest) {
@@ -63,7 +77,7 @@ export async function POST(req: NextRequest) {
     action +
     signTime;
   const expected = createHash('md5').update(base).digest('hex');
-  if (!secret || expected !== signString) {
+  if (!secret || !signatureMatches(expected, signString)) {
     return reply({ error: ERR_SIGN, error_note: 'SIGN CHECK FAILED' });
   }
 
@@ -133,6 +147,10 @@ export async function POST(req: NextRequest) {
       data: {
         status: 'PAID',
         paidAt,
+        // Moliyaviy hisobot uchun: qancha pul haqiqatda tushgani. Buni
+        // yozmasak, onlayn to'langan buyurtmalarda paidTotal 0 bo'lib qoladi
+        // (admin qo'lda tasdiqlash va COD oqimlari esa uni to'ldiradi).
+        paidTotal: order.grandTotal,
         statusHistory: { create: { status: 'PAID', comment: 'Click to‘lovi tasdiqlandi' } },
       },
     }),

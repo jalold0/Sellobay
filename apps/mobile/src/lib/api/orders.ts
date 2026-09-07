@@ -49,6 +49,55 @@ export interface CreateOrderResult {
   error?: { code: string; message: string };
 }
 
+/** Onlayn to'lov provayderlari — bular uchun checkout sahifasi ochilishi shart. */
+const ONLINE_PROVIDERS = ['CLICK', 'PAYME', 'UZUM_BANK'] as const;
+
+export function isOnlinePaymentProvider(provider: string): boolean {
+  return (ONLINE_PROVIDERS as readonly string[]).includes(provider);
+}
+
+export interface StartPaymentResult {
+  success: boolean;
+  /** Onlayn to'lov bo'lsa — Click/Payme checkout havolasi. */
+  checkoutUrl?: string | null;
+  online?: boolean;
+  error?: { code: string; message: string };
+}
+
+/**
+ * Buyurtma yaratilgandan keyin onlayn to'lovni BOSHLAYDI.
+ *
+ * Ilgari mobil ilova bu qadamni umuman bajarmasdi: buyurtma yaratilgach
+ * darhol "Buyurtma qabul qilindi!" deb yozilardi. Click/Payme tanlagan
+ * mijozdan pul olinmasdi, buyurtma esa PENDING bo'lib qolardi — mijoz
+ * to'ladim deb o'ylardi. Web allaqachon shu endpointni chaqiradi.
+ */
+export async function startPayment(orderId: string, provider: string): Promise<StartPaymentResult> {
+  try {
+    const res = await authedFetch('/api/payments/create', {
+      method: 'POST',
+      body: { orderId, provider },
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: { online: boolean; checkoutUrl: string | null };
+      error?: { code: string; message: string };
+    };
+    if (!json.success || !json.data) {
+      return {
+        success: false,
+        error: json.error ?? { code: 'UNKNOWN', message: "To'lovni boshlab bo'lmadi" },
+      };
+    }
+    return { success: true, online: json.data.online, checkoutUrl: json.data.checkoutUrl };
+  } catch (err) {
+    return {
+      success: false,
+      error: { code: 'NETWORK', message: `Tarmoq xatosi: ${String(err)}` },
+    };
+  }
+}
+
 export async function createOrder(
   input: CreateOrderInput,
   idempotencyKey?: string,

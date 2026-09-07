@@ -56,7 +56,13 @@ export function PaymentSection({
     <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">
       <h2 className="text-brand-ink mb-[18px] text-xl font-bold">{t('payment.methodTitle')}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {PAYMENT_TILES.map((tile) => {
+        {/*
+          Karta o'tkazmasi FAQAT platforma kartasi sozlangan bo'lsa ko'rsatiladi.
+          MANUAL_PAYMENT_CARDS qo'yilmagan prod'da bu usul taklif qilinsa, mijoz
+          qayerga pul o'tkazishini bilmaydi (ilgari unga soxta TEST kartasi
+          ko'rsatilardi). Server ham shu holatni rad etadi.
+        */}
+        {PAYMENT_TILES.filter((tile) => tile.id !== 'UZCARD' || cards.length > 0).map((tile) => {
           const active = payment === tile.id;
           return (
             <button

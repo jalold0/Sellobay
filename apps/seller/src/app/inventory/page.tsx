@@ -1,50 +1,91 @@
 'use client';
 
-import {
-  Button,
-  Card,
-  DataTable,
-  Input,
-  KpiCard,
-  MockDataNotice,
-  PageHeader,
-  toast,
-} from '@ecom/ui';
+import { Button, Card, DataTable, Input, KpiCard, PageHeader, toast } from '@ecom/ui';
 import { type ColumnDef } from '@tanstack/react-table';
 import { AlertTriangle, ArrowDownToLine, Boxes, Save } from 'lucide-react';
 import * as React from 'react';
 
+import { listInventory, updateInventory, type InventoryRow } from '../../lib/auth/client';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
-import { sellerProducts, type SellerProduct } from '../../lib/mock';
 
 export default function SellerInventoryPage() {
+  const [rows, setRows] = React.useState<InventoryRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
 
-  const totalStock = sellerProducts.reduce((s, p) => s + p.stock, 0);
-  const inventoryValue = sellerProducts.reduce((s, p) => s + p.stock * p.basePrice, 0);
-  const lowStock = sellerProducts.filter((p) => p.stock > 0 && p.stock <= 10).length;
-  const outOfStock = sellerProducts.filter((p) => p.stock === 0).length;
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    const res = await listInventory();
+    if (res.success) {
+      setRows(res.data.items);
+    } else {
+      toast({ title: res.error.message, variant: 'destructive' });
+    }
+    setLoading(false);
+  }, []);
 
-  const dirtyCount = Object.values(drafts).filter((v) => v && v !== '').length;
+  React.useEffect(() => {
+    void load();
+  }, [load]);
 
-  const onCommit = () => {
+  const totalStock = rows.reduce((s, p) => s + p.stock, 0);
+  const inventoryValue = rows.reduce((s, p) => s + p.stock * p.basePrice, 0);
+  const lowStock = rows.filter((p) => p.stock > 0 && p.stock <= 10).length;
+  const outOfStock = rows.filter((p) => p.stock === 0).length;
+
+  /** Faqat haqiqatan o'zgargan va tahrirlanadigan qatorlar. */
+  const pending = React.useMemo(() => {
+    const out: Array<{ productId: string; quantity: number }> = [];
+    for (const row of rows) {
+      const raw = drafts[row.id];
+      if (raw === undefined || raw === '') continue;
+      const quantity = Number(raw);
+      if (!Number.isInteger(quantity) || quantity < 0) continue;
+      if (quantity === row.stock) continue; // o'zgarish yo'q
+      if (!row.editable) continue;
+      out.push({ productId: row.id, quantity });
+    }
+    return out;
+  }, [rows, drafts]);
+
+  const onCommit = async () => {
+    if (pending.length === 0 || saving) return;
+    setSaving(true);
+    const res = await updateInventory(pending);
+    setSaving(false);
+
+    if (!res.success) {
+      // Muvaffaqiyat xabari FAQAT server tasdiqlaganda chiqadi. Ilgari bu
+      // sahifa hech qanday so'rov yubormasdan "Stok yangilandi" deb yozardi.
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+
+    const { updated, skipped } = res.data;
     toast({
-      title: 'Stok yangilandi',
-      description: `${dirtyCount} ta mahsulot uchun stok saqlandi`,
+      title: `${updated} ta mahsulot stoki yangilandi`,
+      description:
+        skipped.length > 0
+          ? `${skipped.length} ta mahsulot o'tkazib yuborildi (bir nechta variantli): ${skipped.join(', ')}`
+          : undefined,
       variant: 'success',
     });
     setDrafts({});
+    await load(); // serverdagi haqiqiy qiymatni qayta o'qiymiz
   };
 
-  const columns: ColumnDef<SellerProduct>[] = [
+  const columns: ColumnDef<InventoryRow>[] = [
     {
       accessorKey: 'name',
       header: 'Mahsulot',
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="bg-muted h-10 w-10 shrink-0 overflow-hidden rounded-md">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
+            {row.original.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={row.original.imageUrl} alt="" className="h-full w-full object-cover" />
+            ) : null}
           </div>
           <div className="min-w-0">
             <div className="truncate font-medium">{pickLocalized(row.original.name)}</div>
@@ -73,19 +114,24 @@ export default function SellerInventoryPage() {
     {
       id: 'set',
       header: () => <div className="text-right">Yangi miqdor</div>,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder={String(row.original.stock)}
-            value={drafts[row.original.id] ?? ''}
-            onChange={(e) => setDrafts((s) => ({ ...s, [row.original.id]: e.target.value }))}
-            className="h-8 w-24 text-right"
-          />
-        </div>
-      ),
+      cell: ({ row }) =>
+        row.original.editable ? (
+          <div className="flex justify-end">
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder={String(row.original.stock)}
+              value={drafts[row.original.id] ?? ''}
+              onChange={(e) => setDrafts((s) => ({ ...s, [row.original.id]: e.target.value }))}
+              className="h-8 w-24 text-right"
+            />
+          </div>
+        ) : (
+          <div className="text-muted-foreground text-right text-xs">
+            {row.original.variantCount} variant
+          </div>
+        ),
     },
     {
       accessorKey: 'basePrice',
@@ -100,19 +146,21 @@ export default function SellerInventoryPage() {
 
   return (
     <div className="space-y-6">
-      <MockDataNotice description="Inventar hali bazaga ulanmagan. Mahsulot zaxirasi 'Mahsulotlar' bo'limida haqiqiy ko'rsatiladi." />
-
       <PageHeader
         title="Inventar"
         description="Stok darajalarini bir joyda boshqaring"
         actions={
           <>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" disabled>
               <ArrowDownToLine className="mr-2 h-4 w-4" /> CSV eksport
             </Button>
-            <Button size="sm" disabled={!dirtyCount} onClick={onCommit}>
-              <Save className="mr-2 h-4 w-4" />{' '}
-              {dirtyCount > 0 ? `${dirtyCount} ni saqlash` : 'Saqlash'}
+            <Button size="sm" disabled={pending.length === 0 || saving} onClick={onCommit}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving
+                ? 'Saqlanmoqda...'
+                : pending.length > 0
+                  ? `${pending.length} ni saqlash`
+                  : 'Saqlash'}
             </Button>
           </>
         }
@@ -131,7 +179,15 @@ export default function SellerInventoryPage() {
       </div>
 
       <Card className="p-1">
-        <DataTable columns={columns} data={sellerProducts} searchPlaceholder="Nomi yoki SKU..." />
+        {loading ? (
+          <div className="text-muted-foreground p-10 text-center text-sm">Yuklanmoqda...</div>
+        ) : rows.length === 0 ? (
+          <div className="text-muted-foreground p-10 text-center text-sm">
+            Hozircha mahsulot yo`q. Avval mahsulot qo`shing.
+          </div>
+        ) : (
+          <DataTable columns={columns} data={rows} searchPlaceholder="Nomi yoki SKU..." />
+        )}
       </Card>
     </div>
   );

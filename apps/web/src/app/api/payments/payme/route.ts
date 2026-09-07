@@ -11,11 +11,15 @@
 //   CANCELLED → -1 (perform'gacha bekor) yoki -2 (perform'dan keyin bekor/refund)
 //   -1/-2 farqi paidAt mavjudligi bilan aniqlanadi.
 
-import { Prisma } from '@ecom/database';
-import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
+
+import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
 import { reverseOrderLoyalty } from '@/lib/loyalty-server';
+
+import type { Prisma } from '@ecom/database';
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,8 +64,13 @@ function checkAuth(req: NextRequest): boolean {
   const header = req.headers.get('authorization') ?? '';
   if (!key || !header.startsWith('Basic ')) return false;
   const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
-  // format: "Paycom:<KEY>"
-  return decoded === `Paycom:${key}`;
+  // format: "Paycom:<KEY>". Taqqoslash doimiy vaqtda — oddiy `===` birinchi
+  // farqli baytda to'xtaydi va javob vaqti orqali kalitni bayt-bayt topish
+  // (timing attack) imkonini beradi.
+  const expected = Buffer.from(`Paycom:${key}`, 'utf8');
+  const received = Buffer.from(decoded, 'utf8');
+  if (expected.length !== received.length) return false;
+  return timingSafeEqual(expected, received);
 }
 
 /** Payment.status + paidAt'dan Payme tranzaksiya state'i */
@@ -213,6 +222,20 @@ export async function POST(req: NextRequest) {
         return rpcError(id, E_CANNOT_PERFORM, 'Transaction timed out');
       }
 
+      // Buyurtma holatini QAYTA tekshiramiz. CreateTransaction'dan keyin mijoz
+      // buyurtmani bekor qilgan bo'lishi mumkin (zaxira qaytarilgan, Sello Coins
+      // qaytarilgan, promokod bo'shatilgan) — bunday buyurtmani PAID qilib
+      // qo'ysak, to'lov olinadi-yu buyurtma bajarilmaydi. Click webhook'i ham
+      // shu tekshiruvni qiladi (ERR_TRANS_CANCELLED).
+      const order = await prisma.order.findUnique({
+        where: { id: payment.orderId },
+        select: { status: true, grandTotal: true },
+      });
+      if (!order) return rpcError(id, E_ORDER, 'Order not found');
+      if (!PAYABLE_STATUSES.includes(order.status as (typeof PAYABLE_STATUSES)[number])) {
+        return rpcError(id, E_CANNOT_PERFORM, 'Order is no longer payable');
+      }
+
       const paidAt = new Date();
       await prisma.$transaction([
         prisma.payment.update({
@@ -224,6 +247,7 @@ export async function POST(req: NextRequest) {
           data: {
             status: 'PAID',
             paidAt,
+            paidTotal: order.grandTotal,
             statusHistory: { create: { status: 'PAID', comment: 'Payme to‘lovi tasdiqlandi' } },
           },
         }),
@@ -240,13 +264,14 @@ export async function POST(req: NextRequest) {
           id: true,
           orderId: true,
           status: true,
+          amount: true,
           paidAt: true,
           failedAt: true,
           rawPayload: true,
         },
       })) as Pick<
         PaymentRow,
-        'id' | 'orderId' | 'status' | 'paidAt' | 'failedAt' | 'rawPayload'
+        'id' | 'orderId' | 'status' | 'amount' | 'paidAt' | 'failedAt' | 'rawPayload'
       > | null;
       if (!payment) return rpcError(id, E_TX_NOT_FOUND, 'Transaction not found');
 
@@ -271,7 +296,7 @@ export async function POST(req: NextRequest) {
       // Order + user (perform qilingan to'lov bekor qilinsa loyalty qaytariladi)
       const order = await prisma.order.findUnique({
         where: { id: payment.orderId },
-        select: { id: true, number: true, userId: true },
+        select: { id: true, number: true, userId: true, paidTotal: true },
       });
 
       await prisma.$transaction(async (tx) => {
@@ -288,6 +313,11 @@ export async function POST(req: NextRequest) {
           data: {
             status: wasPerformed ? 'REFUNDED' : 'CANCELLED',
             cancelledAt: cancelTime,
+            // Perform qilingan to'lov qaytarilsa — moliyaviy iz qoldiriladi:
+            // refundedTotal to'ldiriladi, paidTotal nolga tushadi (pul bizda emas).
+            ...(wasPerformed
+              ? { refundedTotal: order?.paidTotal ?? payment.amount, paidTotal: 0 }
+              : {}),
             statusHistory: {
               create: {
                 status: wasPerformed ? 'REFUNDED' : 'CANCELLED',

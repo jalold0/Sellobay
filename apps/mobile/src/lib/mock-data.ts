@@ -55,6 +55,28 @@ export interface MockProduct {
   // Ijtimoiy isbot / marketing (Coupang/Temu uslubi) — ixtiyoriy
   soldCount?: number; // nechta sotilgan
   couponAmount?: number; // so'mda kupon (mock — kupon tizimi keyin)
+  /**
+   * Mahsulotning HAQIQIY variantlari (rang/o'lcham). Faqat mahsulot detali
+   * so'ralganda to'ldiriladi — ro'yxatda kerak emas.
+   *
+   * Ilgari mobil ekranda rang va o'lcham ro'yxati kodga yozib qo'yilgan edi
+   * (Qora/Bordo/Ko'k/Qum, XS..XL, 38..44) va bazadagi variantlarga hech
+   * qanday aloqasi yo'q edi: mijoz mavjud bo'lmagan kombinatsiyani tanlashi
+   * mumkin edi, buyurtma esa standart variantga yozilardi va BOSHQA
+   * variantning zaxirasi kamayardi.
+   */
+  variants?: ProductVariantOption[];
+}
+
+/** Bitta variant — rang/o'lcham kombinatsiyasi va o'z zaxirasi. */
+export interface ProductVariantOption {
+  id: string;
+  sku: string;
+  price: number;
+  color: string | null;
+  size: string | null;
+  stock: number;
+  inStock: boolean;
 }
 
 export const categories: MockCategory[] = [

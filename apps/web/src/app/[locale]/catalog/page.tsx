@@ -5,8 +5,8 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { FilterBar } from '../../../components/catalog/filter-bar';
 import { ProductCardClient } from '../../../components/product/product-card-client';
-import { fetchProducts } from '../../../lib/catalog';
-import { brands, categories, findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
+import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../../../lib/catalog';
+import { findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
 
 interface CatalogPageProps {
   searchParams: { category?: string; brand?: string; sort?: string; q?: string };
@@ -28,6 +28,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const t = await getTranslations('catalog');
   const product = await getTranslations('product');
   const common = await getTranslations('common');
+
+  // Filtr ro'yxatlari BAZADAN. Ilgari ular `mock-data.ts` dan olinardi:
+  // bazadagi haqiqiy brend/kategoriya filtrda umuman ko'rinmasdi, mock
+  // variantni bosgan mijoz esa bo'sh natija olardi.
+  //
+  // Bo'sh kategoriya ko'rsatilmaydi — u filtr sifatida foydasiz.
+  const [categories, brands] = await Promise.all([fetchStorefrontCategories(), fetchBrands()]);
 
   const { items: list } = await fetchProducts({
     category: searchParams.category,

@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
 import { Heart } from 'lucide-react-native';
-import { FlatList, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useProducts } from '../../src/lib/hooks';
+import { useProductsByIds } from '../../src/lib/hooks';
 import { globalProducts, type MockProduct } from '../../src/lib/mock-data';
 import { useT } from '../../src/lib/useT';
 import { useWishlist } from '../../src/store/wishlist';
@@ -16,15 +16,22 @@ export default function WishlistScreen() {
   const router = useRouter();
   const { t } = useT();
   const ids = useWishlist((s) => s.ids);
-  const { data: allProducts = [] } = useProducts({ limit: 48 });
-  // Lokal + global — sevimli id'lar ikkala katalogdan bo'lishi mumkin
-  const pool = [...allProducts, ...globalProducts];
-  const seen = new Set<string>();
-  const items = pool.filter((p: MockProduct) => {
-    if (!ids.includes(p.id) || seen.has(p.id)) return false;
-    seen.add(p.id);
-    return true;
-  });
+
+  // Sevimlilar AYNAN saqlangan id'lar bo'yicha olinadi.
+  //
+  // Ilgari bu ekran `useProducts({ limit: 48 })` natijasidan filtrlardi —
+  // ya'ni o'sha 48 talikka kirmagan sevimli mahsulot ro'yxatda KO'RINMASDI,
+  // holbuki profildagi sanoq uni hisoblab turardi. Server `?ids=` filtrini
+  // allaqachon qo'llab-quvvatlardi.
+  const { data: fetched = [], isLoading } = useProductsByIds(ids);
+
+  // Dev'dagi demo katalog id'lari UUID emas, shu sababli serverdan kelmaydi.
+  // Ularni faqat dev rejimda mahalliy ro'yxatdan qo'shamiz.
+  const items: MockProduct[] = __DEV__
+    ? [...fetched, ...globalProducts.filter((p) => ids.includes(p.id))]
+    : fetched;
+
+  const showSpinner = isLoading && items.length === 0 && ids.length > 0;
 
   return (
     <View className="bg-paper flex-1" style={{ paddingTop: insets.top }}>
@@ -34,7 +41,11 @@ export default function WishlistScreen() {
           {t('wishlist.savedCount').replace('{count}', String(items.length))}
         </Text>
       </View>
-      {items.length === 0 ? (
+      {showSpinner ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#531625" />
+        </View>
+      ) : items.length === 0 ? (
         <EmptyState
           icon={<Heart size={32} color="#762237" />}
           title={t('wishlist.emptyTitle')}

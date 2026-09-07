@@ -1,24 +1,40 @@
 'use client';
 
 import { Button } from '@ecom/ui';
-import { ArrowRight, Flame, Zap } from 'lucide-react';
+import { ArrowRight, Flame } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { type Locale, type MockProduct, productImage } from '../../lib/mock-data';
 import { ProductCardClient } from '../product/product-card-client';
-import { CountdownTimer } from './countdown-timer';
 
 interface Props {
   locale: Locale;
   saleProducts: MockProduct[];
 }
 
-// TZ §5: Aksiyalar bloki — countdown + gradient banner + qizil chegarali kartalar
+// TZ §5: Aksiyalar bloki — gradient banner + qizil chegarali kartalar
+//
+// Ilgari bu yerda taymer turardi: `Date.now() + 3 kun 14 soat 22 daqiqa`, ya'ni
+// nishon vaqti HAR SAHIFA YUKLANISHIDA qaytadan hisoblanardi. Natijada
+// hisoblagich hech qachon tugamasdi va har bir mijozga abadiy "3 kun qoldi"
+// ko'rsatardi. Ortida hech qanday aksiya yozuvi yo'q edi (bazada aksiya
+// oynasi maydoni ham yo'q), shuning uchun taymer olib tashlandi.
 export function SaleSection({ locale, saleProducts }: Props) {
   const t = useTranslations('sale');
-  const endTime = React.useMemo(() => Date.now() + (3 * 86_400 + 14 * 3600 + 22 * 60) * 1000, []);
+
+  // Banner sarlavhasidagi foiz — mahsulotlardan HISOBLANADI. Ilgari u
+  // tarjimada "−70%" deb qotib yozilgan edi, holbuki eng katta chegirma
+  // 20% atrofida edi.
+  const maxDiscount = React.useMemo(
+    () =>
+      saleProducts.reduce((max, p) => {
+        if (!p.oldPrice || p.oldPrice <= p.price) return max;
+        return Math.max(max, Math.round(100 - (p.price / p.oldPrice) * 100));
+      }, 0),
+    [saleProducts],
+  );
 
   return (
     <section className="space-y-6">
@@ -36,7 +52,6 @@ export function SaleSection({ locale, saleProducts }: Props) {
         </div>
 
         <div className="flex flex-col items-start gap-3 md:items-end">
-          <CountdownTimer endTime={endTime} />
           <Link
             href="/sale"
             className="text-primary inline-flex items-center gap-1 text-sm font-semibold hover:underline"
@@ -65,10 +80,10 @@ export function SaleSection({ locale, saleProducts }: Props) {
         <div className="relative grid items-center gap-6 md:grid-cols-2">
           <div className="text-white">
             <div className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
-              <Zap size={12} /> {t('limitedTimeShort')}
+              <Flame size={12} /> {t('badge')}
             </div>
             <h3 className="mt-3 text-3xl font-black leading-tight md:text-5xl">
-              {t('bannerHeadline1')}
+              {'−' + maxDiscount + '%'}
               <br />
               <span className="from-brand-orange bg-gradient-to-r to-white bg-clip-text text-transparent">
                 {t('bannerHeadline2')}
@@ -116,9 +131,9 @@ export function SaleSection({ locale, saleProducts }: Props) {
 
       {/* Sale products grid — qizil chegara va katta chegirma badge bilan */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {saleProducts.map((p, i) => (
+        {saleProducts.map((p) => (
           <div key={p.id} className="relative">
-            <ProductCardClient product={p} locale={locale} stockLeft={3 + (i % 5)} />
+            <ProductCardClient product={p} locale={locale} stockLeft={p.stock} />
           </div>
         ))}
       </div>

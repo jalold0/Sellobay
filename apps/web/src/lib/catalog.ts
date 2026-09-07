@@ -17,6 +17,8 @@ import { prisma } from './db';
 import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
 
 export const CATALOG_CACHE_TAG = 'products';
+export const CATEGORIES_CACHE_TAG = 'categories';
+export const BRANDS_CACHE_TAG = 'brands';
 const CATALOG_REVALIDATE_SECONDS = 120;
 
 // Mock/demo mahsulotlar (p1..p12) faqat DEV fallback uchun — ular UUID emas va
@@ -82,6 +84,9 @@ function toMockProduct(p: DbProductRow): MockProduct {
     imageUrl: isRealProductImageUrl(imageUrl) ? imageUrl : undefined,
     badge: deriveBadge(p),
     inStock: stock > 0,
+    // Aniq son ham uzatiladi: ilgari u shu yerda hisoblanib, keyin tashlab
+    // yuborilardi va past-zaxira ogohlantirishi o'ylab topilgan sondan chiqardi.
+    stock,
     // Verified: seller yo'q (platform-rasmiy) yoki seller ACTIVE holatda
     sellerVerified: !p.seller || p.seller.status === 'ACTIVE',
     isGlobal: p.globalSource !== null,
@@ -251,10 +256,26 @@ export async function fetchProductBySlug(slug: string): Promise<MockProduct | nu
  * Bu tuzilma o'sib borishi kerak, kamayishi emas: sahifa qancha ko'p maydonni
  * bazadan olsa, shuncha kam narsa to'qib chiqariladi.
  */
+/** Bitta variant — rang/o'lcham kombinatsiyasi, id va zaxirasi bilan. */
+export interface ProductVariantRow {
+  id: string;
+  color: string | null;
+  size: string | null;
+  stock: number;
+  inStock: boolean;
+}
+
 export interface ProductDetailExtras {
   galleryUrls: string[]; // haqiqiy rasm URL'lari (placeholder emas), position tartibida
   colors: string[]; // variantlardagi noyob ranglar
   sizes: { label: string; inStock: boolean }[]; // variantlardagi noyob o'lchamlar
+  /**
+   * Variantlarning O'ZI — id bilan. Ilgari faqat rang/o'lcham YORLIQLARI
+   * chiqarilardi, ya'ni savatga qo'shishda qaysi variant tanlanganini
+   * bilib bo'lmasdi va buyurtma standart variantga yozilardi (boshqa
+   * variantning zaxirasi kamayardi).
+   */
+  variants: ProductVariantRow[];
   sku: string; // haqiqiy SKU (ilgari `ECM-<id>` deb to'qib chiqarilardi)
   weightGrams: number | null;
   description: LocalizedText | null; // sotuvchi yozgan tavsif
@@ -314,6 +335,7 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
           where: { isActive: true },
           orderBy: { position: 'asc' },
           select: {
+            id: true,
             inventory: { select: { quantityOnHand: true } },
             attributes: {
               select: { valueString: true, attribute: { select: { slug: true } } },
@@ -329,22 +351,30 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
 
     const colors: string[] = [];
     const sizeMap = new Map<string, boolean>();
+    const variants: ProductVariantRow[] = [];
     for (const v of row.variants) {
-      const inStock = v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0) > 0;
+      const stock = v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0);
+      const inStock = stock > 0;
+      let color: string | null = null;
+      let size: string | null = null;
       for (const a of v.attributes) {
         if (!a.valueString) continue;
-        if (a.attribute.slug === 'color' && !colors.includes(a.valueString)) {
-          colors.push(a.valueString);
+        if (a.attribute.slug === 'color') {
+          color = a.valueString;
+          if (!colors.includes(a.valueString)) colors.push(a.valueString);
         }
         if (a.attribute.slug === 'size') {
+          size = a.valueString;
           sizeMap.set(a.valueString, (sizeMap.get(a.valueString) ?? false) || inStock);
         }
       }
+      variants.push({ id: v.id, color, size, stock, inStock });
     }
     return {
       galleryUrls,
       colors,
       sizes: Array.from(sizeMap.entries()).map(([label, inStock]) => ({ label, inStock })),
+      variants,
       sku: row.sku,
       weightGrams: row.weightGrams,
       description: (row.description as LocalizedText | null) ?? null,
@@ -382,6 +412,124 @@ export async function fetchHomeProducts(): Promise<{
     sale: sale.length >= 4 ? sale : items.slice(0, 8),
     source,
   };
+}
+
+// ─── Kategoriyalar ──────────────────────────────────────────────
+
+export interface CategorySummary {
+  id: string;
+  slug: string;
+  name: LocalizedText;
+  iconUrl: string | null;
+  /** Shu kategoriyadagi mahsulotlarning HAQIQIY soni. */
+  productCount: number;
+}
+
+const cachedQueryCategories = unstable_cache(
+  async (): Promise<CategorySummary[]> => {
+    const rows = await prisma.category.findMany({
+      where: { isActive: true, parentId: null },
+      orderBy: { position: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        iconUrl: true,
+        _count: { select: { products: true } },
+      },
+    });
+    return rows.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.name as LocalizedText,
+      iconUrl: c.iconUrl,
+      productCount: c._count.products,
+    }));
+  },
+  ['categories'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATEGORIES_CACHE_TAG] },
+);
+
+/**
+ * Yuqori darajadagi kategoriyalar — mahsulotlarning HAQIQIY soni bilan.
+ *
+ * Ilgari bosh sahifadagi kategoriya to'ri `mock-data.ts` dagi qotib yozilgan
+ * ro'yxatdan o'qirdi va "Kiyim-kechak — 1 280+ mahsulot" deb ko'rsatardi,
+ * holbuki katalogda bir necha mahsulot bor edi. `/api/categories` esa
+ * `_count` bilan haqiqiy sonni allaqachon qaytarardi — UI shunchaki uni
+ * chaqirmasdi. Endi ikkalasi ham shu funksiyadan foydalanadi.
+ *
+ * DB xatosida bo'sh ro'yxat qaytadi (to'r ko'rsatilmaydi) — to'qima sonlarga
+ * qaytish yo'q.
+ */
+export async function fetchTopCategories(): Promise<CategorySummary[]> {
+  try {
+    return await cachedQueryCategories();
+  } catch (err) {
+    console.error('[catalog] fetchTopCategories DB xato:', err);
+    return [];
+  }
+}
+
+/**
+ * Mijoz ko'radigan kategoriyalar — mahsuloti BORLARI.
+ *
+ * `fetchTopCategories()` to'liq ro'yxatni beradi (admin bo'sh kategoriyani
+ * ko'rishi kerak, `/api/categories` ham shuni qaytaradi). Storefront esa
+ * bo'shini ko'rsatmasligi kerak: mijoz uni bosib bo'sh katalogga tushadi.
+ *
+ * Shu filtr ilgari uch joyda alohida yozilgan edi (bosh sahifa to'ri,
+ * katalog yon paneli, header navigatsiyasi) — bitta joyga yig'ildi.
+ */
+export async function fetchStorefrontCategories(): Promise<CategorySummary[]> {
+  const all = await fetchTopCategories();
+  return all.filter((c) => c.productCount > 0);
+}
+
+// ─── Brendlar ───────────────────────────────────────────────────
+
+export interface BrandSummary {
+  id: string;
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+const cachedQueryBrands = unstable_cache(
+  async (): Promise<BrandSummary[]> => {
+    const rows = await prisma.brand.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, slug: true, name: true, logoUrl: true },
+    });
+    return rows;
+  },
+  ['brands'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [BRANDS_CACHE_TAG] },
+);
+
+/**
+ * Aktiv brendlar.
+ *
+ * Ilgari bosh sahifadagi brend paneli, katalog filtri va brend sahifasi
+ * `mock-data.ts` dagi 8 ta qotib yozilgan brenddan o'qirdi. Natijada:
+ * bazadagi haqiqiy brend katalog filtrida umuman ko'rinmasdi, mock brend
+ * esa bosilganda bo'sh natija berardi. `/api/brands` haqiqiy ro'yxatni
+ * allaqachon qaytarardi — UI shunchaki uni chaqirmasdi.
+ */
+export async function fetchBrands(): Promise<BrandSummary[]> {
+  try {
+    return await cachedQueryBrands();
+  } catch (err) {
+    console.error('[catalog] fetchBrands DB xato:', err);
+    return [];
+  }
+}
+
+/** Bitta brend — slug bo'yicha. Topilmasa null (sahifa 404 beradi). */
+export async function fetchBrandBySlug(slug: string): Promise<BrandSummary | null> {
+  const all = await fetchBrands();
+  return all.find((b) => b.slug === slug) ?? null;
 }
 
 // ─── Mock fallback filtering (DB'siz rejim) ──────────────────────

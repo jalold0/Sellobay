@@ -3,6 +3,15 @@ import { Compass, Home, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
+import type { Metadata } from 'next';
+
+// Marshrut umuman mos kelmaganda bu sahifa HTTP 404 bilan chiqadi, lekin
+// layout'dan `robots: { index: true }` merosini oladi — shu sababli bu yerda
+// ham aniq bekor qilinadi.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
+
 export default function NotFound() {
   const t = useTranslations('notFound');
 

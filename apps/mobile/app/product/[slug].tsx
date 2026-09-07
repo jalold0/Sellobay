@@ -34,14 +34,12 @@ import { ProductCard } from '../../src/ui/product-card';
 import { Skeleton } from '../../src/ui/skeleton';
 
 const GALLERY_EXTRAS = ['-2', '-3', '-4', '-5'];
-const COLORS = [
-  { id: 'black', label: 'Qora', hex: '#0A0A0C' },
-  { id: 'crimson', label: 'Bordo', hex: '#531625' },
-  { id: 'blue', label: "Ko'k", hex: '#3b5b8c' },
-  { id: 'sand', label: 'Qum', hex: '#C9A961' },
-];
-const SIZES_CLOTHING = ['XS', 'S', 'M', 'L', 'XL'];
-const SIZES_FOOTWEAR = ['38', '39', '40', '41', '42', '43', '44'];
+// Ilgari bu yerda COLORS (Qora/Bordo/Ko'k/Qum) va SIZES_CLOTHING/
+// SIZES_FOOTWEAR ro'yxatlari qotib yozilgan edi. Ular bazadagi HAQIQIY
+// variantlarga hech qanday aloqasi yo'q edi: mijoz mavjud bo'lmagan
+// kombinatsiyani tanlashi mumkin edi, buyurtma esa standart variantga
+// yozilardi va boshqa variantning zaxirasi kamayardi. Endi ranglar va
+// o'lchamlar mahsulotning o'z variantlaridan olinadi.
 
 export default function ProductDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -52,7 +50,7 @@ export default function ProductDetailScreen() {
   // Jonli API'dan — slug bo'yicha (xato bo'lsa mock fallback)
   const { data: product, isLoading } = useProduct(slug);
   const [activeImage, setActiveImage] = React.useState(0);
-  const [color, setColor] = React.useState(COLORS[0].id);
+  const [color, setColor] = React.useState<string | undefined>(undefined);
   const [size, setSize] = React.useState<string | undefined>(undefined);
   const [qty, setQty] = React.useState(1);
 
@@ -119,33 +117,81 @@ export default function ProductDetailScreen() {
   const name = pickLocalized(product.name, locale);
   const discount = discountPercent(product.price, product.oldPrice);
   const gallery = [product.imageSeed, ...GALLERY_EXTRAS.map((s) => `${product.imageSeed}${s}`)];
-  // categoryId endi slug ('shoes' / 'clothing') — API'dan keladi
-  const isFootwear = product.categoryId === 'shoes' || product.categoryId === 'c2';
-  const isClothing = product.categoryId === 'clothing' || product.categoryId === 'c1';
-  const sizes = isFootwear ? SIZES_FOOTWEAR : isClothing ? SIZES_CLOTHING : [];
   const related = relatedAll.filter((p: MockProduct) => p.id !== product.id).slice(0, 4);
-  const selectedColor = COLORS.find((c) => c.id === color);
+
+  // HAQIQIY variantlar. Bittadan ko'p bo'lsagina tanlov ko'rsatiladi —
+  // bitta "default" variantli mahsulotda rang/o'lcham tanlash ma'nosiz.
+  const variants = product.variants ?? [];
+  const hasVariantChoice = variants.length > 1;
+  const colors = Array.from(
+    new Set(variants.map((v) => v.color).filter((c): c is string => Boolean(c))),
+  );
+  const sizes = Array.from(
+    new Set(variants.map((v) => v.size).filter((sz): sz is string => Boolean(sz))),
+  );
+
+  /** Tanlangan rang/o'lchamga mos variant. */
+  const selectedVariant =
+    variants.find(
+      (v) => (colors.length === 0 || v.color === color) && (sizes.length === 0 || v.size === size),
+    ) ?? (variants.length === 1 ? variants[0] : undefined);
+
+  /** Shu rang bilan mavjud o'lchamlar — yo'q kombinatsiyani tanlab bo'lmasin. */
+  const sizesForColor = color
+    ? Array.from(
+        new Set(
+          variants
+            .filter((v) => v.color === color && v.inStock)
+            .map((v) => v.size)
+            .filter((sz): sz is string => Boolean(sz)),
+        ),
+      )
+    : sizes;
 
   const onAdd = (buyNow = false) => {
-    if (sizes.length > 0 && !size) {
-      haptics.warning();
-      toast({ title: "O'lcham tanlang", variant: 'warning' });
-      return;
+    if (hasVariantChoice) {
+      if (colors.length > 0 && !color) {
+        haptics.warning();
+        toast({ title: 'Rangni tanlang', variant: 'warning' });
+        return;
+      }
+      if (sizes.length > 0 && !size) {
+        haptics.warning();
+        toast({ title: "O'lcham tanlang", variant: 'warning' });
+        return;
+      }
+      // Tanlangan kombinatsiya mavjud emas — jim standart variantga
+      // yozib yubormaymiz (ilgari aynan shunday bo'lardi).
+      if (!selectedVariant) {
+        haptics.warning();
+        toast({ title: 'Bu kombinatsiya mavjud emas', variant: 'warning' });
+        return;
+      }
+      if (!selectedVariant.inStock) {
+        haptics.warning();
+        toast({ title: 'Bu variant omborda yo`q', variant: 'warning' });
+        return;
+      }
     }
     haptics.success();
     addItem({
       productId: product.id,
+      // Aynan qaysi variant buyurtma qilinayotgani — serverda shu variantning
+      // zaxirasi kamayadi.
+      variantId: selectedVariant?.id,
       name,
       brand: product.brand,
       slug: product.slug,
       imageSeed: product.imageSeed,
       imageUrl: product.imageUrl,
-      unitPrice: product.price,
+      // Variant o'z narxiga ega bo'lsa o'shani olamiz.
+      unitPrice: selectedVariant?.price ?? product.price,
       oldPrice: product.oldPrice,
       currency: product.currency,
       quantity: qty,
-      color: selectedColor?.label,
+      color,
       size,
+      maxQuantity: selectedVariant?.stock,
     });
     toast({
       title: t('product.addedToCart'),
@@ -317,26 +363,54 @@ export default function ProductDetailScreen() {
             </View>
           </View>
 
-          {/* Color */}
-          <View>
-            <Text className="text-sm font-semibold">
-              {t('product.color')}:{' '}
-              <Text className="text-muted-foreground font-normal">{selectedColor?.label}</Text>
-            </Text>
-            <View className="mt-2 flex-row gap-2">
-              {COLORS.map((c) => (
-                <Pressable
-                  key={c.id}
-                  onPress={() => setColor(c.id)}
-                  className={cn(
-                    'h-9 w-9 rounded-full border-2',
-                    c.id === color ? 'border-primary' : 'border-border',
-                  )}
-                  style={{ backgroundColor: c.hex }}
-                />
-              ))}
+          {/*
+            Ranglar mahsulotning HAQIQIY variantlaridan. Ilgari bu yerda
+            to'rtta qotib yozilgan rang (rangli doiracha bilan) ko'rsatilardi.
+            Rang nomi matn sifatida chiqadi: bazada rang KODI (hex) saqlanmaydi,
+            shuning uchun doiracha chizish uchun ishonchli manba yo'q edi.
+          */}
+          {colors.length > 0 ? (
+            <View>
+              <Text className="text-sm font-semibold">
+                {t('product.color')}:{' '}
+                <Text className="text-muted-foreground font-normal">{color ?? '—'}</Text>
+              </Text>
+              <View className="mt-2 flex-row flex-wrap gap-2">
+                {colors.map((c) => {
+                  const available = variants.some((v) => v.color === c && v.inStock);
+                  return (
+                    <Pressable
+                      key={c}
+                      onPress={() => {
+                        setColor(c);
+                        // Rang o'zgarsa, mos kelmaydigan o'lcham tanlovini tozalaymiz.
+                        if (size && !variants.some((v) => v.color === c && v.size === size)) {
+                          setSize(undefined);
+                        }
+                      }}
+                      disabled={!available}
+                      className={cn(
+                        'h-10 items-center justify-center rounded-lg border px-3',
+                        c === color
+                          ? 'border-primary bg-primary'
+                          : 'border-border bg-card active:bg-muted',
+                        !available && 'opacity-40',
+                      )}
+                    >
+                      <Text
+                        className={cn(
+                          'text-sm font-medium',
+                          c === color ? 'text-white' : 'text-foreground',
+                        )}
+                      >
+                        {c}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
-          </View>
+          ) : null}
 
           {/* Sizes */}
           {sizes.length > 0 ? (
@@ -352,11 +426,14 @@ export default function ProductDetailScreen() {
                   <Pressable
                     key={s}
                     onPress={() => setSize(s)}
+                    // Tanlangan rangda bu o'lcham yo'q bo'lsa — tanlab bo'lmaydi.
+                    disabled={!sizesForColor.includes(s)}
                     className={cn(
                       'h-10 min-w-12 items-center justify-center rounded-lg border px-3',
                       s === size
                         ? 'border-primary bg-primary'
                         : 'border-border bg-card active:bg-muted',
+                      !sizesForColor.includes(s) && 'opacity-40',
                     )}
                   >
                     <Text

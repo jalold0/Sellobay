@@ -1,5 +1,6 @@
 'use client';
 
+import { pickLocalized, type Locale } from '@ecom/i18n';
 import { Heart, Menu, ShoppingBag } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -12,19 +13,23 @@ import { CartBadge, WishlistBadge } from './cart-badge';
 import { LocaleSwitcher } from './locale-switcher';
 import { MobileNav } from './mobile-nav';
 
-const CATEGORY_SLUGS = [
-  'clothing',
-  'shoes',
-  'perfume',
-  'cosmetics',
-  'beauty',
-  'accessories',
-] as const;
+import type { CategorySummary } from '../../lib/catalog';
 
-export function Header() {
+interface Props {
+  /**
+   * Bazadagi kategoriyalar (server layout'dan keladi).
+   *
+   * Ilgari bu yerda 6 ta slug qotib yozilgan edi va yorliqlar `categories`
+   * i18n namespace'idan olinardi. Natijada admin panelida qo'shilgan
+   * kategoriya menyuda umuman ko'rinmasdi, mahsuloti yo'q kategoriya esa
+   * ko'rinib turardi.
+   */
+  categories: CategorySummary[];
+}
+
+export function Header({ categories }: Props) {
   const common = useTranslations('common');
   const nav = useTranslations('nav');
-  const cat = useTranslations('categories');
   const utility = useTranslations('utilityBar');
   const locale = useLocale();
 
@@ -73,7 +78,7 @@ export function Header() {
       {/* Main header — 44px logo tile + Playfair wordmark + pill search + ikonka stack */}
       <div className="border-b">
         <div className="container flex items-center gap-3 py-4 md:gap-10">
-          <MobileNav />
+          <MobileNav categories={categories} />
 
           {/* Logo */}
           <Link href="/" className="flex shrink-0 items-center gap-3">
@@ -131,13 +136,13 @@ export function Header() {
             {nav('catalog')}
           </Link>
           <div className="flex items-center gap-8 overflow-x-auto">
-            {CATEGORY_SLUGS.map((slug) => (
+            {categories.map((c) => (
               <Link
-                key={slug}
-                href={`/catalog?category=${slug}`}
+                key={c.id}
+                href={`/catalog?category=${c.slug}`}
                 className="hover:text-brand-ink whitespace-nowrap"
               >
-                {cat(slug)}
+                {pickLocalized(c.name, locale as Locale)}
               </Link>
             ))}
             <Link

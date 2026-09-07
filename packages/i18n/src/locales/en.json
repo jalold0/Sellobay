@@ -50,13 +50,7 @@
     "user": "User"
   },
   "categories": {
-    "title": "Categories",
-    "clothing": "Clothing",
-    "shoes": "Shoes",
-    "perfume": "Perfumes",
-    "cosmetics": "Cosmetics",
-    "beauty": "Beauty",
-    "accessories": "Accessories"
+    "title": "Categories"
   },
   "hero": {
     "eyebrow": "New season · 2026",
@@ -79,7 +73,7 @@
     "recentlyViewed": "Recently viewed",
     "bestSellersSubtitle": "Our bestsellers — most popular products",
     "popularBrands": "Popular brands",
-    "productCount": "{count}+ products",
+    "productCount": "{count} products",
     "view": "View",
     "stats": {
       "sellers": "Active sellers",
@@ -94,14 +88,14 @@
     "editorial": {
       "eyebrow": "Curated collection",
       "titleLine1": "Autumn wardrobe:",
-      "titleLine2": "25 essential pieces",
+      "titleLine2": "curated pieces",
       "link": "Open the collection",
       "womenTitle": "For women",
       "womenCount": "New collection",
-      "saleEyebrow": "48 hours only",
+      "saleEyebrow": "Discounts",
       "saleTitleLine1": "Seasonal SALE",
-      "saleTitleLine2": "up to −50%",
-      "saleCta": "Shop the sale"
+      "saleCta": "Shop the sale",
+      "saleDiscount": "up to −{percent}%"
     },
     "sellerCta": {
       "eyebrow": "For sellers",
@@ -135,7 +129,8 @@
       "new": "New arrivals",
       "flash": "Flash deals",
       "secure": "Secure payment"
-    }
+    },
+    "brandsCount": "{count} brands"
   },
   "featured": {
     "eyebrow": "Edit · Premium",
@@ -160,7 +155,7 @@
   },
   "footer": {
     "newsletterTitle": "Be the first to know about new arrivals",
-    "newsletterSubtitle": "Leave your email and get a 10% discount coupon. No spam — only news.",
+    "newsletterSubtitle": "We'll let you know about new arrivals and discounts. No spam.",
     "tagline": "A multi-vendor marketplace for Uzbekistan. Verified sellers, original products.",
     "address": "Tashkent, Mirzo Ulugbek district",
     "paymentMethods": "Payment methods:",
@@ -195,8 +190,9 @@
     "newsletter": {
       "placeholder": "Your email",
       "submit": "Subscribe",
-      "thanks": "Thanks! Email confirmed.",
-      "invalid": "Invalid email"
+      "thanks": "Thanks! You're subscribed.",
+      "invalid": "Invalid email",
+      "error": "Couldn't subscribe. Please try again later."
     }
   },
   "search": {
@@ -379,7 +375,9 @@
     "groupGlobal": "Global (from China)",
     "mixedNote": "Global items arrive by cargo in 15-17 days, so they are ordered separately. You can place both orders.",
     "checkoutLocal": "Order Sellobay items · {amount}",
-    "checkoutGlobal": "Order global items · {amount}"
+    "checkoutGlobal": "Order global items · {amount}",
+    "promoPlaceholder": "Promo code",
+    "promoChecking": "Checking..."
   },
   "checkout": {
     "title": "Checkout",
@@ -503,7 +501,8 @@
       "required": "Please fill required fields",
       "network": "Network error",
       "failed": "Order not created",
-      "staleItems": "Some items in your cart are outdated and were removed. Please add them again."
+      "staleItems": "Some items in your cart are outdated and were removed. Please add them again.",
+      "promoNoLongerValid": "Promo code no longer applies to this order — removed"
     },
     "securePayment": "Secure payment",
     "summaryTitle": "Order · {count} items",
@@ -514,7 +513,8 @@
     "promoAppliedChip": "{code} applied ✓",
     "premiumPoints": "You'll earn +{points} points on this order — Sellobay Premium",
     "pcs": "{count} pcs",
-    "newAddress": "+ New address"
+    "newAddress": "+ New address",
+    "promoDiscount": "Promo discount"
   },
   "auth": {
     "loginRequired": "Please sign in to place an order",
@@ -774,12 +774,12 @@
     "title": "Buy together — pay less",
     "subtitle": "Invite your friends. When the group fills up, everyone gets the discounted price.",
     "howTitle": "How it works",
-    "step1Title": "Start a group",
-    "step1Desc": "Pick a product and open a group buy",
+    "step1Title": "Pick a group",
+    "step1Desc": "Join one of the open group buys",
     "step2Title": "Invite friends",
     "step2Desc": "Share the link so they can join the group",
     "step3Title": "Get the discount",
-    "step3Desc": "When the group is complete, everyone buys at the low price",
+    "step3Desc": "Once the group is full, you order at the group price",
     "activeTitle": "Active groups",
     "soloPrice": "Solo price",
     "groupPrice": "Group price",
@@ -791,7 +791,16 @@
     "share": "Share",
     "linkCopied": "Link copied",
     "expiresIn": "Ends in",
-    "save": "Save {percent}%"
+    "save": "Save {percent}%",
+    "emptyTitle": "No active groups yet",
+    "emptyText": "New group buys will appear soon. Check back later.",
+    "expired": "Expired",
+    "joining": "Joining...",
+    "joinFailed": "Could not join the group. Please try again later.",
+    "leaveGroup": "Leave group",
+    "leaving": "Leaving...",
+    "leftGroup": "You left the group",
+    "leaveFailed": "Could not leave the group. Please try again later."
   },
   "loyalty": {
     "title": "Sello Coins",
@@ -835,36 +844,34 @@
       "referral": "Referral bonus",
       "discount": "Spent on discount",
       "daysAgo": "{days} days ago",
-      "empty": "No coin history yet — make your first purchase!"
+      "empty": "No coin history yet — make your first purchase!",
+      "checkin": "Daily check-in bonus"
     }
   },
   "sale": {
     "metaTitle": "Sale",
-    "metaDescription": "Best discounts and sales — limited time!",
+    "metaDescription": "Discounted products — best prices",
     "badge": "SALE",
-    "title": "Summer sale",
-    "titleWithDiscount": "Summer sale — up to {percent}% off",
-    "subtitle": "This week — the best prices. Limited quantity, hurry up!",
-    "endsIn": "Ends in",
-    "countdown": "Sale ends in: 3 days 14 hours 22 minutes",
+    "title": "Discounts",
+    "titleWithDiscount": "Up to {percent}% off",
+    "subtitle": "Products currently discounted",
     "discountUpTo": "Up to {percent}% off",
     "stats": {
       "items": "Sale items",
       "itemsValue": "{count} pcs",
       "maxDiscount": "Max discount",
-      "totalSaved": "Total saved",
-      "winners": "Customer winners"
+      "totalSaved": "Total saved"
     },
     "allSales": "All sales",
     "flashSale": "Flash Sale",
     "homeTitle": "🔥 On sale",
-    "limitedTime": "Limited time — up to 70% off",
+    "limitedTime": "Products currently discounted",
     "viewAll": "View all",
-    "limitedTimeShort": "Limited time",
-    "bannerHeadline1": "−70%",
     "bannerHeadline2": "up to off",
-    "bannerSubtitle": "Best brands — lowest prices. Limited stock — hurry!",
-    "bannerCta": "Shop the sale"
+    "bannerSubtitle": "Top brands, discounted. Browse the full list.",
+    "bannerCta": "Shop the sale",
+    "emptyTitle": "Nothing is discounted right now",
+    "emptyDesc": "New discounts will show up here. Browse the catalogue meanwhile."
   },
   "order": {
     "status": {
@@ -1119,5 +1126,70 @@
   },
   "localeSwitcher": {
     "label": "Select language"
+  },
+  "deliveryPage": {
+    "metaTitle": "Delivery",
+    "heroTitle": "Delivery",
+    "heroDesc": "Fast, secure delivery to all 14 regions of Uzbekistan.",
+    "homeTitle": "Home delivery",
+    "homeDesc": "Within 24-48 hours",
+    "homeFree": "Free from {amount}",
+    "expressTitle": "Express",
+    "expressDesc": "Within 3 hours across Tashkent",
+    "expressFree": "No minimum",
+    "pickupTitle": "Pickup point",
+    "pickupDesc": "Collect from your nearest point",
+    "pickupPrice": "Free",
+    "pickupFree": "Always",
+    "timesTitle": "Timings",
+    "tashkent": "Tashkent",
+    "tashkent1": "Standard: within 24 hours",
+    "tashkent2": "Express: within 3 hours (after purchase)",
+    "tashkent3": "Order before noon — arrives the same evening",
+    "regions": "Regions",
+    "regions1": "Within 2-3 business days",
+    "regions2": "Express available (depends on category)",
+    "regions3": "We'll notify you by SMS",
+    "zonesTitle": "Delivery zones",
+    "regionList": [
+      "Tashkent City",
+      "Tashkent Region",
+      "Samarkand",
+      "Bukhara",
+      "Andijan",
+      "Fergana",
+      "Namangan",
+      "Kashkadarya",
+      "Surkhandarya",
+      "Jizzakh",
+      "Sirdarya",
+      "Navoi",
+      "Khorezm",
+      "Karakalpakstan"
+    ]
+  },
+  "returnsPage": {
+    "metaTitle": "Returns & refunds",
+    "heroTitle": "Returns and refunds",
+    "heroDesc": "Check the item on delivery — if it isn't right, hand it back on the spot. Or return it within {days} days of delivery.",
+    "howTitle": "How to return",
+    "step1Title": "Check on delivery",
+    "step1Desc": "Open it with the courier or at the pickup point — hand it back there if it isn't right",
+    "step2Title": "Hand over the item",
+    "step2Desc": "The courier collects it, or drop it at a pickup point",
+    "step3Title": "Money comes back",
+    "step3Desc": "To your card or in cash within 3-5 business days",
+    "windowTitle": "Return window",
+    "windowDesc": "For {days} days after delivery you can return the order from Profile → My orders. Stock goes back to the warehouse and your Sello Coins are returned too.",
+    "canTitle": "Can be returned",
+    "can1": "Clothing — with tags and packaging",
+    "can2": "Footwear — unworn, in the original box",
+    "can3": "Accessories — undamaged",
+    "can4": "Electronics — with box and documents",
+    "cantTitle": "Cannot be returned",
+    "cant1": "Perfume — packaging opened",
+    "cant2": "Cosmetics — opened for testing",
+    "cant3": "Underwear, socks",
+    "cant4": "Gift certificates"
   }
 }

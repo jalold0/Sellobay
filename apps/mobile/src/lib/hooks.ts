@@ -8,6 +8,7 @@ import {
   fetchPickupPoints,
   fetchProduct,
   fetchProducts,
+  fetchProductsByIds,
   returnOrder,
   updateOrder,
   type FetchProductsParams,
@@ -28,6 +29,24 @@ export function useProduct(slug: string | undefined) {
     queryFn: () => fetchProduct(slug!),
     enabled: Boolean(slug),
     staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * Aniq ID'lar bo'yicha mahsulotlar — sevimlilar ro'yxati uchun.
+ *
+ * Ilgari sevimlilar ekrani `useProducts({ limit: 48 })` natijasidan
+ * filtrlardi: o'sha 48 talikka kirmagan sevimli mahsulot ko'rinmasdi.
+ */
+export function useProductsByIds(ids: readonly string[]) {
+  // Kesh kaliti tartibga sezgir bo'lmasligi kerak — bir xil to'plam bir xil
+  // kalit beradi.
+  const key = [...ids].sort().join(',');
+  return useQuery({
+    queryKey: ['products-by-ids', key],
+    queryFn: () => fetchProductsByIds(ids),
+    enabled: ids.length > 0,
+    staleTime: 2 * 60_000,
   });
 }
 

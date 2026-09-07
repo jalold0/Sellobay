@@ -1,12 +1,13 @@
 'use client';
 
+import * as React from 'react';
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   KpiCard,
-  MockDataNotice,
   PageHeader,
   Tabs,
   TabsContent,
@@ -15,58 +16,90 @@ import {
 } from '@ecom/ui';
 import { BarChart3, Percent, ShoppingBag, Users } from 'lucide-react';
 
-import { ChannelPie } from '../../components/charts/channel-pie';
 import { OrdersChart } from '../../components/charts/orders-chart';
 import { RevenueChart } from '../../components/charts/revenue-chart';
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
+import { getStats, type AdminStats } from '../../lib/auth/client';
 import { formatMoney, formatNumber } from '../../lib/format';
-import { mockChannelBreakdown, mockOrders, mockProducts, mockRevenueSeries } from '../../lib/mock';
+
+/** Ikki davr orasidagi foiz o'zgarish; oldingi davr bo'sh bo'lsa ko'rsatilmaydi. */
+function deltaPct(current: number, previous: number): number | undefined {
+  if (previous <= 0) return undefined;
+  return Math.round(((current - previous) / previous) * 1000) / 10;
+}
 
 export default function AdminAnalyticsPage() {
-  const revenue30 = mockRevenueSeries.reduce((s, p) => s + p.revenue, 0);
-  const orders30 = mockRevenueSeries.reduce((s, p) => s + (p.orders ?? 0), 0);
-  const conv = 4.2;
-  const aov = revenue30 / Math.max(orders30, 1);
+  // Barcha ko'rsatkich BAZADAN (GET /api/stats). Ilgari bu sahifadagi
+  // delta'lar (+12.4%, +6.2%, −0.3%, +3.5%) va "Konversiya 4.2%" kodga
+  // yozib qo'yilgan sonlar edi — ular hech qachon o'zgarmasdi.
+  const [stats, setStats] = React.useState<AdminStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const topProducts = [...mockProducts].sort((a, b) => b.soldCount - a.soldCount).slice(0, 8);
+  React.useEffect(() => {
+    let alive = true;
+    void getStats().then((res) => {
+      if (!alive) return;
+      if (res.success) setStats(res.data);
+      else setError(res.error.message);
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) {
+    return <div className="text-muted-foreground py-20 text-center text-sm">Yuklanmoqda...</div>;
+  }
+  if (error || !stats) {
+    return <div className="py-20 text-center text-sm">{error ?? 'Ma`lumotni yuklab bo`lmadi'}</div>;
+  }
+
+  const { kpi, revenueSeries, topProducts } = stats;
+  const revenue30 = kpi.revenue;
+  const orders30 = kpi.ordersCount;
+  const aov = kpi.avgCheck;
 
   return (
     <div className="space-y-6">
-      <MockDataNotice description="Analitika hali hisoblanmaydi — daromad, kanal va konversiya raqamlari namuna. Bosh sahifadagi ko'rsatkichlar esa haqiqiy." />
-
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Analitika"
-        description="Daromad, buyurtmalar, konversiya, mahsulot va kanal samaradorligi"
+        description="Daromad, buyurtmalar, mahsulot va mijoz ko`rsatkichlari"
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          label="Daromad (30k)"
+          label={`Daromad (${kpi.windowDays}k)`}
           value={formatMoney(revenue30)}
-          delta={12.4}
+          delta={kpi.revenueDelta ?? undefined}
           icon={BarChart3}
           accent="success"
         />
         <KpiCard
-          label="Buyurtmalar (30k)"
+          label={`Buyurtmalar (${kpi.windowDays}k)`}
           value={formatNumber(orders30)}
-          delta={6.2}
+          delta={deltaPct(orders30, kpi.ordersPrev)}
           icon={ShoppingBag}
           accent="info"
         />
+        {/*
+          "Konversiya" olib tashlandi: uni hisoblash uchun sayt tashriflari
+          kerak, bazada esa tashrif kuzatuvi YO'Q edi — ko'rsatkich
+          `const conv = 4.2` deb yozib qo'yilgandi. O'rniga haqiqiy son:
+          davr ichida ro'yxatdan o'tgan yangi mijozlar.
+        */}
         <KpiCard
-          label="Konversiya"
-          value={`${conv}%`}
-          delta={-0.3}
-          icon={Percent}
+          label="Yangi mijozlar"
+          value={formatNumber(kpi.newCustomers)}
+          icon={Users}
           accent="warning"
         />
         <KpiCard
           label="O`rtacha chek (AOV)"
           value={formatMoney(aov)}
-          delta={3.5}
-          icon={Users}
+          icon={Percent}
           accent="primary"
         />
       </div>
@@ -76,7 +109,6 @@ export default function AdminAnalyticsPage() {
           <TabsTrigger value="overview">Umumiy</TabsTrigger>
           <TabsTrigger value="products">Mahsulot</TabsTrigger>
           <TabsTrigger value="customers">Mijozlar</TabsTrigger>
-          <TabsTrigger value="channels">Kanallar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="grid gap-4 lg:grid-cols-3">
@@ -85,15 +117,32 @@ export default function AdminAnalyticsPage() {
               <CardTitle>Daromad dinamikasi</CardTitle>
             </CardHeader>
             <CardContent>
-              <RevenueChart data={mockRevenueSeries} height={280} />
+              <RevenueChart data={revenueSeries} height={280} />
             </CardContent>
           </Card>
+          {/*
+            Kanal taqsimoti olib tashlandi: buyurtma qaysi manbadan kelganini
+            bazada hech narsa yozmaydi, diagramma to'qima edi.
+          */}
           <Card>
             <CardHeader>
-              <CardTitle>Kanal taqsimoti</CardTitle>
+              <CardTitle>Davr taqqoslash</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ChannelPie data={mockChannelBreakdown} />
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Joriy daromad</span>
+                <span className="font-semibold">{formatMoney(kpi.revenue)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Oldingi davr</span>
+                <span className="font-semibold">{formatMoney(kpi.revenuePrev)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t pt-3">
+                <span className="text-muted-foreground">Buyurtmalar</span>
+                <span className="font-semibold">
+                  {formatNumber(kpi.ordersCount)} / {formatNumber(kpi.ordersPrev)}
+                </span>
+              </div>
             </CardContent>
           </Card>
           <Card className="lg:col-span-3">
@@ -101,7 +150,7 @@ export default function AdminAnalyticsPage() {
               <CardTitle>Buyurtmalar (kunlik)</CardTitle>
             </CardHeader>
             <CardContent>
-              <OrdersChart data={mockRevenueSeries} height={240} />
+              <OrdersChart data={revenueSeries} height={240} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -140,42 +189,41 @@ export default function AdminAnalyticsPage() {
         </TabsContent>
 
         <TabsContent value="customers">
+          {/*
+            Ilgari bu yerda "+1 280", "CLV 2 350 000" va "Repeat rate 36%"
+            qotib yozilgan edi. CLV (median) olib tashlandi — uni to'g'ri
+            hisoblash uchun mijozning butun umri bo'yicha xarid tarixi va
+            davr kesimi kerak; qolganlari bazadan olinadi.
+          */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Yangi mijozlar (30k)</CardTitle>
+                <CardTitle className="text-sm">Yangi mijozlar ({kpi.windowDays}k)</CardTitle>
               </CardHeader>
-              <CardContent className="text-3xl font-bold">+1 280</CardContent>
+              <CardContent className="text-3xl font-bold">
+                {formatNumber(kpi.newCustomers)}
+              </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">CLV (median)</CardTitle>
+                <CardTitle className="text-sm">Xaridorlar (jami)</CardTitle>
               </CardHeader>
-              <CardContent className="text-3xl font-bold">{formatMoney(2_350_000)}</CardContent>
+              <CardContent className="text-3xl font-bold">{formatNumber(kpi.buyers)}</CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Repeat rate</CardTitle>
+                <CardTitle className="text-sm">Takroriy xarid ulushi</CardTitle>
               </CardHeader>
-              <CardContent className="text-3xl font-bold">36%</CardContent>
+              <CardContent className="text-3xl font-bold">
+                {kpi.repeatRate == null ? '—' : `${kpi.repeatRate}%`}
+              </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="channels">
-          <Card>
-            <CardHeader>
-              <CardTitle>Kanal samaradorligi</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChannelPie data={mockChannelBreakdown} height={300} />
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 
       <div className="text-muted-foreground text-xs">
-        {formatNumber(mockOrders.length)} ta buyurtma asosida.
+        {formatNumber(kpi.ordersCount)} ta buyurtma asosida (oxirgi {kpi.windowDays} kun).
       </div>
     </div>
   );

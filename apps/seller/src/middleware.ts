@@ -4,17 +4,28 @@
 import { jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { ACCESS_SECRET, AUTH_CONFIGURED, COOKIE_ACCESS } from '@/lib/auth/constants';
+import { COOKIE_ACCESS, accessSecretOrNull } from '@/lib/auth/constants';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_PREFIXES = ['/api/auth/', '/_next/', '/favicon', '/icon', '/apple-icon', '/manifest'];
 
 const encoder = new TextEncoder();
 
+// Ruxsat etilgan rollar. Web (mijoz) ilovasi ham AYNI shu JWT_SECRET va
+// `sb_at` cookie nomidan foydalanadi — ya'ni oddiy xaridorning tokeni ham
+// imzo tekshiruvidan o'tadi. Shuning uchun imzo yetarli emas: rol ham
+// tekshirilishi kerak (API route'larda rol tekshiruvi bor, bu esa panel
+// sahifalari uchun ikkinchi qatlam).
+const ALLOWED_ROLES = ['SELLER', 'ADMIN', 'SUPER_ADMIN'];
+
 async function isValidAccess(token: string): Promise<boolean> {
   try {
-    await jwtVerify(token, encoder.encode(ACCESS_SECRET));
-    return true;
+    const secret = accessSecretOrNull();
+    // Kalit yo'q/juda qisqa bo'lsa hech qanday token qabul qilinmaydi.
+    if (!secret) return false;
+    const { payload } = await jwtVerify(token, encoder.encode(secret));
+    const roles = Array.isArray(payload.roles) ? (payload.roles as string[]) : [];
+    return roles.some((r) => ALLOWED_ROLES.includes(r));
   } catch {
     return false;
   }
@@ -31,7 +42,7 @@ export async function middleware(req: NextRequest) {
   // Ilgari ikkalasi bir xil ishlangani uchun JWT_SECRET qo`yilmagan muhitda
   // kirgan foydalanuvchi ham har safar /login ga qaytarilaverardi va sabab
   // hech qayerda ko`rinmasdi.
-  if (!AUTH_CONFIGURED) {
+  if (!accessSecretOrNull()) {
     console.error('[auth] JWT_SECRET qo`yilmagan — panelga kirib bo`lmaydi.');
     return NextResponse.json(
       {

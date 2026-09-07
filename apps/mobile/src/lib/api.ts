@@ -13,4 +13,5 @@ export * from './api/orders';
 export * from './api/loyalty';
 export * from './api/account';
 export * from './api/promo';
+export * from './api/sync';
 export { API_BASE } from './api/core';

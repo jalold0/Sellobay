@@ -32,9 +32,11 @@ export function CartView() {
   React.useEffect(() => setMounted(true), []);
 
   const [promo, setPromo] = React.useState('');
-  const [appliedPromo, setAppliedPromo] = React.useState<{ code: string; discount: number } | null>(
-    null,
-  );
+  const [checkingPromo, setCheckingPromo] = React.useState(false);
+  // Promokod savat store'ida saqlanadi — checkout'ga o'tganda yo'qolmasligi kerak.
+  const appliedPromo = useCart((s) => s.appliedPromo);
+  const setAppliedPromo = useCart((s) => s.setPromo);
+  const clearAppliedPromo = useCart((s) => s.clearPromo);
 
   // LOKAL va GLOBAL tovar alohida buyurtma qilinadi (turli muddat va yetkazish),
   // shuning uchun savat ikki guruhga bo'linadi va har biri o'z checkout'iga boradi.
@@ -52,17 +54,55 @@ export function CartView() {
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE;
   const total = Math.max(0, subtotal - discount + shipping);
 
-  const applyPromo = () => {
+  /**
+   * Promokodni SERVERDA tekshiradi. Ilgari bu funksiya WELCOME10 va FREESHIP
+   * kodlarini klientda qotib yozilgan chegirma bilan "qo'llardi", lekin
+   * /api/promo/validate hech qachon chaqirilmasdi va checkout promokod haqida
+   * bilmasdi — mijoz chegirmali summani ko'rib, to'liq narxda to'lardi.
+   */
+  const applyPromo = async () => {
     const code = promo.trim().toUpperCase();
-    if (!code) return;
-    if (code === 'WELCOME10') {
-      setAppliedPromo({ code, discount: Math.round(subtotal * 0.1) });
-      toast({ title: t('promoApplied'), description: t('promoApplied10'), variant: 'success' });
-    } else if (code === 'FREESHIP') {
-      setAppliedPromo({ code, discount: shipping });
-      toast({ title: t('promoFreeShip'), variant: 'success' });
-    } else {
+    if (!code || checkingPromo) return;
+    setCheckingPromo(true);
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ code, subtotal, shippingFee: shipping }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        data?: {
+          valid: boolean;
+          code?: string;
+          type?: string;
+          discount?: number;
+          message?: string;
+        };
+      } | null;
+
+      if (!res.ok || !body?.success || !body.data) {
+        toast({ title: t('promoInvalid'), variant: 'destructive' });
+        return;
+      }
+      const result = body.data;
+      if (!result.valid) {
+        // Serverning sababi mijozga tushunarli tilda keladi (muddati o'tgan,
+        // minimal summa yetmadi, limit tugagan...).
+        toast({ title: result.message ?? t('promoInvalid'), variant: 'destructive' });
+        return;
+      }
+      setAppliedPromo({
+        code: result.code ?? code,
+        discount: result.discount ?? 0,
+        type: result.type ?? 'UNKNOWN',
+      });
+      toast({ title: t('promoApplied'), variant: 'success' });
+    } catch {
       toast({ title: t('promoInvalid'), variant: 'destructive' });
+    } finally {
+      setCheckingPromo(false);
     }
   };
 
@@ -189,18 +229,24 @@ export function CartView() {
                 <Input
                   value={promo}
                   onChange={(e) => setPromo(e.target.value)}
-                  placeholder="WELCOME10"
+                  placeholder={t('promoPlaceholder')}
                   className="h-9 flex-1 uppercase"
+                  disabled={checkingPromo}
                 />
-                <Button size="sm" variant="outline" onClick={applyPromo}>
-                  {t('promoApply')}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void applyPromo()}
+                  disabled={checkingPromo || !promo.trim()}
+                >
+                  {checkingPromo ? t('promoChecking') : t('promoApply')}
                 </Button>
               </div>
               {appliedPromo && (
                 <button
                   type="button"
                   onClick={() => {
-                    setAppliedPromo(null);
+                    clearAppliedPromo();
                     setPromo('');
                   }}
                   className="text-muted-foreground mt-1 text-[11px] hover:text-red-600"

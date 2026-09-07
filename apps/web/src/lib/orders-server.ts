@@ -2,6 +2,8 @@
 // HTTP'ga bog'liq emas — route (interface) faqat parse/auth/rate-limit qilib shu yerga keladi.
 // Biznes-xatolar OrderError bilan tashlanadi; route uni status/code'ga map qiladi.
 
+import { randomInt } from 'crypto';
+
 import {
   SHIPPING_FEE,
   EXPRESS_FEE,
@@ -16,6 +18,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
+import { orderOwnerKey, scopeIdempotencyKey } from '@/lib/idempotency';
 import { getGlobalSettings } from '@/lib/global-settings';
 import {
   deductStockForOrder,
@@ -27,6 +30,7 @@ import { settleOrderLoyalty } from '@/lib/loyalty-server';
 import {
   MANUAL_CARD_PROVIDER,
   ReceiptError,
+  isManualCardAvailable,
   parseReceipt,
   storeReceipt,
 } from '@/lib/manual-payment';
@@ -99,20 +103,129 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
 type CurrentUser = { id: string } | null;
 
-function generateOrderNumber(): string {
-  const year = 2026; // statik — Date.now() server timezone'idan ehtiyot
-  const rand = Math.floor(Math.random() * 99_999_999)
-    .toString()
-    .padStart(8, '0');
+/** Nechta urinishda bo'sh buyurtma raqami izlanadi. */
+const ORDER_NUMBER_ATTEMPTS = 5;
+
+function orderNumberCandidate(): string {
+  // Yil Toshkent kalendaridan olinadi (Asia/Tashkent = UTC+5, DST yo'q), shuning
+  // uchun server timezone'iga bog'liq emas. Avval `2026` statik yozilgan edi —
+  // 2027-yildan boshlab barcha raqamlar noto'g'ri yil bilan chiqardi.
+  const OFFSET_MS = 5 * 60 * 60 * 1000;
+  const year = new Date(Date.now() + OFFSET_MS).getUTCFullYear();
+  // randomInt — CSPRNG va bir tekis. Math.random() parallel serverless
+  // instance'larda korrelyatsiyalanib, to'qnashuv ehtimolini oshiradi.
+  const rand = randomInt(0, 100_000_000).toString().padStart(8, '0');
   return `ORD-${year}-${rand}`;
 }
 
-export async function createOrder(input: CreateOrderInput, currentUser: CurrentUser) {
+/**
+ * Bo'sh buyurtma raqamini qaytaradi. `Order.number` UNIQUE — to'qnashuv
+ * bo'lsa Prisma P2002 tashlaydi va mijoz checkout'da 500 oladi. Shuning uchun
+ * yozishdan oldin raqam bo'shligini tekshiramiz.
+ */
+async function generateOrderNumber(): Promise<string> {
+  for (let attempt = 0; attempt < ORDER_NUMBER_ATTEMPTS; attempt++) {
+    const candidate = orderNumberCandidate();
+    const taken = await prisma.order.findUnique({
+      where: { number: candidate },
+      select: { id: true },
+    });
+    if (!taken) return candidate;
+  }
+  throw new OrderError(
+    503,
+    'ORDER_NUMBER_UNAVAILABLE',
+    'Buyurtmani rasmiylashtirish vaqtincha imkonsiz. Birozdan keyin urinib ko`ring.',
+  );
+}
+
+/** Idempotentlik kaliti uchun oldindan qaytariladigan buyurtma ko'rinishi. */
+const replaySelect = {
+  id: true,
+  number: true,
+  status: true,
+  grandTotal: true,
+  placedAt: true,
+  discountTotal: true,
+  promoCode: true,
+} as const;
+
+/**
+ * Takroriy so'rovga birinchi buyurtmaning natijasini qaytaradi.
+ *
+ * Chegirma va promokod buyurtmaning o'zida saqlanadi, shuning uchun ular
+ * aniq. Sello Coins raqamlari esa qayta hisoblanmaydi (ular
+ * LoyaltyTransaction'da, buyurtma qatorida emas) — `replayed` bayrog'i
+ * klientga shuni bildiradi: bu yangi hisob emas, avvalgi natija.
+ */
+function replayResponse(row: {
+  id: string;
+  number: string;
+  status: string;
+  grandTotal: Prisma.Decimal;
+  placedAt: Date;
+  discountTotal: Prisma.Decimal;
+  promoCode: string | null;
+}) {
+  return {
+    order: {
+      id: row.id,
+      number: row.number,
+      status: row.status,
+      grandTotal: row.grandTotal.toString(),
+      placedAt: row.placedAt.toISOString(),
+      coinsEarned: 0,
+      coinsRedeemed: 0,
+      discountSom: Number(row.discountTotal),
+      promoDiscountSom: 0,
+      appliedPromoCode: row.promoCode,
+    },
+    replayed: true as const,
+  };
+}
+
+export async function createOrder(
+  input: CreateOrderInput,
+  currentUser: CurrentUser,
+  /** `Idempotency-Key` sarlavhasi (ixtiyoriy). Mobil ilova uni yuboradi. */
+  clientIdempotencyKey?: string,
+) {
+  // TAKRORIY YUBORISH TEKSHIRUVI. Mobil ilova `Idempotency-Key` yuborardi,
+  // lekin server uni umuman o'qimasdi — tarmoq uzilib qayta urinilganda
+  // ikkinchi buyurtma yaratilardi (zaxira ikki marta kamayardi, Sello Coins
+  // ikki marta sarflanardi).
+  const ownerKey = orderOwnerKey(currentUser?.id, input.phone);
+  const idempotencyKey = clientIdempotencyKey?.trim()
+    ? scopeIdempotencyKey(clientIdempotencyKey.trim(), ownerKey)
+    : null;
+
+  if (idempotencyKey) {
+    const existing = await prisma.order.findUnique({
+      where: { idempotencyKey },
+      select: replaySelect,
+    });
+    if (existing) {
+      // Ayni so'rov allaqachon bajarilgan — yangi buyurtma yaratmaymiz,
+      // birinchisining natijasini qaytaramiz.
+      return replayResponse(existing);
+    }
+  }
+
   // Karta orqali qo'lda to'lov (UZCARD) — chek majburiy va to'g'ri formatda bo'lishi shart.
   // Chek TRANZAKSIYADAN OLDIN saqlanadi: fayl yuklash tarmoq amali, uni bazaga
   // yozish tranzaksiyasi ichida bajarish tranzaksiyani keraksiz uzoq ushlab turadi.
   let receiptPath: string | null = null;
   if (input.paymentProvider === MANUAL_CARD_PROVIDER) {
+    // Karta sozlanmagan bo'lsa bu usul umuman taklif qilinmasligi kerak edi.
+    // Klient baribir yuborsa — buyurtmani qabul qilmaymiz: mijoz qayerga pul
+    // o'tkazishini bilmaydi va chek tasdiqlanmaydi.
+    if (!isManualCardAvailable()) {
+      throw new OrderError(
+        503,
+        'MANUAL_CARD_UNAVAILABLE',
+        'Karta orqali to`lov hozir mavjud emas. Boshqa usulni tanlang.',
+      );
+    }
     const parsed = parseReceipt(input.paymentReceipt);
     if (!parsed.ok) throw new OrderError(400, 'RECEIPT_REQUIRED', parsed.error);
     try {
@@ -196,6 +309,31 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   const productById = new Map(products.map((p) => [p.id, p]));
   const productName = (name: unknown): string => (name as { uz?: string })?.uz ?? 'Mahsulot';
 
+  // GURUH XARIDI NARXI. Mijoz to'lgan (COMPLETED) guruhning a'zosi bo'lsa, o'sha
+  // mahsulotni guruh narxida oladi — sahifadagi "Guruh to'lganda hamma arzon
+  // narxda xarid qiladi" va'dasi shu yerda bajariladi. Ilgari bu bog'lanish
+  // yo'q edi: guruh to'lardi-yu, groupPrice checkout'ga umuman yetib bormasdi.
+  //
+  // Narx SNAPSHOT: guruh ochilganda yozilgan groupPrice ishlatiladi, katalog
+  // narxi keyin o'zgarsa ham a'zolar ko'rgan narx o'zgarmaydi.
+  const groupPriceByProduct = new Map<string, Prisma.Decimal>();
+  if (currentUser) {
+    const memberships = await prisma.groupBuyMember.findMany({
+      where: {
+        userId: currentUser.id,
+        groupBuy: { status: 'COMPLETED', productId: { in: productIds } },
+      },
+      select: { groupBuy: { select: { productId: true, groupPrice: true } } },
+    });
+    for (const m of memberships) {
+      const prev = groupPriceByProduct.get(m.groupBuy.productId);
+      // Bir mahsulot bo'yicha bir nechta to'lgan guruh bo'lsa — eng arzoni.
+      if (!prev || m.groupBuy.groupPrice.lessThan(prev)) {
+        groupPriceByProduct.set(m.groupBuy.productId, m.groupBuy.groupPrice);
+      }
+    }
+  }
+
   // 2. Subtotal + varyant/ombor aniqlash (pre-check). Har bir satr uchun sotiladigan
   //    varyantni topamiz (aniq berilgan variantId yoki mahsulotning default varyanti),
   //    inventar qatorini olamiz va zaxirani tez tekshiramiz. Yakuniy (race'siz) himoya
@@ -255,7 +393,10 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       );
     }
 
-    const unitPrice = p.basePrice;
+    // Guruh narxi faqat katalog narxidan PAST bo'lsa qo'llanadi — aks holda
+    // eski snapshot mijozga zarar keltirmasin.
+    const groupPrice = groupPriceByProduct.get(p.id);
+    const unitPrice = groupPrice && groupPrice.lessThan(p.basePrice) ? groupPrice : p.basePrice;
     const totalPrice = unitPrice.mul(it.quantity);
     subtotal = subtotal.add(totalPrice);
     orderItemsData.push({
@@ -331,7 +472,7 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
   // 5. Order + OrderItems + Ombor + Sello Coins (atomik $transaction)
   //    Order, ombor kamaytirish (DISPATCH), redeem (spend) va earn yozuvlari birga
   //    commit/rollback — balans va zaxira hech qachon buyurtmalar bilan nomuvofiq bo'lmaydi.
-  const orderNumber = generateOrderNumber();
+  const orderNumber = await generateOrderNumber();
   const txResult = await prisma
     .$transaction(async (tx) => {
       // 5a. Promokod — TX ichida tekshirib qo'llaymiz (usedCount race'siz)
@@ -380,6 +521,7 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       const created = await tx.order.create({
         data: {
           number: orderNumber,
+          idempotencyKey,
           userId: currentUser?.id ?? null,
           guestEmail: null, // hozir guest uchun email yo'q
           guestPhone: currentUser ? null : input.phone,
@@ -426,6 +568,23 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       //      Yetmasa InsufficientStockError tashlanadi → butun tx rollback
       //      (buyurtma, coin, promo — hech biri commit bo'lmaydi). Oversell'ning oldi olinadi.
       await deductStockForOrder(tx, stockLines, orderNumber);
+
+      // 5b″. Guruh xaridi — a'zolikni shu buyurtmaga bog'laymiz. `orderId`
+      //      ilgari hech qachon yozilmasdi: guruh to'lgani bilan uning
+      //      qaysi buyurtmaga aylangani ma'lum bo'lmasdi.
+      if (currentUser && groupPriceByProduct.size > 0) {
+        await tx.groupBuyMember.updateMany({
+          where: {
+            userId: currentUser.id,
+            orderId: null,
+            groupBuy: {
+              status: 'COMPLETED',
+              productId: { in: [...groupPriceByProduct.keys()] },
+            },
+          },
+          data: { orderId: created.id },
+        });
+      }
 
       // 5c. Promokod hisoblagichlari — usedCount va UserCoupon redeemedAt
       if (promoApplied && promoId) {
@@ -498,8 +657,32 @@ export async function createOrder(input: CreateOrderInput, currentUser: CurrentU
       // Ombor yetmasa — buyurtma (va barcha yon ta'sirlar) rollback bo'ladi.
       // Sentinel qaytaramiz (409 uchun); boshqa xatolar odatdagidek yuqoriga.
       if (e instanceof InsufficientStockError) return { stockError: e } as const;
+      // Ayni kalit bilan PARALLEL so'rov bizdan oldin ulgurgan (yuqoridagi
+      // tekshiruv — read-then-write, oraliq bor). UNIQUE cheklov ikkinchisini
+      // to'xtatadi; bu xato emas — birinchisining natijasini qaytaramiz.
+      if (
+        idempotencyKey &&
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        return { duplicateKey: true } as const;
+      }
       throw e;
     });
+
+  if ('duplicateKey' in txResult) {
+    const winner = await prisma.order.findUnique({
+      where: { idempotencyKey: idempotencyKey as string },
+      select: replaySelect,
+    });
+    if (winner) return replayResponse(winner);
+    // Kalit band, lekin qator topilmadi — bu kutilmagan holat.
+    throw new OrderError(
+      409,
+      'DUPLICATE_REQUEST',
+      'Buyurtma allaqachon yuborilgan. Buyurtmalar bo`limini tekshiring.',
+    );
+  }
 
   if ('stockError' in txResult) {
     const e = txResult.stockError;

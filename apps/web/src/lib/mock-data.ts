@@ -8,23 +8,6 @@ export type Locale = 'uz' | 'ru' | 'en';
 // ixtiyoriy. Har doim pickLocale() orqali o'qing — indeks bilan emas.
 export type LocalizedText = { uz: string; ru?: string; en?: string };
 
-export interface MockCategory {
-  id: string;
-  slug: string;
-  name: LocalizedText;
-  emoji: string;
-  imageSeed: string;
-  productCount: number;
-}
-
-export interface MockBrand {
-  id: string;
-  slug: string;
-  name: string;
-  logoText: string;
-  logoBg: string;
-}
-
 export interface MockProduct {
   id: string;
   slug: string;
@@ -42,6 +25,16 @@ export interface MockProduct {
   imageUrl?: string;
   badge?: 'NEW' | 'SALE' | 'TOP';
   inStock: boolean;
+  /**
+   * Omborda qolgan HAQIQIY son (barcha variantlar yig'indisi).
+   *
+   * `inStock` faqat "bor/yo'q" deydi, bu esa aniq sonni beradi va past zaxira
+   * ogohlantirishi ("Faqat N ta qoldi") uchun ishlatiladi. Ilgari o'sha
+   * ogohlantirish massivdagi tartib raqamidan yasalardi — mijozga soxta
+   * tanqislik ko'rsatilardi. To'qima demo ma'lumotida bu maydon yo'q, shu
+   * sababli ixtiyoriy: aniqlanmagan bo'lsa ogohlantirish ko'rsatilmaydi.
+   */
+  stock?: number;
   /** Sotuvchi tasdiqlangan (ACTIVE) yoki platform-rasmiy mahsulot. `false` bo'lsa "Tasdiqlangan"
    *  chip ko'rsatilmaydi. Aniqlanmagan (mock demo) = rasmiy deb hisoblanadi. */
   sellerVerified?: boolean;
@@ -52,68 +45,6 @@ export interface MockProduct {
    */
   isGlobal?: boolean;
 }
-
-export const categories: MockCategory[] = [
-  {
-    id: 'c1',
-    slug: 'clothing',
-    name: { uz: 'Kiyim-kechak', ru: 'Одежда', en: 'Clothing' },
-    emoji: '👕',
-    imageSeed: 'clothing-1',
-    productCount: 1280,
-  },
-  {
-    id: 'c2',
-    slug: 'shoes',
-    name: { uz: 'Poyabzal', ru: 'Обувь', en: 'Shoes' },
-    emoji: '👟',
-    imageSeed: 'shoes-1',
-    productCount: 642,
-  },
-  {
-    id: 'c3',
-    slug: 'perfume',
-    name: { uz: 'Atirlar', ru: 'Парфюмерия', en: 'Perfume' },
-    emoji: '🌸',
-    imageSeed: 'perfume-1',
-    productCount: 318,
-  },
-  {
-    id: 'c4',
-    slug: 'cosmetics',
-    name: { uz: 'Kosmetika', ru: 'Косметика', en: 'Cosmetics' },
-    emoji: '💄',
-    imageSeed: 'cosmetics-1',
-    productCount: 521,
-  },
-  {
-    id: 'c5',
-    slug: 'beauty',
-    name: { uz: "Go'zallik", ru: 'Красота', en: 'Beauty' },
-    emoji: '✨',
-    imageSeed: 'beauty-1',
-    productCount: 274,
-  },
-  {
-    id: 'c6',
-    slug: 'accessories',
-    name: { uz: 'Aksessuarlar', ru: 'Аксессуары', en: 'Accessories' },
-    emoji: '👜',
-    imageSeed: 'accessories-1',
-    productCount: 412,
-  },
-];
-
-export const brands: MockBrand[] = [
-  { id: 'b1', slug: 'nike', name: 'Nike', logoText: 'NIKE', logoBg: '#000000' },
-  { id: 'b2', slug: 'adidas', name: 'Adidas', logoText: 'adidas', logoBg: '#000000' },
-  { id: 'b3', slug: 'zara', name: 'Zara', logoText: 'ZARA', logoBg: '#1a1a1a' },
-  { id: 'b4', slug: 'chanel', name: 'Chanel', logoText: 'CHANEL', logoBg: '#000000' },
-  { id: 'b5', slug: 'dior', name: 'Dior', logoText: 'Dior', logoBg: '#000000' },
-  { id: 'b6', slug: 'gucci', name: 'Gucci', logoText: 'GUCCI', logoBg: '#006400' },
-  { id: 'b7', slug: 'prada', name: 'Prada', logoText: 'PRADA', logoBg: '#000000' },
-  { id: 'b8', slug: 'puma', name: 'Puma', logoText: 'PUMA', logoBg: '#000000' },
-];
 
 export const products: MockProduct[] = [
   {

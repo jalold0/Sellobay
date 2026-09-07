@@ -25,10 +25,17 @@ import {
 import { slugify } from '@ecom/utils';
 import { ArrowLeft, ImagePlus, Save } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
-import { mockBrands, mockCategories } from '../../../lib/mock';
+import {
+  createProduct,
+  listBrands,
+  listCategories,
+  type AdminBrand,
+  type AdminCategory,
+} from '../../../lib/auth/client';
 
 interface FormState {
   nameUz: string;
@@ -41,6 +48,9 @@ interface FormState {
   categoryId: string;
   basePrice: string;
   compareAtPrice: string;
+  /** Boshlang'ich zaxira. Busiz mahsulot katalogda ko'rinadi-yu, checkout
+   *  uni "sotuvda yo'q" deb rad etadi (inventory-server.ts). */
+  stock: string;
   weight: string;
   taxRate: string;
   isFeatured: boolean;
@@ -58,6 +68,7 @@ const initialForm: FormState = {
   categoryId: '',
   basePrice: '',
   compareAtPrice: '',
+  stock: '0',
   weight: '',
   taxRate: '0',
   isFeatured: false,
@@ -65,8 +76,27 @@ const initialForm: FormState = {
 };
 
 export default function NewProductPage() {
+  const router = useRouter();
   const [form, setForm] = React.useState<FormState>(initialForm);
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Kategoriya va brend HAQIQIY bazadan. Ilgari bu yerda mock ro'yxat
+  // ishlatilardi va uning id'lari DB UUID'lari bilan mos kelmasdi — aynan
+  // shu sababli yaratish API'ga ulanmagan edi.
+  const [categories, setCategories] = React.useState<AdminCategory[]>([]);
+  const [brands, setBrands] = React.useState<AdminBrand[]>([]);
+
+  React.useEffect(() => {
+    let alive = true;
+    void Promise.all([listCategories(), listBrands()]).then(([cats, brs]) => {
+      if (!alive) return;
+      if (cats.success) setCategories(cats.data.items);
+      if (brs.success) setBrands(brs.data.items);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((s) => ({ ...s, [key]: value }));
@@ -90,16 +120,33 @@ export default function NewProductPage() {
       return;
     }
     setSubmitting(true);
-    // TODO: admin orqali mahsulot yaratish hali API'ga ulanmagan (mock kategoriya/brend
-    // ID'lari DB bilan mos emas). Yolg'on "saqlandi" ko'rsatmaymiz — halol xabar beramiz.
-    await new Promise((r) => setTimeout(r, 300));
-    setSubmitting(false);
-    toast({
-      title: 'Admin orqali yaratish hali ulanmagan',
-      description:
-        "Mahsulotni Sotuvchi paneli (seller.sellobay / :3002) orqali qo'shing — u to'liq ishlaydi (zaxira, variant, rasm).",
-      variant: 'destructive',
+    const res = await createProduct({
+      nameUz: form.nameUz.trim(),
+      nameRu: form.nameRu.trim() || undefined,
+      nameEn: form.nameEn.trim() || undefined,
+      descriptionUz: form.descriptionUz.trim() || undefined,
+      sku: form.sku.trim(),
+      slug: form.slug.trim() || undefined,
+      basePrice: Number(form.basePrice),
+      compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : null,
+      stock: Number(form.stock) || 0,
+      weightGrams: form.weight ? Number(form.weight) : null,
+      categoryId: form.categoryId,
+      brandId: form.brandId || null,
+      status: form.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE',
     });
+    setSubmitting(false);
+
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: 'Mahsulot yaratildi',
+      description: `${res.data.product.sku} · ${res.data.product.status}`,
+      variant: 'success',
+    });
+    router.push('/products');
   };
 
   return (
@@ -226,6 +273,20 @@ export default function NewProductPage() {
                 />
               </div>
               <div>
+                <Label>Boshlang`ich zaxira</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={form.stock}
+                  onChange={(e) => update('stock', e.target.value)}
+                  placeholder="0"
+                />
+                <p className="text-muted-foreground mt-1 text-xs">
+                  0 bo`lsa mahsulot «sotuvda yo`q» bo`lib turadi.
+                </p>
+              </div>
+              <div>
                 <Label>Soliq stavkasi (%)</Label>
                 <Input
                   type="number"
@@ -276,9 +337,9 @@ export default function NewProductPage() {
                     <SelectValue placeholder="Tanlang" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCategories.map((c) => (
+                    {categories.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name.uz}
+                        {c.name.uz ?? c.slug}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -291,7 +352,7 @@ export default function NewProductPage() {
                     <SelectValue placeholder="Tanlang" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockBrands.map((b) => (
+                    {brands.map((b) => (
                       <SelectItem key={b.id} value={b.id}>
                         {b.name}
                       </SelectItem>
