@@ -2,8 +2,11 @@
 .dart_tool/
 .packages
 build/
-pubspec.lock
 *.iml
+
+# pubspec.lock: ILOVALAR uchun commit QILINADI (build takrorlanishi uchun),
+# kutubxona/paket uchun yo'q — shuning uchun faqat shared'niki chiqariladi.
+shared/pubspec.lock
 
 # Platform artefaktlari (flutter create generatsiya qiladi)
 android/.gradle/
