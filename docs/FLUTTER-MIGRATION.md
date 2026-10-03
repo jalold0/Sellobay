@@ -69,6 +69,78 @@ o'chirardi.
 Mahalliy tozalashdan **oldin** yuboring (token hali qo'lda), qisqa timeout
 bilan, va xato bo'lsa chiqishni baribir davom ettiring.
 
+### 401 har doim ham "token eskirgan" degani emas
+
+`/api/auth/login` noto'g'ri parolda ham **401** qaytaradi. Agar
+interceptor har 401 da yangilashga urinsa, noto'g'ri parol kiritgan
+foydalanuvchining **amaldagi** sessiyasi rotatsiya qilinadi: eski refresh
+token bekor bo'ladi va odam tizimdan chiqib ketadi. Shuning uchun quyidagi
+yo'llar yangilashdan **chetlatilgan**:
+
+```
+/api/auth/login   /api/auth/register   /api/auth/refresh
+/api/auth/logout  /api/auth/otp/send   /api/auth/otp/verify
+```
+
+(`ApiClient.noRefreshPaths`. Testi: `api_client_auth_test.dart` →
+"login dagi 401 da YANGILASH urinilmaydi".)
+
+### Rollar faqat `GET /api/auth/me` da bor
+
+`login`, `register` va `otp/verify` javoblaridagi `user` obyektida
+**`roles` YO'Q** — ular qisqartirilgan. Rolga qarab qaror qabul qiladigan
+ilova (masalan kuryer) kirishdan keyin **darhol** `me()` chaqirishi kerak.
+
+Kuryer ilovasida rol mos kelmasa sessiyani **serverda ham** bekor qiling
+(`POST /api/auth/logout`). Faqat mahalliy tozalash yetarli emas: bazada
+30 kunlik yaroqli refresh token qolib ketadi.
+
+### `null` yubormang — maydonni UMUMAN qo'shmang
+
+`registerSchema` da `email`, `phone`, `firstName`, `lastName`
+`.optional()` — ya'ni **yo'q bo'lishi** mumkin, lekin **`null` bo'lishi
+mumkin emas**. `{"email": null}` yuborilsa server `400 VALIDATION` beradi.
+
+Dart tomonida buni `AuthRepository._compact()` qiladi.
+
+### Ro'yxatdan o'tish ikki xil tugaydi
+
+| So'rov             | Javob                                                 |
+| ------------------ | ----------------------------------------------------- |
+| `role: "customer"` | `{ user, pendingApproval: false, tokens }`            |
+| `role: "seller"`   | `{ user, pendingApproval: true }` — **`tokens` YO'Q** |
+
+Sotuvchi admin tasdiqlagunga qadar `status: PENDING` va sessiya olmaydi.
+Javobni ko'r-ko'rona `data.tokens` deb o'qisangiz, shu yerda yiqilasiz.
+
+### OTP
+
+```
+POST /api/auth/otp/send    { phone }
+-> { sent: true, expiresInSec: 300, resendAfterSec: 60 }
+```
+
+`resendAfterSec` — "Qayta yuborish (NNs)" hisoblagichi uchun. Raqamni
+klientda **yozmang**: qoidani server qo'llaydi (`OTP_RESEND_COOLDOWN_SEC`),
+shuning uchun u serverdan keladi.
+
+Cheklovga tushsangiz `429` va `Retry-After` sarlavhasi keladi. IP bo'yicha
+cheklovda ham, telefon bo'yicha cheklovda ham.
+
+```
+POST /api/auth/otp/verify  { phone, code, firstName? }
+```
+
+Bu endpoint **ham kirish, ham ro'yxatdan o'tish**: telefon bazada
+bo'lmasa, server foydalanuvchini o'zi yaratadi (`CUSTOMER` roli bilan).
+Shuning uchun mijoz ilovasida "telefon bilan ro'yxatdan o'tish" degan
+alohida ekran kerak emas — va kuryer ilovasida OTP **berilmaydi**: u
+faqat rolsiz hisob yaratib, darhol rad etilishiga olib kelardi.
+
+Telefon har doim E.164 (`+998XXXXXXXXX`) ko'rinishida yuboriladi —
+`normalizeUzPhone()` (Dart nusxasi `uz_phone.dart` da, `@ecom/utils`
+bilan bir xil, testi bor).
+
 ## Buyurtma yaratish — `Idempotency-Key`
 
 ```
@@ -176,3 +248,37 @@ ARB formatiga o'girmang — u ikkinchi manba yaratadi.
 
 Tarjimani **har doim** `packages/i18n` da o'zgartiring. Paritetni
 `npx tsx scripts/i18n-check.ts` tekshiradi (CI'da ham).
+
+Nusxalar **repo'ga kirmaydi** (`.gitignore`). Shu sababli:
+
+- yangi klondan keyin `flutter test` ishlashidan oldin `pnpm flutter:i18n`
+  ishga tushirilishi kerak (aks holda `Translations.load` tushunarli
+  xabar bilan yiqiladi);
+- CI'dagi `flutter-verify` ishi Node'siz image'da ishlagani uchun o'sha
+  nusxani `cp` bilan oladi (`.gitlab-ci.yml`).
+
+`apps/flutter/*/build/unit_test_assets/` da eski nusxa qolib ketishi
+mumkin: assetlarni o'chirib testni ishlatsangiz, u **baribir o'tadi**.
+Haqiqiy CI holatini sinash uchun `build/` ni ham o'chiring.
+
+## Widget testlar — bitta tuzoq
+
+`testWidgets` tanasi **soxta vaqt zonasida** ishlaydi. U yerda asset
+o'qish (`rootBundle`) hech qachon tugamaydi va test 10 daqiqalik
+timeout'gacha osilib qoladi — xato xabari ham bermaydi.
+
+Tarjimalarni `setUpAll` da yuklang (u oddiy zonada ishlaydi):
+
+```dart
+late LocaleController uz;
+
+setUpAll(() async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  uz = LocaleController(initialLocale: 'uz');
+  await uz.load();
+});
+```
+
+Soxta backend `package:sellobay_shared/testing.dart` da
+(`package:http/testing.dart` naqshi) — ikkala ilova testlari ham o'shandan
+foydalanadi.

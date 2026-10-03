@@ -1,30 +1,126 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sellobay_courier/src/app.dart';
+import 'package:sellobay_shared/sellobay_shared.dart';
+import 'package:sellobay_shared/testing.dart';
 
-import 'package:sellobay_courier/main.dart';
+final _looksLikeKey = RegExp(r'^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$');
+
+void _expectNoRawKeys(WidgetTester tester) {
+  final leaked = tester
+      .widgetList<Text>(find.byType(Text))
+      .map((w) => w.data)
+      .whereType<String>()
+      .where(_looksLikeKey.hasMatch)
+      .toList();
+  expect(leaked, isEmpty, reason: 'tarjima qilinmagan kalitlar: $leaked');
+}
+
+/// Tillar `setUpAll` da yuklanadi: `testWidgets` tanasi soxta vaqt
+/// zonasida ishlaydi va u yerda haqiqiy asset o'qish hech qachon
+/// tugamaydi — test to'xtab qoladi.
+late LocaleController uz;
+
+SellobayRuntime _runtime(FakeBackend backend) {
+  final client = buildClient(backend);
+  return SellobayRuntime(
+    api: client.api,
+    repository: client.repo,
+    auth: AuthController(repository: client.repo, requiredRole: UserRoles.courier),
+    locale: uz,
+  );
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    uz = LocaleController(initialLocale: 'uz');
+    await uz.load();
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('kirish ekrani chiziladi, tugma bo`sh maydonda o`chiq', (tester) async {
+    final backend = FakeBackend((options, body) => apiOk(const {}));
+    final runtime = _runtime(backend);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpWidget(SellobayCourierApp(runtime: runtime));
+    // `restore()` chaqirilmagani uchun holat `unknown` — gate'ni
+    // `signedOut` ga o'tkazamiz.
+    await runtime.auth.restore();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kuryer kabineti'), findsOneWidget);
+    _expectNoRawKeys(tester);
+
+    final button = tester.widget<FilledButton>(find.byType(FilledButton));
+    expect(button.onPressed, isNull, reason: 'bo`sh forma yuborilmasligi kerak');
+
+    await tester.enterText(find.byType(TextField).first, 'kuryer@sellobay.uz');
+    await tester.enterText(find.byType(TextField).last, 'parol123');
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed, isNotNull);
+  });
+
+  testWidgets('mijoz hisobi kiritilmaydi — xabar ko`rsatiladi', (tester) async {
+    // Butun zanjir: login 200 -> me() da rol yo'q -> serverda logout ->
+    // login ekranida kuryerga tushunarli sabab.
+    final backend = FakeBackend((options, body) {
+      switch (options.path) {
+        case '/api/auth/login':
+          return apiOk({'user': userJson(), 'tokens': tokenPair('mijoz')});
+        case '/api/auth/me':
+          return apiOk({
+            'user': userJson(roles: ['CUSTOMER']),
+          });
+        case '/api/auth/logout':
+          return apiOk({'loggedOut': true});
+      }
+      return apiErr(500, 'UNEXPECTED', options.path);
+    });
+    final runtime = _runtime(backend);
+
+    await tester.pumpWidget(SellobayCourierApp(runtime: runtime));
+    await runtime.auth.restore();
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'mijoz@sellobay.uz');
+    await tester.enterText(find.byType(TextField).last, 'parol123');
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Bu hisobda kuryer huquqi yo\'q. Administratorga murojaat qiling.'),
+      findsOneWidget,
+    );
+    // Sessiya serverda ham bekor qilingani — mahalliy tozalash yetarli emas.
+    expect(backend.countOf('/api/auth/logout'), 1);
+    expect(find.text('Bugungi yetkazib berishlar'), findsNothing);
+  });
+
+  testWidgets('kuryer kiradi va topshiriqlar ekraniga o`tadi', (tester) async {
+    final backend = FakeBackend((options, body) {
+      if (options.path == '/api/auth/login') {
+        return apiOk({'user': userJson(), 'tokens': tokenPair('kuryer')});
+      }
+      return apiOk({
+        'user': userJson(roles: ['CUSTOMER', 'COURIER']),
+      });
+    });
+    final runtime = _runtime(backend);
+
+    await tester.pumpWidget(SellobayCourierApp(runtime: runtime));
+    await runtime.auth.restore();
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'kuryer@sellobay.uz');
+    await tester.enterText(find.byType(TextField).last, 'parol123');
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bugungi yetkazib berishlar'), findsOneWidget);
+    expect(find.text('Dilnoza'), findsOneWidget);
+    _expectNoRawKeys(tester);
   });
 }

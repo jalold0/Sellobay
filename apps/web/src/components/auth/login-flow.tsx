@@ -251,8 +251,26 @@ function PhoneOtpForm() {
       return;
     }
     setStage('code');
-    setResendIn(60);
+    // Kutish vaqtini SERVER aytadi (`OTP_RESEND_COOLDOWN_SEC`). Ilgari
+    // bu yerda 60 qo'lda yozilgan edi va serverdagi qoidadan ajralib
+    // ketishi mumkin edi.
+    setResendIn(result.data.resendAfterSec);
     toast({ title: t('codeSent'), description: fullPhone, variant: 'success' });
+  };
+
+  const resendCode = async () => {
+    if (resendIn > 0) return;
+    const result = await sendOtp(fullPhone);
+    if (!result.success) {
+      // Ilgari bu tugma natijani UMUMAN tekshirmasdi: so'rov 429 bilan
+      // rad etilsa ham "Yangi kod yuborildi" deb yozilardi. Hisoblagich
+      // ham xatodan oldin ishga tushardi, ya'ni foydalanuvchi yo'q
+      // kodni 60 soniya kutardi.
+      toast({ title: result.error.message, variant: 'destructive' });
+      return;
+    }
+    setResendIn(result.data.resendAfterSec);
+    toast({ title: t('codeResent'), variant: 'success' });
   };
 
   const verify = async () => {
@@ -336,13 +354,7 @@ function PhoneOtpForm() {
           </button>
           <button
             type="button"
-            onClick={() => {
-              if (resendIn === 0) {
-                setResendIn(60);
-                void sendOtp(fullPhone);
-                toast({ title: t('codeResent'), variant: 'success' });
-              }
-            }}
+            onClick={() => void resendCode()}
             disabled={resendIn > 0}
             className="text-muted-foreground hover:text-brand-ink mt-3 block w-full text-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
           >

@@ -165,6 +165,13 @@ flutter-verify:
         - apps/flutter/shared/pubspec.yaml
   before_script:
     - flutter --version
+    # Tarjimalar GENERATSIYA qilinadi va repo'ga kirmaydi (manba —
+    # packages/i18n/src/locales/). Bu image'da Node yo'q, shuning uchun
+    # `pnpm flutter:i18n` o'rniga o'sha skript bajaradigan nusxa
+    # ko'chirish qo'lda takrorlanadi. Nusxasiz `flutter test` yiqiladi:
+    # ekranlar asset'dan matn o'qiydi.
+    - mkdir -p apps/flutter/shared/assets/i18n
+    - cp packages/i18n/src/locales/*.json apps/flutter/shared/assets/i18n/
   script:
     - |
       set -e

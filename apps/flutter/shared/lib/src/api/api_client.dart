@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-import '../auth/token_store.dart';
+import '../auth/session_store.dart';
 import '../config/app_config.dart';
 import 'api_exception.dart';
 import 'sellobay_config.dart';
@@ -10,8 +10,8 @@ import 'sellobay_config.dart';
 /// Backend — `apps/web` dagi Next.js route'lari. Shartnoma va tuzoqlar:
 /// docs/FLUTTER-MIGRATION.md
 class ApiClient {
-  ApiClient({AppConfig config = AppConfig.fromEnvironment, TokenStore? tokens, Dio? dio})
-      : _tokens = tokens ?? TokenStore(),
+  ApiClient({AppConfig config = AppConfig.fromEnvironment, SessionStore? session, Dio? dio})
+      : session = session ?? SessionStore(),
         _dio = dio ?? Dio() {
     _dio.options
       ..baseUrl = config.apiBaseUrl
@@ -24,7 +24,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final access = await _tokens.readAccess();
+          final access = await this.session.readAccess();
           if (access != null && access.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $access';
           }
@@ -34,7 +34,8 @@ class ApiClient {
           // Access JWT atigi 15 daqiqa yashaydi, refresh esa 30 kun.
           // 401 kelsa bir marta yangilab, so'rovni QAYTA yuboramiz.
           final alreadyRetried = response.requestOptions.extra['sb_retried'] == true;
-          if (response.statusCode != 401 || alreadyRetried) {
+          final isAuthRoute = noRefreshPaths.contains(response.requestOptions.path);
+          if (response.statusCode != 401 || alreadyRetried || isAuthRoute) {
             return handler.next(response);
           }
           final refreshed = await _refreshOnce();
@@ -42,7 +43,7 @@ class ApiClient {
 
           final opts = response.requestOptions;
           opts.extra['sb_retried'] = true;
-          final access = await _tokens.readAccess();
+          final access = await this.session.readAccess();
           if (access != null) opts.headers['Authorization'] = 'Bearer $access';
           handler.resolve(await _dio.fetch<dynamic>(opts));
         },
@@ -51,7 +52,22 @@ class ApiClient {
   }
 
   final Dio _dio;
-  final TokenStore _tokens;
+
+  /// Tokenlar va keshlangan foydalanuvchi. `AuthRepository` shu orqali yozadi.
+  final SessionStore session;
+
+  /// Bu yo'llardagi 401 "token eskirgan" DEGANI EMAS — u "parol noto'g'ri",
+  /// "kod noto'g'ri" yoki "refresh yaroqsiz" degani. Yangilab qayta urinish
+  /// foydasiz bo'lishi ustiga, bekorga refresh rotatsiyasini sarflaydi:
+  /// eski token bekor qilinib, amaldagi sessiya buzilardi.
+  static const noRefreshPaths = <String>{
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/refresh',
+    '/api/auth/logout',
+    '/api/auth/otp/send',
+    '/api/auth/otp/verify',
+  };
 
   /// Bir vaqtda ketayotgan yangilash. SINGLE-FLIGHT shart: bir nechta
   /// so'rov birvarakayiga 401 olsa, har biri alohida yangilashga urinsa
@@ -63,7 +79,7 @@ class ApiClient {
   }
 
   Future<bool> _doRefresh() async {
-    final refresh = await _tokens.readRefresh();
+    final refresh = await session.readRefresh();
     if (refresh == null || refresh.isEmpty) return false;
 
     try {
@@ -75,7 +91,7 @@ class ApiClient {
       );
       if (res.statusCode == 401) {
         // Refresh ham yaroqsiz (30 kun o'tgan yoki bekor qilingan).
-        await _tokens.clear();
+        await session.clear();
         return false;
       }
       final body = res.data;
@@ -83,7 +99,7 @@ class ApiClient {
       final tokens = (body['data'] as Map?)?['tokens'] as Map?;
       if (tokens == null) return false;
 
-      await _tokens.save(
+      await session.save(
         access: tokens['access'] as String,
         refresh: tokens['refresh'] as String,
       );
@@ -103,27 +119,43 @@ class ApiClient {
     final err = body is Map ? body['error'] as Map? : null;
     throw ApiException(
       code: err?['code'] as String? ?? 'UNKNOWN',
-      message: err?['message'] as String? ?? 'Noma`lum xato',
+      message: err?['message'] as String? ?? "Noma'lum xato",
       statusCode: res.statusCode,
+      retryAfterSec: int.tryParse(res.headers.value('retry-after') ?? ''),
     );
   }
 
-  Future<T> get<T>(String path, {Map<String, dynamic>? query}) async =>
-      _unwrap<T>(await _dio.get<dynamic>(path, queryParameters: query));
+  /// Tarmoq uzilishini [NetworkException] ga aylantiradi.
+  ///
+  /// Dio turlari shu qatlamdan tashqariga CHIQMAYDI: ekranlar `dio` ni
+  /// import qilishi shart emas, demak klientni almashtirish ularga tegmaydi.
+  Future<Response<dynamic>> _send(Future<Response<dynamic>> Function() run) async {
+    try {
+      return await run();
+    } on DioException catch (e) {
+      throw NetworkException(e.message);
+    }
+  }
 
-  Future<T> post<T>(String path, {Object? body, Map<String, String>? headers}) async =>
-      _unwrap<T>(await _dio.post<dynamic>(path, data: body, options: Options(headers: headers)));
+  Future<T> get<T>(String path, {Map<String, dynamic>? query}) async =>
+      _unwrap<T>(await _send(() => _dio.get<dynamic>(path, queryParameters: query)));
+
+  Future<T> post<T>(String path, {Object? body, Map<String, String>? headers}) async => _unwrap<T>(
+        await _send(
+          () => _dio.post<dynamic>(path, data: body, options: Options(headers: headers)),
+        ),
+      );
 
   Future<T> put<T>(String path, {Object? body}) async =>
-      _unwrap<T>(await _dio.put<dynamic>(path, data: body));
+      _unwrap<T>(await _send(() => _dio.put<dynamic>(path, data: body)));
 
   Future<T> delete<T>(String path, {Object? body}) async =>
-      _unwrap<T>(await _dio.delete<dynamic>(path, data: body));
+      _unwrap<T>(await _send(() => _dio.delete<dynamic>(path, data: body)));
 
   /// Biznes qoidalari. Ilova ishga tushganda bir marta olinadi.
   Future<SellobayConfig> fetchConfig() async {
     // `/api/config` `{success,data}` ga o'ralmagan — to'g'ridan-to'g'ri JSON.
-    final res = await _dio.get<dynamic>('/api/config');
+    final res = await _send(() => _dio.get<dynamic>('/api/config'));
     return SellobayConfig.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -151,7 +183,7 @@ class ApiClient {
   /// Xato bo'lsa ham mahalliy tozalash BAJARILADI: tarmoq yo'qligi
   /// foydalanuvchini o'z telefonida ushlab qolish uchun sabab emas.
   Future<void> logout() async {
-    final refresh = await _tokens.readRefresh();
+    final refresh = await session.readRefresh();
     if (refresh != null && refresh.isNotEmpty) {
       try {
         await _dio.post<dynamic>(
@@ -167,6 +199,6 @@ class ApiClient {
         // jim o'tamiz
       }
     }
-    await _tokens.clear();
+    await session.clear();
   }
 }

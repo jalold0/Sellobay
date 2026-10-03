@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show FlutterError;
 import 'package:flutter/services.dart' show rootBundle;
 
 /// Tarjimalar — `packages/i18n/src/locales/*.json` dan AYNAN o'sha holida.
@@ -17,8 +18,17 @@ class Translations {
 
   /// Paket assetidan o'qiydi.
   static Future<Translations> load(String locale) async {
-    final raw = await rootBundle
-        .loadString('packages/sellobay_shared/assets/i18n/$locale.json');
+    final String raw;
+    try {
+      raw = await rootBundle.loadString('packages/sellobay_shared/assets/i18n/$locale.json');
+    } on FlutterError {
+      // Fayllar generatsiya qilinadi va repo'da yo'q. "Unable to load
+      // asset" xabari sababni aytmaydi — nima qilish kerakligini aytamiz.
+      throw StateError(
+        'Tarjima fayli topilmadi: $locale.json. '
+        'Ular generatsiya qilinadi — repo ildizidan `pnpm flutter:i18n` ishga tushiring.',
+      );
+    }
     return Translations(locale, json.decode(raw) as Map<String, dynamic>);
   }
 
