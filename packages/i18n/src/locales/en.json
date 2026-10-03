@@ -745,7 +745,14 @@
       "courier": "Courier:",
       "etaUntil": "Est. by {time}",
       "trackOnMap": "Track on map",
-      "reorder": "Reorder"
+      "reorder": "Reorder",
+      "cancelOrder": "Cancel order",
+      "cancelConfirm": "Cancel this order? This cannot be undone.",
+      "cancelled": "Order cancelled",
+      "requestReturn": "Request a return",
+      "returnConfirm": "Request a return for this order?",
+      "returnRequested": "Return request sent",
+      "returnWindow": "Returns are accepted within {days} days of delivery"
     },
     "orderDetail": {
       "back": "Back to orders",

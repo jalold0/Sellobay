@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import 'orders_screen.dart';
+
 /// Buyurtma qabul qilindi.
 ///
 /// Summa SERVER qaytargan `grandTotal` dan ko'rsatiladi, checkout'dagi
@@ -89,9 +91,21 @@ class OrderSuccessScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  // Ildizga qaytamiz — katalog. Buyurtmalar ro'yxati
-                  // ekrani hali yozilmagan, shuning uchun unga havola
-                  // qo'ymaymiz.
+                  onPressed: () {
+                    // Avval ildizga (katalog), keyin buyurtmalar — orqaga
+                    // bosilganda checkout'ga qaytib qolmasin.
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const OrdersScreen()),
+                    );
+                  },
+                  child: Text(context.t('orderSuccess.goToOrders')),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
                   onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
                   child: Text(context.t('cart.continueShopping')),
                 ),

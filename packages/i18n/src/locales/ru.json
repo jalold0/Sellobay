@@ -745,7 +745,14 @@
       "courier": "Курьер:",
       "etaUntil": "Примерно до {time}",
       "trackOnMap": "Следить на карте",
-      "reorder": "Повторить заказ"
+      "reorder": "Повторить заказ",
+      "cancelOrder": "Отменить заказ",
+      "cancelConfirm": "Отменить заказ? Это действие необратимо.",
+      "cancelled": "Заказ отменён",
+      "requestReturn": "Оформить возврат",
+      "returnConfirm": "Оформить возврат заказа?",
+      "returnRequested": "Заявка на возврат отправлена",
+      "returnWindow": "Возврат возможен в течение {days} дней после доставки"
     },
     "orderDetail": {
       "back": "К заказам",

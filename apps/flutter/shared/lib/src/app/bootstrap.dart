@@ -14,6 +14,7 @@ import '../cart/cart_sync.dart';
 import '../catalog/catalog_repository.dart';
 import '../checkout/checkout_repository.dart';
 import '../i18n/locale_controller.dart';
+import '../orders/orders_repository.dart';
 import '../i18n/translations_scope.dart';
 
 /// Ilovaning umri davomida yashaydigan obyektlar.
@@ -27,6 +28,7 @@ class SellobayRuntime {
     required this.cart,
     required this.cartSync,
     required this.checkout,
+    required this.orders,
     required this.config,
   });
 
@@ -38,6 +40,7 @@ class SellobayRuntime {
   final CartStore cart;
   final CartSync cartSync;
   final CheckoutRepository checkout;
+  final OrdersRepository orders;
 
   /// Biznes qoidalari (`GET /api/config`). Yuklangunga qadar `null` —
   /// u holda ekranlar yetkazish narxini KO'RSATMAYDI, taxmin qilmaydi.
@@ -97,6 +100,7 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
     cart: cart,
     cartSync: cartSync,
     checkout: CheckoutRepository(api),
+    orders: OrdersRepository(api),
     config: config,
   );
 }

@@ -5,6 +5,7 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../widgets/cart_button.dart';
 import '../widgets/product_card.dart';
+import 'orders_screen.dart';
 import 'product_screen.dart';
 
 /// Katalog — tizimga kirgandan keyingi asosiy ekran.
@@ -151,6 +152,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
       appBar: AppBar(
         title: Text(context.t('common.appName')),
         actions: [
+          IconButton(
+            tooltip: context.t('profile.ordersPage.title'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const OrdersScreen()),
+            ),
+            icon: const Icon(Icons.receipt_long_outlined),
+          ),
           const CartButton(),
           IconButton(
             tooltip: context.t('profile.signOut'),

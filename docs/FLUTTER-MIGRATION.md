@@ -307,6 +307,53 @@ Nomni `String` deb o'qisangiz `null` chiqadi va punkt nomsiz ko'rinadi.
 
 Hammasida `message` — foydalanuvchiga ko'rsatishga tayyor matn.
 
+## Buyurtmalar
+
+### Ro'yxat va detal — SHAKLI BOSHQA
+
+```
+GET /api/orders       -> { items: [...] }     oxirgi 50 ta
+GET /api/orders/{id}  -> { order: {...} }
+```
+
+Ro'yxatda **summa taqsimoti yo'q**: `subtotal`, `shippingTotal`,
+`discountTotal`, `promoCode`, `paymentStatus`, `editable`, `returnable`
+va pozitsiyalardagi `unitPrice` faqat DETALDA bor. Shuning uchun
+buyurtma sahifasi alohida so'rov qiladi.
+
+### `nameSnapshot` — ko'p tilli va QOTGAN
+
+Pozitsiya nomi buyurtma berilgan paytdagi nusxa (`OrderItem.nameSnapshot`,
+bazada `Json`). Mahsulot keyin nomini o'zgartirsa ham chek o'zgarmaydi —
+katalogdagi joriy nomni ko'rsatmang.
+
+### Bekor qilish va qaytarish qoidasini SERVER biladi
+
+| Amal                           | Shart                                                  | Rad etilsa            |
+| ------------------------------ | ------------------------------------------------------ | --------------------- |
+| `POST /api/orders/{id}/cancel` | status `PENDING`                                       | `409 NOT_CANCELLABLE` |
+| `POST /api/orders/{id}/return` | `returnable` (yetkazilgan sana + `RETURN_WINDOW_DAYS`) | `409`                 |
+
+Ikkalasi ham `{ reason?: string }` qabul qiladi.
+
+Qaytarish oynasini Dart'da HISOBLAMANG — server `returnable` bayrog'ini
+qo'shib yuboradi. Bekor qilish tugmasini esa `status == PENDING` da
+ko'rsating: bosilib, keyin 409 chiqishidan ko'ra ko'rinmagani yaxshi.
+
+### Noma'lum holat
+
+`OrderStatus` enumiga server yangi qiymat qo'shishi mumkin.
+`OrderStatus.fromValue()` noma'lumda `null` qaytaradi, lekin `rawStatus`
+saqlanadi va ekranda XOM qiymat ko'rsatiladi — bo'sh joy emas.
+
+### Sana formati
+
+`formatOrderDate()` — `apps/web/src/lib/format.ts` dagi `formatDate`
+nusxasi (`03 okt, 2026`). Oy nomlari faqat o'zbekcha, chunki web ham
+shunday: ruscha interfeysda ham o'zbekcha oy chiqadi. Bu nuqson, lekin
+ikkala klientda BIR XIL. Tuzatiladigan bo'lsa, oy nomlari
+`packages/i18n` ga ko'chiriladi va ikkala tomon birga o'zgaradi.
+
 ## Variant (rang/o'lcham) — `variantId` SHART
 
 Savatga qo'shganda va buyurtma berganda `variantId` yuboring. Yubormasangiz

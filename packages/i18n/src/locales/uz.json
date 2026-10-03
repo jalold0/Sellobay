@@ -752,7 +752,14 @@
       "courier": "Kuryer:",
       "etaUntil": "Taxminan {time} gacha",
       "trackOnMap": "Xaritada kuzatish",
-      "reorder": "Qayta buyurtma"
+      "reorder": "Qayta buyurtma",
+      "cancelOrder": "Buyurtmani bekor qilish",
+      "cancelConfirm": "Buyurtma bekor qilinsinmi? Bu amalni qaytarib bo'lmaydi.",
+      "cancelled": "Buyurtma bekor qilindi",
+      "requestReturn": "Qaytarishni so'rash",
+      "returnConfirm": "Buyurtmani qaytarishni so'raysizmi?",
+      "returnRequested": "Qaytarish so'rovi yuborildi",
+      "returnWindow": "Yetkazilgandan keyin {days} kun ichida qaytarish mumkin"
     },
     "orderDetail": {
       "back": "Buyurtmalarga qaytish",
