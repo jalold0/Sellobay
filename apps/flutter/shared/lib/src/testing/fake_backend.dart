@@ -209,6 +209,7 @@ SellobayRuntime buildRuntime(
     cart: cartStore,
     checkout: CheckoutRepository(client.api),
     orders: OrdersRepository(client.api),
+    courier: CourierRepository(client.api),
     cartSync: CartSync(
       auth: auth,
       cart: cartStore,

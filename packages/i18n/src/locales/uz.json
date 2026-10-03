@@ -1207,6 +1207,33 @@
     "loginTitle": "Kuryer kabineti",
     "loginSubtitle": "Hisobni administrator yaratadi — bu yerda ro'yxatdan o'tish yo'q",
     "roleRequired": "Bu hisobda kuryer huquqi yo'q. Administratorga murojaat qiling.",
-    "deliveriesTitle": "Bugungi yetkazib berishlar"
+    "deliveriesTitle": "Bugungi yetkazib berishlar",
+    "tabMine": "Mening topshiriqlarim",
+    "tabAvailable": "Bo'sh topshiriqlar",
+    "claim": "O'zimga olish",
+    "claimed": "Topshiriq sizga biriktirildi",
+    "noMine": "Sizda faol topshiriq yo'q",
+    "noAvailable": "Hozircha bo'sh topshiriq yo'q",
+    "recipient": "Qabul qiluvchi",
+    "address": "Manzil",
+    "failReason": "Sababi",
+    "failReasonHint": "Nega yetkazib bo'lmadi?",
+    "statusUpdated": "Holat yangilandi",
+    "status": {
+      "ASSIGNED": "Biriktirildi",
+      "PICKED_UP": "Olindi",
+      "IN_TRANSIT": "Yo'lda",
+      "ARRIVED": "Yetib keldi",
+      "DELIVERED": "Yetkazildi",
+      "FAILED": "Bajarilmadi",
+      "RETURNED": "Qaytarildi"
+    },
+    "action": {
+      "PICKED_UP": "Buyurtmani oldim",
+      "IN_TRANSIT": "Yo'lga chiqdim",
+      "ARRIVED": "Yetib keldim",
+      "DELIVERED": "Yetkazdim",
+      "FAILED": "Yetkazib bo'lmadi"
+    }
   }
 }

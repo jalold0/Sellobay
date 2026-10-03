@@ -28,6 +28,8 @@ export 'src/catalog/taxonomy.dart';
 export 'src/checkout/checkout_models.dart';
 export 'src/checkout/checkout_repository.dart';
 export 'src/config/app_config.dart';
+export 'src/courier/courier_repository.dart';
+export 'src/courier/delivery_models.dart';
 export 'src/i18n/locale_controller.dart';
 export 'src/i18n/translations.dart';
 export 'src/i18n/translations_scope.dart';

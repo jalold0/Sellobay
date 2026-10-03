@@ -354,6 +354,72 @@ shunday: ruscha interfeysda ham o'zbekcha oy chiqadi. Bu nuqson, lekin
 ikkala klientda BIR XIL. Tuzatiladigan bo'lsa, oy nomlari
 `packages/i18n` ga ko'chiriladi va ikkala tomon birga o'zgaradi.
 
+## Kuryer: yetkazishlar
+
+### Bu bo'lim YANGI — oldin model bor, foydalanuvchi yo'q edi
+
+`Delivery`, `DeliveryEvent` va `Courier` jadvallari sxemada bor edi,
+lekin jonli kodda ularga **hech kim yozmasdi** (yagona havola
+karantindagi `graveyard/api` da edi). Expo kuryer ilovasi esa qotib
+yozilgan ikkita buyurtmani ko'rsatardi.
+
+Endi zanjir to'liq:
+
+1. buyurtma yaratilganda `Delivery` yozuvi ochiladi
+   (`orders-server.ts`, buyurtma bilan BITTA tranzaksiyada) —
+   `PICKUP_POINT` dan tashqari;
+2. kuryer uni ro'yxatdan oladi (`claim`);
+3. holatni oldinga suradi; `DELIVERED` da buyurtmaning o'zi ham
+   yopiladi.
+
+```
+GET  /api/courier/deliveries              -> { mine: [...], available: [...] }
+POST /api/courier/deliveries/{id}/claim   -> { delivery }
+POST /api/courier/deliveries/{id}/status  -> { delivery }
+     body: { status, note?, latitude?, longitude? }
+```
+
+Hammasi auth VA `COURIER` rolini talab qiladi (`403 NOT_A_COURIER`).
+
+### "Egasiz" ekanini HOLAT emas, `courierId` belgilaydi
+
+Yangi yozuv `ASSIGNED` holatida bo'ladi — sxemadagi standart qiymat shu
+va enumda "yaratildi" degan alohida qiymat yo'q (uni qo'shish migratsiya
+talab qilardi). Shuning uchun bo'sh topshiriq = `courierId === null`.
+
+### O'tish qoidalarini KLIENT bilmaydi
+
+Server har bir yozuvga `nextStatuses` ni qo'shib yuboradi va ilova
+tugmalarni faqat shundan quradi. Jadval `courier-server.ts` da, testi
+`courier-server.test.ts` da:
+
+```
+ASSIGNED   -> PICKED_UP | FAILED
+PICKED_UP  -> IN_TRANSIT | FAILED
+IN_TRANSIT -> ARRIVED | DELIVERED | FAILED
+ARRIVED    -> DELIVERED | FAILED
+DELIVERED / FAILED / RETURNED -> (yakuniy)
+```
+
+Orqaga qaytish yo'q: «yetkazildi» dan «yo'lda» ga qaytarish mijozning
+buyurtma tarixini buzardi. `RETURNED` ni kuryer qo'ya olmaydi.
+
+`FAILED` uchun `note` MAJBURIY (`400 REASON_REQUIRED`) — ilova ham
+oldindan so'raydi.
+
+### Poyga holati
+
+Ikki kuryer bir vaqtda `claim` bossa, server `courierId: null` sharti
+bilan `updateMany` qiladi va ikkinchisi `409 ALREADY_CLAIMED` oladi.
+Bitta topshiriq ikki kishiga tushmaydi.
+
+### `DELIVERED` buyurtmani ham yopadi
+
+Kuryer «yetkazdim» desa, `Order.status` ham `DELIVERED` bo'ladi va
+`OrderStatusHistory` ga yozuv tushadi — aks holda mijoz qo'lida
+topshirilgan buyurtmani ekranda «Yo'lda» deb ko'rib turardi. Bekor
+qilingan yoki allaqachon yopilgan buyurtma qayta ochilmaydi.
+
 ## Variant (rang/o'lcham) — `variantId` SHART
 
 Savatga qo'shganda va buyurtma berganda `variantId` yuboring. Yubormasangiz

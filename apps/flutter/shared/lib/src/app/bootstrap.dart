@@ -12,6 +12,7 @@ import '../cart/cart_scope.dart';
 import '../cart/cart_store.dart';
 import '../cart/cart_sync.dart';
 import '../catalog/catalog_repository.dart';
+import '../courier/courier_repository.dart';
 import '../checkout/checkout_repository.dart';
 import '../i18n/locale_controller.dart';
 import '../orders/orders_repository.dart';
@@ -29,6 +30,7 @@ class SellobayRuntime {
     required this.cartSync,
     required this.checkout,
     required this.orders,
+    required this.courier,
     required this.config,
   });
 
@@ -41,6 +43,9 @@ class SellobayRuntime {
   final CartSync cartSync;
   final CheckoutRepository checkout;
   final OrdersRepository orders;
+
+  /// Kuryer ilovasi uchun. Mijoz ilovasida ishlatilmaydi.
+  final CourierRepository courier;
 
   /// Biznes qoidalari (`GET /api/config`). Yuklangunga qadar `null` —
   /// u holda ekranlar yetkazish narxini KO'RSATMAYDI, taxmin qilmaydi.
@@ -101,6 +106,7 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
     cartSync: cartSync,
     checkout: CheckoutRepository(api),
     orders: OrdersRepository(api),
+    courier: CourierRepository(api),
     config: config,
   );
 }
