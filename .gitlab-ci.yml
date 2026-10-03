@@ -35,7 +35,7 @@ variables:
 # Node ishlatadigan har ikki job uchun umumiy tayyorgarlik.
 #
 # `apt-get install openssl` NEGA KERAK: Prisma query engine'i libssl'ga bog'liq,
-# `node:20-bookworm-slim` esa openssl paketisiz keladi. Bo'lmasa Prisma versiyani
+# `node:24-bookworm-slim` esa openssl paketisiz keladi. Bo'lmasa Prisma versiyani
 # ANIQLAY OLMAYDI va jim ravishda "openssl-1.1.x" ga qaytadi, keyin engine .so
 # faylini yuklashda yiqiladi (bookworm'da OpenSSL 3.x, libssl.so.1.1 yo'q).
 #
@@ -58,7 +58,7 @@ variables:
 
 lint-typecheck-build:
   stage: verify
-  image: node:20-bookworm-slim
+  image: node:24-bookworm-slim
   # GitHub'dagi `concurrency: cancel-in-progress` ekvivalenti
   interruptible: true
   # `rules` yozilmasa job MR pipeline'ida ishga tushmaydi (default only: branches, tags).
@@ -104,7 +104,7 @@ lint-typecheck-build:
 # (masked, protected). Qoyilmasa job yiqiladi - bu ataylab, jim otib ketmasin.
 migrate-deploy:
   stage: deploy
-  image: node:20-bookworm-slim
+  image: node:24-bookworm-slim
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
