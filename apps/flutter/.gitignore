@@ -1,0 +1,20 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+pubspec.lock
+*.iml
+
+# Platform artefaktlari (flutter create generatsiya qiladi)
+android/.gradle/
+android/local.properties
+ios/Pods/
+ios/.symlinks/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Tarjimalar — GENERATSIYA (pnpm flutter:i18n).
+# Commit QILINMAYDI: manba `packages/i18n/src/locales/`, nusxa esa eskirib
+# qolsa Flutter jim ravishda eski matnni ko'rsatardi. Flutter loyihasi
+# skaffold qilingach CI'ga sinxronlik tekshiruvi qo'shiladi.
+shared/assets/i18n/

@@ -146,3 +146,37 @@ docker-build-push:
     - docker build -f "apps/$APP/Dockerfile" -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
     - docker push "$IMAGE:$TAG"
     - docker push "$IMAGE:latest"
+
+# Flutter ilovalari (apps/flutter) — alohida toolchain, alohida job.
+#
+# `rules: exists:` — job faqat pubspec paydo bo'lgandan keyin pipeline'ga
+# qo'shiladi. Hozircha loyiha skaffold qilinmagan (Flutter o'rnatilishi
+# kutilmoqda), shuning uchun bu job hali yaratilmaydi va pipeline'ni
+# yiqitmaydi.
+#
+# `apps/flutter/**` pnpm workspace'dan chiqarilgan, ya'ni yuqoridagi
+# `lint-typecheck-build` bu kodga tegmaydi.
+flutter-verify:
+  stage: verify
+  image: ghcr.io/cirruslabs/flutter:stable
+  interruptible: true
+  rules:
+    - exists:
+        - apps/flutter/shared/pubspec.yaml
+  before_script:
+    - flutter --version
+  script:
+    - |
+      set -e
+      cd apps/flutter
+      for d in shared customer courier; do
+        [ -f "$d/pubspec.yaml" ] || continue
+        echo "=== $d ==="
+        (
+          cd "$d"
+          flutter pub get
+          dart analyze
+          # Test papkasi bo'lmasa `flutter test` xato beradi — o'tkazib yuboramiz.
+          if [ -d test ]; then flutter test; else echo "(test yo'q)"; fi
+        )
+      done
