@@ -84,3 +84,6 @@ android/app/build/
 
 # Dizayn maketi ishchi fayllari (seed qilingan HTML 2.5MB)
 .design/
+
+# CI: pinlangan Flutter SDK (.gitlab-ci.yml dagi flutter-verify)
+.flutter-sdk/
