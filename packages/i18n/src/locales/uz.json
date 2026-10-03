@@ -26,7 +26,9 @@
     "to": "gacha",
     "yes": "Ha",
     "no": "Yo'q",
-    "all": "Barchasi"
+    "all": "Barchasi",
+    "networkError": "Internet aloqasi yo'q. Ulanishni tekshiring.",
+    "notConnectedYet": "Bu bo'lim hali ulanmagan"
   },
   "utilityBar": {
     "deliveryPromise": "O'zbekiston bo'ylab 24/7 yetkazib berish",
@@ -601,7 +603,8 @@
     "termsPrefix": "Davom etish orqali siz",
     "offerLink": "Oferta",
     "termsJoin": "va",
-    "termsAgreeSuffix": "ga rozilik bildirasiz"
+    "termsAgreeSuffix": "ga rozilik bildirasiz",
+    "identifier": "Telefon yoki email"
   },
   "profile": {
     "title": "Shaxsiy ma'lumotlar",
@@ -1191,5 +1194,12 @@
     "cant2": "Kosmetika — sinov uchun ochilgan",
     "cant3": "Ichki kiyim, paypoq",
     "cant4": "Sovg'a sertifikatlari"
+  },
+  "courier": {
+    "appName": "Sellobay Kuryer",
+    "loginTitle": "Kuryer kabineti",
+    "loginSubtitle": "Hisobni administrator yaratadi — bu yerda ro'yxatdan o'tish yo'q",
+    "roleRequired": "Bu hisobda kuryer huquqi yo'q. Administratorga murojaat qiling.",
+    "deliveriesTitle": "Bugungi yetkazib berishlar"
   }
 }

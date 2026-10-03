@@ -69,10 +69,13 @@ export function registerWithEmail(input: {
 }
 
 export function sendOtp(phone: string) {
-  return api<{ sent: boolean; expiresInSec: number }>('/api/auth/otp/send', {
-    method: 'POST',
-    body: JSON.stringify({ phone }),
-  });
+  return api<{ sent: boolean; expiresInSec: number; resendAfterSec: number }>(
+    '/api/auth/otp/send',
+    {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    },
+  );
 }
 
 export function verifyOtp(phone: string, code: string, firstName?: string) {

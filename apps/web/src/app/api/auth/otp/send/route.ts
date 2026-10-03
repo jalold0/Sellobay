@@ -5,14 +5,14 @@ import { normalizeUzPhone } from '@ecom/utils';
 import { prisma } from '@/lib/db';
 import { otpSendSchema } from '@/lib/auth/validators';
 import { apiError, apiOk } from '@/lib/auth/errors';
-import { OTP_TTL_MINUTES } from '@/lib/auth/constants';
+import { OTP_RESEND_COOLDOWN_SEC, OTP_TTL_MINUTES } from '@/lib/auth/constants';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  // SMS-spam himoyasi (IP bo'yicha) — per-telefon 60s cheklov pastda DB'da bor
+  // SMS-spam himoyasi (IP bo'yicha) — per-telefon cheklov pastda DB'da bor
   const limited = await enforceRateLimit(req, 'otp-send', { limit: 5, windowSec: 60 });
   if (limited) return limited;
 
@@ -26,17 +26,25 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'VALIDATION', "Telefon raqami noto'g'ri (+998XXXXXXXXX kerak)");
   }
 
-  // Spam himoyasi: 60 soniya ichida bitta marta
+  // Spam himoyasi: telefon bo'yicha cooldown ichida bitta marta
   const recent = await prisma.otpCode.findFirst({
     where: {
       recipient: normalized,
       channel: 'PHONE',
-      createdAt: { gte: new Date(Date.now() - 60 * 1000) },
+      createdAt: { gte: new Date(Date.now() - OTP_RESEND_COOLDOWN_SEC * 1000) },
     },
     orderBy: { createdAt: 'desc' },
   });
   if (recent) {
-    return apiError(429, 'RATE_LIMIT', "Iltimos, 60 sekunddan keyin urinib ko'ring");
+    const res = apiError(
+      429,
+      'RATE_LIMIT',
+      `Iltimos, ${OTP_RESEND_COOLDOWN_SEC} sekunddan keyin urinib ko'ring`,
+    );
+    // Klient hisoblagichni shu sarlavhadan oladi. Ilgari bu yo'lda
+    // `Retry-After` yo'q edi — faqat IP bo'yicha cheklovda bor edi.
+    res.headers.set('Retry-After', String(OTP_RESEND_COOLDOWN_SEC));
+    return res;
   }
 
   const code = generateOtpCode(6);
@@ -59,5 +67,10 @@ export async function POST(req: NextRequest) {
     console.log(`[SMS-MOCK] ${normalized}: Sellobay tasdiqlash kodi ${code}`);
   }
 
-  return apiOk({ sent: true, expiresInSec: OTP_TTL_MINUTES * 60 });
+  return apiOk({
+    sent: true,
+    expiresInSec: OTP_TTL_MINUTES * 60,
+    // Qayta yuborish tugmasi shu qiymat bilan bloklanadi.
+    resendAfterSec: OTP_RESEND_COOLDOWN_SEC,
+  });
 }

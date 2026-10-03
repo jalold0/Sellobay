@@ -56,3 +56,14 @@ export const COOKIE_REFRESH = 'sb_rt';
 
 export const OTP_TTL_MINUTES = 5;
 export const OTP_MAX_ATTEMPTS = 5;
+
+/**
+ * Ikki SMS orasidagi eng kam vaqt (soniya).
+ *
+ * Bu qoidani `/api/auth/otp/send` qo'llaydi, lekin uni BILISHI kerak
+ * bo'lgan tomon — klient: "Qayta yuborish (NNs)" hisoblagichi shunga
+ * qarab ishlaydi. Ilgari raqam uch joyda qo'lda yozilgan edi (route,
+ * web login-flow, mobil) va ular bir-biridan ajralib ketishi mumkin
+ * edi. Endi javobda `resendAfterSec` bo'lib qaytadi.
+ */
+export const OTP_RESEND_COOLDOWN_SEC = 60;
