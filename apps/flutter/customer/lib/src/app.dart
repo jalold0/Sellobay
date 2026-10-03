@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/catalog_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
@@ -39,7 +39,7 @@ class AuthGate extends StatelessWidget {
       // ko'rsatib yuborardi.
       AuthStatus.unknown => const SplashScreen(),
       AuthStatus.signedOut => const LoginScreen(),
-      AuthStatus.signedIn => const HomeScreen(),
+      AuthStatus.signedIn => const CatalogScreen(),
     };
   }
 }

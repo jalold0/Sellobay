@@ -141,6 +141,75 @@ Telefon har doim E.164 (`+998XXXXXXXXX`) ko'rinishida yuboriladi —
 `normalizeUzPhone()` (Dart nusxasi `uz_phone.dart` da, `@ecom/utils`
 bilan bir xil, testi bor).
 
+## Katalog
+
+### Javob shakli BOSHQACHA — `{success,data}` yo'q
+
+Katalog route'lari auth route'laridan oldin yozilgan va foydali yukni
+to'g'ridan-to'g'ri qaytaradi:
+
+```
+GET /api/products   -> { items, total, page, limit, hasMore }
+GET /api/products/{slug} -> { ...mahsulot }
+GET /api/categories -> { items }
+GET /api/brands     -> { items }
+xato               -> { "error": "..." }   (404 / 500)
+```
+
+Shuning uchun Dart tomonida `ApiClient.getRaw()` ishlatiladi. `get()` bilan
+chaqirsangiz muvaffaqiyatli javob ham xato deb qabul qilinadi (`success`
+maydoni yo'q) va tushunarsiz `UNKNOWN` chiqadi — testi bor.
+
+### `name` ko'p tilli, `brand.name` esa ODDIY SATR
+
+`Product.name` va `Category.name` bazada `Json` (`{ uz, ru, en }`),
+`Brand.name` esa `String`. Ularni aralashtirib yubormang.
+
+Ko'p tilli matnni har doim `LocalizedText.pick(locale)` orqali o'qing.
+Zaxira zanjiri `@ecom/i18n` dagi `pickLocalized()` bilan bir xil, shu
+jumladan **bo'sh satr ham qiymat** hisoblanadi: aks holda bitta mahsulot
+saytda bo'sh, telefonda to'ldirilgan bo'lib ko'rinardi.
+
+### Pul — satr
+
+`price` va `oldPrice` `Decimal(14,2)` dan satr bo'lib keladi
+(`"990000"`). `double` ga o'tkazmang — `parseMoney()` bilan `Decimal`
+qiling, ko'rsatish uchun `formatMoney()`.
+
+### Rasm manzili XOM holda keladi
+
+`imageUrl` bazadagi qiymat va u ko'pincha
+`picsum.photos/seed/<seed>/...` bo'ladi — bu seed ma'lumotidan qolgan
+TASODIFIY rasm xizmati, mahsulotga aloqasi yo'q. Ko'rsatishdan oldin
+`resolveProductImageUrl()` dan o'tkazing: u seed'dan
+`<base>/products/<seed>.jpg` quradi.
+
+TS tomonidagi `LOCAL_PRODUCT_IMAGE_SEEDS` ro'yxati ATAYLAB
+ko'chirilmagan — u repodagi fayllar ro'yxati va o'z izohida
+"vaqtinchalik" deb belgilangan. Ikki tilda qo'lda yuritilsa ajralib
+ketardi. O'rniga manzil quriladi, fayl topilmasa `ProductThumbnail`
+mahalliy belgini chizadi.
+
+### `scope` standart **LOCAL**
+
+Global tovar (Xitoy, 15-17 kun) lokal ro'yxatga tushmasligi kerak:
+mijoz "ertaga keladi" deb o'ylab buyurtma bermasin. Global kerak bo'lsa
+`?scope=GLOBAL` yoki `ALL` deb aniq so'raladi.
+
+### `/api/categories` BO'SH kategoriyalarni ham qaytaradi
+
+U `fetchTopCategories()` ni beradi — admin bo'sh kategoriyani ko'rishi
+kerak. Mijoz ekranida `productCount > 0` bo'yicha filtrlang
+(`CatalogRepository.fetchStorefrontCategories()`), aks holda chip bosilib
+bo'sh ro'yxat chiqadi. Web'da bu qoida `fetchStorefrontCategories()` da.
+
+### Flutter WEB build API'ga ulana olmaydi
+
+Backend'da CORS sarlavhalari **umuman yo'q**. Native ilova (Android/iOS)
+uchun bu muammo emas — brauzerning same-origin qoidasi faqat web'da
+ishlaydi. Ya'ni `flutter run -d chrome` bilan katalog bo'sh qoladi.
+Sinash uchun Android emulyatori yoki haqiqiy qurilma kerak.
+
 ## Buyurtma yaratish — `Idempotency-Key`
 
 ```
@@ -282,3 +351,14 @@ setUpAll(() async {
 Soxta backend `package:sellobay_shared/testing.dart` da
 (`package:http/testing.dart` naqshi) — ikkala ilova testlari ham o'shandan
 foydalanadi.
+
+Yana ikkita tuzoq:
+
+- **`pumpAndSettle` + spinner = osilib qolish.** `CircularProgressIndicator`
+  cheksiz animatsiya rejalashtiradi, `pumpAndSettle` esa animatsiya
+  tugashini kutadi. Yuklanish holatini sinayotganda belgilangan sondagi
+  `pump()` chaqiring.
+- **Standart test ekrani 800x600** — planshetga o'xshaydi. To'rdagi
+  kartochkalar ekrandan chiqib ketadi va `tap` nishonga tegmaydi.
+  Telefon o'lchamini qo'ying (`tester.view.physicalSize`) — bu bir
+  vaqtning o'zida tor ekrandagi joylashuv xatolarini ham ushlaydi.

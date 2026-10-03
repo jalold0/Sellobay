@@ -21,15 +21,8 @@ void _expectNoRawKeys(WidgetTester tester) {
 /// tugamaydi — test to'xtab qoladi.
 late LocaleController uz;
 
-SellobayRuntime _runtime(FakeBackend backend) {
-  final client = buildClient(backend);
-  return SellobayRuntime(
-    api: client.api,
-    repository: client.repo,
-    auth: AuthController(repository: client.repo, requiredRole: UserRoles.courier),
-    locale: uz,
-  );
-}
+SellobayRuntime _runtime(FakeBackend backend) =>
+    buildRuntime(backend, locale: uz, requiredRole: UserRoles.courier);
 
 void main() {
   setUpAll(() async {

@@ -56,6 +56,10 @@ class ApiClient {
   /// Tokenlar va keshlangan foydalanuvchi. `AuthRepository` shu orqali yozadi.
   final SessionStore session;
 
+  /// Backend manzili. Rasm manzillarini to'liq qilish uchun kerak
+  /// (`resolveProductImageUrl`) — server nisbiy yo'l qaytaradi.
+  String get baseUrl => _dio.options.baseUrl;
+
   /// Bu yo'llardagi 401 "token eskirgan" DEGANI EMAS — u "parol noto'g'ri",
   /// "kod noto'g'ri" yoki "refresh yaroqsiz" degani. Yangilab qayta urinish
   /// foydasiz bo'lishi ustiga, bekorga refresh rotatsiyasini sarflaydi:
@@ -140,6 +144,30 @@ class ApiClient {
   Future<T> get<T>(String path, {Map<String, dynamic>? query}) async =>
       _unwrap<T>(await _send(() => _dio.get<dynamic>(path, queryParameters: query)));
 
+  /// `{success,data}` ga O'RALMAGAN javoblar uchun.
+  ///
+  /// Katalog route'lari (`/api/products`, `/api/categories`, `/api/brands`,
+  /// `/api/config`) foydali yukni to'g'ridan-to'g'ri qaytaradi, xatoni esa
+  /// `{ "error": "..." }` ko'rinishida. Ular auth route'laridan oldin
+  /// yozilgan va shakli boshqacha.
+  ///
+  /// Bularni [get] bilan chaqirsangiz, muvaffaqiyatli javob ham xato deb
+  /// qabul qilinadi (`success` maydoni yo'q) va tushunarsiz `UNKNOWN`
+  /// chiqadi — shuning uchun alohida metod.
+  Future<T> getRaw<T>(String path, {Map<String, dynamic>? query}) async {
+    final res = await _send(() => _dio.get<dynamic>(path, queryParameters: query));
+    final status = res.statusCode ?? 0;
+    if (status >= 200 && status < 300) return res.data as T;
+
+    final body = res.data;
+    throw ApiException(
+      code: status == 404 ? 'NOT_FOUND' : 'HTTP_$status',
+      message: (body is Map ? body['error'] as String? : null) ?? "Noma'lum xato",
+      statusCode: res.statusCode,
+      retryAfterSec: int.tryParse(res.headers.value('retry-after') ?? ''),
+    );
+  }
+
   Future<T> post<T>(String path, {Object? body, Map<String, String>? headers}) async => _unwrap<T>(
         await _send(
           () => _dio.post<dynamic>(path, data: body, options: Options(headers: headers)),
@@ -153,11 +181,8 @@ class ApiClient {
       _unwrap<T>(await _send(() => _dio.delete<dynamic>(path, data: body)));
 
   /// Biznes qoidalari. Ilova ishga tushganda bir marta olinadi.
-  Future<SellobayConfig> fetchConfig() async {
-    // `/api/config` `{success,data}` ga o'ralmagan — to'g'ridan-to'g'ri JSON.
-    final res = await _send(() => _dio.get<dynamic>('/api/config'));
-    return SellobayConfig.fromJson(res.data as Map<String, dynamic>);
-  }
+  Future<SellobayConfig> fetchConfig() async =>
+      SellobayConfig.fromJson(await getRaw<Map<String, dynamic>>('/api/config'));
 
   /// Buyurtma yaratish.
   ///

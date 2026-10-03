@@ -22,6 +22,9 @@ class FakeBackend implements HttpClientAdapter {
   /// Yuborilgan body'lar — `calls` bilan bir xil indeksda.
   final List<Map<String, dynamic>?> bodies = <Map<String, dynamic>?>[];
 
+  /// Yuborilgan so'rov parametrlari — `calls` bilan bir xil indeksda.
+  final List<Map<String, dynamic>?> queries = <Map<String, dynamic>?>[];
+
   int countOf(String path) => calls.where((c) => c == path).length;
 
   @override
@@ -43,6 +46,7 @@ class FakeBackend implements HttpClientAdapter {
     }
     calls.add(options.path);
     bodies.add(body);
+    queries.add(options.queryParameters);
     return handler(options, body);
   }
 
@@ -52,6 +56,19 @@ class FakeBackend implements HttpClientAdapter {
 
 /// `{ success: true, data: ... }`.
 ResponseBody apiOk(Map<String, dynamic> data) => _body({'success': true, 'data': data}, 200);
+
+/// Xom JSON matn — katalog route'lari kabi O'RALMAGAN javoblar uchun.
+///
+/// Matn sifatida beriladi, chunki testlar serverdan AYNAN ko'chirilgan
+/// javobni ishlatadi: qayta yozilgan `Map` shaklni emas, tasavvurni
+/// tekshirardi.
+ResponseBody rawJson(String body, {int status = 200}) => ResponseBody.fromString(
+      body,
+      status,
+      headers: {
+        Headers.contentTypeHeader: ['application/json'],
+      },
+    );
 
 /// `{ success: false, error: { code, message } }`.
 ResponseBody apiErr(
@@ -160,4 +177,24 @@ class MemorySessionStore extends SessionStore {
   final dio = Dio()..httpClientAdapter = backend;
   final api = ApiClient(dio: dio, session: store);
   return (api: api, repo: AuthRepository(api), store: store);
+}
+
+/// Soxta backendga ulangan to'liq runtime — vidjet testlari uchun.
+///
+/// [locale] ALLAQACHON yuklangan bo'lishi kerak. Uni `setUpAll` da
+/// yuklang: `testWidgets` tanasi soxta vaqt zonasida ishlaydi va u
+/// yerda asset o'qish hech qachon tugamaydi.
+SellobayRuntime buildRuntime(
+  FakeBackend backend, {
+  required LocaleController locale,
+  String? requiredRole,
+}) {
+  final client = buildClient(backend);
+  return SellobayRuntime(
+    api: client.api,
+    repository: client.repo,
+    auth: AuthController(repository: client.repo, requiredRole: requiredRole),
+    locale: locale,
+    catalog: CatalogRepository(client.api),
+  );
 }

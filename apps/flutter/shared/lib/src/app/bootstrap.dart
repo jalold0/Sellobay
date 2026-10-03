@@ -6,6 +6,7 @@ import '../api/api_client.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_repository.dart';
 import '../auth/auth_scope.dart';
+import '../catalog/catalog_repository.dart';
 import '../i18n/locale_controller.dart';
 import '../i18n/translations_scope.dart';
 
@@ -16,12 +17,14 @@ class SellobayRuntime {
     required this.repository,
     required this.auth,
     required this.locale,
+    required this.catalog,
   });
 
   final ApiClient api;
   final AuthRepository repository;
   final AuthController auth;
   final LocaleController locale;
+  final CatalogRepository catalog;
 
   void dispose() {
     auth.dispose();
@@ -44,7 +47,13 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
   await locale.load();
   unawaited(auth.restore());
 
-  return SellobayRuntime(api: api, repository: repository, auth: auth, locale: locale);
+  return SellobayRuntime(
+    api: api,
+    repository: repository,
+    auth: auth,
+    locale: locale,
+    catalog: CatalogRepository(api),
+  );
 }
 
 /// Ishga tushirilgan obyektlarni ekranlarga uzatadi.

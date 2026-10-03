@@ -17,19 +17,16 @@ late LocaleController ru;
 
 Widget wrap(Widget screen, {LocaleController? locale, FakeBackend? backend}) {
   final loc = locale ?? uz;
-  final client = buildClient(backend ?? FakeBackend((options, body) => apiOk(const {})));
-  final auth = AuthController(repository: client.repo);
+  final runtime = buildRuntime(
+    backend ?? FakeBackend((options, body) => apiOk(const {})),
+    locale: loc,
+  );
   return SellobayRuntimeScope(
-    runtime: SellobayRuntime(
-      api: client.api,
-      repository: client.repo,
-      auth: auth,
-      locale: loc,
-    ),
+    runtime: runtime,
     child: TranslationsScope(
       translations: loc.translations!,
       child: AuthScope(
-        controller: auth,
+        controller: runtime.auth,
         child: MaterialApp(theme: buildSellobayTheme(), home: screen),
       ),
     ),
