@@ -225,6 +225,88 @@ yo'qoladi.
 Server kalitni xom holda saqlamaydi: buyurtma egasi bilan birga hash
 qiladi. Ya'ni ikki mijozning bir xil kaliti to'qnashmaydi.
 
+## Checkout
+
+### `Idempotency-Key` CHECKOUT BOSHIDA bir marta
+
+Kalit ekran ochilganda hosil qilinadi va qayta urinishlarda
+**o'zgarmaydi**. Har yuborishda yangilansa ma'nosi yo'qoladi: tarmoq
+uzilib qayta urinilganda server ikkinchi buyurtma yaratardi (zaxira ikki
+marta kamayardi, Sello Coins ikki marta sarflanardi).
+
+Server ayni kalitni ikkinchi marta ko'rsa yangi buyurtma yaratmaydi —
+birinchisini `replayed: true` bilan qaytaradi. **Bu xato emas**, uni
+muvaffaqiyat deb qabul qiling.
+
+### To'lov usullari ro'yxatini KLIENTDA yozmang
+
+```
+GET /api/payment-cards -> { cards: [...], providers: ["CASH_ON_DELIVERY", ...] }
+```
+
+`providers` — hozir ISHLAYDIGAN usullar. Sozlanmagan provayder (env
+kalitlari yo'q) ro'yxatga tushmaydi: kalitsiz `buildClickUrl` baribir
+manzil quradi, lekin `service_id` bo'sh bo'lib, mijoz buzuq to'lov
+sahifasiga tushadi.
+
+Bu maydon `/api/config` da EMAS va bu ataylab: `/api/config` prerender
+qilinadi (build vaqtida statik), ya'ni `process.env` undan deploy
+muhitidagi emas, BUILD muhitidagi qiymatni olardi. `/api/payment-cards`
+esa `force-dynamic`.
+
+**`UZCARD` (qo'lda karta) Flutter'da qo'llanmaydi:** u chek rasmini
+yuklashni talab qiladi (`paymentReceipt` majburiy), aks holda server
+`400 RECEIPT_REQUIRED` beradi.
+
+### Mehmon onlayn to'lay olmaydi
+
+`POST /api/orders` auth TALAB QILMAYDI — mehmon buyurtma bera oladi.
+Lekin `POST /api/payments/create` auth talab qiladi (401). Shuning uchun
+kirmagan foydalanuvchiga faqat naqd pul taklif qilinadi.
+
+### Yakuniy summani SERVER hisoblaydi
+
+Mijozdagi xulosa — taxmin. Buyurtma yaratilgach ekranda serverning
+`grandTotal` i ko'rsatiladi: chegirma, yetkazish va coin serverda qayta
+hisoblanadi va ikkisi farq qilishi mumkin.
+
+`POST /api/promo/validate` ham faqat OLDINDAN KO'RSATISH — hech narsa
+saqlanmaydi, yakuniy chegirma buyurtmada qayta hisoblanadi.
+
+### Yetkazish hududini server tekshiradi
+
+`HOME_DELIVERY` va `EXPRESS` faqat Toshkent shahar uchun. Koordinata
+berilsa bbox bo'yicha, bo'lmasa `region`/`city` MATNI bo'yicha
+tekshiriladi. Bu mantiqni Dart'ga ko'chirmang — server
+`400 DELIVERY_OUT_OF_ZONE` bilan tayyor o'zbekcha xabar qaytaradi.
+
+### Topshirish punktining nomi KO'P TILLI
+
+```json
+{
+  "name": { "uz": "Andijon markaz", "ru": "ПВЗ Андижан" },
+  "region": "Andijon",
+  "city": "Andijon",
+  "street": "Navoiy 22"
+}
+```
+
+`name` — `LocalizedText`, `region`/`city`/`street` esa oddiy satr.
+Nomni `String` deb o'qisangiz `null` chiqadi va punkt nomsiz ko'rinadi.
+
+### Kutish mumkin bo'lgan biznes xatolari
+
+| Kod                                    | Qachon                              |
+| -------------------------------------- | ----------------------------------- |
+| `STOCK_INSUFFICIENT`                   | omborda yetarli emas (409)          |
+| `DELIVERY_OUT_OF_ZONE`                 | Toshkentdan tashqari uyga yetkazish |
+| `PICKUP_REQUIRED` / `PICKUP_NOT_FOUND` | punkt tanlanmagan yoki faol emas    |
+| `VARIANT_NOT_FOUND`                    | variant o'chirilgan                 |
+| `PRODUCT_NOT_FOUND`                    | mahsulot faol emas                  |
+| `DUPLICATE_REQUEST`                    | ayni kalit bilan parallel so'rov    |
+
+Hammasida `message` — foydalanuvchiga ko'rsatishga tayyor matn.
+
 ## Variant (rang/o'lcham) — `variantId` SHART
 
 Savatga qo'shganda va buyurtma berganda `variantId` yuboring. Yubormasangiz
@@ -394,3 +476,13 @@ Yana ikkita tuzoq:
   ko'rinadi. Navigatsiyadan keyin yetarlicha `pump()` qiling, yoki
   tekshiruvni ekranga bog'lang:
   `find.descendant(of: find.byType(CartScreen), matching: ...)`.
+- **`ListView` faqat EKRANDAGI bolalarini quradi.** Pastdagi bo'limlar
+  (to'lov, promokod, xulosa) suraklanmaguncha daraxtda umuman bo'lmaydi
+  va `find` ularni topmaydi — avval `tester.drag` bilan suring.
+- **`testWidgets` tanasida tarmoqni KUTMANG.** Soat faqat `pump()` bilan
+  suriladi; `pumpWidget` dan oldin `await auth.restore()` qilsangiz test
+  osilib qoladi. Bunday tayyorgarlikni `tester.runAsync(() async { ... })`
+  ichida bajaring.
+- **Fon taymerlari testni yiqitadi** ("A Timer is still pending").
+  `CartSync` savat o'zgarganda 800 ms kutadi; `buildRuntime` ga qisqa
+  `cartDebounce` bering va yuborishdan keyin yetarlicha `pump()` qiling.

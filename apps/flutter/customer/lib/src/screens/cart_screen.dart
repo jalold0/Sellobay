@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import 'checkout_screen.dart';
+
 /// Savat.
 ///
 /// Yetkazish narxi `GET /api/config` dan keladi — Dart'da yozilmagan.
@@ -113,10 +115,8 @@ class CartScreen extends StatelessWidget {
                 _summaryRow(context.t('cart.total'), formatMoney(totals.total), bold: true),
                 const SizedBox(height: 10),
                 FilledButton(
-                  // Checkout hali yozilmagan. Tugma soxta "muvaffaqiyat"
-                  // ko'rsatmaydi — nima bo'layotgani rostini aytadi.
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.t('common.notConnectedYet'))),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const CheckoutScreen()),
                   ),
                   child: Text(context.t('cart.checkout')),
                 ),

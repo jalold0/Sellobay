@@ -25,6 +25,9 @@ class FakeBackend implements HttpClientAdapter {
   /// Yuborilgan so'rov parametrlari — `calls` bilan bir xil indeksda.
   final List<Map<String, dynamic>?> queries = <Map<String, dynamic>?>[];
 
+  /// Yuborilgan sarlavhalar — `calls` bilan bir xil indeksda.
+  final List<Map<String, dynamic>> headers = <Map<String, dynamic>>[];
+
   int countOf(String path) => calls.where((c) => c == path).length;
 
   @override
@@ -47,6 +50,7 @@ class FakeBackend implements HttpClientAdapter {
     calls.add(options.path);
     bodies.add(body);
     queries.add(options.queryParameters);
+    headers.add(Map<String, dynamic>.from(options.headers));
     return handler(options, body);
   }
 
@@ -203,6 +207,7 @@ SellobayRuntime buildRuntime(
     locale: locale,
     catalog: catalog,
     cart: cartStore,
+    checkout: CheckoutRepository(client.api),
     cartSync: CartSync(
       auth: auth,
       cart: cartStore,

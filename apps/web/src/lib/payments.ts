@@ -60,6 +60,35 @@ export function buildPaymeUrl(params: { orderId: string; amountSom: number }): s
   return `${endpoint}/${encoded}`;
 }
 
+/**
+ * Provayder ishlashga TAYYORMI — kerakli env o'zgaruvchilari qo'yilganmi.
+ *
+ * Kalitsiz `buildClickUrl` baribir manzil quradi, lekin unda `service_id`
+ * bo'sh bo'ladi va mijoz buzuq to'lov sahifasiga tushadi. Shuning uchun
+ * sozlanmagan usul mijozga UMUMAN taklif qilinmasligi kerak — mana shu
+ * funksiya buni hal qiladi (`GET /api/config` shu ro'yxatni beradi).
+ */
+export function isProviderConfigured(provider: PaymentProvider): boolean {
+  switch (provider) {
+    case 'CLICK':
+      return Boolean(process.env.CLICK_SERVICE_ID && process.env.CLICK_MERCHANT_ID);
+    case 'PAYME':
+      return Boolean(process.env.PAYME_MERCHANT_ID);
+    case 'CASH_ON_DELIVERY':
+      // Naqd pul hech qanday integratsiya talab qilmaydi.
+      return true;
+    default:
+      // UZCARD (qo'lda karta) alohida tekshiriladi — `isManualCardAvailable()`,
+      // chunki u karta ro'yxatiga va chek yuklashga bog'liq.
+      return false;
+  }
+}
+
+/** Hozir ishlaydigan to'lov usullari. */
+export function availableProviders(): PaymentProvider[] {
+  return (['CLICK', 'PAYME', 'CASH_ON_DELIVERY'] as const).filter(isProviderConfigured);
+}
+
 /** Provayder + order'dan checkout URL quradi (online bo'lmasa null) */
 export function buildCheckoutUrl(
   provider: PaymentProvider,
