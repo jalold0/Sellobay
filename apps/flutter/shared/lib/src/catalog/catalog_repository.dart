@@ -118,6 +118,33 @@ class CatalogRepository {
     return ProductPage.fromJson(json);
   }
 
+  /// Aniq id'lar bo'yicha mahsulotlar (savat sinxroni, sevimlilar).
+  ///
+  /// `scope` ATAYLAB YUBORILMAYDI. Server shunday yozilgan: id bo'yicha
+  /// so'ralganda standart qamrov filtri qo'llanmaydi, lekin `?scope=`
+  /// aniq berilsa — hurmat qilinadi. Ya'ni `scope=LOCAL` qo'shsak,
+  /// savatdagi GLOBAL tovar javobga tushmay qolardi va sinxron uni
+  /// savatdan o'chirib tashlardi.
+  ///
+  /// `limit` ham shart: standart qiymat 24 ta, undan uzun savat
+  /// qirqilib qolardi.
+  Future<List<ProductSummary>> fetchProductsByIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    final unique = ids.toSet().toList();
+    final json = await _api.getRaw<Map<String, dynamic>>(
+      '/api/products',
+      query: {
+        'ids': unique.join(','),
+        // Server 100 tagacha cheklaydi; savat ham 100 ta bilan chegaralangan.
+        'limit': '${unique.length.clamp(1, 100)}',
+      },
+    );
+    return (json['items'] as List<dynamic>? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(ProductSummary.fromJson)
+        .toList();
+  }
+
   /// Bitta mahsulot. Topilmasa `ApiException(code: 'NOT_FOUND')`.
   Future<ProductDetail> fetchProduct(String slug) async {
     final json = await _api.getRaw<Map<String, dynamic>>('/api/products/$slug');

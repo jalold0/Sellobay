@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../widgets/cart_button.dart';
+import 'cart_screen.dart';
+
 /// Mahsulot sahifasi.
 ///
 /// Rang va o'lcham ro'yxati BAZADAGI variantlardan quriladi. Expo
@@ -77,7 +80,10 @@ class _ProductScreenState extends State<ProductScreen> {
     final product = _product;
 
     return Scaffold(
-      appBar: AppBar(title: Text(product?.brandName ?? '')),
+      appBar: AppBar(
+        title: Text(product?.brandName ?? ''),
+        actions: const [CartButton()],
+      ),
       body: switch ((_loading, _error, product)) {
         (true, _, _) => const Center(
             child: SizedBox(
@@ -378,7 +384,7 @@ class _ProductScreenState extends State<ProductScreen> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
         child: FilledButton(
-          onPressed: canOrder ? () => _notYetWired(context) : null,
+          onPressed: canOrder ? () => _addToCart(context, product, variant) : null,
           child: Text(
             canOrder
                 ? context.t('product.addToCart')
@@ -391,14 +397,33 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  /// Savat hali yozilmagan.
+  /// Savatga qo'shish.
   ///
-  /// "Savatga qo'shildi" degan SOXTA xabar ko'rsatmaymiz: auditda aynan
-  /// shunday tugmalar topilgan edi — bosilardi, chiroyli xabar chiqardi,
-  /// lekin hech narsa saqlanmasdi.
-  void _notYetWired(BuildContext context) {
+  /// `variantId` SHU YERDA biriktiriladi: buyurtma aynan tanlangan
+  /// variantga tushishi kerak. Expo ilovasida variant ro'yxati kodga
+  /// yozib qo'yilgan edi va buyurtma har doim standart variantga
+  /// tushardi — boshqa variantning zaxirasi kamayardi.
+  void _addToCart(BuildContext context, ProductDetail product, ProductVariant? variant) {
+    CartScope.read(context).add(
+      CartLine.fromDetail(
+        product,
+        variantId: variant?.id,
+        // Variant o'z narxiga ega bo'lishi mumkin.
+        unitPrice: variant?.price,
+        color: _color,
+        size: _size,
+      ),
+    );
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.t('common.notConnectedYet'))),
+      SnackBar(
+        content: Text(context.t('product.addedToCart')),
+        action: SnackBarAction(
+          label: context.t('cart.title'),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const CartScreen()),
+          ),
+        ),
+      ),
     );
   }
 }

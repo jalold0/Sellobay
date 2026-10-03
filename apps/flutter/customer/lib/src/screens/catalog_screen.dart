@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../widgets/cart_button.dart';
 import '../widgets/product_card.dart';
 import 'product_screen.dart';
 
@@ -150,6 +151,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       appBar: AppBar(
         title: Text(context.t('common.appName')),
         actions: [
+          const CartButton(),
           IconButton(
             tooltip: context.t('profile.signOut'),
             onPressed: () => AuthScope.read(context).signOut(),

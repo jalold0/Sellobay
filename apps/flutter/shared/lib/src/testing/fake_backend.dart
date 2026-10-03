@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../sellobay_shared.dart';
 
 /// Soxta HTTP qatlami: so'rovlarni yozib boradi va tayyor javob qaytaradi.
@@ -188,13 +188,69 @@ SellobayRuntime buildRuntime(
   FakeBackend backend, {
   required LocaleController locale,
   String? requiredRole,
+  CartStore? cart,
+  SellobayConfig? config,
+  Duration cartDebounce = const Duration(milliseconds: 800),
 }) {
   final client = buildClient(backend);
+  final auth = AuthController(repository: client.repo, requiredRole: requiredRole);
+  final catalog = CatalogRepository(client.api);
+  final cartStore = cart ?? CartStore(storage: InMemoryCartStorage());
   return SellobayRuntime(
     api: client.api,
     repository: client.repo,
-    auth: AuthController(repository: client.repo, requiredRole: requiredRole),
+    auth: auth,
     locale: locale,
-    catalog: CatalogRepository(client.api),
+    catalog: catalog,
+    cart: cartStore,
+    cartSync: CartSync(
+      auth: auth,
+      cart: cartStore,
+      repository: CartRepository(client.api),
+      catalog: catalog,
+      debounce: cartDebounce,
+    )..start(),
+    config: ValueNotifier<SellobayConfig?>(config),
   );
 }
+
+/// Xotiradagi savat saqlovi — testda qurilma xotirasi yo'q.
+class InMemoryCartStorage implements CartStorage {
+  String? _value;
+
+  @override
+  Future<String?> read() async => _value;
+
+  @override
+  Future<void> write(String value) async => _value = value;
+
+  @override
+  Future<void> clear() async => _value = null;
+}
+
+/// `GET /api/config` ning HAQIQIY javobi (lokal prod build'dan olingan).
+///
+/// Testlar qo'lda yozilgan shakl ustida emas, serverning o'z javobi
+/// ustida ishlasin — server o'zgarsa test yiqilsin, ilova emas.
+const realConfigResponse = '''
+{
+  "shipping": { "currency": "UZS", "standardFee": 20000, "expressFee": 50000, "freeThreshold": 500000 },
+  "loyalty": {
+    "coinPerSom": 0.001,
+    "coinValueSom": 10,
+    "tiers": [
+      { "key": "bronze",   "min": 0,        "cashbackPct": 1, "icon": "B" },
+      { "key": "silver",   "min": 1000000,  "cashbackPct": 2, "icon": "S" },
+      { "key": "gold",     "min": 5000000,  "cashbackPct": 3, "icon": "G" },
+      { "key": "platinum", "min": 20000000, "cashbackPct": 5, "icon": "P" }
+    ]
+  },
+  "returns": { "windowDays": 14 },
+  "geo": { "tashkentCityBbox": { "latMin": 41.15, "latMax": 41.4, "lngMin": 69.1, "lngMax": 69.45 } },
+  "locales": ["uz", "ru", "en"]
+}
+''';
+
+/// Shu javobdan qurilgan konfiguratsiya.
+SellobayConfig testConfig() =>
+    SellobayConfig.fromJson(json.decode(realConfigResponse) as Map<String, dynamic>);

@@ -269,6 +269,31 @@ boshqa qurilmada qo'shilgan tovar yo'qoladi. Server javobida faqat id va son
 bo'ladi, shuning uchun yetishmagan mahsulotlarni
 `GET /api/products?ids=a,b,c` bilan olib, ro'yxatga qo'shing.
 
+Flutter tomonida bu `CartSync` da bajarilgan, testi bor ("FAQAT serverda
+bor satr tiklanadi"). Quyidagilar ham shu qatlamning qoidalari:
+
+- **Satr kaliti `productId|variantId`** — serverning o'zi biladigan
+  juftlik. Mahalliy kalitni kengaytirib (masalan rangni qo'shib) bo'lmaydi:
+  sinxrondan keyin bitta server satri ikkita mahalliy satrga tushib,
+  sonlar ikki barobar bo'lardi.
+- **`fetchProductsByIds` `scope` YUBORMAYDI.** Server shunday yozilgan:
+  id bo'yicha so'ralganda qamrov filtri qo'llanmaydi, lekin `?scope=`
+  aniq berilsa hurmat qilinadi. `scope=LOCAL` qo'shilsa, savatdagi
+  GLOBAL tovar javobga tushmaydi va sinxron uni savatdan o'chirib
+  tashlaydi. `limit` ham beriladi — standart 24 ta uzun savatni qirqadi.
+- **Chegaralar:** bitta satrda ko'pi bilan **999** dona, savatda ko'pi
+  bilan **100** satr (`z.array(...).max(100)`).
+- **Serverda yo'q satr mahalliy savatdan ham o'chadi** — boshqa
+  qurilmada o'chirilgan tovar `replace` bilan tirilib chiqmasin.
+- **Narx — serverdagi snapshot.** `CartItem.unitPrice` tovar savatga
+  qo'shilgan paytdagi narx; katalogdagi joriy narx emas.
+- Savat `SharedPreferences` da saqlanadi, `flutter_secure_storage` da
+  EMAS: savat maxfiy emas, iOS keychain esa ilova o'chirilganda ham
+  saqlanib qoladi — qayta o'rnatilgan ilovada eski savat tirilib
+  chiqardi.
+- Tizimga kirilmagan bo'lsa `/api/cart` UMUMAN chaqirilmaydi (u 401
+  beradi). Mehmon savati faqat telefonda yashaydi.
+
 ## Pul
 
 Javoblarda pul **satr** sifatida keladi (`Decimal` → string). Dart'da
@@ -362,3 +387,10 @@ Yana ikkita tuzoq:
   kartochkalar ekrandan chiqib ketadi va `tap` nishonga tegmaydi.
   Telefon o'lchamini qo'ying (`tester.view.physicalSize`) — bu bir
   vaqtning o'zida tor ekrandagi joylashuv xatolarini ham ushlaydi.
+- **`ScaffoldMessenger` SnackBar'ni ro'yxatdagi HAR BIR `Scaffold` da
+  ko'rsatadi.** Ekran boshqasi ustida turganda bir xil matn ikki marta
+  topiladi. `findsWidgets` yoki `.first` ishlating.
+- **Marshrut o'tishi 300 ms.** Tugamaguncha pastdagi ekran ham daraxtda
+  ko'rinadi. Navigatsiyadan keyin yetarlicha `pump()` qiling, yoki
+  tekshiruvni ekranga bog'lang:
+  `find.descendant(of: find.byType(CartScreen), matching: ...)`.

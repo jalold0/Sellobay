@@ -46,6 +46,10 @@ class LocalizedText {
     return '';
   }
 
+  /// Saqlashga tayyor nusxa (savat mahalliy xotirada shu ko'rinishda
+  /// yoziladi).
+  Map<String, String> toJsonMap() => Map<String, String>.unmodifiable(_values);
+
   @override
   String toString() => 'LocalizedText($_values)';
 }

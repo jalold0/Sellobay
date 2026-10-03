@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../api/api_client.dart';
+import '../api/sellobay_config.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_repository.dart';
 import '../auth/auth_scope.dart';
+import '../cart/cart_repository.dart';
+import '../cart/cart_scope.dart';
+import '../cart/cart_store.dart';
+import '../cart/cart_sync.dart';
 import '../catalog/catalog_repository.dart';
 import '../i18n/locale_controller.dart';
 import '../i18n/translations_scope.dart';
@@ -18,6 +23,9 @@ class SellobayRuntime {
     required this.auth,
     required this.locale,
     required this.catalog,
+    required this.cart,
+    required this.cartSync,
+    required this.config,
   });
 
   final ApiClient api;
@@ -25,10 +33,19 @@ class SellobayRuntime {
   final AuthController auth;
   final LocaleController locale;
   final CatalogRepository catalog;
+  final CartStore cart;
+  final CartSync cartSync;
+
+  /// Biznes qoidalari (`GET /api/config`). Yuklangunga qadar `null` —
+  /// u holda ekranlar yetkazish narxini KO'RSATMAYDI, taxmin qilmaydi.
+  final ValueNotifier<SellobayConfig?> config;
 
   void dispose() {
+    cartSync.dispose();
     auth.dispose();
     locale.dispose();
+    cart.dispose();
+    config.dispose();
   }
 }
 
@@ -44,15 +61,39 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
   final auth = AuthController(repository: repository, requiredRole: requiredRole);
   final locale = LocaleController();
 
+  final catalog = CatalogRepository(api);
+  final cart = CartStore();
+  final config = ValueNotifier<SellobayConfig?>(null);
+
   await locale.load();
+  // Savat mahalliy saqlovdan o'qiladi — birinchi kadrdan oldin tayyor
+  // bo'lsin, aks holda savat belgisi bir lahza bo'sh ko'rinardi.
+  await cart.load();
+
   unawaited(auth.restore());
+  // Qoidalar tarmoqdan keladi; ilovani kutdirmaydi.
+  unawaited(
+    // Yuklanmasa ekranlar yetkazish narxini ko'rsatmaydi — o'zimiz
+    // raqam o'ylab topmaymiz, shuning uchun xato jim yutiladi.
+    api.fetchConfig().then<void>((value) => config.value = value).catchError((Object _) {}),
+  );
+
+  final cartSync = CartSync(
+    auth: auth,
+    cart: cart,
+    repository: CartRepository(api),
+    catalog: catalog,
+  )..start();
 
   return SellobayRuntime(
     api: api,
     repository: repository,
     auth: auth,
     locale: locale,
-    catalog: CatalogRepository(api),
+    catalog: catalog,
+    cart: cart,
+    cartSync: cartSync,
+    config: config,
   );
 }
 
@@ -125,7 +166,10 @@ class _SellobayScopeState extends State<SellobayScope> {
           runtime: widget.runtime,
           child: TranslationsScope(
             translations: translations,
-            child: AuthScope(controller: widget.runtime.auth, child: widget.child),
+            child: AuthScope(
+              controller: widget.runtime.auth,
+              child: CartScope(store: widget.runtime.cart, child: widget.child),
+            ),
           ),
         );
       },

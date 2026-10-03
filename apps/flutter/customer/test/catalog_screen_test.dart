@@ -121,7 +121,10 @@ Future<void> pumpCatalog(WidgetTester tester, FakeBackend backend) async {
         translations: uz.translations!,
         child: AuthScope(
           controller: runtime.auth,
-          child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
+          child: CartScope(
+            store: runtime.cart,
+            child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
+          ),
         ),
       ),
     ),
@@ -273,7 +276,9 @@ void main() {
           translations: uz.translations!,
           child: AuthScope(
             controller: runtime.auth,
-            child: MaterialApp(
+            child: CartScope(
+              store: runtime.cart,
+              child: MaterialApp(
               theme: buildSellobayTheme(),
               builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context).copyWith(
@@ -282,6 +287,7 @@ void main() {
                 child: child!,
               ),
               home: const CatalogScreen(),
+            ),
             ),
           ),
         ),
@@ -302,7 +308,10 @@ void main() {
           translations: uz.translations!,
           child: AuthScope(
             controller: runtime.auth,
-            child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
+            child: CartScope(
+              store: runtime.cart,
+              child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
+            ),
           ),
         ),
       ),
