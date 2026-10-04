@@ -43,8 +43,17 @@ class FakeBackend implements HttpClientAdapter {
         bytes.addAll(chunk);
       }
       if (bytes.isNotEmpty) {
-        final decoded = json.decode(utf8.decode(bytes));
-        if (decoded is Map<String, dynamic>) body = decoded;
+        // JSON bo'lmagan tanalar ham bor (chek yuklashdagi
+        // `multipart/form-data`). Ilgari dekodlash istisnosi dio
+        // ichida tarmoq xatosiga aylanib, test «tarmoq yo'q» deb
+        // yiqilardi. Bunday so'rov uchun `bodies` ga `null` tushadi,
+        // `calls` esa baribir yoziladi.
+        try {
+          final decoded = json.decode(utf8.decode(bytes));
+          if (decoded is Map<String, dynamic>) body = decoded;
+        } on FormatException {
+          body = null;
+        }
       }
     }
     calls.add(options.path);

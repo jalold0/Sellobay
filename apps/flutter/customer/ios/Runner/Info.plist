@@ -6,7 +6,11 @@
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
-		<key>CFBundleDisplayName</key>
+		<key>NSPhotoLibraryUsageDescription</key>
+	<string>To'lov chekining rasmini tanlash uchun galereyaga ruxsat kerak.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>To'lov chekini suratga olish uchun kameraga ruxsat kerak.</string>
+	<key>CFBundleDisplayName</key>
 		<string>Sellobay</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>

@@ -24,12 +24,20 @@ enum DeliveryMethod {
 
 /// To'lov usuli — serverdagi `paymentProvider` enum bilan bir xil.
 ///
-/// `UZCARD` (qo'lda karta) ATAYLAB yo'q: u chek rasmini yuklashni talab
-/// qiladi (`paymentReceipt` majburiy), bu esa hali yozilmagan. Ro'yxatga
-/// qo'shsak, mijoz tanlab, server 400 `RECEIPT_REQUIRED` qaytarardi.
+/// `HUMO` va `UZUM_BANK` yo'q: serverda ular uchun integratsiya
+/// yozilmagan (`availableProviders()` ularni qaytarmaydi).
 enum PaymentProvider {
   click('CLICK', 'checkout.payment.click'),
   payme('PAYME', 'checkout.payment.payme'),
+
+  /// Qo'lda karta o'tkazmasi — platforma kartasiga pul tashlanadi va
+  /// chek yuklanadi, keyin admin tasdiqlaydi.
+  ///
+  /// Serverda bu AYNAN `UZCARD` deb yuritiladi (`MANUAL_CARD_PROVIDER`):
+  /// yangi enum qiymati va migratsiya qilmaslik uchun mavjudi
+  /// ishlatilgan.
+  uzcard('UZCARD', 'checkout.payment.card'),
+
   cashOnDelivery('CASH_ON_DELIVERY', 'checkout.payment.cash');
 
   const PaymentProvider(this.value, this.labelKey);
@@ -37,16 +45,70 @@ enum PaymentProvider {
   final String value;
   final String labelKey;
 
-  /// Onlayn — buyurtmadan keyin to'lov sahifasiga o'tiladi.
-  bool get isOnline => this != PaymentProvider.cashOnDelivery;
+  /// Tagidagi izoh matni (`checkout.payment.*Sub`).
+  String get hintKey => switch (this) {
+        PaymentProvider.click => 'checkout.payment.clickSub',
+        PaymentProvider.payme => 'checkout.payment.paymeSub',
+        PaymentProvider.uzcard => 'checkout.payment.cardSub',
+        PaymentProvider.cashOnDelivery => 'checkout.payment.cashSub',
+      };
+
+  /// Onlayn — buyurtmadan keyin provayderning to'lov sahifasiga o'tiladi.
+  ///
+  /// `UZCARD` onlayn EMAS: redirect yo'q, pul qo'lda o'tkaziladi
+  /// (`isOnlineProvider` serverda ham shunday).
+  bool get isOnline => this == PaymentProvider.click || this == PaymentProvider.payme;
+
+  /// Chek rasmi MAJBURIY — serverda ham (`400 RECEIPT_REQUIRED`).
+  bool get requiresReceipt => this == PaymentProvider.uzcard;
 
   static PaymentProvider? fromValue(String value) {
     for (final p in PaymentProvider.values) {
       if (p.value == value) return p;
     }
-    // `UZCARD`, `HUMO`, `UZUM_BANK` — ilovada qo'llab-quvvatlanmaydi.
     return null;
   }
+}
+
+/// Platforma to'lov kartasi (`GET /api/payment-cards`).
+///
+/// Ro'yxat BO'SH bo'lsa, qo'lda karta to'lovi umuman taklif qilinmaydi:
+/// server `MANUAL_PAYMENT_CARDS` sozlanmagan bo'lsa bo'sh qaytaradi va
+/// buyurtmani ham rad etadi (`503 MANUAL_CARD_UNAVAILABLE`). Mijozga
+/// qayerga pul o'tkazishini aytmay turib usulni ko'rsatish — yolg'on.
+class PaymentCard {
+  const PaymentCard({required this.number, required this.holder, required this.bank});
+
+  factory PaymentCard.fromJson(Map<String, dynamic> json) => PaymentCard(
+        number: json['number'] as String? ?? '',
+        holder: json['holder'] as String? ?? '',
+        bank: json['bank'] as String?,
+      );
+
+  final String number;
+  final String holder;
+  final String? bank;
+}
+
+/// `GET /api/payment-cards` javobi.
+class PaymentOptions {
+  const PaymentOptions({required this.cards, required this.providers});
+
+  final List<PaymentCard> cards;
+  final List<PaymentProvider> providers;
+
+  /// Qo'lda karta to'lovi hozir mumkinmi.
+  ///
+  /// Qoida WEB bilan bir xil (`payment-section.tsx`): karta ro'yxati
+  /// bo'sh bo'lmasa. Server `providers` ichida `UZCARD` ni qaytarmaydi —
+  /// u yerda faqat integratsiyali provayderlar bor.
+  bool get manualCardAvailable => cards.isNotEmpty;
+
+  /// Ekranda ko'rsatiladigan to'liq ro'yxat.
+  List<PaymentProvider> get selectable => [
+        ...providers,
+        if (manualCardAvailable) PaymentProvider.uzcard,
+      ];
 }
 
 /// Topshirish punkti (`GET /api/pickup-points`).

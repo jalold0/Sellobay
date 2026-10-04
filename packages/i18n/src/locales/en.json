@@ -519,6 +519,7 @@
     "promoDiscount": "Promo discount"
   },
   "auth": {
+    "loginForOnlinePayment": "Sign up to pay online",
     "loginRequired": "Please sign in to place an order",
     "phone": "Phone number",
     "email": "Email",

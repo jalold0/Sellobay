@@ -100,6 +100,8 @@ Future<void> shoot(
   Widget home, {
   FakeBackend? backend,
   CartStore? cart,
+  /// Suratdan oldin bajariladigan amal (bosish, surish).
+  Future<void> Function(WidgetTester tester)? before,
 }) async {
   tester.view
     ..physicalSize = const Size(390 * 2, 844 * 2)
@@ -123,6 +125,10 @@ Future<void> shoot(
     ),
   );
   await _settle(tester);
+  if (before != null) {
+    await before(tester);
+    await _settle(tester);
+  }
 
   await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/$name.png'));
 }
@@ -343,11 +349,21 @@ FakeBackend _catalogBackend() => FakeBackend((options, body) {
       return rawJson(_productsJson);
     });
 
-FakeBackend _checkoutBackend() => FakeBackend((options, body) {
+FakeBackend _checkoutBackend({bool cards = false}) => FakeBackend((options, body) {
       switch (options.path) {
+        case '/api/uploads/receipt':
+          return apiOk({'pathname': 'receipts/chek.jpg'});
         case '/api/payment-cards':
           return apiOk({
-            'cards': <Map<String, dynamic>>[],
+            'cards': cards
+                ? [
+                    {
+                      'number': '8600 1234 5678 9012',
+                      'holder': 'SELLOBAY MCHJ',
+                      'bank': 'Uzcard',
+                    },
+                  ]
+                : <Map<String, dynamic>>[],
             'providers': ['CLICK', 'PAYME', 'CASH_ON_DELIVERY'],
           });
         case '/api/auth/me':
@@ -487,6 +503,33 @@ void main() {
   testWidgets(
     '07 rasmiylashtirish',
     (t) => shoot(t, '07-checkout', const CheckoutScreen(), backend: _checkoutBackend(), cart: _cart()),
+  );
+
+  testWidgets(
+    '07b karta orqali to`lov',
+    (t) => shoot(
+      t,
+      '07b-checkout-card',
+      const CheckoutScreen(),
+      backend: _checkoutBackend(cards: true),
+      cart: _cart(),
+      before: (tester) async {
+        await tester.scrollUntilVisible(
+          find.text('Karta'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+        await tester.tap(find.text('Karta'));
+        await _settle(tester);
+        await tester.scrollUntilVisible(
+          find.text('Chekni yuklash'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+      },
+    ),
   );
 
   testWidgets(

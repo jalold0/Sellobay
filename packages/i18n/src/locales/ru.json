@@ -519,6 +519,7 @@
     "promoDiscount": "Скидка по промокоду"
   },
   "auth": {
+    "loginForOnlinePayment": "Для онлайн-оплаты зарегистрируйтесь",
     "loginRequired": "Войдите в систему, чтобы оформить заказ",
     "phone": "Номер телефона",
     "email": "Email",

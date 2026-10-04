@@ -189,19 +189,17 @@ void main() {
 
   group('to`lov usullari', () {
     test('serverdan keladi, ilova bilmaganlari tashlab yuboriladi', () async {
-      // `UZCARD` chek yuklashni talab qiladi va ilovada qo'llanmaydi —
-      // ro'yxatga tushmasligi kerak.
       final backend = FakeBackend(
         (options, body) => apiOk({
           'cards': <Map<String, dynamic>>[],
-          'providers': ['CLICK', 'CASH_ON_DELIVERY', 'UZCARD'],
+          'providers': ['CLICK', 'CASH_ON_DELIVERY', 'HUMO'],
         }),
       );
       final repo = CheckoutRepository(buildClient(backend).api);
 
-      final providers = await repo.fetchPaymentProviders();
+      final options = await repo.fetchPaymentOptions();
 
-      expect(providers, [PaymentProvider.click, PaymentProvider.cashOnDelivery]);
+      expect(options.providers, [PaymentProvider.click, PaymentProvider.cashOnDelivery]);
       expect(backend.calls, ['/api/payment-cards']);
     });
 
@@ -209,15 +207,88 @@ void main() {
       final backend = FakeBackend(
         (options, body) => apiOk({'cards': <Map<String, dynamic>>[], 'providers': <String>[]}),
       );
-      final repo = CheckoutRepository(buildClient(backend).api);
+      final options = await CheckoutRepository(buildClient(backend).api).fetchPaymentOptions();
 
-      expect(await repo.fetchPaymentProviders(), isEmpty);
+      expect(options.selectable, isEmpty);
     });
 
-    test('onlayn va naqd farqi', () {
+    test('karta YO`Q bo`lsa qo`lda to`lov taklif qilinmaydi', () async {
+      // Server `MANUAL_PAYMENT_CARDS` sozlanmagan prod'da bo'sh ro'yxat
+      // qaytaradi. Usulni ko'rsatsak, mijoz qayerga pul o'tkazishini
+      // bilmasdi va server buyurtmani rad etardi (503).
+      final backend = FakeBackend(
+        (options, body) => apiOk({
+          'cards': <Map<String, dynamic>>[],
+          'providers': ['CLICK'],
+        }),
+      );
+      final options = await CheckoutRepository(buildClient(backend).api).fetchPaymentOptions();
+
+      expect(options.manualCardAvailable, isFalse);
+      expect(options.selectable, [PaymentProvider.click]);
+    });
+
+    test('karta BOR bo`lsa qo`lda to`lov qo`shiladi', () async {
+      // `providers` ichida `UZCARD` KELMAYDI — serverda u alohida
+      // tekshiriladi (`isManualCardAvailable`), web ham shunday qiladi.
+      final backend = FakeBackend(
+        (options, body) => apiOk({
+          'cards': [
+            {'number': '8600 1234 5678 9012', 'holder': 'SELLOBAY MCHJ', 'bank': 'Uzcard'},
+          ],
+          'providers': ['CLICK'],
+        }),
+      );
+      final options = await CheckoutRepository(buildClient(backend).api).fetchPaymentOptions();
+
+      expect(options.manualCardAvailable, isTrue);
+      expect(options.selectable, [PaymentProvider.click, PaymentProvider.uzcard]);
+      expect(options.cards.single.holder, 'SELLOBAY MCHJ');
+      expect(options.cards.single.bank, 'Uzcard');
+    });
+
+    test('onlayn, naqd va qo`lda karta farqi', () {
       expect(PaymentProvider.click.isOnline, isTrue);
       expect(PaymentProvider.payme.isOnline, isTrue);
       expect(PaymentProvider.cashOnDelivery.isOnline, isFalse);
+      // Qo'lda karta — redirect YO'Q, lekin chek majburiy.
+      expect(PaymentProvider.uzcard.isOnline, isFalse);
+      expect(PaymentProvider.uzcard.requiresReceipt, isTrue);
+      expect(PaymentProvider.cashOnDelivery.requiresReceipt, isFalse);
+    });
+
+    test('serverdagi qiymatlar bilan bir xil', () {
+      expect(PaymentProvider.uzcard.value, 'UZCARD');
+      expect(
+        PaymentProvider.values.map((p) => p.value).toSet(),
+        {'CLICK', 'PAYME', 'UZCARD', 'CASH_ON_DELIVERY'},
+      );
+    });
+  });
+
+  group('chek yuklash', () {
+    test('multipart yuboriladi va YO`L qaytadi', () async {
+      final backend = FakeBackend(
+        (options, body) => apiOk({'pathname': 'receipts/abc123.jpg'}),
+      );
+      final repo = CheckoutRepository(buildClient(backend).api);
+
+      final path = await repo.uploadReceipt(bytes: [1, 2, 3], filename: 'chek.jpg');
+
+      expect(backend.calls, ['/api/uploads/receipt']);
+      expect(path, 'receipts/abc123.jpg');
+    });
+
+    test('juda katta rasm — serverning matni', () async {
+      final backend = FakeBackend(
+        (options, body) => apiErr(400, 'VALIDATION', 'Rasm juda katta'),
+      );
+      final repo = CheckoutRepository(buildClient(backend).api);
+
+      await expectLater(
+        repo.uploadReceipt(bytes: [1], filename: 'chek.jpg'),
+        throwsA(isA<ApiException>().having((e) => e.message, 'xabar', 'Rasm juda katta')),
+      );
     });
   });
 
