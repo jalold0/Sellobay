@@ -1,5 +1,8 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'order_success_screen.dart';
@@ -11,6 +14,13 @@ import 'order_success_screen.dart';
 /// serverning `grandTotal` i ko'rsatiladi, mijoz ko'rgan taxmin emas.
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
+
+  /// Rasm tanlovchi.
+  ///
+  /// Testda almashtiriladi: haqiqiysi platforma kanaliga chiqadi va
+  /// testda platforma yo'q — chaqiruv javobsiz osilib qolardi.
+  @visibleForTesting
+  static ImagePicker picker = ImagePicker();
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -34,7 +44,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   List<SavedAddress> _addresses = const [];
   List<PickupPoint> _pickupPoints = const [];
+  PaymentOptions? _options;
   List<PaymentProvider> _providers = const [];
+
+  /// Yuklangan chekning ichki yo'li (`receipts/...`).
+  ///
+  /// Rasmning o'zi emas: server chekni yopiq saqlaydi va faqat yo'lni
+  /// qaytaradi, buyurtmaga ham o'sha yuboriladi.
+  String? _receiptPath;
+  bool _receiptBusy = false;
+  final _paymentNote = TextEditingController();
+
+  /// Joriy coin balansi (`GET /api/loyalty`). Mehmonda 0.
+  int _coinBalance = 0;
+  bool _useCoins = false;
 
   DeliveryMethod _delivery = DeliveryMethod.homeDelivery;
   PickupPoint? _pickupPoint;
@@ -57,6 +80,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     for (final c in [_name, _phone, _region, _city, _street, _apartment, _notes, _promoField]) {
       c.dispose();
     }
+    _paymentNote.dispose();
     super.dispose();
   }
 
@@ -72,16 +96,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     try {
-      final providers = await _repo.fetchPaymentProviders();
+      final options = await _repo.fetchPaymentOptions();
       if (!mounted) return;
 
       // Mehmon onlayn to'lovni BOSHLAY OLMAYDI: `/api/payments/create`
       // auth talab qiladi va 401 beradi. Shuning uchun unga faqat
       // naqd pul taklif qilinadi — tanlab, keyin devorga urilmasin.
-      final usable =
-          _signedIn ? providers : providers.where((p) => !p.isOnline).toList();
+      // Qo'lda karta (`UZCARD`) mehmonga ham ochiq: redirect yo'q va
+      // chek yuklash endpointi auth talab qilmaydi.
+      final usable = _signedIn
+          ? options.selectable
+          : options.selectable.where((p) => !p.isOnline).toList();
 
       setState(() {
+        _options = options;
         _providers = usable;
         _payment = usable.isEmpty ? null : usable.first;
         _loading = false;
@@ -92,6 +120,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _loading = false;
         _error = context.errorText(e);
       });
+    }
+
+    // Coin balansi — faqat kirgan foydalanuvchida (`/api/loyalty` 401).
+    if (_signedIn) {
+      try {
+        final loyalty = await SellobayRuntimeScope.of(context).loyalty.fetchSummary();
+        if (mounted) setState(() => _coinBalance = loyalty.coins);
+      } catch (_) {
+        // Balans olinmasa coin bo'limi ko'rsatilmaydi. Raqamni
+        // o'zimiz o'ylab topmaymiz.
+      }
     }
 
     // Saqlangan manzillar — faqat kirgan foydalanuvchida.
@@ -136,6 +175,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         SellobayRuntimeScope.of(context).config.value,
       );
 
+  /// 1 coin necha so'm — SERVERDAN (`/api/config`).
+  ///
+  /// Dart'ga ko'chirib yozsak, qoida ikki joyda bo'lib, vaqt o'tib
+  /// ajralib ketardi. Qoidalar yuklanmagan bo'lsa coin bo'limi
+  /// umuman ko'rsatilmaydi.
+  int? _coinValueSom(BuildContext context) =>
+      SellobayRuntimeScope.of(context).config.value?.loyalty.coinValueSom;
+
+  /// Shu buyurtmada ishlatish mumkin bo'lgan coinlar.
+  ///
+  /// Chegara SERVERDAGI bilan bir xil: balans va promokoddan keyingi
+  /// qoldiq. Yakuniy raqamni baribir server hisoblaydi.
+  int _redeemableCoins(BuildContext context, CartTotals totals) {
+    final value = _coinValueSom(context);
+    if (value == null || value <= 0 || _coinBalance <= 0) return 0;
+    final promo = (_promo?.valid == true ? _promo!.discount : null) ?? Decimal.zero;
+    final afterPromo = totals.total - promo;
+    if (afterPromo <= Decimal.zero) return 0;
+    final maxByTotal = (afterPromo.toDouble() / value).floor();
+    return _coinBalance < maxByTotal ? _coinBalance : maxByTotal;
+  }
+
+  int _coinsToRedeem(BuildContext context, CartTotals totals) =>
+      _useCoins ? _redeemableCoins(context, totals) : 0;
+
   Future<void> _applyPromo() async {
     final code = _promoField.text.trim();
     if (code.isEmpty) return;
@@ -174,6 +238,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return context.t('checkout.shipping.selectPickup');
     }
     if (_payment == null) return context.t('checkout.payment.title');
+    // Chek serverda ham MAJBURIY (`400 RECEIPT_REQUIRED`) — oldindan
+    // aytganimiz yaxshi.
+    if (_payment!.requiresReceipt && _receiptPath == null) {
+      return context.t('checkout.payment.receiptRequired');
+    }
     return null;
   }
 
@@ -206,7 +275,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         deliveryMethod: _delivery,
         pickupPointId: _pickupPoint?.id,
         paymentProvider: provider,
+        paymentReceipt: _receiptPath,
+        paymentNote: _paymentNote.text,
         promoCode: _promo?.valid == true ? _promo!.code : null,
+        redeemCoins: _coinsToRedeem(context, _totals(context)),
         notes: _notes.text,
         idempotencyKey: _idempotencyKey,
       );
@@ -279,6 +351,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 _sectionTitle(context.t('checkout.shipping.title')),
                 _deliveryOptions(context),
                 const SizedBox(height: 22),
+                _coinsRow(context),
                 _sectionTitle(context.t('checkout.payment.title')),
                 _paymentOptions(context),
                 const SizedBox(height: 22),
@@ -501,21 +574,225 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   contentPadding: EdgeInsets.zero,
                   title:
                       Text(context.t(provider.labelKey), style: const TextStyle(fontSize: 14.5)),
+                  subtitle: Text(
+                    context.t(provider.hintKey),
+                    style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+                  ),
                 ),
             ],
           ),
         ),
-        if (!_signedIn)
+        if (_payment?.requiresReceipt ?? false) _manualCardPanel(context),
+        // Izoh FAQAT shu sababdan usul yashirilgan bo'lsa chiqadi.
+        // Ilgari u mehmonga doim ko'rinardi va «buyurtma berish uchun
+        // ro'yxatdan o'ting» deb turardi — qo'lda karta bilan esa
+        // mehmon ham buyurtma bera oladi, ya'ni yolg'on edi.
+        if (!_signedIn && (_options?.providers.any((p) => p.isOnline) ?? false))
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              // Mehmonda onlayn to'lov endpointi 401 beradi.
-              context.t('auth.loginRequired'),
+              // Mehmonda `/api/payments/create` 401 beradi. Matn
+              // AYNAN shu haqda: buyurtmaning o'zini mehmon ham
+              // bera oladi (qo'lda karta yoki naqd bilan).
+              context.t('auth.loginForOnlinePayment'),
               style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
             ),
           ),
       ],
     );
+  }
+
+  /// Qo'lda karta to'lovi: kartalar, chek va izoh.
+  ///
+  /// Ko'rinishi WEB bilan bir xil (`payment-section.tsx`): summa,
+  /// nusxalanadigan karta raqamlari, chek yuklash va ixtiyoriy izoh.
+  Widget _manualCardPanel(BuildContext context) {
+    final cards = _options?.cards ?? const <PaymentCard>[];
+    final totals = _totals(context);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: SellobayColors.primary.withValues(alpha: 0.03),
+        border: Border.all(color: SellobayColors.primary.withValues(alpha: 0.30)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('checkout.payment.cardTransferTitle'),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: SellobayColors.ink,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.t('checkout.payment.cardTransferHint'),
+            style: const TextStyle(fontSize: 12, height: 1.45, color: SellobayColors.mutedText),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.t('checkout.payment.amountToTransfer'),
+                    style: const TextStyle(fontSize: 13, color: SellobayColors.mutedText),
+                  ),
+                ),
+                Text(
+                  // Summa SERVER qayta hisoblaydi; bu yerda mijoz
+                  // ko'rayotgan jamisi turadi.
+                  formatMoney(totals.total),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: SellobayColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final card in cards) ...[
+            const SizedBox(height: 8),
+            _cardRow(context, card),
+          ],
+          const SizedBox(height: 12),
+          _receiptPicker(context),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _paymentNote,
+            maxLength: 200,
+            decoration: InputDecoration(
+              labelText: context.t('checkout.payment.receiptNoteLabel'),
+              hintText: context.t('checkout.payment.receiptNotePlaceholder'),
+              counterText: '',
+              fillColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cardRow(BuildContext context, PaymentCard card) => Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.number,
+                    // `fontFamily: 'monospace'` ATAYLAB yo'q: Android'da
+                    // u platforma shriftiga tushadi, iOS'da esa bunday
+                    // oila yo'q va jim e'tiborsiz qoldiriladi. Raqam
+                    // guruhlari allaqachon bo'sh joy bilan ajratilgan,
+                    // oraliqni kattalashtirish yetarli.
+                    style: const TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                      color: SellobayColors.ink,
+                    ),
+                  ),
+                  Text(
+                    [card.holder, ?card.bank].join(' - '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, color: SellobayColors.mutedText),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: card.number));
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.t('checkout.payment.copied'))),
+                );
+              },
+              child: Text(context.t('checkout.payment.copyCard')),
+            ),
+          ],
+        ),
+      );
+
+  Widget _receiptPicker(BuildContext context) {
+    final done = _receiptPath != null;
+    final label = _receiptBusy
+        ? 'checkout.payment.receiptProcessing'
+        : done
+            ? 'checkout.payment.receiptUploaded'
+            : 'checkout.payment.uploadReceipt';
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _receiptBusy ? null : _pickReceipt,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(46),
+          backgroundColor: Colors.white,
+          foregroundColor: done ? SellobayColors.success : SellobayColors.ink,
+          side: BorderSide(color: done ? SellobayColors.success : SellobayColors.border),
+        ),
+        icon: Icon(done ? Icons.check_circle_outline : Icons.receipt_long_outlined, size: 18),
+        label: Text(context.t(label)),
+      ),
+    );
+  }
+
+  /// Chekni tanlaydi va DARHOL yuklaydi.
+  ///
+  /// Rasm buyurtma bilan birga emas, alohida yuboriladi: buyurtma
+  /// so'rovi bir necha megabaytlik rasm bilan og'irlashsa, tarmoq
+  /// uzilganda butun buyurtma qayta yuborilishi kerak bo'lardi.
+  Future<void> _pickReceipt() async {
+    final picked = await CheckoutScreen.picker.pickImage(
+      source: ImageSource.gallery,
+      // Server ~3.5MB gacha qabul qiladi; shu yerda kichraytirib
+      // yuboramiz, aks holda zamonaviy telefon surati rad etilardi.
+      maxWidth: 1600,
+      imageQuality: 80,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _receiptBusy = true;
+      _error = null;
+    });
+    try {
+      final bytes = await picked.readAsBytes();
+      final path = await _repo.uploadReceipt(bytes: bytes, filename: picked.name);
+      if (!mounted) return;
+      setState(() {
+        _receiptPath = path;
+        _receiptBusy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _receiptBusy = false;
+        // Eski chek saqlanib qolmasin — mijoz yuklandi deb o'ylamasin.
+        _receiptPath = null;
+        _error = context.errorText(e);
+      });
+    }
   }
 
   Widget _promoRow(BuildContext context) {
@@ -559,8 +836,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Sello Coins bilan to'lash.
+  ///
+  /// Web'dagi kabi BITTA kalit: mumkin bo'lgan hammasi ishlatiladi
+  /// (`checkout-flow.tsx`). Qisman yechish serverda ham, web'da ham
+  /// yo'q — ikki xil xulq yaratmaymiz.
+  Widget _coinsRow(BuildContext context) {
+    final totals = _totals(context);
+    final redeemable = _redeemableCoins(context, totals);
+    // Ishlatadigan coin yo'q bo'lsa bo'lim umuman ko'rsatilmaydi:
+    // nolga teng kalitni bosib ko'rgan mijoz nima bo'lmaganini
+    // tushunmasdi.
+    if (redeemable <= 0) return const SizedBox.shrink();
+
+    final som = Decimal.fromInt(redeemable * (_coinValueSom(context) ?? 0));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: SwitchListTile(
+        value: _useCoins,
+        onChanged: (v) => setState(() => _useCoins = v),
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          context.t('checkout.useCoinsTitle'),
+          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          context.t(
+            'checkout.useCoinsAvail',
+            params: {'coins': redeemable, 'som': formatMoney(som)},
+          ),
+          style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+        ),
+      ),
+    );
+  }
+
   Widget _summary(BuildContext context, CartTotals totals) {
     final discount = _promo?.valid == true ? _promo!.discount : null;
+    final coins = _coinsToRedeem(context, totals);
+    final coinDiscount = Decimal.fromInt(coins * (_coinValueSom(context) ?? 0));
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -578,8 +892,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   : formatMoney(totals.shippingFee),
             ),
           if (discount != null) _row(context.t('checkout.promoDiscount'), '−${formatMoney(discount)}'),
+          if (coinDiscount > Decimal.zero)
+            _row(context.t('checkout.coinDiscount'), '−${formatMoney(coinDiscount)}'),
           const Divider(height: 18),
-          _row(context.t('checkout.summaryTotal'), formatMoney(totals.total), bold: true),
+          _row(
+            context.t('checkout.summaryTotal'),
+            // Taxminiy: yakuniy summani server qayta hisoblaydi.
+            formatMoney(totals.total - (discount ?? Decimal.zero) - coinDiscount),
+            bold: true,
+          ),
           const SizedBox(height: 6),
           Text(
             // Yakuniy summani server qayta hisoblaydi — bu taxmin.
@@ -591,25 +912,42 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Xulosa qatori.
+  ///
+  /// Yorliq ham, qiymat ham siqiladi: ikkalasi ham qat'iy bo'lsa,
+  /// uzunroq matn (masalan «Sello Coins chegirmasi» + yetti xonali
+  /// summa) qatorni toshirib yuborardi — tor ekranda yoki matn
+  /// kattalashtirilganda.
   Widget _row(String label, String value, {bool bold = false}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: bold ? 15 : 13.5,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: bold ? SellobayColors.ink : SellobayColors.mutedText,
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: bold ? 15 : 13.5,
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                  color: bold ? SellobayColors.ink : SellobayColors.mutedText,
+                ),
               ),
             ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: bold ? 17 : 13.5,
-                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                color: SellobayColors.ink,
+            const SizedBox(width: 10),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: bold ? 17 : 13.5,
+                    fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+                    color: SellobayColors.ink,
+                  ),
+                ),
               ),
             ),
           ],

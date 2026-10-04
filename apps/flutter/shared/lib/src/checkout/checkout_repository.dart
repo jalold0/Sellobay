@@ -32,20 +32,32 @@ class CheckoutRepository {
         .toList();
   }
 
-  /// Hozir ishlaydigan to'lov usullari.
+  /// Hozir ishlaydigan to'lov usullari va platforma kartalari.
   ///
   /// Server sozlanmagan provayderni (env kalitlari yo'q) ro'yxatga
   /// qo'shmaydi. Shu sababli ro'yxatni KLIENTDA yozib qo'ymaymiz: aks
   /// holda mijoz Click'ni tanlab, bo'sh `service_id` bilan qurilgan
   /// buzuq to'lov sahifasiga tushardi.
-  Future<List<PaymentProvider>> fetchPaymentProviders() async {
+  ///
+  /// Kartalar AYNI javobda keladi — ikkita so'rov qilishning hojati yo'q.
+  Future<PaymentOptions> fetchPaymentOptions() async {
     final data = await _api.get<Map<String, dynamic>>('/api/payment-cards');
-    return (data['providers'] as List<dynamic>? ?? const [])
-        .cast<String>()
-        .map(PaymentProvider.fromValue)
-        .whereType<PaymentProvider>()
-        .toList();
+    return PaymentOptions(
+      cards: (data['cards'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(PaymentCard.fromJson)
+          .toList(),
+      providers: (data['providers'] as List<dynamic>? ?? const [])
+          .cast<String>()
+          .map(PaymentProvider.fromValue)
+          .whereType<PaymentProvider>()
+          .toList(),
+    );
   }
+
+  /// Chek rasmini yuklaydi va bazaga yoziladigan yo'lni qaytaradi.
+  Future<String> uploadReceipt({required List<int> bytes, required String filename}) =>
+      _api.uploadReceipt(bytes: bytes, filename: filename);
 
   /// Promokodni tekshiradi. Hech narsa saqlanmaydi — faqat ko'rsatish.
   Future<PromoPreview> validatePromo({
@@ -85,7 +97,13 @@ class CheckoutRepository {
     required DeliveryMethod deliveryMethod,
     String? pickupPointId,
     required PaymentProvider paymentProvider,
+    /// `UZCARD` uchun MAJBURIY — `uploadReceipt` qaytargan yo'l.
+    String? paymentReceipt,
+    String? paymentNote,
     String? promoCode,
+    /// Ishlatiladigan Sello Coins. Serverda QAYTA cheklanadi: balans,
+    /// promokoddan keyingi qoldiq va coin qiymati bo'yicha.
+    int redeemCoins = 0,
     String? notes,
     required String idempotencyKey,
   }) async {
@@ -111,7 +129,12 @@ class CheckoutRepository {
         'deliveryMethod': deliveryMethod.value,
         'pickupPointId': ?pickupPointId,
         'paymentProvider': paymentProvider.value,
+        if (paymentReceipt != null && paymentReceipt.isNotEmpty)
+          'paymentReceipt': paymentReceipt,
+        if (paymentNote != null && paymentNote.trim().isNotEmpty)
+          'paymentNote': paymentNote.trim(),
         if (promoCode != null && promoCode.trim().isNotEmpty) 'promoCode': promoCode.trim(),
+        if (redeemCoins > 0) 'redeemCoins': redeemCoins,
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       },
       idempotencyKey: idempotencyKey,

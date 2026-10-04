@@ -519,6 +519,7 @@
     "promoDiscount": "Promo discount"
   },
   "auth": {
+    "loginForOnlinePayment": "Sign up to pay online",
     "loginRequired": "Please sign in to place an order",
     "phone": "Phone number",
     "email": "Email",
@@ -746,6 +747,7 @@
       "etaUntil": "Est. by {time}",
       "trackOnMap": "Track on map",
       "reorder": "Reorder",
+      "payNow": "Complete payment",
       "cancelOrder": "Cancel order",
       "cancelConfirm": "Cancel this order? This cannot be undone.",
       "cancelled": "Order cancelled",
@@ -936,6 +938,22 @@
     "savedCount": "{count} items saved",
     "emptyTitle": "Your wishlist is empty",
     "emptyDesc": "Tap the heart on a product card to save items you like"
+  },
+  "reviews": {
+    "formTitle": "Write a review",
+    "ratingLabel": "Your rating",
+    "titleLabel": "Title (optional)",
+    "bodyLabel": "Your thoughts (optional)",
+    "submit": "Submit",
+    "sent": "Your review was added",
+    "deleted": "Review deleted",
+    "deleteConfirm": "Delete this review?",
+    "onlyPurchasers": "To write a review you must have bought and received the product",
+    "alreadyWrote": "You have already reviewed this product",
+    "verified": "Verified purchase",
+    "yours": "Your review",
+    "viewAll": "All reviews",
+    "ratingRequired": "Pick a rating"
   },
   "brand": {
     "notFound": "Brand not found",

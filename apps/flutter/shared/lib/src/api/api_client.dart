@@ -188,6 +188,26 @@ class ApiClient {
   Future<SellobayConfig> fetchConfig() async =>
       SellobayConfig.fromJson(await getRaw<Map<String, dynamic>>('/api/config'));
 
+  /// Chek (kvitansiya) rasmini yuklaydi va ichki YO'LINI qaytaradi.
+  ///
+  /// Rasmning o'zi javobda qaytmaydi: chek yopiq saqlanadi va uni faqat
+  /// admin ko'ra oladi. Buyurtmaga o'sha yo'l yuboriladi.
+  ///
+  /// `multipart/form-data` — route `req.formData()` dan `file` ni
+  /// o'qiydi, JSON'dan emas.
+  Future<String> uploadReceipt({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final data = _unwrap<Map<String, dynamic>>(
+      await _send(() => _dio.post<dynamic>('/api/uploads/receipt', data: form)),
+    );
+    return data['pathname'] as String;
+  }
+
   /// Buyurtma yaratish.
   ///
   /// [idempotencyKey] — tarmoq uzilib qayta urinilganda IKKINCHI buyurtma
