@@ -9,7 +9,11 @@ void main() {
     });
 
     test('prod manzili `apps/web` ning o`zi — alohida subdomen yo`q', () {
-      expect(AppConfig.prodBaseUrl, 'https://sellobay.uz');
+      // `sellobay.uz` EMAS: o'sha domen hali ro'yxatdan o'tmagan va
+      // DNS'da yo'q. Reliz APK unga ulanib «tarmoq yo'q» deb turardi.
+      // Domen ulangach shu qator va `AppConfig.prodBaseUrl` birga
+      // o'zgaradi — test aynan shuni ushlab turish uchun qattiq yozilgan.
+      expect(AppConfig.prodBaseUrl, 'https://sellobay-web.vercel.app');
       expect(AppConfig.prodBaseUrl, startsWith('https://'));
       // Oxiridagi `/` bo'lsa, so'rov yo'li `//api/...` bo'lib ketardi.
       expect(AppConfig.prodBaseUrl, isNot(endsWith('/')));

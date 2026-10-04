@@ -7,7 +7,17 @@ class AppConfig {
   /// Alohida mobil backend YO'Q — bu `apps/web` dagi Next.js API'si
   /// (`apps/web/src/app/api/**`). Web ham, mobil ham ayni o'shanga
   /// ulanadi, shuning uchun alohida `api.` subdomeni ham yo'q.
-  static const prodBaseUrl = 'https://sellobay.uz';
+  ///
+  /// DIQQAT: bu yerda ilgari `https://sellobay.uz` turardi, lekin o'sha
+  /// domen hali RO'YXATDAN O'TMAGAN — DNS'da umuman yo'q. Natijada
+  /// reliz APK har bir so'rovda «tarmoq yo'q» deb turardi va buni
+  /// telefon aybi deb o'ylash oson edi. `.env.example` dagi
+  /// `NEXT_PUBLIC_SITE_URL=https://sellobay.uz` — kelajak rejasi, hozirgi
+  /// haqiqat emas.
+  ///
+  /// Domen ulangach shu qator o'zgaradi (va eski manzil Vercel'da
+  /// redirect bo'lib qoladi, shuning uchun eski APK'lar ham ishlaydi).
+  static const prodBaseUrl = 'https://sellobay-web.vercel.app';
 
   /// Android emulyatorida `localhost` ISHLAMAYDI — `10.0.2.2` kerak
   /// (emulyator uchun host mashina shu manzilda).

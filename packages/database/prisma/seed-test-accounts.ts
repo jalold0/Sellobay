@@ -1,5 +1,5 @@
-// Sellobay — 3 ta test hisob seed
-// Customer + Seller (ACTIVE, approval o'tkazib yuborilgan) + SUPER_ADMIN
+// Sellobay - 4 ta test hisob seed
+// Customer + Seller (ACTIVE, approval o'tkazib yuborilgan) + Courier + SUPER_ADMIN
 // Idempotent: upsert + role assignment dedup
 // Run: pnpm --filter @ecom/database exec tsx prisma/seed-test-accounts.ts
 
@@ -21,7 +21,7 @@ interface SeedAccount {
   password: string;
   firstName: string;
   lastName: string;
-  roles: Array<'CUSTOMER' | 'SELLER' | 'ADMIN' | 'SUPER_ADMIN'>;
+  roles: Array<'CUSTOMER' | 'SELLER' | 'COURIER' | 'ADMIN' | 'SUPER_ADMIN'>;
   status: 'ACTIVE' | 'PENDING';
 }
 
@@ -43,6 +43,25 @@ const ACCOUNTS: SeedAccount[] = [
     lastName: 'Sotuvchi',
     roles: ['CUSTOMER', 'SELLER'],
     status: 'ACTIVE', // testda darhol faol (production'da PENDING → admin approval)
+  },
+  {
+    // Kuryer ilovasiga kirishning YAGONA yo'li.
+    //
+    // Admin panelida rol tayinlash oynasi YO'Q va `COURIER` rolini
+    // beradigan boshqa kod ham yo'q, shuning uchun bu hisob bo'lmasa
+    // `apps/flutter/courier` ga umuman kirib bo'lmaydi: u har bir
+    // so'rovda `assertCourier` dan 403 `NOT_A_COURIER` oladi.
+    //
+    // `Courier` qatorini bu yerda yaratmaymiz — `ensureCourierProfile`
+    // uni birinchi so'rovda o'zi yaratadi (rol haqiqat manbai, profil
+    // unga ergashadi).
+    email: 'courier@test.uz',
+    phone: '+998904444444',
+    password: 'Test1234',
+    firstName: 'Test',
+    lastName: 'Kuryer',
+    roles: ['CUSTOMER', 'COURIER'],
+    status: 'ACTIVE',
   },
   {
     email: 'admin@test.uz',
