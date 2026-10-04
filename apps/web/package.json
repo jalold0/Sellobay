@@ -4,7 +4,7 @@
   "private": true,
   "description": "Mijoz sayti (Next.js)",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "next dev -p 3000",
