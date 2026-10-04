@@ -74,6 +74,7 @@ const _card = {
 FakeBackend _backend({
   List<String> providers = const ['CLICK', 'PAYME', 'CASH_ON_DELIVERY'],
   List<Map<String, dynamic>> cards = const [],
+  int coins = 0,
   ResponseBody Function(int attempt)? order,
   ResponseBody Function()? receipt,
 }) {
@@ -90,6 +91,13 @@ FakeBackend _backend({
         });
       case '/api/addresses':
         return apiOk({'items': <Map<String, dynamic>>[]});
+      case '/api/loyalty':
+        return apiOk({
+          'coins': coins,
+          'spentSom': 0,
+          'history': <Map<String, dynamic>>[],
+          'checkedInToday': false,
+        });
       case '/api/orders':
         attempt++;
         return order?.call(attempt) ?? rawJson(_orderOk());
@@ -474,6 +482,77 @@ void main() {
 
       expect(find.text('Karta'), findsOneWidget);
       expect(find.text('Click'), findsNothing);
+    });
+  });
+
+  group('Sello Coins', () {
+    testWidgets('balans NOL bo`lsa bo`lim ko`rsatilmaydi', (tester) async {
+      // Nolga teng kalitni bosib ko'rgan mijoz nima bo'lmaganini
+      // tushunmasdi.
+      await pumpCheckout(tester, _backend(), signedIn: true);
+
+      expect(find.text('Sello Coins ishlatish'), findsNothing);
+    });
+
+    testWidgets('balans bor — kalit va summa ko`rinadi', (tester) async {
+      // Savatda 2 x 300 000 = 600 000 (yetkazish tekin, chegara
+      // 500 000). 1 coin = 10 so'm, ya'ni 500 coin bemalol sig'adi.
+      await pumpCheckout(tester, _backend(coins: 500), signedIn: true);
+      await scrollTo(tester, find.text('Sello Coins ishlatish'));
+
+      expect(find.text('Sello Coins ishlatish'), findsOneWidget);
+      expect(find.textContaining('500 coin'), findsOneWidget);
+    });
+
+    testWidgets('kalit yoqilmasa coin YUBORILMAYDI', (tester) async {
+      final backend = _backend(coins: 500);
+      await pumpCheckout(tester, backend, signedIn: true);
+      await fillAddress(tester);
+      await tester.tap(find.text('Buyurtmani tasdiqlash'));
+      await settle(tester);
+
+      final sent = backend.bodies[backend.calls.indexOf('/api/orders')]!;
+      expect(sent.containsKey('redeemCoins'), isFalse);
+    });
+
+    testWidgets('yoqilsa coin soni yuboriladi', (tester) async {
+      final backend = _backend(coins: 500);
+      await pumpCheckout(tester, backend, signedIn: true);
+      await fillAddress(tester);
+      await scrollTo(tester, find.text('Sello Coins ishlatish'));
+      await tester.tap(find.byType(SwitchListTile));
+      await settle(tester);
+
+      await tester.tap(find.text('Buyurtmani tasdiqlash'));
+      await settle(tester);
+
+      final sent = backend.bodies[backend.calls.indexOf('/api/orders')]!;
+      expect(sent['redeemCoins'], 500);
+    });
+
+    testWidgets('buyurtma summasidan OSHIB ketmaydi', (tester) async {
+      // Savat 600 000 so'm, 1 coin = 10 so'm -> ko'pi bilan 60 000
+      // coin sig'adi. Serverda ham shunday cheklanadi (`maxByTotal`).
+      final backend = _backend(coins: 100000);
+      await pumpCheckout(tester, backend, signedIn: true);
+      await fillAddress(tester);
+      await scrollTo(tester, find.text('Sello Coins ishlatish'));
+      await tester.tap(find.byType(SwitchListTile));
+      await settle(tester);
+      await tester.tap(find.text('Buyurtmani tasdiqlash'));
+      await settle(tester);
+
+      final sent = backend.bodies[backend.calls.indexOf('/api/orders')]!;
+      // 600 000 / 10 = 60 000 ta coin.
+      expect(sent['redeemCoins'], 60000);
+    });
+
+    testWidgets('mehmonda bo`lim YO`Q — `/api/loyalty` 401 beradi', (tester) async {
+      final backend = _backend(coins: 500);
+      await pumpCheckout(tester, backend);
+
+      expect(backend.countOf('/api/loyalty'), 0);
+      expect(find.text('Sello Coins ishlatish'), findsNothing);
     });
   });
 }

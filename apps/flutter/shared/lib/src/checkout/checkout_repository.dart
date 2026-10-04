@@ -101,6 +101,9 @@ class CheckoutRepository {
     String? paymentReceipt,
     String? paymentNote,
     String? promoCode,
+    /// Ishlatiladigan Sello Coins. Serverda QAYTA cheklanadi: balans,
+    /// promokoddan keyingi qoldiq va coin qiymati bo'yicha.
+    int redeemCoins = 0,
     String? notes,
     required String idempotencyKey,
   }) async {
@@ -131,6 +134,7 @@ class CheckoutRepository {
         if (paymentNote != null && paymentNote.trim().isNotEmpty)
           'paymentNote': paymentNote.trim(),
         if (promoCode != null && promoCode.trim().isNotEmpty) 'promoCode': promoCode.trim(),
+        if (redeemCoins > 0) 'redeemCoins': redeemCoins,
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       },
       idempotencyKey: idempotencyKey,

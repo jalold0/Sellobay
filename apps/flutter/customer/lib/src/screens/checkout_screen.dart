@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:flutter/services.dart';
@@ -53,6 +54,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String? _receiptPath;
   bool _receiptBusy = false;
   final _paymentNote = TextEditingController();
+
+  /// Joriy coin balansi (`GET /api/loyalty`). Mehmonda 0.
+  int _coinBalance = 0;
+  bool _useCoins = false;
 
   DeliveryMethod _delivery = DeliveryMethod.homeDelivery;
   PickupPoint? _pickupPoint;
@@ -117,6 +122,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
     }
 
+    // Coin balansi — faqat kirgan foydalanuvchida (`/api/loyalty` 401).
+    if (_signedIn) {
+      try {
+        final loyalty = await SellobayRuntimeScope.of(context).loyalty.fetchSummary();
+        if (mounted) setState(() => _coinBalance = loyalty.coins);
+      } catch (_) {
+        // Balans olinmasa coin bo'limi ko'rsatilmaydi. Raqamni
+        // o'zimiz o'ylab topmaymiz.
+      }
+    }
+
     // Saqlangan manzillar — faqat kirgan foydalanuvchida.
     if (_signedIn) {
       try {
@@ -158,6 +174,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         CartScope.of(context),
         SellobayRuntimeScope.of(context).config.value,
       );
+
+  /// 1 coin necha so'm — SERVERDAN (`/api/config`).
+  ///
+  /// Dart'ga ko'chirib yozsak, qoida ikki joyda bo'lib, vaqt o'tib
+  /// ajralib ketardi. Qoidalar yuklanmagan bo'lsa coin bo'limi
+  /// umuman ko'rsatilmaydi.
+  int? _coinValueSom(BuildContext context) =>
+      SellobayRuntimeScope.of(context).config.value?.loyalty.coinValueSom;
+
+  /// Shu buyurtmada ishlatish mumkin bo'lgan coinlar.
+  ///
+  /// Chegara SERVERDAGI bilan bir xil: balans va promokoddan keyingi
+  /// qoldiq. Yakuniy raqamni baribir server hisoblaydi.
+  int _redeemableCoins(BuildContext context, CartTotals totals) {
+    final value = _coinValueSom(context);
+    if (value == null || value <= 0 || _coinBalance <= 0) return 0;
+    final promo = (_promo?.valid == true ? _promo!.discount : null) ?? Decimal.zero;
+    final afterPromo = totals.total - promo;
+    if (afterPromo <= Decimal.zero) return 0;
+    final maxByTotal = (afterPromo.toDouble() / value).floor();
+    return _coinBalance < maxByTotal ? _coinBalance : maxByTotal;
+  }
+
+  int _coinsToRedeem(BuildContext context, CartTotals totals) =>
+      _useCoins ? _redeemableCoins(context, totals) : 0;
 
   Future<void> _applyPromo() async {
     final code = _promoField.text.trim();
@@ -237,6 +278,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paymentReceipt: _receiptPath,
         paymentNote: _paymentNote.text,
         promoCode: _promo?.valid == true ? _promo!.code : null,
+        redeemCoins: _coinsToRedeem(context, _totals(context)),
         notes: _notes.text,
         idempotencyKey: _idempotencyKey,
       );
@@ -309,6 +351,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 _sectionTitle(context.t('checkout.shipping.title')),
                 _deliveryOptions(context),
                 const SizedBox(height: 22),
+                _coinsRow(context),
                 _sectionTitle(context.t('checkout.payment.title')),
                 _paymentOptions(context),
                 const SizedBox(height: 22),
@@ -793,8 +836,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Sello Coins bilan to'lash.
+  ///
+  /// Web'dagi kabi BITTA kalit: mumkin bo'lgan hammasi ishlatiladi
+  /// (`checkout-flow.tsx`). Qisman yechish serverda ham, web'da ham
+  /// yo'q — ikki xil xulq yaratmaymiz.
+  Widget _coinsRow(BuildContext context) {
+    final totals = _totals(context);
+    final redeemable = _redeemableCoins(context, totals);
+    // Ishlatadigan coin yo'q bo'lsa bo'lim umuman ko'rsatilmaydi:
+    // nolga teng kalitni bosib ko'rgan mijoz nima bo'lmaganini
+    // tushunmasdi.
+    if (redeemable <= 0) return const SizedBox.shrink();
+
+    final som = Decimal.fromInt(redeemable * (_coinValueSom(context) ?? 0));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: SwitchListTile(
+        value: _useCoins,
+        onChanged: (v) => setState(() => _useCoins = v),
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          context.t('checkout.useCoinsTitle'),
+          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          context.t(
+            'checkout.useCoinsAvail',
+            params: {'coins': redeemable, 'som': formatMoney(som)},
+          ),
+          style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+        ),
+      ),
+    );
+  }
+
   Widget _summary(BuildContext context, CartTotals totals) {
     final discount = _promo?.valid == true ? _promo!.discount : null;
+    final coins = _coinsToRedeem(context, totals);
+    final coinDiscount = Decimal.fromInt(coins * (_coinValueSom(context) ?? 0));
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -812,8 +892,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   : formatMoney(totals.shippingFee),
             ),
           if (discount != null) _row(context.t('checkout.promoDiscount'), '−${formatMoney(discount)}'),
+          if (coinDiscount > Decimal.zero)
+            _row(context.t('checkout.coinDiscount'), '−${formatMoney(coinDiscount)}'),
           const Divider(height: 18),
-          _row(context.t('checkout.summaryTotal'), formatMoney(totals.total), bold: true),
+          _row(
+            context.t('checkout.summaryTotal'),
+            // Taxminiy: yakuniy summani server qayta hisoblaydi.
+            formatMoney(totals.total - (discount ?? Decimal.zero) - coinDiscount),
+            bold: true,
+          ),
           const SizedBox(height: 6),
           Text(
             // Yakuniy summani server qayta hisoblaydi — bu taxmin.
@@ -825,25 +912,42 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Xulosa qatori.
+  ///
+  /// Yorliq ham, qiymat ham siqiladi: ikkalasi ham qat'iy bo'lsa,
+  /// uzunroq matn (masalan «Sello Coins chegirmasi» + yetti xonali
+  /// summa) qatorni toshirib yuborardi — tor ekranda yoki matn
+  /// kattalashtirilganda.
   Widget _row(String label, String value, {bool bold = false}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: bold ? 15 : 13.5,
-                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: bold ? SellobayColors.ink : SellobayColors.mutedText,
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: bold ? 15 : 13.5,
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                  color: bold ? SellobayColors.ink : SellobayColors.mutedText,
+                ),
               ),
             ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: bold ? 17 : 13.5,
-                fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                color: SellobayColors.ink,
+            const SizedBox(width: 10),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: bold ? 17 : 13.5,
+                    fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+                    color: SellobayColors.ink,
+                  ),
+                ),
               ),
             ),
           ],

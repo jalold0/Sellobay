@@ -100,6 +100,7 @@ Future<void> shoot(
   Widget home, {
   FakeBackend? backend,
   CartStore? cart,
+  bool signIn = false,
   /// Suratdan oldin bajariladigan amal (bosish, surish).
   Future<void> Function(WidgetTester tester)? before,
 }) async {
@@ -112,7 +113,21 @@ Future<void> shoot(
     backend ?? FakeBackend((options, body) => apiErr(500, 'UNEXPECTED', options.path)),
     locale: uz,
     cart: cart,
+    // Biznes qoidalari — yetkazish narxi va coin qiymati shu yerdan.
+    // Qoidasiz ekran ularni UMUMAN ko'rsatmaydi (raqam o'ylab
+    // topilmaydi), ya'ni surat ham bo'sh chiqardi.
+    config: testConfig(),
   );
+  if (signIn) {
+    // `runAsync` SHART: `testWidgets` soxta vaqtda ishlaydi va kadr
+    // surilmaguncha tarmoq zanjiri tugamaydi. Ekran esa `_load()` da
+    // auth holatini BIR MARTA o'qiydi — kirish undan oldin tugashi
+    // kerak, aks holda coin bo'limi umuman so'ralmasdi.
+    await tester.runAsync(() async {
+      await runtime.api.session.save(access: 'a', refresh: 'r');
+      await runtime.auth.restore();
+    });
+  }
 
   await tester.pumpWidget(
     SellobayScope(
@@ -151,7 +166,7 @@ Future<void> shootTab(
     ..devicePixelRatio = 2;
   addTearDown(tester.view.reset);
 
-  final runtime = buildRuntime(backend, locale: uz, cart: cart);
+  final runtime = buildRuntime(backend, locale: uz, cart: cart, config: testConfig());
   if (signIn) {
     // `await` QILINMAYDI: soxta vaqtda kadr surilmaguncha tugamaydi.
     unawaited(runtime.auth.signInWithPassword(identifier: '+998901234567', password: 'parol1234'));
@@ -372,6 +387,15 @@ FakeBackend _checkoutBackend({bool cards = false}) => FakeBackend((options, body
           });
         case '/api/addresses':
           return apiOk({'items': <Map<String, dynamic>>[]});
+        case '/api/loyalty':
+          return apiOk({
+            'coins': 820,
+            'spentSom': 4300000,
+            'history': <Map<String, dynamic>>[],
+            'checkedInToday': false,
+          });
+        case '/api/auth/login':
+          return apiOk({'user': _me(), 'tokens': tokenPair('1')});
       }
       return apiErr(500, 'UNEXPECTED', options.path);
     });
@@ -502,7 +526,14 @@ void main() {
 
   testWidgets(
     '07 rasmiylashtirish',
-    (t) => shoot(t, '07-checkout', const CheckoutScreen(), backend: _checkoutBackend(), cart: _cart()),
+    (t) => shoot(
+      t,
+      '07-checkout',
+      const CheckoutScreen(),
+      backend: _checkoutBackend(),
+      cart: _cart(),
+      signIn: true,
+    ),
   );
 
   testWidgets(
@@ -524,6 +555,34 @@ void main() {
         await _settle(tester);
         await tester.scrollUntilVisible(
           find.text('Chekni yuklash'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+      },
+    ),
+  );
+
+  testWidgets(
+    '07c Sello Coins',
+    (t) => shoot(
+      t,
+      '07c-checkout-coins',
+      const CheckoutScreen(),
+      backend: _checkoutBackend(),
+      cart: _cart(),
+      signIn: true,
+      before: (tester) async {
+        await tester.scrollUntilVisible(
+          find.text('Sello Coins ishlatish'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+        await tester.tap(find.byType(SwitchListTile));
+        await _settle(tester);
+        await tester.scrollUntilVisible(
+          find.text('Jami'),
           220,
           scrollable: find.byType(Scrollable).first,
           maxScrolls: 40,

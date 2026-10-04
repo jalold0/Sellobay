@@ -15,6 +15,7 @@ import '../cart/cart_sync.dart';
 import '../catalog/catalog_repository.dart';
 import '../courier/courier_repository.dart';
 import '../checkout/checkout_repository.dart';
+import '../loyalty/loyalty_repository.dart';
 import '../wishlist/wishlist_repository.dart';
 import '../wishlist/wishlist_scope.dart';
 import '../wishlist/wishlist_store.dart';
@@ -35,6 +36,7 @@ class SellobayRuntime {
     required this.checkout,
     required this.addresses,
     required this.orders,
+    required this.loyalty,
     required this.wishlist,
     required this.courier,
     required this.config,
@@ -50,6 +52,7 @@ class SellobayRuntime {
   final CheckoutRepository checkout;
   final AddressRepository addresses;
   final OrdersRepository orders;
+  final LoyaltyRepository loyalty;
   final WishlistStore wishlist;
 
   /// Kuryer ilovasi uchun. Mijoz ilovasida ishlatilmaydi.
@@ -115,6 +118,7 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
     checkout: CheckoutRepository(api),
     addresses: AddressRepository(api),
     orders: OrdersRepository(api),
+    loyalty: LoyaltyRepository(api),
     wishlist: WishlistStore(repository: WishlistRepository(api), auth: auth),
     courier: CourierRepository(api),
     config: config,

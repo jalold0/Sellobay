@@ -219,6 +219,7 @@ SellobayRuntime buildRuntime(
     checkout: CheckoutRepository(client.api),
     addresses: AddressRepository(client.api),
     orders: OrdersRepository(client.api),
+    loyalty: LoyaltyRepository(client.api),
     wishlist: WishlistStore(repository: WishlistRepository(client.api), auth: auth),
     courier: CourierRepository(client.api),
     cartSync: CartSync(
