@@ -4,4 +4,11 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Lokal dev-serverni telefonda sinash uchun: Android 9 (API 28)
+         dan boshlab shifrlanmagan HTTP sukut bo'yicha BLOKLANADI, ya'ni
+         `API_BASE_URL=http://192.168.x.x:3000` manzili jim ishlamay
+         qo'yardi. FAQAT debug build uchun — reliz manifestida bu yo'q,
+         shuning uchun do'konga chiqadigan APK'ga ta'sir qilmaydi. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
