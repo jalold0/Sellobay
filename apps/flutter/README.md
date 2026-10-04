@@ -61,7 +61,7 @@ pnpm flutter:i18n     # repo root'dan
 ```
 
 `packages/i18n/src/locales/*.json` ni `shared/assets/i18n/` ga ko'chiradi
-(1029 kalit × 3 til). **O'sha fayllarni qo'lda tahrirlamang** — manba
+(1086 kalit x 3 til). **O'sha fayllarni qo'lda tahrirlamang** — manba
 `packages/i18n`.
 
 `shared/pubspec.yaml` ga:
@@ -89,6 +89,77 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
 (Android emulyatorida `localhost` emas, `10.0.2.2`.)
+
+## Android: birinchi marta qurish
+
+`flutter doctor` yashil bo'lishi YETARLI EMAS. APK quriladigan mashinada
+qo'shimcha ikki komponent kerak:
+
+| Komponent           | Nega                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| NDK `28.2.13676358` | `jni` paketi `externalNativeBuild { cmake }` bilan haqiqiy C kodini kompilyatsiya qiladi |
+| CMake `3.22.1`      | o'sha build'ni yurituvchi                                                                |
+
+`jni` TO'G'RIDAN-TO'G'RI bog'liqlik emas, shuning uchun `pubspec.yaml` ga
+qarab uni sezmaysiz. Zanjir: `image_picker` -> `path_provider_android`
+-> `jni`. Versiyani Flutter SDK belgilaydi
+(`packages/flutter_tools/gradle/src/main/kotlin/FlutterExtension.kt`),
+ya'ni SDK yangilansa NDK versiyasi ham o'zgaradi.
+
+### sdkmanager tuzog'i
+
+Gradle ularni O'ZI yuklab olmoqchi bo'ladi va YIQILADI:
+
+```
+Package ndk not found.
+Package 28.2.13676358 not found.
+> Android sdkmanager did not install NDK 28.2.13676358
+```
+
+Sabab: Google `sdkmanager` ni yangi `android` CLI bilan almashtirgan va
+paket nomi formati o'zgargan. Gradle eski `ndk;28.2.13676358` ni
+yuboradi, yangi CLI esa uni nuqtali vergulda ikkiga bo'lib tashlaydi.
+
+Qo'lda o'rnating — `cmdline-tools/latest/bin/` dan:
+
+```bash
+android sdk install "ndk/28.2.13676358"
+android sdk install "cmake/3.22.1"
+```
+
+**Nuqtali vergul emas, SLASH.** `@` shakli ham ishlamaydi: u
+`No url for ndk. Ignoring.` deb yozadi va **exit code 0 qaytaradi** —
+ya'ni jim yiqiladi, skript esa muvaffaqiyat deb o'ylaydi. O'rnatilganini
+`$ANDROID_HOME/ndk/` papkasiga qarab tekshiring.
+
+### INTERNET ruxsati
+
+`main/AndroidManifest.xml` dagi `INTERNET` ruxsatini O'CHIRMANG. Flutter
+shabloni uni faqat `debug/` va `profile/` ga qo'yadi; ularsiz reliz APK
+tarmoqqa chiqa olmaydi va har bir ekran "tarmoq xatosi" bilan ochiladi.
+Nuqson `flutter run` da KO'RINMAYDI — faqat reliz APK telefonga
+o'rnatilgandan keyin chiqadi.
+
+### Qurish
+
+```bash
+pnpm flutter:i18n                  # repo root'dan, tarjimalar generatsiyasi
+cd apps/flutter/customer
+flutter build apk --release        # -> build/app/outputs/flutter-apk/
+flutter install --release
+```
+
+Reliz build standart holda `https://sellobay.uz` ga ulanadi
+(`AppConfig.fromEnvironment`), bayroq kerak emas.
+
+APK ~53 MB, chunki u universal (barcha ABI). Kichikroq kerak bo'lsa:
+`flutter build apk --split-per-abi` (~18 MB), lekin unda telefon
+arxitekturasiga mos faylni o'zingiz tanlaysiz.
+
+Reliz build hozircha DEBUG kaliti bilan imzolanadi (qarang
+`android/app/build.gradle.kts`) — sinash uchun yetarli, Play Store uchun
+emas. Haqiqiy keystore ulangach, ilovani telefondan avval o'chirish
+kerak: imzo mos kelmaydi.
 
 ## Ko'chish tartibi
 
