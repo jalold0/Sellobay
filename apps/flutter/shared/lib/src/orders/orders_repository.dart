@@ -21,6 +21,23 @@ class OrdersRepository {
   /// imkoniyati bilan. Ro'yxat javobida bular YO'Q.
   ///
   /// Boshqa odamning buyurtmasi so'ralsa server `403 FORBIDDEN` beradi.
+  /// Raqam + telefon bo'yicha kuzatish. AUTH TALAB QILMAYDI.
+  ///
+  /// Telefon SHART: buyurtma raqami ketma-ket
+  /// (`ORD-2026-00001234`), faqat raqam bo'yicha qidirish begona
+  /// odamga birma-bir sanab chiqish imkonini berardi.
+  ///
+  /// Server topilmadi va telefon mos emas holatlariga BIR XIL javob
+  /// qaytaradi (404) — farq «bu raqam mavjud» degan ma'lumotni
+  /// oshkor qilardi.
+  Future<TrackedOrder> track({required String number, required String phone}) async {
+    final data = await _api.post<Map<String, dynamic>>(
+      '/api/orders/track',
+      body: {'number': number.trim().toUpperCase(), 'phone': phone.trim()},
+    );
+    return TrackedOrder.fromJson(data);
+  }
+
   Future<OrderDetail> fetchOrder(String id) async {
     final data = await _api.get<Map<String, dynamic>>('/api/orders/$id');
     return OrderDetail.fromJson(data);

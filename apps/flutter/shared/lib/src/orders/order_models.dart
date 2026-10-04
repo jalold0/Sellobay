@@ -293,3 +293,64 @@ class OrderDetail {
 
   bool get hasDiscount => discountTotal > Decimal.zero;
 }
+
+/// Raqam + telefon bo'yicha kuzatilgan buyurtma (`POST /api/orders/track`).
+///
+/// Javobda ATAYLAB kam ma'lumot: manzil, ism va to'lov tafsilotlari
+/// berilmaydi — ular faqat kabinetda, to'liq autentifikatsiyadan
+/// keyin ko'rinadi.
+class TrackedOrder {
+  const TrackedOrder({
+    required this.number,
+    required this.status,
+    required this.rawStatus,
+    required this.placedAt,
+    required this.total,
+    required this.deliveryMethod,
+    required this.itemCount,
+    required this.timeline,
+  });
+
+  factory TrackedOrder.fromJson(Map<String, dynamic> json) {
+    final order = json['order'] as Map<String, dynamic>? ?? const {};
+    return TrackedOrder(
+      number: order['number'] as String? ?? '',
+      status: OrderStatus.fromValue(order['status'] as String?),
+      rawStatus: order['status'] as String? ?? '',
+      placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
+      total: parseMoney(order['total']),
+      deliveryMethod: order['deliveryMethod'] as String?,
+      itemCount: (order['itemCount'] as num?)?.toInt() ?? 0,
+      timeline: (order['timeline'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(TrackedStep.fromJson)
+          .toList(),
+    );
+  }
+
+  final String number;
+  final OrderStatus? status;
+  final String rawStatus;
+  final DateTime? placedAt;
+  final Decimal total;
+  final String? deliveryMethod;
+  final int itemCount;
+
+  /// Holat tarixi — eng eskisidan boshlab.
+  final List<TrackedStep> timeline;
+}
+
+/// Kuzatuvdagi bitta qadam.
+class TrackedStep {
+  const TrackedStep({required this.status, required this.rawStatus, required this.at});
+
+  factory TrackedStep.fromJson(Map<String, dynamic> json) => TrackedStep(
+        status: OrderStatus.fromValue(json['status'] as String?),
+        rawStatus: json['status'] as String? ?? '',
+        at: DateTime.tryParse(json['at'] as String? ?? ''),
+      );
+
+  final OrderStatus? status;
+  final String rawStatus;
+  final DateTime? at;
+}

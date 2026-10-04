@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'addresses_screen.dart';
+import 'track_order_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Profil: ma'lumotlar, til va chiqish.
@@ -181,6 +182,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   labelKey: 'profile.nav.wishlist',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const WishlistScreen()),
+                  ),
+                ),
+                _linkTile(
+                  context,
+                  icon: Icons.local_shipping_outlined,
+                  labelKey: 'nav.trackOrder',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const TrackOrderScreen()),
                   ),
                 ),
                 _linkTile(

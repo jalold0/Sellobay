@@ -28,6 +28,18 @@ Future<void> settleAssets(WidgetTester tester) async {
   await settle(tester);
 }
 
+/// Dangasa ro'yxatda pastdagi element qurilmaydi — avval surib
+/// chiqamiz. Profil o'sgani sari bu kerak bo'ladi.
+Future<void> scrollTo(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(
+    target,
+    220,
+    scrollable: find.byType(Scrollable).first,
+    maxScrolls: 40,
+  );
+  await settle(tester);
+}
+
 Future<void> settleRoute(WidgetTester tester) async {
   await settle(tester);
   await tester.pump(const Duration(milliseconds: 400));
@@ -141,10 +153,7 @@ void main() {
     final runtime = await pumpProfile(tester, _backend());
 
     // Profilda havolalar ko'payib, tugma ekrandan pastga tushdi.
-    await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Chiqish'));
-    // Suriluvchi joylashuv keyingi KADRDA yangilanadi — darhol bossak,
-    // koordinata eski bo'lib, bosish pastki panelga tushib ketardi.
-    await settle(tester);
+    await scrollTo(tester, find.widgetWithText(OutlinedButton, 'Chiqish'));
     await tester.tap(find.widgetWithText(OutlinedButton, 'Chiqish'));
     await settleRoute(tester);
     await tester.tap(find.text('Bekor qilish'));
@@ -223,6 +232,7 @@ void main() {
       final backend = _backend(after: _user(locale: 'ru'));
       final runtime = await pumpProfile(tester, backend);
 
+      await scrollTo(tester, find.text('Русский'));
       await tester.tap(find.text('Русский'));
       await settleAssets(tester);
 
@@ -249,6 +259,7 @@ void main() {
       final backend = _backend(patch: () => apiErr(500, 'SERVER', 'Ichki xato'));
       final runtime = await pumpProfile(tester, backend);
 
+      await scrollTo(tester, find.text('English'));
       await tester.tap(find.text('English'));
       await settle(tester);
 
@@ -271,6 +282,7 @@ void main() {
 
     expect(find.text('Profil'), findsOneWidget);
     expect(find.text("Profil ma'lumotlari"), findsOneWidget);
+    await scrollTo(tester, find.text('Til tanlash'));
     expect(find.text('Til tanlash'), findsOneWidget);
   });
 }
