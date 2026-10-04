@@ -754,6 +754,7 @@
       "etaUntil": "Taxminan {time} gacha",
       "trackOnMap": "Xaritada kuzatish",
       "reorder": "Qayta buyurtma",
+      "payNow": "To'lovni yakunlash",
       "cancelOrder": "Buyurtmani bekor qilish",
       "cancelConfirm": "Buyurtma bekor qilinsinmi? Bu amalni qaytarib bo'lmaydi.",
       "cancelled": "Buyurtma bekor qilindi",

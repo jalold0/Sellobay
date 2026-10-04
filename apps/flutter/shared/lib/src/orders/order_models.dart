@@ -4,6 +4,39 @@ import '../catalog/localized_text.dart';
 import '../utils/money.dart';
 
 /// Buyurtma holati — `OrderStatus` enum (schema.prisma) bilan bir xil.
+/// To'lov holati — `PaymentStatus` enum (schema.prisma) bilan bir xil.
+enum PaymentStatus {
+  pending('PENDING'),
+  authorized('AUTHORIZED'),
+  paid('PAID'),
+  partiallyRefunded('PARTIALLY_REFUNDED'),
+  refunded('REFUNDED'),
+  failed('FAILED'),
+  cancelled('CANCELLED');
+
+  const PaymentStatus(this.value);
+
+  final String value;
+
+  String get labelKey => 'order.paymentStatus.$value';
+
+  /// Pul kelganmi.
+  bool get isSettled => this == PaymentStatus.paid || this == PaymentStatus.authorized;
+
+  /// Mijoz yana urinib ko'rishi MUMKINMI.
+  ///
+  /// `CANCELLED` va qaytarilganlar bundan tashqarida: ularda qayta
+  /// to'lash tugmasini ko'rsatsak, server baribir rad etardi.
+  bool get isRetriable => this == PaymentStatus.pending || this == PaymentStatus.failed;
+
+  static PaymentStatus? fromValue(String? value) {
+    for (final s in PaymentStatus.values) {
+      if (s.value == value) return s;
+    }
+    return null;
+  }
+}
+
 enum OrderStatus {
   pending('PENDING'),
   confirmed('CONFIRMED'),
@@ -180,6 +213,7 @@ class OrderDetail {
     required this.deliveryMethod,
     required this.paymentProvider,
     required this.paymentStatus,
+    required this.payment,
     required this.paymentReview,
     required this.placedAt,
     required this.deliveredAt,
@@ -208,6 +242,7 @@ class OrderDetail {
       deliveryMethod: order['deliveryMethod'] as String? ?? '',
       paymentProvider: order['paymentProvider'] as String?,
       paymentStatus: order['paymentStatus'] as String?,
+      payment: PaymentStatus.fromValue(order['paymentStatus'] as String?),
       paymentReview: order['paymentReview'] as bool? ?? false,
       placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
       deliveredAt: DateTime.tryParse(order['deliveredAt'] as String? ?? ''),
@@ -240,7 +275,12 @@ class OrderDetail {
   final String? notes;
   final String deliveryMethod;
   final String? paymentProvider;
+
+  /// Serverdagi XOM qiymat — ilova bilmaydigan holat ham ko'rsatiladi.
   final String? paymentStatus;
+
+  /// Tanilgan holat; `null` bo'lsa [paymentStatus] xom holida chiqadi.
+  final PaymentStatus? payment;
   final bool paymentReview;
   final DateTime? placedAt;
   final DateTime? deliveredAt;

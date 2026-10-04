@@ -311,7 +311,7 @@ Map<String, dynamic> _orderSummary({String status = 'PENDING'}) => {
 
 Map<String, dynamic> _orderDetail() => {
       ..._orderSummary(),
-      'paymentProvider': 'CASH_ON_DELIVERY',
+      'paymentProvider': 'CLICK',
       'paymentStatus': 'PENDING',
       'subtotal': '600000',
       'shippingTotal': '20000',

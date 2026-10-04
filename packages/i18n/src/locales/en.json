@@ -747,6 +747,7 @@
       "etaUntil": "Est. by {time}",
       "trackOnMap": "Track on map",
       "reorder": "Reorder",
+      "payNow": "Complete payment",
       "cancelOrder": "Cancel order",
       "cancelConfirm": "Cancel this order? This cannot be undone.",
       "cancelled": "Order cancelled",
