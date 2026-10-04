@@ -946,6 +946,22 @@
     "emptyTitle": "Sevimlilar bo'sh",
     "emptyDesc": "Yoqtirgan mahsulotlaringizni saqlash uchun kartochkadagi yurakcha tugmasini bosing"
   },
+  "reviews": {
+    "formTitle": "Sharh yozish",
+    "ratingLabel": "Bahoyingiz",
+    "titleLabel": "Sarlavha (ixtiyoriy)",
+    "bodyLabel": "Fikringiz (ixtiyoriy)",
+    "submit": "Yuborish",
+    "sent": "Sharhingiz qo'shildi",
+    "deleted": "Sharh o'chirildi",
+    "deleteConfirm": "Sharhni o'chirasizmi?",
+    "onlyPurchasers": "Sharh yozish uchun mahsulotni sotib olgan va qabul qilgan bo'lishingiz kerak",
+    "alreadyWrote": "Siz bu mahsulotga sharh yozgansiz",
+    "verified": "Tasdiqlangan xarid",
+    "yours": "Sizning sharhingiz",
+    "viewAll": "Barcha sharhlar",
+    "ratingRequired": "Bahoni tanlang"
+  },
   "brand": {
     "notFound": "Brend topilmadi",
     "metaDescription": "{name} — barcha mahsulotlar",

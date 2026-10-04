@@ -939,6 +939,22 @@
     "emptyTitle": "Your wishlist is empty",
     "emptyDesc": "Tap the heart on a product card to save items you like"
   },
+  "reviews": {
+    "formTitle": "Write a review",
+    "ratingLabel": "Your rating",
+    "titleLabel": "Title (optional)",
+    "bodyLabel": "Your thoughts (optional)",
+    "submit": "Submit",
+    "sent": "Your review was added",
+    "deleted": "Review deleted",
+    "deleteConfirm": "Delete this review?",
+    "onlyPurchasers": "To write a review you must have bought and received the product",
+    "alreadyWrote": "You have already reviewed this product",
+    "verified": "Verified purchase",
+    "yours": "Your review",
+    "viewAll": "All reviews",
+    "ratingRequired": "Pick a rating"
+  },
   "brand": {
     "notFound": "Brand not found",
     "metaDescription": "{name} — all products",
