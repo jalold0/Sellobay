@@ -359,6 +359,41 @@ Map<String, dynamic> _orderDetail() => {
     };
 
 FakeBackend _catalogBackend() => FakeBackend((options, body) {
+      if (options.path == '/api/products/nike-air-max/reviews') {
+        return apiOk({
+          'items': [
+            {
+              'id': 'r1',
+              'rating': 5,
+              'title': null,
+              'body': "Oyoqqa juda qulay o'tiribdi, o'lchami to'g'ri keldi.",
+              'images': <String>[],
+              'isVerifiedPurchase': true,
+              'helpfulCount': 0,
+              'createdAt': '2026-09-28T08:00:00.000Z',
+              'author': 'Dilnoza K.',
+              'userId': 'u2',
+            },
+            {
+              'id': 'r2',
+              'rating': 4,
+              'title': null,
+              'body': 'Yetkazish tez bo`ldi.',
+              'images': <String>[],
+              'isVerifiedPurchase': true,
+              'helpfulCount': 0,
+              'createdAt': '2026-09-20T08:00:00.000Z',
+              'author': 'Jasur T.',
+              'userId': 'u3',
+            },
+          ],
+          'total': 2,
+          'page': 1,
+          'limit': 3,
+          'hasMore': false,
+          'eligibility': null,
+        });
+      }
       if (options.path == '/api/categories') return rawJson(_categoriesJson);
       if (options.path == '/api/products/nike-air-max') return rawJson(_detailJson);
       return rawJson(_productsJson);
@@ -541,6 +576,24 @@ void main() {
       '05-product',
       const ProductScreen(slug: 'nike-air-max'),
       backend: _catalogBackend(),
+    ),
+  );
+
+  testWidgets(
+    '05b sharhlar',
+    (t) => shoot(
+      t,
+      '05b-product-reviews',
+      const ProductScreen(slug: 'nike-air-max'),
+      backend: _catalogBackend(),
+      before: (tester) async {
+        await tester.scrollUntilVisible(
+          find.text('2 ta sharh'),
+          240,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+      },
     ),
   );
 
