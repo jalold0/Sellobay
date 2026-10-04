@@ -87,3 +87,6 @@ android/app/build/
 
 # CI: pinlangan Flutter SDK (.gitlab-ci.yml dagi flutter-verify)
 .flutter-sdk/
+
+# Reyting qayta hisoblash skriptining zaxirasi (bir martalik, repoga kirmaydi)
+ratings-backup-*.json

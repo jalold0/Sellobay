@@ -19,9 +19,14 @@
 
 // Boshqa skriptlar kabi paketga TO'G'RIDAN-TO'G'RI murojaat:
 // `@ecom/database` repo ildizidan hal bo'lmaydi.
+import { writeFileSync } from 'node:fs';
+
 import { Prisma, prisma } from '../packages/database/src/index.ts';
 
 const APPLY = process.argv.includes('--apply');
+
+/** Yozishdan oldingi holat shu yerga tushadi. */
+const BACKUP_FILE = `ratings-backup-${new Date().toISOString().slice(0, 10)}.json`;
 
 interface Change {
   slug: string;
@@ -46,6 +51,21 @@ async function main(): Promise<void> {
     _count: { _all: true },
   });
   const byProduct = new Map(grouped.map((g) => [g.productId, g]));
+
+  // Yozishdan OLDIN joriy holat zaxiraga tushadi. Bayroq emas, doimiy
+  // xulq: qaytarish kerak bo'lsa, «esdan chiqib qolgan» holat
+  // bo'lmasligi uchun.
+  if (APPLY) {
+    const snapshot = products.map((p) => ({
+      id: p.id,
+      slug: p.slug,
+      rating: p.rating.toFixed(2),
+      reviewCount: p.reviewCount,
+    }));
+    writeFileSync(BACKUP_FILE, JSON.stringify(snapshot, null, 2), 'utf8');
+    console.log(`Zaxira: ${BACKUP_FILE} (${snapshot.length} mahsulot)
+`);
+  }
 
   const changes: Change[] = [];
 
