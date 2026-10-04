@@ -1254,6 +1254,12 @@
     "statsFailed": "Failed",
     "statsActive": "In progress",
     "statsAllTime": "Delivered in total",
+    "profileTitle": "Profile",
+    "history": "Delivery history",
+    "historyEmpty": "No completed deliveries yet",
+    "loadMore": "Load more",
+    "vehicle": "Vehicle",
+    "ratingLabel": "Rating",
     "unclaimed": "New",
     "status": {
       "ASSIGNED": "Assigned",

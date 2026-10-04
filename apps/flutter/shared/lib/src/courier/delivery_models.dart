@@ -206,3 +206,23 @@ class CourierStats {
   final int active;
   final int allTimeDelivered;
 }
+
+/// Tarix sahifasi (`GET /api/courier/history`).
+class CourierHistoryPage {
+  const CourierHistoryPage({required this.items, required this.nextCursor});
+
+  factory CourierHistoryPage.fromJson(Map<String, dynamic> json) => CourierHistoryPage(
+        items: (json['items'] as List<dynamic>? ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(CourierDelivery.fromJson)
+            .toList(),
+        // `null` — oxiri. Serverdan keladi, ilova o'zi hisoblamaydi:
+        // «yana bormi» ni bilish uchun unga butun jadval kerak bo'lardi.
+        nextCursor: json['nextCursor'] as String?,
+      );
+
+  final List<CourierDelivery> items;
+  final String? nextCursor;
+
+  bool get hasMore => nextCursor != null;
+}

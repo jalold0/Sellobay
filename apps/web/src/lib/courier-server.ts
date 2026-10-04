@@ -476,3 +476,49 @@ export async function courierStats(userId: string) {
     allTimeDelivered,
   };
 }
+
+/**
+ * Kuryerning TUGAGAN topshiriqlari — tarix.
+ *
+ * `listCourierDeliveries` ataylab faqat faol topshiriqlarni beradi:
+ * kuryer kun davomida o'nlab yetkazish qiladi va ularni asosiy
+ * ro'yxatda qoldirsak, bugungi ish ko'rinmay ketardi. Tarix esa
+ * alohida ekranda, sahifalab o'qiladi.
+ *
+ * Kursor — `id`, `updatedAt` emas: bir soniyada bir nechta yozuv
+ * yangilansa, vaqt bo'yicha sahifalash ularning bir qismini
+ * tashlab ketardi yoki ikki marta ko'rsatardi.
+ */
+export async function listCourierHistory(
+  userId: string,
+  opts: { cursor?: string; limit?: number } = {},
+) {
+  const courier = await prisma.courier.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!courier) return { items: [], nextCursor: null };
+
+  const limit = Math.min(Math.max(opts.limit ?? 20, 1), 50);
+
+  const rows = await prisma.delivery.findMany({
+    where: {
+      courierId: courier.id,
+      status: { in: ['DELIVERED', 'FAILED', 'RETURNED'] },
+    },
+    // Eng yangisi tepada.
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    // Keyingisi borligini bilish uchun bittasini ORTIQCHA so'raymiz.
+    take: limit + 1,
+    ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+    select: deliverySelect,
+  });
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+
+  return {
+    items: page.map(serializeDelivery),
+    nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
+  };
+}

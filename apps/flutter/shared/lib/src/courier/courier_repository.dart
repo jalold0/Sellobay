@@ -68,6 +68,18 @@ class CourierRepository {
   }) =>
       _api.uploadDeliveryProof(bytes: bytes, filename: filename);
 
+  /// Tugagan topshiriqlar, sahifalab.
+  ///
+  /// [cursor] — oldingi sahifaning `nextCursor` i. Birinchi sahifa
+  /// uchun `null`.
+  Future<CourierHistoryPage> fetchHistory({String? cursor, int? limit}) async {
+    final data = await _api.get<Map<String, dynamic>>(
+      '/api/courier/history',
+      query: {'cursor': ?cursor, 'limit': ?limit},
+    );
+    return CourierHistoryPage.fromJson(data);
+  }
+
   Future<CourierStats> fetchStats() async {
     final data = await _api.get<Map<String, dynamic>>('/api/courier/stats');
     return CourierStats.fromJson(data['stats'] as Map<String, dynamic>);

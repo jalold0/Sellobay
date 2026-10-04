@@ -1254,6 +1254,12 @@
     "statsFailed": "Bajarilmadi",
     "statsActive": "Qo'lda",
     "statsAllTime": "Jami yetkazilgan",
+    "profileTitle": "Profil",
+    "history": "Topshiriqlar tarixi",
+    "historyEmpty": "Hali tugagan topshiriq yo'q",
+    "loadMore": "Yana yuklash",
+    "vehicle": "Transport",
+    "ratingLabel": "Reyting",
     "unclaimed": "Yangi",
     "status": {
       "ASSIGNED": "Biriktirildi",

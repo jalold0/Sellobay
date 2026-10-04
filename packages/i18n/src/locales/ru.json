@@ -1254,6 +1254,12 @@
     "statsFailed": "Не доставлено",
     "statsActive": "В работе",
     "statsAllTime": "Всего доставлено",
+    "profileTitle": "Профиль",
+    "history": "История заданий",
+    "historyEmpty": "Завершённых заданий пока нет",
+    "loadMore": "Загрузить ещё",
+    "vehicle": "Транспорт",
+    "ratingLabel": "Рейтинг",
     "unclaimed": "Новая",
     "status": {
       "ASSIGNED": "Назначено",
