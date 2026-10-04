@@ -226,7 +226,19 @@ void main() {
       );
       await pump(tester, _backend(), DeliveryDetailScreen(delivery: delivery));
 
-      expect(find.byType(FilledButton), findsNothing);
+      // Holat o'tish tugmalari YO'Q. Widget turiga emas, MATNGA
+      // qaraymiz: ekranda qo'ng'iroq va yo'l ko'rsatish tugmalari ham
+      // bor, ular holatga tegmaydi va yakuniy holatda ham qoladi.
+      for (final label in const [
+        'Buyurtmani oldim',
+        "Yo'lga chiqdim",
+        'Yetkazdim',
+        "Yetkazib bo'lmadi",
+      ]) {
+        expect(find.widgetWithText(FilledButton, label), findsNothing, reason: label);
+        expect(find.widgetWithText(OutlinedButton, label), findsNothing, reason: label);
+      }
+      // Holat chipi esa o'z joyida.
       expect(find.text('Yetkazildi'), findsOneWidget);
     });
 

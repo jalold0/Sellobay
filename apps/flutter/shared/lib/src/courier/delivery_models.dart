@@ -70,6 +70,7 @@ class CourierDelivery {
     required this.pickedUpAt,
     required this.deliveredAt,
     required this.failureReason,
+    required this.hasProofPhoto,
     required this.orderNumber,
     required this.orderTotal,
     required this.recipientName,
@@ -103,6 +104,9 @@ class CourierDelivery {
       longitude: (json['destinationLng'] as num?)?.toDouble(),
       pickedUpAt: DateTime.tryParse(json['pickedUpAt'] as String? ?? ''),
       deliveredAt: DateTime.tryParse(json['deliveredAt'] as String? ?? ''),
+      // Server suratning YO'LINI bermaydi, faqat borligini: unda
+      // mijozning uyi va eshigi bo'ladi.
+      hasProofPhoto: json['hasProofPhoto'] as bool? ?? false,
       failureReason: json['failureReason'] as String?,
       orderNumber: order['number'] as String? ?? '',
       orderTotal: parseMoney(order['grandTotal']),
@@ -134,6 +138,9 @@ class CourierDelivery {
   final DateTime? deliveredAt;
   final String? failureReason;
 
+  /// Yetkazish isboti surati biriktirilganmi.
+  final bool hasProofPhoto;
+
   final String orderNumber;
   final Decimal orderTotal;
   final String? recipientName;
@@ -164,4 +171,38 @@ class CourierDeliveries {
   final List<CourierDelivery> available;
 
   bool get isEmpty => mine.isEmpty && available.isEmpty;
+}
+
+/// Kuryerning ko'rsatkichlari (`GET /api/courier/stats`).
+///
+/// «Bugun» SERVERDA, Toshkent vaqtida hisoblanadi. Ilovada hisoblash
+/// noto'g'ri bo'lardi: qurilma zonasi boshqa bo'lsa (yoki foydalanuvchi
+/// uni qo'lda o'zgartirsa) kun chegarasi siljib ketardi.
+///
+/// Daromad YO'Q — sxemada kuryer to'lovi modeli yo'q, har qanday summa
+/// to'qima bo'lardi.
+class CourierStats {
+  const CourierStats({
+    required this.deliveredToday,
+    required this.failedToday,
+    required this.active,
+    required this.allTimeDelivered,
+  });
+
+  factory CourierStats.fromJson(Map<String, dynamic> json) {
+    final today = json['today'] as Map<String, dynamic>? ?? const {};
+    return CourierStats(
+      deliveredToday: (today['delivered'] as num?)?.toInt() ?? 0,
+      failedToday: (today['failed'] as num?)?.toInt() ?? 0,
+      active: (json['active'] as num?)?.toInt() ?? 0,
+      allTimeDelivered: (json['allTimeDelivered'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  final int deliveredToday;
+  final int failedToday;
+
+  /// Hozir qo'lda turgan, tugamagan topshiriqlar.
+  final int active;
+  final int allTimeDelivered;
 }

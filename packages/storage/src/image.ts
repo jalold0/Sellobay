@@ -26,6 +26,14 @@ const KIND_META: Record<ImageKind, KindMeta> = {
 export const MAX_PRODUCT_IMAGE_BYTES = 4 * 1024 * 1024;
 /** To'lov cheki — telefon skrinshoti, mahsulot rasmidan kichik bo'ladi. */
 export const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;
+/**
+ * Yetkazish isboti — kamerada olingan surat.
+ *
+ * Chekdan kattaroq: chek odatda skrinshot, bu esa jonli foto. Ilova uni
+ * yuborishdan oldin kichraytiradi (`maxWidth: 1600, imageQuality: 80`),
+ * shuning uchun 4 MB amalda yetarli zahira.
+ */
+export const MAX_DELIVERY_PROOF_BYTES = 4 * 1024 * 1024;
 
 function startsWith(bytes: Uint8Array, signature: readonly number[]): boolean {
   if (bytes.length < signature.length) return false;

@@ -20,6 +20,10 @@ const schema = z.object({
   note: z.string().trim().max(300).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  // `/api/uploads/delivery-proof` qaytargan ICHKI yo'l (ochiq havola
+  // emas). Qaysi holatlarga ruxsat etilishini `updateDeliveryStatus`
+  // hal qiladi — qoida bitta joyda tursin.
+  proofPhotoUrl: z.string().trim().min(1).max(500).optional(),
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -37,6 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       note: parsed.data.note,
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
+      proofPhotoUrl: parsed.data.proofPhotoUrl,
     });
     return apiOk({ delivery });
   } catch (e) {
