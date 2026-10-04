@@ -260,9 +260,13 @@ void main() {
       );
       final api = buildClient(backend).api;
 
+      // Kod `UNEXPECTED_RESPONSE`: javob bizning `{success,data}`
+      // shaklimizda emas. Ilgari bu `UNKNOWN` edi va «Noma'lum xato»
+      // deb ko'rsatilardi — deploy qilinmagan route ham, yiqilgan
+      // server ham shu matnni berardi.
       await expectLater(
         api.get<Map<String, dynamic>>('/api/products'),
-        throwsA(isA<ApiException>().having((e) => e.code, 'code', 'UNKNOWN')),
+        throwsA(isA<ApiException>().having((e) => e.code, 'code', 'UNEXPECTED_RESPONSE')),
       );
     });
   });

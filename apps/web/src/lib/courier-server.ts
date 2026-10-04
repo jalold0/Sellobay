@@ -7,7 +7,7 @@
 // karantindagi `graveyard/api` da edi. Natijada kuryer ilovasi
 // ko'rsatadigan ma'lumot umuman yo'q edi.
 
-import { Prisma, type DeliveryStatus } from '@ecom/database';
+import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
 
 import { prisma } from '@/lib/db';
 
@@ -39,6 +39,49 @@ const TRANSITIONS: Record<DeliveryStatus, DeliveryStatus[]> = {
   FAILED: [],
   RETURNED: [],
 };
+
+/**
+ * Yetkazish holati -> BUYURTMA holati.
+ *
+ * NEGA KERAK: ilgari buyurtma holatiga faqat `DELIVERED` da tegilardi
+ * va `OrderStatusHistory` ga butun kodda shu yagona joy yozardi.
+ * Natijada mijoz kuzatuvida buyurtma «Kutilmoqda» dan to'g'ridan-to'g'ri
+ * «Yetkazildi» ga sakrardi: kuryer olgani ham, yo'lga chiqqani ham
+ * ko'rinmasdi, garchi `DeliveryEvent` da hammasi yozilgan bo'lsa ham.
+ *
+ * `FAILED` ataylab YO'Q: urinish muvaffaqiyatsiz bo'lgani buyurtmani
+ * bekor qilmaydi — ertaga qayta urinish mumkin. Qarorni admin qabul
+ * qiladi.
+ */
+const ORDER_STATUS_FOR: Partial<Record<DeliveryStatus, OrderStatus>> = {
+  PICKED_UP: 'SHIPPED',
+  IN_TRANSIT: 'OUT_FOR_DELIVERY',
+  // `ARRIVED` ham `OUT_FOR_DELIVERY`: mijoz uchun «kuryer yo'lda» va
+  // «kuryer eshik oldida» bitta holat. Buyurtma enumida alohida
+  // qiymat yo'q, qo'shish esa migratsiya talab qilardi.
+  ARRIVED: 'OUT_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+};
+
+/**
+ * Yetkazish holatiga mos buyurtma holati (yoki `null` — tegilmaydi).
+ *
+ * Eksport qilingan: sof funksiya, testda bazasiz tekshiriladi.
+ */
+export function orderStatusFor(delivery: DeliveryStatus): OrderStatus | null {
+  return ORDER_STATUS_FOR[delivery] ?? null;
+}
+
+/** Tarixdagi izoh — kuryer qaysi qadamni bosgani ko'rinib tursin. */
+const ORDER_COMMENT: Partial<Record<DeliveryStatus, string>> = {
+  PICKED_UP: 'Kuryer buyurtmani oldi',
+  IN_TRANSIT: "Kuryer yo'lga chiqdi",
+  ARRIVED: 'Kuryer manzilga yetib keldi',
+  DELIVERED: 'Kuryer yetkazdi',
+};
+
+/** Yopilgan buyurtma QAYTA OCHILMAYDI. */
+const CLOSED_ORDER_STATUSES: OrderStatus[] = ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERED'];
 
 /** Shu holatdan keyin mumkin bo'lgan holatlar. */
 export function nextDeliveryStatuses(current: DeliveryStatus): DeliveryStatus[] {
@@ -328,22 +371,32 @@ export async function updateDeliveryStatus(
       },
     });
 
-    if (next === 'DELIVERED') {
-      // Bekor qilingan yoki allaqachon yopilgan buyurtmani qayta
-      // ochmaymiz — shart bilan yangilaymiz.
-      const closed = await tx.order.updateMany({
+    // Buyurtma holati yetkazish holatiga ERGASHADI.
+    const orderNext = ORDER_STATUS_FOR[next];
+    if (orderNext != null) {
+      const changed = await tx.order.updateMany({
         where: {
           id: current.orderId,
-          status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERED'] },
+          status: {
+            notIn: CLOSED_ORDER_STATUSES,
+            // O'sha holatning O'ZIGA qayta yozmaymiz: `IN_TRANSIT` ham,
+            // `ARRIVED` ham `OUT_FOR_DELIVERY` ga olib keladi va
+            // tarixda ikkita bir xil qator paydo bo'lardi.
+            not: orderNext,
+          },
         },
-        data: { status: 'DELIVERED', deliveredAt: now },
+        data: {
+          status: orderNext,
+          ...(orderNext === 'SHIPPED' ? { shippedAt: now } : {}),
+          ...(orderNext === 'DELIVERED' ? { deliveredAt: now } : {}),
+        },
       });
-      if (closed.count > 0) {
+      if (changed.count > 0) {
         await tx.orderStatusHistory.create({
           data: {
             orderId: current.orderId,
-            status: 'DELIVERED',
-            comment: 'Kuryer yetkazdi',
+            status: orderNext,
+            comment: ORDER_COMMENT[next] ?? null,
           },
         });
       }

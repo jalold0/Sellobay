@@ -39,6 +39,11 @@ extension TranslationsContext on BuildContext {
   String errorText(Object error) {
     if (error is NetworkException) return t('common.networkError');
     if (error is ApiException) {
+      // Server bizning JSON shaklimizda javob bermagan — kodni
+      // ko'rsatamiz, aks holda xabar hech narsa aytmaydi.
+      if (error.code == 'UNEXPECTED_RESPONSE') {
+        return t('common.unexpectedResponse', params: {'status': error.statusCode ?? 0});
+      }
       final translated = t(error.message);
       return translated == error.message ? error.message : translated;
     }

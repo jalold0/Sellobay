@@ -27,6 +27,7 @@
     "yes": "Ha",
     "no": "Yo'q",
     "all": "Barchasi",
+    "unexpectedResponse": "Server kutilmagan javob qaytardi ({status}). Birozdan keyin urinib ko'ring.",
     "networkError": "Internet aloqasi yo'q. Ulanishni tekshiring.",
     "notConnectedYet": "Bu bo'lim hali ulanmagan"
   },

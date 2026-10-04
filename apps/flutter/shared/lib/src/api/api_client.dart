@@ -121,9 +121,27 @@ class ApiClient {
     if (body is Map && body['success'] == true) return body['data'] as T;
 
     final err = body is Map ? body['error'] as Map? : null;
+    final message = err?['message'] as String?;
+
+    // Javob bizning shaklimizda KELMAGAN bo'lsa (404 HTML sahifasi,
+    // shlyuz xatosi, proxy javobi) — HTTP kodini matnga chiqaramiz.
+    //
+    // Ilgari bu yerda shunchaki «Noma'lum xato» turardi va u hech
+    // narsa aytmasdi: route deploy qilinmagani ham, server yiqilgani
+    // ham, internet orqadagi proxy'da uzilgani ham bir xil ko'rinardi.
+    // Kodni ko'rsatish 404 ni 500 dan darhol ajratadi.
+    if (message == null) {
+      throw ApiException(
+        code: 'UNEXPECTED_RESPONSE',
+        message: 'common.unexpectedResponse',
+        statusCode: res.statusCode,
+        retryAfterSec: int.tryParse(res.headers.value('retry-after') ?? ''),
+      );
+    }
+
     throw ApiException(
       code: err?['code'] as String? ?? 'UNKNOWN',
-      message: err?['message'] as String? ?? "Noma'lum xato",
+      message: message,
       statusCode: res.statusCode,
       retryAfterSec: int.tryParse(res.headers.value('retry-after') ?? ''),
     );
@@ -160,9 +178,18 @@ class ApiClient {
     if (status >= 200 && status < 300) return res.data as T;
 
     final body = res.data;
+    // Xom route'lar xatoni `{ "error": "matn" }` ko'rinishida qaytaradi
+    // (auth route'laridan boshqacha — ular ilgariroq yozilgan).
+    final message = body is Map ? body['error'] as String? : null;
     throw ApiException(
-      code: status == 404 ? 'NOT_FOUND' : 'HTTP_$status',
-      message: (body is Map ? body['error'] as String? : null) ?? "Noma'lum xato",
+      code: message == null
+          ? 'UNEXPECTED_RESPONSE'
+          : status == 404
+              ? 'NOT_FOUND'
+              : 'HTTP_$status',
+      // Matnsiz javobda HTTP kodi ko'rsatiladi — `errorText` buni
+      // `UNEXPECTED_RESPONSE` kodi bo'yicha tarjima qiladi.
+      message: message ?? 'common.unexpectedResponse',
       statusCode: res.statusCode,
       retryAfterSec: int.tryParse(res.headers.value('retry-after') ?? ''),
     );

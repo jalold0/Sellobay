@@ -10,6 +10,7 @@ import {
   canTransition,
   isTerminalDeliveryStatus,
   nextDeliveryStatuses,
+  orderStatusFor,
   serializeDelivery,
   tashkentDayStart,
 } from './courier-server';
@@ -186,5 +187,33 @@ describe('Toshkent kunining boshlanishi', () => {
     expect(tashkentDayStart(new Date('2026-10-04T19:00:00.000Z')).toISOString()).toBe(
       '2026-10-04T19:00:00.000Z',
     );
+  });
+});
+
+describe('buyurtma holati yetkazishga ergashadi', () => {
+  // Ilgari buyurtma holatiga FAQAT `DELIVERED` da tegilardi, shuning
+  // uchun mijoz kuzatuvida «Kutilmoqda» dan to'g'ridan-to'g'ri
+  // «Yetkazildi» ga sakrash ko'rinardi.
+  it('oraliq qadamlar ham buyurtmaga ko`chadi', () => {
+    expect(orderStatusFor('PICKED_UP')).toBe('SHIPPED');
+    expect(orderStatusFor('IN_TRANSIT')).toBe('OUT_FOR_DELIVERY');
+    expect(orderStatusFor('DELIVERED')).toBe('DELIVERED');
+  });
+
+  it('`ARRIVED` alohida buyurtma holatini ochmaydi', () => {
+    // Mijoz uchun «yo'lda» va «eshik oldida» bitta holat; buyurtma
+    // enumida alohida qiymat yo'q.
+    expect(orderStatusFor('ARRIVED')).toBe(orderStatusFor('IN_TRANSIT'));
+  });
+
+  it('`FAILED` buyurtmaga TEGMAYDI', () => {
+    // Muvaffaqiyatsiz urinish buyurtmani bekor qilmaydi — ertaga
+    // qayta urinish mumkin, qarorni admin qabul qiladi.
+    expect(orderStatusFor('FAILED')).toBeNull();
+  });
+
+  it('`ASSIGNED` ham tegmaydi', () => {
+    // Yozuv ochilishi mijoz uchun yangilik emas.
+    expect(orderStatusFor('ASSIGNED')).toBeNull();
   });
 });
