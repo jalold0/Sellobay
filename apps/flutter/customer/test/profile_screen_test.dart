@@ -34,6 +34,13 @@ Future<void> settleRoute(WidgetTester tester) async {
   await settle(tester);
 }
 
+/// Oxirgi YUBORILGAN body.
+///
+/// `bodies.last` yaramaydi: profil so'rovidan keyin fonda sevimlilar
+/// ham so'raladi va uning body'si `null`.
+Map<String, dynamic> lastBody(FakeBackend backend) =>
+    backend.bodies.whereType<Map<String, dynamic>>().last;
+
 Map<String, dynamic> _user({
   String? firstName = 'Dilnoza',
   String? lastName,
@@ -75,6 +82,7 @@ FakeBackend _backend({
       }
       if (options.path == '/api/orders') return apiOk({'items': <Map<String, dynamic>>[]});
       if (options.path == '/api/cart') return apiOk({'cartId': 'c1', 'items': <Map<String, dynamic>>[]});
+      if (options.path == '/api/wishlist') return apiOk({'productIds': <String>[]});
       return apiErr(500, 'UNEXPECTED', '${options.method} ${options.path}');
     });
 
@@ -132,12 +140,21 @@ void main() {
   testWidgets('chiqish FAQAT tasdiqdan keyin', (tester) async {
     final runtime = await pumpProfile(tester, _backend());
 
+    // Profilda havolalar ko'payib, tugma ekrandan pastga tushdi.
+    await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Chiqish'));
+    // Suriluvchi joylashuv keyingi KADRDA yangilanadi — darhol bossak,
+    // koordinata eski bo'lib, bosish pastki panelga tushib ketardi.
+    await settle(tester);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Chiqish'));
     await settleRoute(tester);
     await tester.tap(find.text('Bekor qilish'));
     await settleRoute(tester);
     expect(runtime.auth.isSignedIn, isTrue);
 
+    await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Chiqish'));
+    // Suriluvchi joylashuv keyingi KADRDA yangilanadi — darhol bossak,
+    // koordinata eski bo'lib, bosish pastki panelga tushib ketardi.
+    await settle(tester);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Chiqish'));
     await settleRoute(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Chiqish'));
@@ -155,7 +172,7 @@ void main() {
       await settle(tester);
 
       expect(backend.calls.where((c) => c == '/api/auth/me'), hasLength(2)); // GET + PATCH
-      final sent = backend.bodies.last!;
+      final sent = lastBody(backend);
       expect(sent['firstName'], 'Dilnoza');
       expect(sent['lastName'], 'Karimova');
       expect(find.text('Saqlandi'), findsWidgets);
@@ -171,7 +188,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
       await settle(tester);
 
-      final sent = backend.bodies.last!;
+      final sent = lastBody(backend);
       expect(sent.containsKey('firstName'), isTrue);
       expect(sent['firstName'], isNull);
     });
@@ -209,7 +226,7 @@ void main() {
       await tester.tap(find.text('Русский'));
       await settleAssets(tester);
 
-      expect(backend.bodies.last!['locale'], 'ru');
+      expect(lastBody(backend)['locale'], 'ru');
       // Tarjimalarni `SellobayScope` `user.locale` ga ergashib
       // almashtiradi — ekran o'zi emas.
       expect(runtime.locale.locale, 'ru');

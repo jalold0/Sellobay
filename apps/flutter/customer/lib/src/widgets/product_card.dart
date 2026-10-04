@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import 'wishlist_button.dart';
+
 /// Katalogdagi mahsulot kartochkasi.
 ///
 /// Kartochkadagi HAR BIR raqam serverdan keladi: narx, chegirma foizi,
@@ -57,6 +59,11 @@ class ProductCard extends StatelessWidget {
                       top: 8,
                       child: _badge('-$discount%', SellobayColors.primary),
                     ),
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: WishlistButton(productId: product.id, compact: true),
+                  ),
                   if (!product.inStock)
                     Positioned.fill(
                       child: ColoredBox(

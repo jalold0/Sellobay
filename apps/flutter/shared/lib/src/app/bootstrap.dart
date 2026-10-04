@@ -15,6 +15,9 @@ import '../cart/cart_sync.dart';
 import '../catalog/catalog_repository.dart';
 import '../courier/courier_repository.dart';
 import '../checkout/checkout_repository.dart';
+import '../wishlist/wishlist_repository.dart';
+import '../wishlist/wishlist_scope.dart';
+import '../wishlist/wishlist_store.dart';
 import '../i18n/locale_controller.dart';
 import '../orders/orders_repository.dart';
 import '../i18n/translations_scope.dart';
@@ -32,6 +35,7 @@ class SellobayRuntime {
     required this.checkout,
     required this.addresses,
     required this.orders,
+    required this.wishlist,
     required this.courier,
     required this.config,
   });
@@ -46,6 +50,7 @@ class SellobayRuntime {
   final CheckoutRepository checkout;
   final AddressRepository addresses;
   final OrdersRepository orders;
+  final WishlistStore wishlist;
 
   /// Kuryer ilovasi uchun. Mijoz ilovasida ishlatilmaydi.
   final CourierRepository courier;
@@ -110,6 +115,7 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
     checkout: CheckoutRepository(api),
     addresses: AddressRepository(api),
     orders: OrdersRepository(api),
+    wishlist: WishlistStore(repository: WishlistRepository(api), auth: auth),
     courier: CourierRepository(api),
     config: config,
   );
@@ -186,7 +192,10 @@ class _SellobayScopeState extends State<SellobayScope> {
             translations: translations,
             child: AuthScope(
               controller: widget.runtime.auth,
-              child: CartScope(store: widget.runtime.cart, child: widget.child),
+              child: CartScope(
+              store: widget.runtime.cart,
+              child: WishlistScope(store: widget.runtime.wishlist, child: widget.child),
+            ),
             ),
           ),
         );

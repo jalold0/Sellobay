@@ -115,18 +115,9 @@ Future<void> pumpCatalog(WidgetTester tester, FakeBackend backend) async {
   usePhoneViewport(tester);
   final runtime = buildRuntime(backend, locale: uz);
   await tester.pumpWidget(
-    SellobayRuntimeScope(
+    SellobayScope(
       runtime: runtime,
-      child: TranslationsScope(
-        translations: uz.translations!,
-        child: AuthScope(
-          controller: runtime.auth,
-          child: CartScope(
-            store: runtime.cart,
-            child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
-          ),
-        ),
-      ),
+      child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
     ),
   );
   await settle(tester);
@@ -270,27 +261,18 @@ void main() {
     usePhoneViewport(tester);
     final runtime = buildRuntime(happyBackend(), locale: uz);
     await tester.pumpWidget(
-      SellobayRuntimeScope(
+      SellobayScope(
         runtime: runtime,
-        child: TranslationsScope(
-          translations: uz.translations!,
-          child: AuthScope(
-            controller: runtime.auth,
-            child: CartScope(
-              store: runtime.cart,
-              child: MaterialApp(
-              theme: buildSellobayTheme(),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(1.6),
-                ),
-                child: child!,
-              ),
-              home: const CatalogScreen(),
-            ),
-            ),
+        child: MaterialApp(
+        theme: buildSellobayTheme(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(1.6),
           ),
+          child: child!,
         ),
+        home: const CatalogScreen(),
+      ),
       ),
     );
     await settle(tester);
@@ -302,18 +284,9 @@ void main() {
     // 800x600 — standart test ekrani, planshet/landshaftga yaqin.
     final runtime = buildRuntime(happyBackend(), locale: uz);
     await tester.pumpWidget(
-      SellobayRuntimeScope(
+      SellobayScope(
         runtime: runtime,
-        child: TranslationsScope(
-          translations: uz.translations!,
-          child: AuthScope(
-            controller: runtime.auth,
-            child: CartScope(
-              store: runtime.cart,
-              child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
-            ),
-          ),
-        ),
+        child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
       ),
     );
     await settle(tester);

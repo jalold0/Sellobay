@@ -103,22 +103,13 @@ Future<SellobayRuntime> pumpCatalog(
   usePhoneViewport(tester);
   final runtime = buildRuntime(backend, locale: uz, config: config, cart: cart);
   await tester.pumpWidget(
-    SellobayRuntimeScope(
+    SellobayScope(
       runtime: runtime,
-      child: TranslationsScope(
-        translations: uz.translations!,
-        child: AuthScope(
-          controller: runtime.auth,
-          child: CartScope(
-            store: runtime.cart,
-            // Haqiqiy ildiz — qobiq. Savatga pastki paneldan o'tiladi,
-            // ilgari katalog AppBar'idagi belgidan o'tilardi.
-            child: HomeTabsScope(
-              controller: HomeTabsController(),
-              child: MaterialApp(theme: buildSellobayTheme(), home: const HomeShell()),
-            ),
-          ),
-        ),
+      // Haqiqiy ildiz — qobiq. Savatga pastki paneldan o'tiladi,
+      // ilgari katalog AppBar'idagi belgidan o'tilardi.
+      child: HomeTabsScope(
+        controller: HomeTabsController(),
+        child: MaterialApp(theme: buildSellobayTheme(), home: const HomeShell()),
       ),
     ),
   );

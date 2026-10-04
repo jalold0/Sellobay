@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'addresses_screen.dart';
+import 'wishlist_screen.dart';
 
 /// Profil: ma'lumotlar, til va chiqish.
 ///
@@ -174,6 +175,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       : Text(context.t('profile.saveChanges')),
                 ),
                 const SizedBox(height: 26),
+                _linkTile(
+                  context,
+                  icon: Icons.favorite_border,
+                  labelKey: 'profile.nav.wishlist',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const WishlistScreen()),
+                  ),
+                ),
                 _linkTile(
                   context,
                   icon: Icons.location_on_outlined,

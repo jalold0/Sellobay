@@ -25,6 +25,7 @@ import 'package:sellobay_customer/src/screens/order_detail_screen.dart';
 import 'package:sellobay_customer/src/screens/order_success_screen.dart';
 import 'package:sellobay_customer/src/screens/otp_screen.dart';
 import 'package:sellobay_customer/src/screens/product_screen.dart';
+import 'package:sellobay_customer/src/screens/wishlist_screen.dart';
 import 'package:sellobay_customer/src/screens/register_screen.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:sellobay_shared/testing.dart';
@@ -112,21 +113,12 @@ Future<void> shoot(
   );
 
   await tester.pumpWidget(
-    SellobayRuntimeScope(
+    SellobayScope(
       runtime: runtime,
-      child: TranslationsScope(
-        translations: uz.translations!,
-        child: AuthScope(
-          controller: runtime.auth,
-          child: CartScope(
-            store: runtime.cart,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: previewTheme(),
-              home: home,
-            ),
-          ),
-        ),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: previewTheme(),
+        home: home,
       ),
     ),
   );
@@ -393,6 +385,13 @@ FakeBackend _profileBackend() => FakeBackend((options, body) {
       return rawJson(_productsJson);
     });
 
+FakeBackend _wishlistBackend() => FakeBackend((options, body) {
+      if (options.path == '/api/wishlist') {
+        return apiOk({'productIds': ['puma-rs-x', 'nike-air-max']});
+      }
+      return rawJson(_productsJson);
+    });
+
 FakeBackend _addressesBackend() => FakeBackend((options, body) => apiOk({
       'items': [
         {
@@ -514,6 +513,11 @@ void main() {
   testWidgets(
     '09 buyurtmalar',
     (t) => shootTab(t, '09-orders', HomeTab.orders, backend: _ordersBackend()),
+  );
+
+  testWidgets(
+    '13 sevimlilar',
+    (t) => shoot(t, '13-wishlist', const WishlistScreen(), backend: _wishlistBackend()),
   );
 
   testWidgets(
