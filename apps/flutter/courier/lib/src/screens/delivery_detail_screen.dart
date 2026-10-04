@@ -111,7 +111,11 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
         children: [
           Row(
             children: [
-              DeliveryStatusChip(status: delivery.status, rawStatus: delivery.rawStatus),
+              DeliveryStatusChip(
+                status: delivery.status,
+                rawStatus: delivery.rawStatus,
+                claimed: delivery.claimed,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(

@@ -6,15 +6,31 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 /// Server ilova bilmaydigan holat qaytarsa, XOM qiymat ko'rsatiladi —
 /// bo'sh joy emas.
 class DeliveryStatusChip extends StatelessWidget {
-  const DeliveryStatusChip({super.key, required this.status, required this.rawStatus});
+  const DeliveryStatusChip({
+    super.key,
+    required this.status,
+    required this.rawStatus,
+    required this.claimed,
+  });
 
   final DeliveryStatus? status;
   final String rawStatus;
 
+  /// Kuryer biriktirilganmi.
+  ///
+  /// Egasiz topshiriqning holati ham `ASSIGNED` bo'ladi, lekin unga
+  /// «Biriktirildi» deb yozib qo'yish mijozni emas, kuryerni
+  /// chalg'itadi: u aynan egasiz topshiriqlarni qidirib turadi.
+  final bool claimed;
+
   @override
   Widget build(BuildContext context) {
     final (background, foreground) = _colors(status);
-    final label = status == null ? rawStatus : context.t(status!.labelKey);
+    final label = switch (status) {
+      null => rawStatus,
+      DeliveryStatus.assigned when !claimed => context.t('courier.unclaimed'),
+      final s => context.t(s.labelKey),
+    };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),

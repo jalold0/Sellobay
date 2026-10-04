@@ -82,9 +82,14 @@ const deliverySelect = {
   },
 } satisfies Prisma.DeliverySelect;
 
-type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySelect }>;
+export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySelect }>;
 
-function serialize(d: DeliveryRow) {
+/**
+ * Bazadagi qatorni klient javobiga o'giradi.
+ *
+ * Eksport qilingan — sof funksiya va testda bazasiz tekshiriladi.
+ */
+export function serializeDelivery(d: DeliveryRow) {
   return {
     id: d.id,
     status: d.status,
@@ -97,6 +102,16 @@ function serialize(d: DeliveryRow) {
     deliveredAt: d.deliveredAt?.toISOString() ?? null,
     failureReason: d.failureReason,
     createdAt: d.createdAt.toISOString(),
+    /**
+     * Kuryer biriktirilganmi.
+     *
+     * `ASSIGNED` holati "yetkazishga tayinlandi" degani, "kuryerga
+     * biriktirildi" EMAS — yangi yozuv egasiz holda ham `ASSIGNED`
+     * bo'ladi. Shu farqni klient o'zi topa olmaydi, shuning uchun
+     * server aytadi: aks holda ilova egasiz topshiriq ustida
+     * "Biriktirildi" deb yozib turadi.
+     */
+    claimed: d.courierId !== null,
     /** Keyingi mumkin bo'lgan holatlar — klient tugmalarni shunga qarab chizadi. */
     nextStatuses: nextDeliveryStatuses(d.status),
     order: {
@@ -178,7 +193,7 @@ export async function listCourierDeliveries(userId: string) {
     }),
   ]);
 
-  return { mine: mine.map(serialize), available: available.map(serialize) };
+  return { mine: mine.map(serializeDelivery), available: available.map(serializeDelivery) };
 }
 
 /**
@@ -212,7 +227,7 @@ export async function claimDelivery(userId: string, deliveryId: string) {
     where: { id: deliveryId },
     select: deliverySelect,
   });
-  return serialize(row);
+  return serializeDelivery(row);
 }
 
 /**
@@ -305,5 +320,5 @@ export async function updateDeliveryStatus(
     where: { id: deliveryId },
     select: deliverySelect,
   });
-  return serialize(row);
+  return serializeDelivery(row);
 }

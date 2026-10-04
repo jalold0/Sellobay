@@ -1219,6 +1219,7 @@
     "failReason": "Reason",
     "failReasonHint": "Why could it not be delivered?",
     "statusUpdated": "Status updated",
+    "unclaimed": "New",
     "status": {
       "ASSIGNED": "Assigned",
       "PICKED_UP": "Picked up",

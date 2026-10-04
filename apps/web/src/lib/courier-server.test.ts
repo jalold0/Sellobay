@@ -6,7 +6,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { canTransition, isTerminalDeliveryStatus, nextDeliveryStatuses } from './courier-server';
+import {
+  canTransition,
+  isTerminalDeliveryStatus,
+  nextDeliveryStatuses,
+  serializeDelivery,
+} from './courier-server';
 
 import type { DeliveryStatus } from '@ecom/database';
 
@@ -90,5 +95,56 @@ describe('yetkazish holati o`tishlari', () => {
     for (const from of ALL) {
       expect(canTransition(from, 'RETURNED')).toBe(false);
     }
+  });
+});
+
+describe('javobga o`girish', () => {
+  // Faqat `serializeDelivery` ga kerak bo'lgan maydonlar; qolgani
+  // o'girishga ta'sir qilmaydi.
+  const row = (over: Record<string, unknown> = {}) =>
+    ({
+      id: 'd1',
+      status: 'ASSIGNED',
+      method: 'HOME_DELIVERY',
+      destinationAddress: 'Toshkent, Yunusobod 1',
+      destinationLat: null,
+      destinationLng: null,
+      assignedAt: null,
+      pickedUpAt: null,
+      deliveredAt: null,
+      failureReason: null,
+      createdAt: new Date('2026-10-04T08:00:00.000Z'),
+      courierId: null,
+      order: {
+        id: 'o1',
+        number: 'ORD-1',
+        grandTotal: { toString: () => '620000' },
+        placedAt: new Date('2026-10-04T07:55:00.000Z'),
+        notes: null,
+        shippingAddress: null,
+        items: [],
+      },
+      ...over,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+  it('egasiz topshiriq ASSIGNED bo`lsa ham `claimed: false`', () => {
+    // `ASSIGNED` = "yetkazishga tayinlandi", "kuryerga biriktirildi"
+    // EMAS. Ilgari klient bu farqni bilmagani uchun bo'sh topshiriq
+    // ustida «Biriktirildi» deb yozib turardi.
+    expect(serializeDelivery(row({ courierId: null })).claimed).toBe(false);
+  });
+
+  it('kuryer olgan bo`lsa `claimed: true`', () => {
+    expect(serializeDelivery(row({ courierId: 'c1' })).claimed).toBe(true);
+  });
+
+  it('`nextStatuses` holatdan hisoblanadi', () => {
+    expect(serializeDelivery(row({ status: 'IN_TRANSIT' })).nextStatuses).toEqual([
+      'ARRIVED',
+      'DELIVERED',
+      'FAILED',
+    ]);
+    expect(serializeDelivery(row({ status: 'DELIVERED' })).nextStatuses).toEqual([]);
   });
 });

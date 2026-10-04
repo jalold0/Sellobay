@@ -61,6 +61,7 @@ class CourierDelivery {
     required this.id,
     required this.status,
     required this.rawStatus,
+    required this.claimed,
     required this.nextStatuses,
     required this.method,
     required this.destinationAddress,
@@ -83,6 +84,11 @@ class CourierDelivery {
       id: json['id'] as String,
       status: DeliveryStatus.fromValue(json['status'] as String?),
       rawStatus: json['status'] as String? ?? '',
+      // Kuryer biriktirilganmi — SERVER aytadi. `ASSIGNED` holati
+      // "yetkazishga tayinlandi" degani, "kuryerga biriktirildi" EMAS:
+      // egasiz yangi yozuv ham `ASSIGNED` bo'ladi. Holatdan taxmin
+      // qilsak, bo'sh topshiriq ustida «Biriktirildi» deb yozilardi.
+      claimed: json['claimed'] as bool? ?? false,
       // Mumkin bo'lgan o'tishlarni SERVER aytadi (`courier-server.ts`
       // dagi jadval). Dart'da takrorlasak, ikkisi ajralib ketardi va
       // ilova serverda rad etiladigan tugmani ko'rsatardi.
@@ -113,6 +119,9 @@ class CourierDelivery {
   final String id;
   final DeliveryStatus? status;
   final String rawStatus;
+
+  /// Kuryer o'ziga olganmi.
+  final bool claimed;
 
   /// Shu yetkazish uchun ruxsat etilgan keyingi holatlar.
   final List<DeliveryStatus> nextStatuses;

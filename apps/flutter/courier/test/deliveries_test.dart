@@ -29,10 +29,12 @@ Map<String, dynamic> _delivery({
   String status = 'ASSIGNED',
   List<String> next = const ['PICKED_UP', 'FAILED'],
   String? failureReason,
+  bool claimed = true,
 }) =>
     {
       'id': id,
       'status': status,
+      'claimed': claimed,
       'method': 'HOME_DELIVERY',
       'destinationAddress': 'Toshkent, Yunusobod, Amir Temur 1',
       'destinationLat': null,
@@ -140,6 +142,21 @@ void main() {
     expect(find.text('ORD-A'), findsOneWidget);
     expect(find.text('ORD-B'), findsOneWidget);
     expect(find.text("Yo'lda"), findsOneWidget);
+  });
+
+  testWidgets('bo`sh topshiriqda «Biriktirildi» EMAS, «Yangi»', (tester) async {
+    // Ikkalasining holati ham `ASSIGNED`; farq — kuryer olganmi.
+    await pump(
+      tester,
+      _backend(
+        mine: [_delivery(id: 'd1', number: 'ORD-A', claimed: true)],
+        available: [_delivery(id: 'd2', number: 'ORD-B', claimed: false)],
+      ),
+      const DeliveriesScreen(),
+    );
+
+    expect(find.text('Yangi'), findsOneWidget);
+    expect(find.text('Biriktirildi'), findsOneWidget);
   });
 
   testWidgets('"o`zimga olish" FAQAT bo`sh topshiriqda', (tester) async {

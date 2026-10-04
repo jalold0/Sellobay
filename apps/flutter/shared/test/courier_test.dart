@@ -11,10 +11,12 @@ Map<String, dynamic> _delivery({
   String id = _deliveryId,
   String status = 'ASSIGNED',
   List<String> next = const ['PICKED_UP', 'FAILED'],
+  bool claimed = true,
 }) =>
     {
       'id': id,
       'status': status,
+      'claimed': claimed,
       'method': 'HOME_DELIVERY',
       'destinationAddress': 'Toshkent, Yunusobod, Amir Temur 1, 25-uy',
       'destinationLat': 41.33,
@@ -141,6 +143,31 @@ void main() {
         data.mine.single.nextStatuses,
         [DeliveryStatus.delivered, DeliveryStatus.failed],
       );
+    });
+
+    test('`claimed` SERVERDAN keladi, holatdan taxmin qilinmaydi', () async {
+      // Egasiz yozuvning holati ham `ASSIGNED` — ikkisi boshqa narsa.
+      final backend = FakeBackend(
+        (options, body) => rawJson(_listJson(
+          mine: [_delivery(id: 'd1', claimed: true)],
+          available: [_delivery(id: 'd2', claimed: false)],
+        )),
+      );
+      final data = await CourierRepository(buildClient(backend).api).fetchDeliveries();
+
+      expect(data.mine.single.claimed, isTrue);
+      expect(data.available.single.claimed, isFalse);
+      expect(data.available.single.status, DeliveryStatus.assigned);
+    });
+
+    test('`claimed` yo`q bo`lsa — biriktirilmagan deb olinadi', () async {
+      // Eski javobda maydon yo'q edi; chalg'ituvchi «Biriktirildi»
+      // yozuvidan ko'ra ehtiyotkor taxmin yaxshi.
+      final json = _delivery()..remove('claimed');
+      final backend = FakeBackend((options, body) => rawJson(_listJson(available: [json])));
+      final data = await CourierRepository(buildClient(backend).api).fetchDeliveries();
+
+      expect(data.available.single.claimed, isFalse);
     });
 
     test('ilova bilmaydigan holat ro`yxatdan tashlanadi', () async {

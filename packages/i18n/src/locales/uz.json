@@ -1219,6 +1219,7 @@
     "failReason": "Sababi",
     "failReasonHint": "Nega yetkazib bo'lmadi?",
     "statusUpdated": "Holat yangilandi",
+    "unclaimed": "Yangi",
     "status": {
       "ASSIGNED": "Biriktirildi",
       "PICKED_UP": "Olindi",

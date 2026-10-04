@@ -49,7 +49,11 @@ class DeliveryCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                DeliveryStatusChip(status: delivery.status, rawStatus: delivery.rawStatus),
+                DeliveryStatusChip(
+                  status: delivery.status,
+                  rawStatus: delivery.rawStatus,
+                  claimed: delivery.claimed,
+                ),
               ],
             ),
             const SizedBox(height: 8),

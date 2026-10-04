@@ -1219,6 +1219,7 @@
     "failReason": "Причина",
     "failReasonHint": "Почему не удалось доставить?",
     "statusUpdated": "Статус обновлён",
+    "unclaimed": "Новая",
     "status": {
       "ASSIGNED": "Назначено",
       "PICKED_UP": "Забрано",

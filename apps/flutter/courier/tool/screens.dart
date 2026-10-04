@@ -108,10 +108,12 @@ Map<String, dynamic> _delivery({
   String status = 'ASSIGNED',
   List<String> next = const ['PICKED_UP', 'FAILED'],
   String address = 'Toshkent, Yunusobod, Amir Temur shoh ko\'chasi 1, 25-uy',
+  bool claimed = true,
 }) =>
     {
       'id': id,
       'status': status,
+      'claimed': claimed,
       'method': 'HOME_DELIVERY',
       'destinationAddress': address,
       'destinationLat': 41.33,
@@ -162,6 +164,7 @@ FakeBackend _backend() => FakeBackend((options, body) {
               _delivery(
                 id: 'd2',
                 number: 'ORD-2026-00012346',
+                claimed: false,
                 address: 'Toshkent, Chilonzor, Bunyodkor shoh ko\'chasi 12',
               ),
             ],
