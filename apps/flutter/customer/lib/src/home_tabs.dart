@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Pastki navigatsiyadagi bo'limlar.
-enum HomeTab { catalog, cart, orders, profile }
+enum HomeTab { home, catalog, cart, orders, profile }
 
 /// Qaysi bo'lim ochiqligi.
 ///
@@ -10,19 +10,27 @@ enum HomeTab { catalog, cart, orders, profile }
 /// almashtira oladi. Qobiq ichida saqlasak, surilgan ekran unga
 /// yeta olmasdi: u Navigator'ning qo'shnisi, farzandi emas.
 class HomeTabsController extends ChangeNotifier {
-  HomeTab _tab = HomeTab.catalog;
+  HomeTab _tab = HomeTab.home;
 
   /// Ochilgan bo'limlar.
   ///
   /// `IndexedStack` farzandlarining HAMMASINI darhol quradi. Shunda
   /// ilova ishga tushishi bilan buyurtmalar ro'yxati ham so'ralardi —
   /// foydalanuvchi u bo'limga umuman kirmagan bo'lsa ham.
-  final _visited = <HomeTab>{HomeTab.catalog};
+  final _visited = <HomeTab>{HomeTab.home};
 
   /// Buyurtmalar bo'limi har ochilganda qaytadan yuklanishi uchun
   /// hisoblagich. Yangi buyurtma bergandan keyin eski ro'yxat turib
   /// qolmasligi kerak.
   int _ordersEpoch = 0;
+
+  /// Katalogga o'tishda qo'llanadigan kategoriya.
+  ///
+  /// Bosh sahifadagi kategoriya bosilganda katalog o'sha filtr bilan
+  /// ochilishi kerak. Katalog ekrani qobiqda TIRIK qoladi
+  /// (`IndexedStack`), ya'ni unga parametr uzatib bo'lmaydi — shuning
+  /// uchun kategoriya shu yerda qoldiriladi va ekran uni o'zi oladi.
+  String? _pendingCategory;
 
   HomeTab get tab => _tab;
   bool isVisited(HomeTab tab) => _visited.contains(tab);
@@ -38,6 +46,19 @@ class HomeTabsController extends ChangeNotifier {
   }
 
   void goIndex(int index) => go(HomeTab.values[index]);
+
+  /// Katalogni ochadi, xohlasa kategoriya filtri bilan.
+  void openCatalog({String? categorySlug}) {
+    _pendingCategory = categorySlug;
+    go(HomeTab.catalog);
+  }
+
+  /// Kutayotgan kategoriyani OLIB qo'yadi — bir marta qo'llanadi.
+  String? takePendingCategory() {
+    final slug = _pendingCategory;
+    _pendingCategory = null;
+    return slug;
+  }
 }
 
 class HomeTabsScope extends InheritedNotifier<HomeTabsController> {

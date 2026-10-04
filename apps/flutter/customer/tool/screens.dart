@@ -364,6 +364,26 @@ FakeBackend _catalogBackend() => FakeBackend((options, body) {
       return rawJson(_productsJson);
     });
 
+/// Bosh sahifa: `featured` va `popular` ALOHIDA ro'yxat — ikkala
+/// javlon bir xil bo'lsa surat chalg'itardi.
+FakeBackend _homeBackend() => FakeBackend((options, body) {
+      if (options.path == '/api/categories') return rawJson(_categoriesJson);
+      if (options.queryParameters['sort'] == 'popular') {
+        return rawJson(json.encode({
+          'items': [
+            _product(slug: 'adidas-ultraboost', nameUz: 'Adidas Ultraboost', price: '1250000', brand: 'Adidas'),
+            _product(slug: 'reebok-classic', nameUz: 'Reebok Classic Leather', price: '640000', brand: 'Reebok'),
+            _product(slug: 'puma-rs-x', nameUz: 'Puma RS-X krossovkalar', price: '990000'),
+          ],
+          'total': 3,
+          'page': 1,
+          'limit': 24,
+          'hasMore': false,
+        }));
+      }
+      return rawJson(_productsJson);
+    });
+
 FakeBackend _checkoutBackend({bool cards = false}) => FakeBackend((options, body) {
       switch (options.path) {
         case '/api/uploads/receipt':
@@ -503,6 +523,11 @@ void main() {
   );
 
   testWidgets('03 ro`yxatdan o`tish', (t) => shoot(t, '03-register', const RegisterScreen()));
+
+  testWidgets(
+    '00 bosh sahifa',
+    (t) => shootTab(t, '00-home', HomeTab.home, backend: _homeBackend(), cart: _cart()),
+  );
 
   testWidgets(
     '04 katalog',
