@@ -177,6 +177,9 @@ class ApiClient {
   Future<T> put<T>(String path, {Object? body}) async =>
       _unwrap<T>(await _send(() => _dio.put<dynamic>(path, data: body)));
 
+  Future<T> patch<T>(String path, {Object? body}) async =>
+      _unwrap<T>(await _send(() => _dio.patch<dynamic>(path, data: body)));
+
   Future<T> delete<T>(String path, {Object? body}) async =>
       _unwrap<T>(await _send(() => _dio.delete<dynamic>(path, data: body)));
 

@@ -130,6 +130,35 @@ class AuthController extends ChangeNotifier {
     return outcome;
   }
 
+  /// Profilni yangilaydi: serverda ham, mahalliy keshda ham.
+  ///
+  /// Keshni ham yangilash SHART — aks holda ilova qayta ochilganda
+  /// eski ism qaytib kelardi (`restore()` keshdan o'qiydi).
+  Future<void> updateProfile({
+    required String? firstName,
+    required String? lastName,
+    required String? email,
+  }) async {
+    final updated = await _repo.updateProfile(
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+    );
+    await _repo.cacheUser(updated);
+    _set(AuthStatus.signedIn, updated);
+  }
+
+  /// Tilni serverda saqlaydi.
+  ///
+  /// Tarjimalarni BU YER almashtirmaydi: `SellobayScope` auth
+  /// o'zgarishini kuzatib, `user.locale` ga ergashadi. Ikki joyda
+  /// almashtirsak, biri ikkinchisini bosib ketishi mumkin edi.
+  Future<void> updateLocale(String locale) async {
+    final updated = await _repo.updateLocale(locale);
+    await _repo.cacheUser(updated);
+    _set(AuthStatus.signedIn, updated);
+  }
+
   Future<void> signOut() async {
     await _repo.logout();
     _set(AuthStatus.signedOut, null);

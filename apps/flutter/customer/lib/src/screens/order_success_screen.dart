@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
-import 'orders_screen.dart';
+import '../home_tabs.dart';
 
 /// Buyurtma qabul qilindi.
 ///
@@ -92,12 +92,11 @@ class OrderSuccessScreen extends StatelessWidget {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    // Avval ildizga (katalog), keyin buyurtmalar — orqaga
-                    // bosilganda checkout'ga qaytib qolmasin.
+                    // Ildizga qaytamiz — orqaga bosilganda checkout'ga
+                    // qaytib qolmasin — va buyurtmalar bo'limini ochamiz.
+                    // Yangi ekran SURMAYMIZ: qobiqda u allaqachon bor.
+                    HomeTabsScope.read(context)?.go(HomeTab.orders);
                     Navigator.of(context).popUntil((route) => route.isFirst);
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const OrdersScreen()),
-                    );
                   },
                   child: Text(context.t('orderSuccess.goToOrders')),
                 ),
@@ -106,7 +105,10 @@ class OrderSuccessScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                  onPressed: () {
+                    HomeTabsScope.read(context)?.go(HomeTab.catalog);
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
                   child: Text(context.t('cart.continueShopping')),
                 ),
               ),

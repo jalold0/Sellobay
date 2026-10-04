@@ -9,19 +9,19 @@
 //   flutter test tool/screens.dart --update-goldens
 //
 // Natija: tool/shots/*.png
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sellobay_customer/src/screens/cart_screen.dart';
-import 'package:sellobay_customer/src/screens/catalog_screen.dart';
+import 'package:sellobay_customer/src/home_tabs.dart';
 import 'package:sellobay_customer/src/screens/checkout_screen.dart';
+import 'package:sellobay_customer/src/screens/home_shell.dart';
 import 'package:sellobay_customer/src/screens/login_screen.dart';
 import 'package:sellobay_customer/src/screens/order_detail_screen.dart';
 import 'package:sellobay_customer/src/screens/order_success_screen.dart';
-import 'package:sellobay_customer/src/screens/orders_screen.dart';
 import 'package:sellobay_customer/src/screens/otp_screen.dart';
 import 'package:sellobay_customer/src/screens/product_screen.dart';
 import 'package:sellobay_customer/src/screens/register_screen.dart';
@@ -125,6 +125,49 @@ Future<void> shoot(
               home: home,
             ),
           ),
+        ),
+      ),
+    ),
+  );
+  await _settle(tester);
+
+  await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/$name.png'));
+}
+
+/// Qobiq ichidagi bo'limni suratga oladi.
+///
+/// Katalog, savat, buyurtmalar va profil ilovada ALOHIDA ekran emas —
+/// pastki panelli qobiqning bo'limlari. Ularni yakka holda chizsak,
+/// surat ilovaga o'xshamay qolardi.
+Future<void> shootTab(
+  WidgetTester tester,
+  String name,
+  HomeTab tab, {
+  required FakeBackend backend,
+  CartStore? cart,
+  bool signIn = false,
+}) async {
+  tester.view
+    ..physicalSize = const Size(390 * 2, 844 * 2)
+    ..devicePixelRatio = 2;
+  addTearDown(tester.view.reset);
+
+  final runtime = buildRuntime(backend, locale: uz, cart: cart);
+  if (signIn) {
+    // `await` QILINMAYDI: soxta vaqtda kadr surilmaguncha tugamaydi.
+    unawaited(runtime.auth.signInWithPassword(identifier: '+998901234567', password: 'parol1234'));
+  }
+
+  final tabs = HomeTabsController()..go(tab);
+  await tester.pumpWidget(
+    SellobayScope(
+      runtime: runtime,
+      child: HomeTabsScope(
+        controller: tabs,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: previewTheme(),
+          home: const HomeShell(),
         ),
       ),
     ),
@@ -324,6 +367,31 @@ FakeBackend _checkoutBackend() => FakeBackend((options, body) {
       return apiErr(500, 'UNEXPECTED', options.path);
     });
 
+Map<String, dynamic> _me() => {
+      'id': '11111111-1111-4111-8111-111111111111',
+      'email': 'dilnoza@sellobay.uz',
+      'phone': '+998901234567',
+      'firstName': 'Dilnoza',
+      'lastName': 'Karimova',
+      'avatarUrl': null,
+      'locale': 'uz',
+      'status': 'ACTIVE',
+      'loyaltyPoints': 340,
+      'roles': ['CUSTOMER'],
+    };
+
+FakeBackend _profileBackend() => FakeBackend((options, body) {
+      if (options.path == '/api/auth/login') {
+        return apiOk({'user': _me(), 'tokens': tokenPair('1')});
+      }
+      if (options.path == '/api/auth/me') return apiOk({'user': _me()});
+      if (options.path == '/api/categories') return rawJson(_categoriesJson);
+      if (options.path == '/api/cart') {
+        return apiOk({'cartId': 'c1', 'items': <Map<String, dynamic>>[]});
+      }
+      return rawJson(_productsJson);
+    });
+
 FakeBackend _ordersBackend() => FakeBackend((options, body) {
       if (options.path == '/api/orders') {
         return rawJson(json.encode({
@@ -369,7 +437,7 @@ void main() {
 
   testWidgets(
     '04 katalog',
-    (t) => shoot(t, '04-catalog', const CatalogScreen(), backend: _catalogBackend(), cart: _cart()),
+    (t) => shootTab(t, '04-catalog', HomeTab.catalog, backend: _catalogBackend(), cart: _cart()),
   );
 
   testWidgets(
@@ -384,7 +452,7 @@ void main() {
 
   testWidgets(
     '06 savat',
-    (t) => shoot(t, '06-cart', const CartScreen(), backend: _catalogBackend(), cart: _cart()),
+    (t) => shootTab(t, '06-cart', HomeTab.cart, backend: _catalogBackend(), cart: _cart()),
   );
 
   testWidgets(
@@ -415,7 +483,12 @@ void main() {
 
   testWidgets(
     '09 buyurtmalar',
-    (t) => shoot(t, '09-orders', const OrdersScreen(), backend: _ordersBackend()),
+    (t) => shootTab(t, '09-orders', HomeTab.orders, backend: _ordersBackend()),
+  );
+
+  testWidgets(
+    '11 profil',
+    (t) => shootTab(t, '11-profile', HomeTab.profile, backend: _profileBackend(), signIn: true),
   );
 
   testWidgets(

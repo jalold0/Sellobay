@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sellobay_customer/src/home_tabs.dart';
 import 'package:sellobay_customer/src/screens/cart_screen.dart';
-import 'package:sellobay_customer/src/screens/catalog_screen.dart';
-import 'package:sellobay_customer/src/widgets/cart_button.dart';
+import 'package:sellobay_customer/src/screens/home_shell.dart';
 import 'package:sellobay_customer/src/widgets/product_card.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:sellobay_shared/testing.dart';
@@ -111,7 +111,12 @@ Future<SellobayRuntime> pumpCatalog(
           controller: runtime.auth,
           child: CartScope(
             store: runtime.cart,
-            child: MaterialApp(theme: buildSellobayTheme(), home: const CatalogScreen()),
+            // Haqiqiy ildiz — qobiq. Savatga pastki paneldan o'tiladi,
+            // ilgari katalog AppBar'idagi belgidan o'tilardi.
+            child: HomeTabsScope(
+              controller: HomeTabsController(),
+              child: MaterialApp(theme: buildSellobayTheme(), home: const HomeShell()),
+            ),
           ),
         ),
       ),
@@ -136,9 +141,14 @@ Future<void> addFirstProduct(WidgetTester tester) async {
   await settleRoute(tester);
 }
 
-/// Katalogdagi savat belgisidan savat ekranini ochadi.
+/// Pastki paneldagi savat bo'limiga o'tadi.
 Future<void> openCart(WidgetTester tester) async {
-  await tester.tap(find.byType(CartButton));
+  await tester.tap(
+    find.descendant(
+      of: find.byType(NavigationBar),
+      matching: find.byIcon(Icons.shopping_bag_outlined),
+    ),
+  );
   await settleRoute(tester);
 }
 

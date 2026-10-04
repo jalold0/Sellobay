@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
-import '../widgets/cart_button.dart';
 import '../widgets/product_card.dart';
-import 'orders_screen.dart';
 import 'product_screen.dart';
 
 /// Katalog — tizimga kirgandan keyingi asosiy ekran.
@@ -149,24 +147,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.t('common.appName')),
-        actions: [
-          IconButton(
-            tooltip: context.t('profile.ordersPage.title'),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const OrdersScreen()),
-            ),
-            icon: const Icon(Icons.receipt_long_outlined),
-          ),
-          const CartButton(),
-          IconButton(
-            tooltip: context.t('profile.signOut'),
-            onPressed: () => AuthScope.read(context).signOut(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
+      // Savat, buyurtmalar va profil endi pastki panelda — AppBar'da
+      // takrorlanmaydi.
+      appBar: AppBar(title: Text(context.t('common.appName'))),
       body: RefreshIndicator(
         onRefresh: () async {
           await _loadCategories();

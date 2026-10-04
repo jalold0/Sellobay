@@ -80,6 +80,34 @@ ThemeData buildSellobayTheme() {
         foregroundColor: SellobayColors.ink,
       ),
     ),
+    // M3 `ColorScheme.fromSeed` tanlangan holat uchun pushti
+    // `secondaryContainer` chiqaradi — u brend rangi emas. Pastki panel
+    // va chiplar ilovaning eng ko'rinadigan joyi, shuning uchun ular
+    // aniq belgilanadi.
+    //
+    // DIQQAT: bu yerda `TextStyle` BERILMAYDI. `WidgetStateProperty`
+    // dagi uslub mavzudagi shriftni merge qilmay almashtiradi va
+    // oila ko'rsatilmasa platforma standartiga tushib ketadi.
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: SellobayColors.primary.withValues(alpha: 0.10),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          size: 23,
+          color: states.contains(WidgetState.selected)
+              ? SellobayColors.primary
+              : SellobayColors.mutedText,
+        ),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: Colors.white,
+      selectedColor: SellobayColors.primary.withValues(alpha: 0.10),
+      checkmarkColor: SellobayColors.primary,
+      side: const BorderSide(color: SellobayColors.border),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+    ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
   );
 }
