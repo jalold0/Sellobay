@@ -65,6 +65,7 @@ const deliverySelect = {
   pickedUpAt: true,
   deliveredAt: true,
   failureReason: true,
+  proofPhotoUrl: true,
   createdAt: true,
   courierId: true,
   order: {
@@ -101,6 +102,14 @@ export function serializeDelivery(d: DeliveryRow) {
     pickedUpAt: d.pickedUpAt?.toISOString() ?? null,
     deliveredAt: d.deliveredAt?.toISOString() ?? null,
     failureReason: d.failureReason,
+    /**
+     * Isbot surati biriktirilganmi.
+     *
+     * Yo'lning O'ZI qaytmaydi: suratda mijozning uyi, eshigi, ba'zan
+     * o'zi ham bo'ladi. Kuryerga «biriktirdim»ni bilish yetarli,
+     * suratni ko'rish kerak emas — uni admin ko'radi.
+     */
+    hasProofPhoto: d.proofPhotoUrl !== null,
     createdAt: d.createdAt.toISOString(),
     /**
      * Kuryer biriktirilganmi.
@@ -240,7 +249,13 @@ export async function updateDeliveryStatus(
   userId: string,
   deliveryId: string,
   next: DeliveryStatus,
-  extra: { note?: string; latitude?: number; longitude?: number } = {},
+  extra: {
+    note?: string;
+    latitude?: number;
+    longitude?: number;
+    /** `/api/uploads/delivery-proof` qaytargan ichki yo'l. */
+    proofPhotoUrl?: string;
+  } = {},
 ) {
   const courier = await prisma.courier.findUnique({
     where: { userId },
@@ -267,6 +282,24 @@ export async function updateDeliveryStatus(
     throw new CourierError(400, 'REASON_REQUIRED', 'Sababni yozing');
   }
 
+  // Surat FAQAT yakuniy holatlarga biriktiriladi.
+  //
+  // `DELIVERED` — topshirilgani isboti. `FAILED` ham ataylab ruxsat
+  // etilgan: «uyda hech kim yo'q» degan sababni yopiq eshik surati
+  // tasdiqlaydi va bahsda shu hal qiladi.
+  //
+  // Oraliq holatga kelsa — bu klient xatosi. Jim e'tiborsiz qoldirsak,
+  // kuryer suratni biriktirdim deb o'ylab, u esa hech qayerga
+  // yozilmagan bo'lardi.
+  const proof = extra.proofPhotoUrl?.trim();
+  if (proof && next !== 'DELIVERED' && next !== 'FAILED') {
+    throw new CourierError(
+      400,
+      'PROOF_NOT_ALLOWED',
+      'Suratni faqat «yetkazildi» yoki «bajarilmadi» holatiga biriktirib bo`ladi',
+    );
+  }
+
   const now = new Date();
   await prisma.$transaction(async (tx) => {
     // Shart bilan yangilash: parallel so'rov holatni allaqachon
@@ -278,6 +311,7 @@ export async function updateDeliveryStatus(
         ...(next === 'PICKED_UP' ? { pickedUpAt: now } : {}),
         ...(next === 'DELIVERED' ? { deliveredAt: now } : {}),
         ...(next === 'FAILED' ? { failureReason: extra.note?.trim() ?? null } : {}),
+        ...(proof ? { proofPhotoUrl: proof } : {}),
       },
     });
     if (updated.count === 0) {
@@ -321,4 +355,71 @@ export async function updateDeliveryStatus(
     select: deliverySelect,
   });
   return serializeDelivery(row);
+}
+
+/**
+ * Toshkent kunining boshlanishi, UTC `Date` sifatida.
+ *
+ * `new Date().setHours(0,0,0,0)` SERVER zonasini oladi — Vercel'da u
+ * UTC. Natijada ertalab soat 03:00 da (Toshkent) hali «kechagi» kun
+ * davom etardi va kuryer bajargan ishini statistikada ko'rmasdi.
+ *
+ * O'zbekiston — UTC+5, yozgi vaqtga o'tish 2005 yildan beri yo'q,
+ * shuning uchun qat'iy siljish to'g'ri (Intl bilan zona hisoblash bu
+ * yerda ortiqcha murakkablik bo'lardi).
+ */
+const UZ_OFFSET_MS = 5 * 60 * 60 * 1000;
+
+export function tashkentDayStart(now: Date = new Date()): Date {
+  const shifted = new Date(now.getTime() + UZ_OFFSET_MS);
+  const midnightUtc = Date.UTC(
+    shifted.getUTCFullYear(),
+    shifted.getUTCMonth(),
+    shifted.getUTCDate(),
+  );
+  return new Date(midnightUtc - UZ_OFFSET_MS);
+}
+
+/**
+ * Kuryerning statistikasi.
+ *
+ * Faqat HISOBLANADIGAN raqamlar: yetkazilgan va bajarilmagan topshiriq
+ * soni. Daromad ko'rsatilmaydi — sxemada kuryer to'lovi modeli YO'Q
+ * (`Courier` da na tarif, na balans bor), shuning uchun har qanday
+ * summa to'qima bo'lardi.
+ */
+export async function courierStats(userId: string) {
+  const courier = await prisma.courier.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  // Profil hali yo'q — hech narsa qilmagan kuryer. Nol qaytaramiz,
+  // 404 emas: ilova uchun bu xato emas, oddiy boshlang'ich holat.
+  if (!courier) {
+    return { today: { delivered: 0, failed: 0 }, active: 0, allTimeDelivered: 0 };
+  }
+
+  const dayStart = tashkentDayStart();
+  const mine = { courierId: courier.id } as const;
+
+  const [todayDelivered, todayFailed, active, allTimeDelivered] = await Promise.all([
+    // `deliveredAt` bo'yicha, `updatedAt` emas: keyinchalik admin
+    // izoh qo'shsa, topshirish sanasi siljib ketmasin.
+    prisma.delivery.count({
+      where: { ...mine, status: 'DELIVERED', deliveredAt: { gte: dayStart } },
+    }),
+    prisma.delivery.count({
+      where: { ...mine, status: 'FAILED', updatedAt: { gte: dayStart } },
+    }),
+    prisma.delivery.count({
+      where: { ...mine, status: { in: ['ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'ARRIVED'] } },
+    }),
+    prisma.delivery.count({ where: { ...mine, status: 'DELIVERED' } }),
+  ]);
+
+  return {
+    today: { delivered: todayDelivered, failed: todayFailed },
+    active,
+    allTimeDelivered,
+  };
 }

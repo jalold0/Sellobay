@@ -19,6 +19,7 @@ class DeliveriesScreen extends StatefulWidget {
 
 class _DeliveriesScreenState extends State<DeliveriesScreen> {
   CourierDeliveries? _data;
+  CourierStats? _stats;
   bool _loading = true;
   bool _busy = false;
   Object? _error;
@@ -37,10 +38,18 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
       _error = null;
     });
     try {
-      final data = await _repo.fetchDeliveries();
+      // Ikkalasi BIRGA so'raladi, lekin taqdiri boshqa: ro'yxat
+      // ekranning mazmuni, statistika esa bezak. Statistika yiqilsa
+      // ro'yxat baribir ko'rinadi — aks holda ikkinchi darajali
+      // so'rov butun ekranni «tarmoq xatosi» ga aylantirardi.
+      final results = await Future.wait([
+        _repo.fetchDeliveries(),
+        _repo.fetchStats().then<CourierStats?>((s) => s).catchError((_) => null),
+      ]);
       if (!mounted) return;
       setState(() {
-        _data = data;
+        _data = results[0] as CourierDeliveries;
+        _stats = results[1] as CourierStats?;
         _loading = false;
       });
     } catch (e) {
@@ -128,6 +137,10 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
+        if (_stats != null) ...[
+          _statsCard(context, _stats!),
+          const SizedBox(height: 20),
+        ],
         _sectionTitle(context.t('courier.tabMine')),
         if (data.mine.isEmpty)
           _empty(context.t('courier.noMine'))
@@ -169,6 +182,82 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
     // Detalda holat o'zgargan bo'lishi mumkin.
     if (mounted) await _load();
   }
+
+  /// Kunlik ko'rsatkichlar.
+  ///
+  /// «Bugun» SERVERDA, Toshkent vaqtida hisoblanadi — ilovada
+  /// hisoblasak, qurilma zonasi boshqa bo'lganda kun chegarasi siljib
+  /// ketardi.
+  Widget _statsCard(BuildContext context, CourierStats stats) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: SellobayColors.soft,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.t('courier.statsToday'),
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+                color: SellobayColors.mutedText,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _stat(context.t('courier.statsDelivered'), stats.deliveredToday),
+                _stat(context.t('courier.statsFailed'), stats.failedToday),
+                _stat(context.t('courier.statsActive'), stats.active),
+              ],
+            ),
+            const Divider(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.t('courier.statsAllTime'),
+                    style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+                  ),
+                ),
+                Text(
+                  '${stats.allTimeDelivered}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: SellobayColors.ink,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _stat(String label, int value) => Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$value',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: SellobayColors.ink,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              label,
+              maxLines: 2,
+              style: const TextStyle(fontSize: 11.5, height: 1.25, color: SellobayColors.mutedText),
+            ),
+          ],
+        ),
+      );
 
   Widget _sectionTitle(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 10),

@@ -56,6 +56,8 @@ function assertConfigured(): void {
 export const FOLDER = {
   productImages: 'products',
   receipts: 'receipts',
+  /** Yetkazib berish isboti — kuryer topshirish payti olgan surat. */
+  deliveryProofs: 'delivery-proofs',
 } as const;
 
 export type StorageFolder = (typeof FOLDER)[keyof typeof FOLDER];

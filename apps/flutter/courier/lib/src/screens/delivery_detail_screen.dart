@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../external_actions.dart';
 import '../widgets/delivery_status_chip.dart';
 
 /// Bitta topshiriq va holatni o'zgartirish tugmalari.
@@ -11,6 +13,11 @@ import '../widgets/delivery_status_chip.dart';
 class DeliveryDetailScreen extends StatefulWidget {
   const DeliveryDetailScreen({super.key, required this.delivery});
 
+  /// Testda almashtiriladi — kamera widget testida ishlamaydi
+  /// (platforma kanali yo'q, chaqiruv javobsiz osilib qolardi).
+  @visibleForTesting
+  static ImagePicker picker = ImagePicker();
+
   final CourierDelivery delivery;
 
   @override
@@ -20,6 +27,10 @@ class DeliveryDetailScreen extends StatefulWidget {
 class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
   late CourierDelivery _delivery = widget.delivery;
   bool _busy = false;
+
+  /// Yuklangan isbot suratining ichki yo'li (hali biriktirilmagan).
+  String? _proofPath;
+  bool _photoBusy = false;
 
   /// Sabab maydoni.
   ///
@@ -50,7 +61,17 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
 
     setState(() => _busy = true);
     try {
-      final updated = await _repo.updateStatus(_delivery.id, next, note: note);
+      final updated = await _repo.updateStatus(
+        _delivery.id,
+        next,
+        note: note,
+        // Surat FAQAT yakuniy holatlarga biriktiriladi — server ham
+        // shunday (`400 PROOF_NOT_ALLOWED`). Oraliq holatda yuborsak,
+        // o'tish butunlay rad etilardi.
+        proofPhotoUrl: next == DeliveryStatus.delivered || next == DeliveryStatus.failed
+            ? _proofPath
+            : null,
+      );
       if (!mounted) return;
       setState(() {
         _delivery = updated;
@@ -66,6 +87,61 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
         SnackBar(content: Text(context.errorText(e))),
       );
     }
+  }
+
+  Future<void> _call(String phone) async {
+    final ok = await openFirst([callUri(phone)]);
+    if (!ok && mounted) _toast(context.t('courier.cannotOpen'));
+  }
+
+  Future<void> _navigate(CourierDelivery d) async {
+    final ok = await openFirst(
+      navigationUris(
+        latitude: d.latitude,
+        longitude: d.longitude,
+        address: d.destinationAddress,
+      ),
+    );
+    if (!ok && mounted) _toast(context.t('courier.cannotOpen'));
+  }
+
+  /// Isbot suratini oladi va DARHOL yuklaydi.
+  ///
+  /// Holat o'zgartirishdan alohida: surat bir necha megabayt, tarmoq
+  /// uzilsa butun o'tishni qayta yuborish kerak bo'lardi.
+  Future<void> _takeProof() async {
+    final shot = await DeliveryDetailScreen.picker.pickImage(
+      // Galereya EMAS: isbot topshirish paytida olinishi kerak, eski
+      // suratni biriktirish uni ma'nosiz qilardi.
+      source: ImageSource.camera,
+      // Server 4 MB gacha qabul qiladi.
+      maxWidth: 1600,
+      imageQuality: 80,
+    );
+    if (shot == null || !mounted) return;
+
+    setState(() => _photoBusy = true);
+    try {
+      final bytes = await shot.readAsBytes();
+      final path = await _repo.uploadProofPhoto(bytes: bytes, filename: shot.name);
+      if (!mounted) return;
+      setState(() {
+        _proofPath = path;
+        _photoBusy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _photoBusy = false;
+        // Eski yo'l qolib ketmasin — kuryer yuklandi deb o'ylamasin.
+        _proofPath = null;
+      });
+      _toast(context.errorText(e));
+    }
+  }
+
+  void _toast(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Future<String?> _askReason() {
@@ -153,6 +229,15 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
             delivery.destinationAddress,
             style: const TextStyle(fontSize: 14, height: 1.45, color: SellobayColors.ink),
           ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => _navigate(delivery),
+              icon: const Icon(Icons.directions_outlined, size: 18),
+              label: Text(context.t('courier.navigate')),
+            ),
+          ),
           if (delivery.recipientName != null) ...[
             const SizedBox(height: 20),
             _section(context.t('courier.recipient')),
@@ -165,6 +250,19 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
               SelectableText(
                 delivery.recipientPhone!,
                 style: const TextStyle(fontSize: 14, color: SellobayColors.primary),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                // `FilledButton` EMAS: to'ldirilgan tugmalar bu ekranda
+                // holat o'zgartirish uchun ajratilgan. Qo'ng'iroq va
+                // yo'l ko'rsatish — boshqa toifa: ular topshiriqni
+                // o'zgartirmaydi, boshqa ilovaga o'tkazadi.
+                child: OutlinedButton.icon(
+                  onPressed: () => _call(delivery.recipientPhone!),
+                  icon: const Icon(Icons.call_outlined, size: 18),
+                  label: Text(context.t('courier.call')),
+                ),
               ),
             ],
           ],
@@ -195,11 +293,80 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
               ),
             ),
           const SizedBox(height: 26),
+          ..._proofSection(context, delivery),
           ..._actions(context, delivery),
         ],
       ),
     );
   }
+
+  /// Isbot surati bo'limi.
+  ///
+  /// Faqat yakuniy holatga o'tish MUMKIN bo'lganda ko'rinadi: yo'lda
+  /// ketayotgan kuryerga surat tugmasi kerak emas, topshirish paytida
+  /// esa kerak.
+  ///
+  /// Surat MAJBURIY EMAS. Majburiy qilsak, kamerasi ishlamagan yoki
+  /// ruxsat bermagan kuryer topshiriqni umuman yopa olmay qolardi —
+  /// va buyurtma mijozda «yo'lda» bo'lib muzlab turardi.
+  List<Widget> _proofSection(BuildContext context, CourierDelivery delivery) {
+    final canFinish = delivery.nextStatuses.contains(DeliveryStatus.delivered) ||
+        delivery.nextStatuses.contains(DeliveryStatus.failed);
+    if (!canFinish) {
+      // Yakuniy holatda — allaqachon biriktirilganini ko'rsatamiz.
+      if (!delivery.hasProofPhoto) return const [];
+      return [
+        _attachedRow(context.t('courier.photoAttached')),
+        const SizedBox(height: 20),
+      ];
+    }
+
+    final attached = _proofPath != null;
+    return [
+      _section(context.t('courier.proofPhoto')),
+      Text(
+        context.t('courier.proofPhotoHint'),
+        style: const TextStyle(fontSize: 12.5, height: 1.4, color: SellobayColors.mutedText),
+      ),
+      const SizedBox(height: 10),
+      if (attached) _attachedRow(context.t('courier.photoAttached')),
+      if (attached) const SizedBox(height: 8),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: _photoBusy || _busy ? null : _takeProof,
+          icon: const Icon(Icons.photo_camera_outlined, size: 18),
+          label: Text(
+            context.t(
+              _photoBusy
+                  ? 'courier.photoUploading'
+                  : attached
+                      ? 'courier.retakePhoto'
+                      : 'courier.takePhoto',
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 22),
+    ];
+  }
+
+  Widget _attachedRow(String text) => Row(
+        children: [
+          const Icon(Icons.check_circle_outline, size: 17, color: SellobayColors.success),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: SellobayColors.success,
+              ),
+            ),
+          ),
+        ],
+      );
 
   List<Widget> _actions(BuildContext context, CourierDelivery delivery) {
     if (delivery.nextStatuses.isEmpty) {

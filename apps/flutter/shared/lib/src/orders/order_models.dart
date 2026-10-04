@@ -4,6 +4,39 @@ import '../catalog/localized_text.dart';
 import '../utils/money.dart';
 
 /// Buyurtma holati — `OrderStatus` enum (schema.prisma) bilan bir xil.
+/// To'lov holati — `PaymentStatus` enum (schema.prisma) bilan bir xil.
+enum PaymentStatus {
+  pending('PENDING'),
+  authorized('AUTHORIZED'),
+  paid('PAID'),
+  partiallyRefunded('PARTIALLY_REFUNDED'),
+  refunded('REFUNDED'),
+  failed('FAILED'),
+  cancelled('CANCELLED');
+
+  const PaymentStatus(this.value);
+
+  final String value;
+
+  String get labelKey => 'order.paymentStatus.$value';
+
+  /// Pul kelganmi.
+  bool get isSettled => this == PaymentStatus.paid || this == PaymentStatus.authorized;
+
+  /// Mijoz yana urinib ko'rishi MUMKINMI.
+  ///
+  /// `CANCELLED` va qaytarilganlar bundan tashqarida: ularda qayta
+  /// to'lash tugmasini ko'rsatsak, server baribir rad etardi.
+  bool get isRetriable => this == PaymentStatus.pending || this == PaymentStatus.failed;
+
+  static PaymentStatus? fromValue(String? value) {
+    for (final s in PaymentStatus.values) {
+      if (s.value == value) return s;
+    }
+    return null;
+  }
+}
+
 enum OrderStatus {
   pending('PENDING'),
   confirmed('CONFIRMED'),
@@ -180,6 +213,7 @@ class OrderDetail {
     required this.deliveryMethod,
     required this.paymentProvider,
     required this.paymentStatus,
+    required this.payment,
     required this.paymentReview,
     required this.placedAt,
     required this.deliveredAt,
@@ -208,6 +242,7 @@ class OrderDetail {
       deliveryMethod: order['deliveryMethod'] as String? ?? '',
       paymentProvider: order['paymentProvider'] as String?,
       paymentStatus: order['paymentStatus'] as String?,
+      payment: PaymentStatus.fromValue(order['paymentStatus'] as String?),
       paymentReview: order['paymentReview'] as bool? ?? false,
       placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
       deliveredAt: DateTime.tryParse(order['deliveredAt'] as String? ?? ''),
@@ -240,7 +275,12 @@ class OrderDetail {
   final String? notes;
   final String deliveryMethod;
   final String? paymentProvider;
+
+  /// Serverdagi XOM qiymat — ilova bilmaydigan holat ham ko'rsatiladi.
   final String? paymentStatus;
+
+  /// Tanilgan holat; `null` bo'lsa [paymentStatus] xom holida chiqadi.
+  final PaymentStatus? payment;
   final bool paymentReview;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
@@ -252,4 +292,65 @@ class OrderDetail {
   final List<OrderLine> items;
 
   bool get hasDiscount => discountTotal > Decimal.zero;
+}
+
+/// Raqam + telefon bo'yicha kuzatilgan buyurtma (`POST /api/orders/track`).
+///
+/// Javobda ATAYLAB kam ma'lumot: manzil, ism va to'lov tafsilotlari
+/// berilmaydi — ular faqat kabinetda, to'liq autentifikatsiyadan
+/// keyin ko'rinadi.
+class TrackedOrder {
+  const TrackedOrder({
+    required this.number,
+    required this.status,
+    required this.rawStatus,
+    required this.placedAt,
+    required this.total,
+    required this.deliveryMethod,
+    required this.itemCount,
+    required this.timeline,
+  });
+
+  factory TrackedOrder.fromJson(Map<String, dynamic> json) {
+    final order = json['order'] as Map<String, dynamic>? ?? const {};
+    return TrackedOrder(
+      number: order['number'] as String? ?? '',
+      status: OrderStatus.fromValue(order['status'] as String?),
+      rawStatus: order['status'] as String? ?? '',
+      placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
+      total: parseMoney(order['total']),
+      deliveryMethod: order['deliveryMethod'] as String?,
+      itemCount: (order['itemCount'] as num?)?.toInt() ?? 0,
+      timeline: (order['timeline'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(TrackedStep.fromJson)
+          .toList(),
+    );
+  }
+
+  final String number;
+  final OrderStatus? status;
+  final String rawStatus;
+  final DateTime? placedAt;
+  final Decimal total;
+  final String? deliveryMethod;
+  final int itemCount;
+
+  /// Holat tarixi — eng eskisidan boshlab.
+  final List<TrackedStep> timeline;
+}
+
+/// Kuzatuvdagi bitta qadam.
+class TrackedStep {
+  const TrackedStep({required this.status, required this.rawStatus, required this.at});
+
+  factory TrackedStep.fromJson(Map<String, dynamic> json) => TrackedStep(
+        status: OrderStatus.fromValue(json['status'] as String?),
+        rawStatus: json['status'] as String? ?? '',
+        at: DateTime.tryParse(json['at'] as String? ?? ''),
+      );
+
+  final OrderStatus? status;
+  final String rawStatus;
+  final DateTime? at;
 }

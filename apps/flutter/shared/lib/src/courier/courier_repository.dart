@@ -33,12 +33,16 @@ class CourierRepository {
   /// [status] `CourierDelivery.nextStatuses` dan olinadi — ro'yxatni
   /// server beradi. `FAILED` uchun [note] MAJBURIY (server
   /// `400 REASON_REQUIRED` qaytaradi).
+  /// [proofPhotoUrl] — `uploadProofPhoto` qaytargan yo'l. Server uni
+  /// FAQAT `DELIVERED` va `FAILED` ga biriktiradi; oraliq holatga
+  /// yuborilsa `400 PROOF_NOT_ALLOWED` qaytadi.
   Future<CourierDelivery> updateStatus(
     String deliveryId,
     DeliveryStatus status, {
     String? note,
     double? latitude,
     double? longitude,
+    String? proofPhotoUrl,
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/api/courier/deliveries/$deliveryId/status',
@@ -47,8 +51,25 @@ class CourierRepository {
         'note': ?note,
         'latitude': ?latitude,
         'longitude': ?longitude,
+        'proofPhotoUrl': ?proofPhotoUrl,
       },
     );
     return CourierDelivery.fromJson(data['delivery'] as Map<String, dynamic>);
+  }
+
+  /// Isbot suratini yuklaydi va ichki yo'lini qaytaradi.
+  ///
+  /// Holat o'zgartirishdan ALOHIDA yuboriladi: surat bir necha megabayt
+  /// bo'lishi mumkin va tarmoq uzilsa, butun holat so'rovini qayta
+  /// yuborish kerak bo'lardi.
+  Future<String> uploadProofPhoto({
+    required List<int> bytes,
+    required String filename,
+  }) =>
+      _api.uploadDeliveryProof(bytes: bytes, filename: filename);
+
+  Future<CourierStats> fetchStats() async {
+    final data = await _api.get<Map<String, dynamic>>('/api/courier/stats');
+    return CourierStats.fromJson(data['stats'] as Map<String, dynamic>);
   }
 }

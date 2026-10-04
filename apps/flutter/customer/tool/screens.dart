@@ -100,6 +100,9 @@ Future<void> shoot(
   Widget home, {
   FakeBackend? backend,
   CartStore? cart,
+  bool signIn = false,
+  /// Suratdan oldin bajariladigan amal (bosish, surish).
+  Future<void> Function(WidgetTester tester)? before,
 }) async {
   tester.view
     ..physicalSize = const Size(390 * 2, 844 * 2)
@@ -110,7 +113,21 @@ Future<void> shoot(
     backend ?? FakeBackend((options, body) => apiErr(500, 'UNEXPECTED', options.path)),
     locale: uz,
     cart: cart,
+    // Biznes qoidalari — yetkazish narxi va coin qiymati shu yerdan.
+    // Qoidasiz ekran ularni UMUMAN ko'rsatmaydi (raqam o'ylab
+    // topilmaydi), ya'ni surat ham bo'sh chiqardi.
+    config: testConfig(),
   );
+  if (signIn) {
+    // `runAsync` SHART: `testWidgets` soxta vaqtda ishlaydi va kadr
+    // surilmaguncha tarmoq zanjiri tugamaydi. Ekran esa `_load()` da
+    // auth holatini BIR MARTA o'qiydi — kirish undan oldin tugashi
+    // kerak, aks holda coin bo'limi umuman so'ralmasdi.
+    await tester.runAsync(() async {
+      await runtime.api.session.save(access: 'a', refresh: 'r');
+      await runtime.auth.restore();
+    });
+  }
 
   await tester.pumpWidget(
     SellobayScope(
@@ -123,6 +140,10 @@ Future<void> shoot(
     ),
   );
   await _settle(tester);
+  if (before != null) {
+    await before(tester);
+    await _settle(tester);
+  }
 
   await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/$name.png'));
 }
@@ -145,7 +166,7 @@ Future<void> shootTab(
     ..devicePixelRatio = 2;
   addTearDown(tester.view.reset);
 
-  final runtime = buildRuntime(backend, locale: uz, cart: cart);
+  final runtime = buildRuntime(backend, locale: uz, cart: cart, config: testConfig());
   if (signIn) {
     // `await` QILINMAYDI: soxta vaqtda kadr surilmaguncha tugamaydi.
     unawaited(runtime.auth.signInWithPassword(identifier: '+998901234567', password: 'parol1234'));
@@ -305,7 +326,7 @@ Map<String, dynamic> _orderSummary({String status = 'PENDING'}) => {
 
 Map<String, dynamic> _orderDetail() => {
       ..._orderSummary(),
-      'paymentProvider': 'CASH_ON_DELIVERY',
+      'paymentProvider': 'CLICK',
       'paymentStatus': 'PENDING',
       'subtotal': '600000',
       'shippingTotal': '20000',
@@ -338,16 +359,81 @@ Map<String, dynamic> _orderDetail() => {
     };
 
 FakeBackend _catalogBackend() => FakeBackend((options, body) {
+      if (options.path == '/api/products/nike-air-max/reviews') {
+        return apiOk({
+          'items': [
+            {
+              'id': 'r1',
+              'rating': 5,
+              'title': null,
+              'body': "Oyoqqa juda qulay o'tiribdi, o'lchami to'g'ri keldi.",
+              'images': <String>[],
+              'isVerifiedPurchase': true,
+              'helpfulCount': 0,
+              'createdAt': '2026-09-28T08:00:00.000Z',
+              'author': 'Dilnoza K.',
+              'userId': 'u2',
+            },
+            {
+              'id': 'r2',
+              'rating': 4,
+              'title': null,
+              'body': 'Yetkazish tez bo`ldi.',
+              'images': <String>[],
+              'isVerifiedPurchase': true,
+              'helpfulCount': 0,
+              'createdAt': '2026-09-20T08:00:00.000Z',
+              'author': 'Jasur T.',
+              'userId': 'u3',
+            },
+          ],
+          'total': 2,
+          'page': 1,
+          'limit': 3,
+          'hasMore': false,
+          'eligibility': null,
+        });
+      }
       if (options.path == '/api/categories') return rawJson(_categoriesJson);
       if (options.path == '/api/products/nike-air-max') return rawJson(_detailJson);
       return rawJson(_productsJson);
     });
 
-FakeBackend _checkoutBackend() => FakeBackend((options, body) {
+/// Bosh sahifa: `featured` va `popular` ALOHIDA ro'yxat — ikkala
+/// javlon bir xil bo'lsa surat chalg'itardi.
+FakeBackend _homeBackend() => FakeBackend((options, body) {
+      if (options.path == '/api/categories') return rawJson(_categoriesJson);
+      if (options.queryParameters['sort'] == 'popular') {
+        return rawJson(json.encode({
+          'items': [
+            _product(slug: 'adidas-ultraboost', nameUz: 'Adidas Ultraboost', price: '1250000', brand: 'Adidas'),
+            _product(slug: 'reebok-classic', nameUz: 'Reebok Classic Leather', price: '640000', brand: 'Reebok'),
+            _product(slug: 'puma-rs-x', nameUz: 'Puma RS-X krossovkalar', price: '990000'),
+          ],
+          'total': 3,
+          'page': 1,
+          'limit': 24,
+          'hasMore': false,
+        }));
+      }
+      return rawJson(_productsJson);
+    });
+
+FakeBackend _checkoutBackend({bool cards = false}) => FakeBackend((options, body) {
       switch (options.path) {
+        case '/api/uploads/receipt':
+          return apiOk({'pathname': 'receipts/chek.jpg'});
         case '/api/payment-cards':
           return apiOk({
-            'cards': <Map<String, dynamic>>[],
+            'cards': cards
+                ? [
+                    {
+                      'number': '8600 1234 5678 9012',
+                      'holder': 'SELLOBAY MCHJ',
+                      'bank': 'Uzcard',
+                    },
+                  ]
+                : <Map<String, dynamic>>[],
             'providers': ['CLICK', 'PAYME', 'CASH_ON_DELIVERY'],
           });
         case '/api/auth/me':
@@ -356,6 +442,15 @@ FakeBackend _checkoutBackend() => FakeBackend((options, body) {
           });
         case '/api/addresses':
           return apiOk({'items': <Map<String, dynamic>>[]});
+        case '/api/loyalty':
+          return apiOk({
+            'coins': 820,
+            'spentSom': 4300000,
+            'history': <Map<String, dynamic>>[],
+            'checkedInToday': false,
+          });
+        case '/api/auth/login':
+          return apiOk({'user': _me(), 'tokens': tokenPair('1')});
       }
       return apiErr(500, 'UNEXPECTED', options.path);
     });
@@ -465,6 +560,11 @@ void main() {
   testWidgets('03 ro`yxatdan o`tish', (t) => shoot(t, '03-register', const RegisterScreen()));
 
   testWidgets(
+    '00 bosh sahifa',
+    (t) => shootTab(t, '00-home', HomeTab.home, backend: _homeBackend(), cart: _cart()),
+  );
+
+  testWidgets(
     '04 katalog',
     (t) => shootTab(t, '04-catalog', HomeTab.catalog, backend: _catalogBackend(), cart: _cart()),
   );
@@ -480,13 +580,93 @@ void main() {
   );
 
   testWidgets(
+    '05b sharhlar',
+    (t) => shoot(
+      t,
+      '05b-product-reviews',
+      const ProductScreen(slug: 'nike-air-max'),
+      backend: _catalogBackend(),
+      before: (tester) async {
+        await tester.scrollUntilVisible(
+          find.text('2 ta sharh'),
+          240,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+      },
+    ),
+  );
+
+  testWidgets(
     '06 savat',
     (t) => shootTab(t, '06-cart', HomeTab.cart, backend: _catalogBackend(), cart: _cart()),
   );
 
   testWidgets(
     '07 rasmiylashtirish',
-    (t) => shoot(t, '07-checkout', const CheckoutScreen(), backend: _checkoutBackend(), cart: _cart()),
+    (t) => shoot(
+      t,
+      '07-checkout',
+      const CheckoutScreen(),
+      backend: _checkoutBackend(),
+      cart: _cart(),
+      signIn: true,
+    ),
+  );
+
+  testWidgets(
+    '07b karta orqali to`lov',
+    (t) => shoot(
+      t,
+      '07b-checkout-card',
+      const CheckoutScreen(),
+      backend: _checkoutBackend(cards: true),
+      cart: _cart(),
+      before: (tester) async {
+        await tester.scrollUntilVisible(
+          find.text('Karta'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+        await tester.tap(find.text('Karta'));
+        await _settle(tester);
+        await tester.scrollUntilVisible(
+          find.text('Chekni yuklash'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+      },
+    ),
+  );
+
+  testWidgets(
+    '07c Sello Coins',
+    (t) => shoot(
+      t,
+      '07c-checkout-coins',
+      const CheckoutScreen(),
+      backend: _checkoutBackend(),
+      cart: _cart(),
+      signIn: true,
+      before: (tester) async {
+        await tester.scrollUntilVisible(
+          find.text('Sello Coins ishlatish'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+        await tester.tap(find.byType(SwitchListTile));
+        await _settle(tester);
+        await tester.scrollUntilVisible(
+          find.text('Jami'),
+          220,
+          scrollable: find.byType(Scrollable).first,
+          maxScrolls: 40,
+        );
+      },
+    ),
   );
 
   testWidgets(

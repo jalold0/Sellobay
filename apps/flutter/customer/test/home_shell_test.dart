@@ -75,10 +75,11 @@ void main() {
     await uz.load();
   });
 
-  testWidgets('to`rtta bo`lim bor', (tester) async {
+  testWidgets('beshta bo`lim bor', (tester) async {
     await pumpShell(tester, _backend());
 
-    expect(find.text('Katalog'), findsOneWidget);
+    expect(find.text('Bosh sahifa'), findsOneWidget);
+    expect(find.text('Katalog'), findsWidgets);
     expect(find.text('Savatcha'), findsOneWidget);
     expect(find.text('Buyurtmalar'), findsWidgets);
     expect(find.text('Profil'), findsOneWidget);
@@ -87,13 +88,13 @@ void main() {
   testWidgets('bo`lim almashadi', (tester) async {
     await pumpShell(tester, _backend());
 
-    // Boshida katalog.
+    // Boshida bosh sahifa.
     expect(find.text('Sellobay'), findsOneWidget);
 
     await tester.tap(navIcon(Icons.receipt_long_outlined));
     await settle(tester);
 
-    // Katalog endi ko'rinmaydi, buyurtmalar ko'rinadi.
+    // Bosh sahifa endi ko'rinmaydi, buyurtmalar ko'rinadi.
     expect(find.text('Sellobay'), findsNothing);
     expect(find.text('Buyurtmalarim'), findsOneWidget);
   });
@@ -130,7 +131,9 @@ void main() {
     await tester.tap(find.text('Xaridni davom ettirish'));
     await settle(tester);
 
-    expect(find.text('Sellobay'), findsOneWidget);
+    expect(find.text('Katalog'), findsWidgets);
+    expect(find.descendant(of: find.byType(CartScreen), matching: find.text("Savatcha bo'sh")),
+        findsNothing);
   });
 
   testWidgets('ochilmagan bo`lim so`rov YUBORMAYDI', (tester) async {
@@ -149,7 +152,7 @@ void main() {
 
     await tester.tap(navIcon(Icons.receipt_long_outlined));
     await settle(tester);
-    await tester.tap(navIcon(Icons.grid_view_outlined));
+    await tester.tap(navIcon(Icons.home_outlined));
     await settle(tester);
     await tester.tap(navIcon(Icons.receipt_long_outlined));
     await settle(tester);

@@ -11,6 +11,7 @@ import {
   isTerminalDeliveryStatus,
   nextDeliveryStatuses,
   serializeDelivery,
+  tashkentDayStart,
 } from './courier-server';
 
 import type { DeliveryStatus } from '@ecom/database';
@@ -113,6 +114,7 @@ describe('javobga o`girish', () => {
       pickedUpAt: null,
       deliveredAt: null,
       failureReason: null,
+      proofPhotoUrl: null,
       createdAt: new Date('2026-10-04T08:00:00.000Z'),
       courierId: null,
       order: {
@@ -146,5 +148,43 @@ describe('javobga o`girish', () => {
       'FAILED',
     ]);
     expect(serializeDelivery(row({ status: 'DELIVERED' })).nextStatuses).toEqual([]);
+  });
+
+  it('isbot surati — BORLIGI qaytadi, yo`lning o`zi EMAS', () => {
+    // Suratda mijozning uyi va eshigi bo'ladi. Kuryerga «biriktirdim»ni
+    // bilish yetarli; yo'l qaytsa, uni bilgan har kim fayl so'ray
+    // olardi.
+    const withPhoto = serializeDelivery(row({ proofPhotoUrl: 'delivery-proofs/2026-10/x.jpg' }));
+    expect(withPhoto.hasProofPhoto).toBe(true);
+    expect(JSON.stringify(withPhoto)).not.toContain('delivery-proofs');
+
+    expect(serializeDelivery(row()).hasProofPhoto).toBe(false);
+  });
+});
+
+describe('Toshkent kunining boshlanishi', () => {
+  // Kun chegarasi UTC'da hisoblansa, Toshkentdagi 00:00-05:00 oralig'i
+  // «kechagi» kunga tushib qolardi: kuryer tunda yetkazgan buyurtmani
+  // ertalab statistikada ko'rmasdi.
+  it('tunda (Toshkent 01:00) — O`SHA kunning boshi', () => {
+    // 2026-10-04T20:00Z = 2026-10-05 01:00 Toshkent.
+    expect(tashkentDayStart(new Date('2026-10-04T20:00:00.000Z')).toISOString()).toBe(
+      '2026-10-04T19:00:00.000Z',
+    );
+  });
+
+  it('ertalab (Toshkent 08:00) — O`SHA kunning boshi', () => {
+    // 2026-10-04T03:00Z = 2026-10-04 08:00 Toshkent. UTC yarim tuni
+    // (2026-10-04T00:00Z) NOTO'G'RI javob bo'lardi.
+    const start = tashkentDayStart(new Date('2026-10-04T03:00:00.000Z'));
+    expect(start.toISOString()).toBe('2026-10-03T19:00:00.000Z');
+    expect(start.toISOString()).not.toBe('2026-10-04T00:00:00.000Z');
+  });
+
+  it('kun boshining O`ZIDA ham o`sha kun', () => {
+    // Chegarada: 19:00Z aynan Toshkent yarim tuni.
+    expect(tashkentDayStart(new Date('2026-10-04T19:00:00.000Z')).toISOString()).toBe(
+      '2026-10-04T19:00:00.000Z',
+    );
   });
 });

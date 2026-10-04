@@ -41,6 +41,15 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Mijozga qo'ng'iroq (`tel:`) va manzilga yo'l ko'rsatish (`geo:`).
+  # Ikkalasi ham qurilmadagi boshqa ilovaga topshiriladi — o'z
+  # dialerimiz yoki xaritamiz yo'q.
+  url_launcher: ^6.3.3
+
+  # Yetkazish isboti surati — KAMERADAN olinadi (galereyadan emas:
+  # isbot topshirish paytida olinishi kerak).
+  image_picker: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

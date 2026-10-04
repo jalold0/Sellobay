@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
+
+import '../widgets/review_tile.dart';
+import 'review_form_screen.dart';
 
 import '../widgets/cart_button.dart';
 import 'cart_screen.dart';
@@ -34,6 +39,38 @@ class _ProductScreenState extends State<ProductScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
+  /// Sharhlar ALOHIDA so'raladi: mahsulot javobida ular yo'q va
+  /// sahifa ochilishini kutdirishning hojati ham yo'q.
+  ReviewPage? _reviews;
+
+  Future<void> _loadReviews(String slug) async {
+    try {
+      final page = await SellobayRuntimeScope.of(context).reviews.fetchForProduct(slug, limit: 3);
+      if (mounted) setState(() => _reviews = page);
+    } catch (_) {
+      // Sharhlar kelmasa bo'lim ko'rsatilmaydi — mahsulot sahifasi
+      // shundan yiqilmasligi kerak.
+    }
+  }
+
+  Future<void> _openReviewForm(ProductDetail product) async {
+    final created = await Navigator.of(context).push<ProductReview>(
+      MaterialPageRoute(
+        builder: (_) => ReviewFormScreen(
+          productId: product.id,
+          productName: product.name.pick(SellobayRuntimeScope.of(context).locale.locale),
+        ),
+      ),
+    );
+    if (created == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.t('reviews.sent'))),
+    );
+    // Baho ham o'zgardi (server qayta hisoblaydi) — mahsulotni ham
+    // qaytadan o'qiymiz.
+    await _load();
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -42,6 +79,7 @@ class _ProductScreenState extends State<ProductScreen> {
     try {
       final product = await SellobayRuntimeScope.of(context).catalog.fetchProduct(widget.slug);
       if (!mounted) return;
+      unawaited(_loadReviews(product.slug));
       setState(() {
         _product = product;
         _loading = false;
@@ -285,6 +323,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   ),
                 ),
               ],
+              ..._reviewsSection(context, product),
               if (product.sellerName != null) ...[
                 const SizedBox(height: 20),
                 Row(
@@ -303,6 +342,75 @@ class _ProductScreenState extends State<ProductScreen> {
         ),
       ],
     );
+  }
+
+  /// Sharhlar bo'limi.
+  ///
+  /// Server yulduzchani sharhlardan hisoblaydi — bu yerda faqat
+  /// ko'rsatiladi.
+  List<Widget> _reviewsSection(BuildContext context, ProductDetail product) {
+    final page = _reviews;
+    if (page == null) return const [];
+
+    final eligibility = page.eligibility;
+    final myId = AuthScope.of(context).user?.id;
+
+    return [
+      const SizedBox(height: 24),
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              page.total > 0
+                  ? context.t('product.reviewsCountLong', params: {'count': page.total})
+                  : context.t('product.reviews'),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+          ),
+          if (page.total > page.items.length)
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ReviewsScreen(
+                    slug: product.slug,
+                    productName: product.name.pick(
+                      SellobayRuntimeScope.of(context).locale.locale,
+                    ),
+                  ),
+                ),
+              ),
+              child: Text(context.t('reviews.viewAll')),
+            ),
+        ],
+      ),
+      if (page.items.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            context.t('product.noReviews'),
+            style: const TextStyle(fontSize: 13, height: 1.5, color: SellobayColors.mutedText),
+          ),
+        )
+      else
+        for (final review in page.items)
+          ReviewTile(review: review, isMine: review.userId == myId),
+      // Tugma FAQAT server ruxsat bergan holatda. Qoidani (xarid
+      // yetkazilganmi, avval yozilganmi) klient hisoblamaydi.
+      if (eligibility?.canReview ?? false) ...[
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => _openReviewForm(product),
+          icon: const Icon(Icons.rate_review_outlined, size: 18),
+          label: Text(context.t('product.writeReview')),
+        ),
+      ] else if (eligibility != null && eligibility.existingReviewId != null) ...[
+        const SizedBox(height: 8),
+        Text(
+          context.t('reviews.alreadyWrote'),
+          style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+        ),
+      ],
+    ];
   }
 
   Widget _statsRow(BuildContext context, ProductDetail product) {

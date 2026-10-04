@@ -45,10 +45,16 @@ Map<String, dynamic> _summary({String status = 'PENDING', bool paymentReview = f
       ],
     };
 
-Map<String, dynamic> _detail({String status = 'PENDING', bool returnable = false}) => {
+Map<String, dynamic> _detail({
+  String status = 'PENDING',
+  bool returnable = false,
+  String provider = 'CASH_ON_DELIVERY',
+  String paymentStatus = 'PENDING',
+}) =>
+    {
       ..._summary(status: status),
-      'paymentProvider': 'CASH_ON_DELIVERY',
-      'paymentStatus': 'PENDING',
+      'paymentProvider': provider,
+      'paymentStatus': paymentStatus,
       'subtotal': '600000',
       'shippingTotal': '20000',
       'discountTotal': '0',
@@ -90,6 +96,9 @@ FakeBackend _backend({
           'success': true,
           'data': {'items': orders ?? [_summary()]},
         }));
+      }
+      if (options.path == '/api/payments/create') {
+        return apiOk({'online': true, 'checkoutUrl': 'https://my.click.uz/services/pay?x=1'});
       }
       if (options.path.endsWith('/cancel')) {
         return cancel?.call() ?? apiOk({'ok': true});
@@ -264,5 +273,65 @@ void main() {
     await settleRoute(tester);
 
     expect(find.textContaining('allaqachon qabul qilingan'), findsWidgets);
+  });
+
+  group('to`lov holati', () {
+    testWidgets('usul va holat ko`rsatiladi', (tester) async {
+      // Ilgari bu ekranda to'lov haqida hech narsa yo'q edi: onlayn
+      // to'lagan mijoz pul o'tdimi-yo'qmi bilmasdi.
+      await pump(tester, _backend(detail: _detail(provider: 'CLICK')), const OrderDetailScreen(orderId: _orderId));
+
+      expect(find.text("To'lov usuli"), findsOneWidget);
+      expect(find.text('Click'), findsOneWidget);
+      expect(find.text("To'lov kutilmoqda"), findsOneWidget);
+    });
+
+    testWidgets('onlayn va to`lanmagan bo`lsa — «yakunlash» tugmasi', (tester) async {
+      await pump(tester, _backend(detail: _detail(provider: 'PAYME')), const OrderDetailScreen(orderId: _orderId));
+
+      expect(find.widgetWithText(FilledButton, "To'lovni yakunlash"), findsOneWidget);
+    });
+
+    testWidgets('naqd to`lovda tugma YO`Q', (tester) async {
+      // Naqdda to'lanadigan sahifa ham yo'q.
+      await pump(tester, _backend(detail: _detail()), const OrderDetailScreen(orderId: _orderId));
+
+      expect(find.text("To'lovni yakunlash"), findsNothing);
+      expect(find.text('Naqd pul'), findsOneWidget);
+    });
+
+    testWidgets('to`langan bo`lsa tugma YO`Q', (tester) async {
+      await pump(
+        tester,
+        _backend(detail: _detail(provider: 'CLICK', paymentStatus: 'PAID')),
+        const OrderDetailScreen(orderId: _orderId),
+      );
+
+      expect(find.text("To'landi"), findsOneWidget);
+      expect(find.text("To'lovni yakunlash"), findsNothing);
+    });
+
+    testWidgets('«yakunlash» YANGI buyurtma yaratmaydi', (tester) async {
+      // Buyurtma allaqachon bor — faqat to'lov manzili qayta so'raladi.
+      final backend = _backend(detail: _detail(provider: 'CLICK'));
+      await pump(tester, backend, const OrderDetailScreen(orderId: _orderId));
+
+      await tester.tap(find.widgetWithText(FilledButton, "To'lovni yakunlash"));
+      await settle(tester);
+
+      expect(backend.countOf('/api/payments/create'), 1);
+      expect(backend.countOf('/api/orders'), 0);
+    });
+
+    testWidgets('ilova bilmaydigan holat XOM ko`rsatiladi', (tester) async {
+      // Sxemaga yangi qiymat qo'shilsa, ekranda bo'sh joy qolmasin.
+      await pump(
+        tester,
+        _backend(detail: _detail(provider: 'CLICK', paymentStatus: 'CHARGEBACK')),
+        const OrderDetailScreen(orderId: _orderId),
+      );
+
+      expect(find.text('CHARGEBACK'), findsOneWidget);
+    });
   });
 }

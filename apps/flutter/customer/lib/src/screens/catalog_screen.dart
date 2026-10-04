@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../home_tabs.dart';
 import '../widgets/product_card.dart';
 import 'product_screen.dart';
 
@@ -128,6 +129,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
+  /// Bosh sahifadan kelgan kategoriya filtri.
+  ///
+  /// Qobiq ichida bu ekran TIRIK qoladi, ya'ni unga yangi parametr
+  /// bilan qayta kirib bo'lmaydi. Shuning uchun filtr `HomeTabsController`
+  /// da qoldiriladi va shu yerda olinadi.
+  void _takePendingCategory() {
+    final slug = HomeTabsScope.read(context)?.takePendingCategory();
+    if (slug == null || slug == _query.categorySlug) return;
+    _apply(_query.copyWith(categorySlug: slug, search: null));
+  }
+
   void _apply(ProductQuery query) {
     setState(() => _query = query.copyWith(page: 1));
     _reload();
@@ -145,11 +157,21 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Bo'lim almashganda qobiq qayta quradi — shu paytda tekshiramiz.
+    // `build` ichida qilib bo'lmaydi: u holat o'zgartiradi.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _takePendingCategory();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Savat, buyurtmalar va profil endi pastki panelda — AppBar'da
-      // takrorlanmaydi.
-      appBar: AppBar(title: Text(context.t('common.appName'))),
+      // Sarlavha «Sellobay» EMAS: u endi bosh sahifada. Ikkalasi bir
+      // xil bo'lsa, qaysi bo'limda turganini ajratib bo'lmasdi.
+      appBar: AppBar(title: Text(context.t('nav.catalog'))),
       body: RefreshIndicator(
         onRefresh: () async {
           await _loadCategories();

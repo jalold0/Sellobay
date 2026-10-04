@@ -188,6 +188,45 @@ class ApiClient {
   Future<SellobayConfig> fetchConfig() async =>
       SellobayConfig.fromJson(await getRaw<Map<String, dynamic>>('/api/config'));
 
+  /// Rasmni yuklaydi va uning ichki YO'LINI qaytaradi.
+  ///
+  /// Rasmning o'zi javobda qaytmaydi: ikkala yuklash ham YOPIQ saqlanadi
+  /// va ochiq havola berilmaydi. Yo'l keyingi so'rovga (buyurtma yoki
+  /// yetkazish holati) biriktiriladi.
+  ///
+  /// `multipart/form-data` — route'lar `req.formData()` dan `file` ni
+  /// o'qiydi, JSON'dan emas.
+  Future<String> _uploadImage(
+    String path, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final data = _unwrap<Map<String, dynamic>>(
+      await _send(() => _dio.post<dynamic>(path, data: form)),
+    );
+    return data['pathname'] as String;
+  }
+
+  /// To'lov cheki (mijoz ilovasi, checkout).
+  Future<String> uploadReceipt({
+    required List<int> bytes,
+    required String filename,
+  }) =>
+      _uploadImage('/api/uploads/receipt', bytes: bytes, filename: filename);
+
+  /// Yetkazib berish isboti surati (kuryer ilovasi).
+  ///
+  /// Chekdan farqli: bu endpoint mehmonga ochiq EMAS, `COURIER` roli
+  /// talab qilinadi.
+  Future<String> uploadDeliveryProof({
+    required List<int> bytes,
+    required String filename,
+  }) =>
+      _uploadImage('/api/uploads/delivery-proof', bytes: bytes, filename: filename);
+
   /// Buyurtma yaratish.
   ///
   /// [idempotencyKey] — tarmoq uzilib qayta urinilganda IKKINCHI buyurtma

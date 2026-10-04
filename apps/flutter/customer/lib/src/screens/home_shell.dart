@@ -4,6 +4,7 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 import '../home_tabs.dart';
 import 'cart_screen.dart';
 import 'catalog_screen.dart';
+import 'home_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
 
@@ -31,7 +32,8 @@ class HomeShell extends StatelessWidget {
       body: IndexedStack(
         index: tabs.index,
         children: [
-          const CatalogScreen(),
+          const HomeScreen(),
+          _page(tabs, HomeTab.catalog, () => const CatalogScreen()),
           _page(tabs, HomeTab.cart, () => const CartScreen()),
           // Kalit har safar o'zgaradi: buyurtma bergandan keyin eski
           // ro'yxat turib qolmasligi uchun ekran qaytadan quriladi.
@@ -43,6 +45,11 @@ class HomeShell extends StatelessWidget {
         selectedIndex: tabs.index,
         onDestinationSelected: tabs.goIndex,
         destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: context.t('nav.home'),
+          ),
           NavigationDestination(
             icon: const Icon(Icons.grid_view_outlined),
             selectedIcon: const Icon(Icons.grid_view),

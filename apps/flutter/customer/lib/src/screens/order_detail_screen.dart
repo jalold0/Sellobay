@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/order_status_chip.dart';
 
@@ -17,16 +20,71 @@ class OrderDetailScreen extends StatefulWidget {
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState extends State<OrderDetailScreen> {
+class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindingObserver {
   OrderDetail? _order;
   bool _loading = true;
   bool _busy = false;
   Object? _error;
 
+  /// To'lov sahifasi TASHQI brauzerda ochilganmi.
+  ///
+  /// Shunday bo'lsa, ilovaga qaytilganda buyurtma qaytadan o'qiladi:
+  /// to'lovni server webhook orqali biladi, ilova esa eski holatni
+  /// ko'rsatib turardi.
+  bool _awaitingPayment = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !_awaitingPayment) return;
+    _awaitingPayment = false;
+    unawaited(_load());
+  }
+
+  /// To'lov sahifasini qayta ochadi.
+  ///
+  /// Buyurtma allaqachon bor; bu yerda faqat provayderning manzili
+  /// qayta so'raladi. Buyurtmani qaytadan yaratmaymiz — ikkinchi
+  /// buyurtma paydo bo'lardi.
+  Future<void> _payNow(OrderDetail order) async {
+    final provider = PaymentProvider.fromValue(order.paymentProvider ?? '');
+    if (provider == null) return;
+
+    setState(() => _busy = true);
+    try {
+      final start = await SellobayRuntimeScope.of(context).checkout.startPayment(
+            orderId: order.id,
+            provider: provider,
+          );
+      final url = start.checkoutUrl;
+      if (url == null) {
+        if (!mounted) return;
+        setState(() => _busy = false);
+        return;
+      }
+      _awaitingPayment = true;
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)
+          .catchError((Object _) => false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.errorText(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   OrdersRepository get _repo => SellobayRuntimeScope.of(context).orders;
@@ -171,6 +229,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         const SizedBox(height: 20),
         _sectionTitle(context.t('checkout.summary')),
         _summary(context, order),
+        if (order.paymentStatus != null) ...[
+          const SizedBox(height: 20),
+          _sectionTitle(context.t('checkout.payment.methodTitle')),
+          _paymentBlock(context, order),
+        ],
         if (order.address != null) ...[
           const SizedBox(height: 20),
           _sectionTitle(context.t('checkout.review.addressLabel')),
@@ -246,6 +309,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
 
     return buttons;
+  }
+
+  /// To'lov usuli va holati.
+  ///
+  /// Ilgari bu ekranda to'lov haqida HECH NARSA yo'q edi: onlayn
+  /// to'lagan mijoz pul o'tdimi-yo'qmi bilmasdi.
+  Widget _paymentBlock(BuildContext context, OrderDetail order) {
+    final provider = PaymentProvider.fromValue(order.paymentProvider ?? '');
+    final status = order.payment;
+    final settled = status?.isSettled ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _row(
+          provider == null
+              // Ilova bilmaydigan provayder — xom qiymat, bo'sh joy emas.
+              ? (order.paymentProvider ?? '—')
+              : context.t(provider.labelKey),
+          // Holatni ham shunday: tanilmasa xom qiymat chiqadi.
+          status == null ? (order.paymentStatus ?? '') : context.t(status.labelKey),
+        ),
+        if (!settled && (status?.isRetriable ?? false) && (provider?.isOnline ?? false)) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _busy ? null : () => _payNow(order),
+              child: Text(context.t('profile.ordersPage.payNow')),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _sectionTitle(String text) => Padding(

@@ -1,4 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Flutter shabloni INTERNET ruxsatini FAQAT `debug/` va `profile/`
+         manifestlariga qo'yadi, `main/` ga emas. Ya'ni RELIZ APK'da u
+         umuman yo'q edi: ilova boshdan-oyoq API klient bo'lgani uchun
+         har bir so'rov qurilmada yiqilardi, ekranlar esa «tarmoq xatosi»
+         ko'rsatardi. Debug build'da ruxsat bor, shuning uchun nuqson
+         ishlab chiqish paytida KO'RINMAYDI — faqat reliz APK telefonga
+         o'rnatilganda chiqadi. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="Sellobay"
         android:name="${applicationName}"

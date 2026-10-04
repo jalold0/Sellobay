@@ -42,6 +42,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.3
 
+  # Chek (kvitansiya) rasmini tanlash uchun.
+  image_picker: ^1.2.0
+
+  # Pul — har doim Decimal (CLAUDE.md). `sellobay_shared` orqali ham
+  # keladi, lekin bu yerda TO'G'RIDAN-TO'G'RI ishlatiladi.
+  decimal: ^3.2.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
