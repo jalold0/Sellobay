@@ -1,3 +1,18 @@
+import '../catalog/localized_text.dart';
+
+/// Sharh qaysi mahsulotga tegishli (`/api/reviews/mine` javobida).
+class ReviewedProduct {
+  const ReviewedProduct({required this.slug, required this.name});
+
+  factory ReviewedProduct.fromJson(Map<String, dynamic> json) => ReviewedProduct(
+        slug: json['slug'] as String? ?? '',
+        name: LocalizedText.fromJson(json['name']),
+      );
+
+  final String slug;
+  final LocalizedText name;
+}
+
 /// Mahsulot sharhi (`GET /api/products/{slug}/reviews`).
 class ProductReview {
   const ProductReview({
@@ -9,6 +24,7 @@ class ProductReview {
     required this.userId,
     required this.isVerifiedPurchase,
     required this.createdAt,
+    this.product,
   });
 
   factory ProductReview.fromJson(Map<String, dynamic> json) => ProductReview(
@@ -21,6 +37,9 @@ class ProductReview {
         userId: json['userId'] as String? ?? '',
         isVerifiedPurchase: json['isVerifiedPurchase'] as bool? ?? false,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
+        product: json['product'] is Map<String, dynamic>
+            ? ReviewedProduct.fromJson(json['product'] as Map<String, dynamic>)
+            : null,
       );
 
   final String id;
@@ -36,6 +55,9 @@ class ProductReview {
 
   final bool isVerifiedPurchase;
   final DateTime? createdAt;
+
+  /// Faqat «mening sharhlarim» ro'yxatida bor.
+  final ReviewedProduct? product;
 }
 
 /// Mijoz shu mahsulotga sharh yoza oladimi.

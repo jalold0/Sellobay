@@ -30,6 +30,11 @@ Future<void> settleAssets(WidgetTester tester) async {
 
 /// Dangasa ro'yxatda pastdagi element qurilmaydi — avval surib
 /// chiqamiz. Profil o'sgani sari bu kerak bo'ladi.
+Future<void> scrollToTop(WidgetTester tester) async {
+  await tester.drag(find.byType(Scrollable).first, const Offset(0, 4000));
+  await settle(tester);
+}
+
 Future<void> scrollTo(WidgetTester tester, Finder target) async {
   await tester.scrollUntilVisible(
     target,
@@ -240,6 +245,7 @@ void main() {
       // Tarjimalarni `SellobayScope` `user.locale` ga ergashib
       // almashtiradi — ekran o'zi emas.
       expect(runtime.locale.locale, 'ru');
+      await scrollToTop(tester);
       expect(find.text('Данные профиля'), findsOneWidget);
       // AppBar ham, pastki paneldagi yorliq ham o'girilgan.
       expect(find.text('Профиль'), findsNWidgets(2));
@@ -264,6 +270,7 @@ void main() {
       await settle(tester);
 
       expect(runtime.locale.locale, 'uz');
+      await scrollToTop(tester);
       expect(find.text('Ichki xato'), findsOneWidget);
     });
   });

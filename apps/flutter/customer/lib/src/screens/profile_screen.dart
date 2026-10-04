@@ -3,6 +3,7 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'addresses_screen.dart';
 import 'track_order_screen.dart';
+import 'my_reviews_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Profil: ma'lumotlar, til va chiqish.
@@ -182,6 +183,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   labelKey: 'profile.nav.wishlist',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const WishlistScreen()),
+                  ),
+                ),
+                _linkTile(
+                  context,
+                  icon: Icons.rate_review_outlined,
+                  labelKey: 'profile.nav.reviews',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const MyReviewsScreen()),
                   ),
                 ),
                 _linkTile(
