@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
-import '../widgets/cart_button.dart';
 import '../widgets/product_card.dart';
 import 'product_screen.dart';
 
@@ -148,17 +147,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.t('common.appName')),
-        actions: [
-          const CartButton(),
-          IconButton(
-            tooltip: context.t('profile.signOut'),
-            onPressed: () => AuthScope.read(context).signOut(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
+      // Savat, buyurtmalar va profil endi pastki panelda — AppBar'da
+      // takrorlanmaydi.
+      appBar: AppBar(title: Text(context.t('common.appName'))),
       body: RefreshIndicator(
         onRefresh: () async {
           await _loadCategories();

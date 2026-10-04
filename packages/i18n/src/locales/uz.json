@@ -752,7 +752,14 @@
       "courier": "Kuryer:",
       "etaUntil": "Taxminan {time} gacha",
       "trackOnMap": "Xaritada kuzatish",
-      "reorder": "Qayta buyurtma"
+      "reorder": "Qayta buyurtma",
+      "cancelOrder": "Buyurtmani bekor qilish",
+      "cancelConfirm": "Buyurtma bekor qilinsinmi? Bu amalni qaytarib bo'lmaydi.",
+      "cancelled": "Buyurtma bekor qilindi",
+      "requestReturn": "Qaytarishni so'rash",
+      "returnConfirm": "Buyurtmani qaytarishni so'raysizmi?",
+      "returnRequested": "Qaytarish so'rovi yuborildi",
+      "returnWindow": "Yetkazilgandan keyin {days} kun ichida qaytarish mumkin"
     },
     "orderDetail": {
       "back": "Buyurtmalarga qaytish",
@@ -1200,6 +1207,34 @@
     "loginTitle": "Kuryer kabineti",
     "loginSubtitle": "Hisobni administrator yaratadi — bu yerda ro'yxatdan o'tish yo'q",
     "roleRequired": "Bu hisobda kuryer huquqi yo'q. Administratorga murojaat qiling.",
-    "deliveriesTitle": "Bugungi yetkazib berishlar"
+    "deliveriesTitle": "Bugungi yetkazib berishlar",
+    "tabMine": "Mening topshiriqlarim",
+    "tabAvailable": "Bo'sh topshiriqlar",
+    "claim": "O'zimga olish",
+    "claimed": "Topshiriq sizga biriktirildi",
+    "noMine": "Sizda faol topshiriq yo'q",
+    "noAvailable": "Hozircha bo'sh topshiriq yo'q",
+    "recipient": "Qabul qiluvchi",
+    "address": "Manzil",
+    "failReason": "Sababi",
+    "failReasonHint": "Nega yetkazib bo'lmadi?",
+    "statusUpdated": "Holat yangilandi",
+    "unclaimed": "Yangi",
+    "status": {
+      "ASSIGNED": "Biriktirildi",
+      "PICKED_UP": "Olindi",
+      "IN_TRANSIT": "Yo'lda",
+      "ARRIVED": "Yetib keldi",
+      "DELIVERED": "Yetkazildi",
+      "FAILED": "Bajarilmadi",
+      "RETURNED": "Qaytarildi"
+    },
+    "action": {
+      "PICKED_UP": "Buyurtmani oldim",
+      "IN_TRANSIT": "Yo'lga chiqdim",
+      "ARRIVED": "Yetib keldim",
+      "DELIVERED": "Yetkazdim",
+      "FAILED": "Yetkazib bo'lmadi"
+    }
   }
 }

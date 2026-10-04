@@ -53,6 +53,25 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Ikonkalarni generatsiya qiladi — natija (mipmap/AppIcon) repoga
+  # commit qilinadi, ya'ni qurishda bu paket kerak emas.
+  flutter_launcher_icons: ^0.14.4
+
+  # Ishga tushish ekrani. Natija repoga commit qilinadi.
+  flutter_native_splash: ^2.4.8
+
+# `dart run flutter_launcher_icons` bilan qayta chiziladi.
+flutter_launcher_icons:
+  image_path: assets/brand/icon.png
+  android: true
+  ios: true
+  # iOS shaffoflikni qabul qilmaydi.
+  remove_alpha_ios: true
+  adaptive_icon_background: '#531625'
+  # Adaptive ikonkada tizim chekkalarini kesadi — belgi alohida,
+  # bo'shliq bilan beriladi.
+  adaptive_icon_foreground: assets/brand/icon_foreground.png
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -93,3 +112,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# `dart run flutter_native_splash:create` bilan qayta chiziladi.
+#
+# Flutter yuklanguncha ekran OQ turardi — brend rangidan oq ekranga,
+# keyin yana brendga sakrash ko'zga shunday urilardiki, ilova
+# yiqilgandek tuyulardi.
+flutter_native_splash:
+  color: '#531625'
+  image: assets/brand/icon_foreground.png
+  android_12:
+    color: '#531625'
+    image: assets/brand/icon_foreground.png
+    icon_background_color: '#531625'

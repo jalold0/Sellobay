@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../home_tabs.dart';
+
 import 'checkout_screen.dart';
 
 /// Savat.
@@ -58,7 +60,10 @@ class CartScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
+                // Savat ham bo'lim, ham alohida surilgan ekran bo'lishi
+                // mumkin. Qobiq ichida `pop` qiladigan narsa yo'q —
+                // tugma jim o'tirib qolardi.
+                onPressed: () => backToCatalog(context),
                 child: Text(context.t('cart.continueShopping')),
               ),
             ],
@@ -361,4 +366,13 @@ class _Stepper extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
         padding: EdgeInsets.zero,
       );
+}
+
+/// Katalogga qaytadi — qayerdan chaqirilganiga qarab.
+void backToCatalog(BuildContext context) {
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).pop();
+    return;
+  }
+  HomeTabsScope.read(context)?.go(HomeTab.catalog);
 }

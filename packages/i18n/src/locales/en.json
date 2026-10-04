@@ -745,7 +745,14 @@
       "courier": "Courier:",
       "etaUntil": "Est. by {time}",
       "trackOnMap": "Track on map",
-      "reorder": "Reorder"
+      "reorder": "Reorder",
+      "cancelOrder": "Cancel order",
+      "cancelConfirm": "Cancel this order? This cannot be undone.",
+      "cancelled": "Order cancelled",
+      "requestReturn": "Request a return",
+      "returnConfirm": "Request a return for this order?",
+      "returnRequested": "Return request sent",
+      "returnWindow": "Returns are accepted within {days} days of delivery"
     },
     "orderDetail": {
       "back": "Back to orders",
@@ -1200,6 +1207,34 @@
     "loginTitle": "Courier portal",
     "loginSubtitle": "Your account is created by an administrator — there is no sign-up here",
     "roleRequired": "This account has no courier role. Contact an administrator.",
-    "deliveriesTitle": "Today's deliveries"
+    "deliveriesTitle": "Today's deliveries",
+    "tabMine": "My tasks",
+    "tabAvailable": "Available tasks",
+    "claim": "Take it",
+    "claimed": "Task assigned to you",
+    "noMine": "You have no active tasks",
+    "noAvailable": "No available tasks yet",
+    "recipient": "Recipient",
+    "address": "Address",
+    "failReason": "Reason",
+    "failReasonHint": "Why could it not be delivered?",
+    "statusUpdated": "Status updated",
+    "unclaimed": "New",
+    "status": {
+      "ASSIGNED": "Assigned",
+      "PICKED_UP": "Picked up",
+      "IN_TRANSIT": "In transit",
+      "ARRIVED": "Arrived",
+      "DELIVERED": "Delivered",
+      "FAILED": "Failed",
+      "RETURNED": "Returned"
+    },
+    "action": {
+      "PICKED_UP": "Picked up the order",
+      "IN_TRANSIT": "On my way",
+      "ARRIVED": "Arrived",
+      "DELIVERED": "Delivered",
+      "FAILED": "Could not deliver"
+    }
   }
 }

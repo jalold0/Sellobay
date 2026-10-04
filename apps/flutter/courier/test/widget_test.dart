@@ -96,6 +96,11 @@ void main() {
       if (options.path == '/api/auth/login') {
         return apiOk({'user': userJson(), 'tokens': tokenPair('kuryer')});
       }
+      if (options.path == '/api/courier/deliveries') {
+        // Bo'sh ro'yxat — bu test kirish oqimini tekshiradi, topshiriq
+        // mazmunini emas (u `deliveries_test.dart` da).
+        return apiOk({'mine': <Map<String, dynamic>>[], 'available': <Map<String, dynamic>>[]});
+      }
       return apiOk({
         'user': userJson(roles: ['CUSTOMER', 'COURIER']),
       });
@@ -113,7 +118,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Bugungi yetkazib berishlar'), findsOneWidget);
-    expect(find.text('Dilnoza'), findsOneWidget);
+    // Topshiriqlar ekrani ochildi: ikkala bo'lim sarlavhasi ham bor.
+    expect(find.text('Mening topshiriqlarim'), findsOneWidget);
+    expect(find.text("Bo'sh topshiriqlar"), findsOneWidget);
     _expectNoRawKeys(tester);
   });
 }

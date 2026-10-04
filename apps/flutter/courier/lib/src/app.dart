@@ -29,12 +29,15 @@ class _CourierGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (AuthScope.of(context).status) {
+      // Foni NATIVE splash bilan bir xil (`pubspec.yaml`) — oq
+      // qoldirsak, brend rangidan oqqa sakrash ko'rinardi.
       AuthStatus.unknown => const Scaffold(
+          backgroundColor: SellobayColors.ink,
           body: Center(
             child: SizedBox(
               width: 28,
               height: 28,
-              child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
             ),
           ),
         ),

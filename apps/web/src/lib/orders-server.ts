@@ -564,6 +564,36 @@ export async function createOrder(
         });
       }
 
+      // 5b‴. Kuryer yetkazishi — `Delivery` yozuvi ochiladi.
+      //
+      // Ilgari `Delivery`, `DeliveryEvent` va `Courier` jadvallariga
+      // HECH KIM yozmasdi (jonli koddagi yagona havola karantindagi
+      // `graveyard/api` da edi), shuning uchun kuryer ilovasi
+      // ko'rsatadigan narsa yo'q edi.
+      //
+      // Punkt orqali olinadigan buyurtmaga kuryer kerak emas.
+      //
+      // Holat `ASSIGNED` bo'ladi, lekin `courierId` BO'SH: enumda
+      // "yaratildi" degan alohida qiymat yo'q va uni qo'shish migratsiya
+      // talab qilardi. Shuning uchun "egasiz" ekanini holat emas,
+      // `courierId === null` belgilaydi (qarang `courier-server.ts`).
+      if (input.deliveryMethod !== 'PICKUP_POINT') {
+        await tx.delivery.create({
+          data: {
+            orderId: created.id,
+            status: 'ASSIGNED',
+            method: input.deliveryMethod,
+            destinationAddress: [input.region, input.city, input.street, input.apartment]
+              .map((part) => part?.trim())
+              .filter((part): part is string => Boolean(part))
+              .join(', '),
+            destinationLat: input.latitude != null ? new Prisma.Decimal(input.latitude) : null,
+            destinationLng: input.longitude != null ? new Prisma.Decimal(input.longitude) : null,
+            events: { create: { status: 'ASSIGNED', note: 'Buyurtma yaratildi' } },
+          },
+        });
+      }
+
       // 5b′. Ombor — zaxirani ATOMIK kamaytirish (+ DISPATCH StockMovement).
       //      Yetmasa InsufficientStockError tashlanadi → butun tx rollback
       //      (buyurtma, coin, promo — hech biri commit bo'lmaydi). Oversell'ning oldi olinadi.

@@ -172,6 +172,44 @@ class AuthRepository {
     return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
   }
 
+  /// Profil maydonlarini yangilaydi (`PATCH /api/auth/me`).
+  ///
+  /// Bu yerda `_compact` ATAYLAB ishlatilmaydi. Sxemada bu maydonlar
+  /// `.optional().nullable()`, ya'ni `null` — "tozalash" degani va
+  /// server uni shunday bajaradi. Nullarni tashlab yuborsak,
+  /// foydalanuvchi ismini yoki emailini o'chira olmasdi: bo'sh maydon
+  /// saqlangandek ko'rinib, eskisi qolib ketardi.
+  ///
+  /// Javob rollar bilan keladi (route `current.roles` ni qo'shadi).
+  Future<AuthUser> updateProfile({
+    required String? firstName,
+    required String? lastName,
+    required String? email,
+  }) async {
+    final data = await _api.patch<Map<String, dynamic>>(
+      '/api/auth/me',
+      body: <String, dynamic>{
+        'firstName': _blankToNull(firstName),
+        'lastName': _blankToNull(lastName),
+        'email': _blankToNull(email),
+      },
+    );
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
+  /// Interfeys tilini SERVERDA saqlaydi.
+  ///
+  /// Mahalliy tanlov yaratilmaydi: til bitta joyda — foydalanuvchi
+  /// yozuvida — turadi, shunda web va mobil bir xil tilda gapiradi
+  /// (qarang `LocaleController` izohi).
+  Future<AuthUser> updateLocale(String locale) async {
+    final data = await _api.patch<Map<String, dynamic>>(
+      '/api/auth/me',
+      body: <String, dynamic>{'locale': locale},
+    );
+    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
   /// Serverda bekor qiladi va mahalliy saqlovni tozalaydi.
   Future<void> logout() => _api.logout();
 

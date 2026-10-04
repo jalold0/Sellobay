@@ -1,6 +1,8 @@
 import 'package:decimal/decimal.dart';
 
 import '../api/api_client.dart';
+import '../addresses/address_repository.dart';
+import '../addresses/saved_address.dart';
 import '../cart/cart_line.dart';
 import 'checkout_models.dart';
 
@@ -10,14 +12,11 @@ class CheckoutRepository {
 
   final ApiClient _api;
 
+  /// Manzillar bitta joyda boshqariladi — ikki nusxa bo'lmasin.
+  late final _addresses = AddressRepository(_api);
+
   /// Saqlangan manzillar. AUTH talab qiladi — mehmonda chaqirmang.
-  Future<List<SavedAddress>> fetchAddresses() async {
-    final data = await _api.get<Map<String, dynamic>>('/api/addresses');
-    return (data['items'] as List<dynamic>? ?? const [])
-        .cast<Map<String, dynamic>>()
-        .map(SavedAddress.fromJson)
-        .toList();
-  }
+  Future<List<SavedAddress>> fetchAddresses() => _addresses.fetchAll();
 
   Future<List<PickupPoint>> fetchPickupPoints({String? region, String? city}) async {
     final data = await _api.get<Map<String, dynamic>>(

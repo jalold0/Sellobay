@@ -49,48 +49,6 @@ enum PaymentProvider {
   }
 }
 
-/// Saqlangan manzil (`GET /api/addresses`).
-class SavedAddress {
-  const SavedAddress({
-    required this.id,
-    required this.label,
-    required this.recipientName,
-    required this.phone,
-    required this.region,
-    required this.city,
-    required this.street,
-    required this.apartment,
-    required this.isDefault,
-  });
-
-  factory SavedAddress.fromJson(Map<String, dynamic> json) => SavedAddress(
-        id: json['id'] as String,
-        label: json['label'] as String?,
-        recipientName: json['recipientName'] as String? ?? '',
-        phone: json['phone'] as String? ?? '',
-        region: json['region'] as String? ?? '',
-        city: json['city'] as String? ?? '',
-        street: json['street'] as String? ?? '',
-        apartment: json['apartment'] as String?,
-        isDefault: json['isDefault'] as bool? ?? false,
-      );
-
-  final String id;
-  final String? label;
-  final String recipientName;
-  final String phone;
-  final String region;
-  final String city;
-  final String street;
-  final String? apartment;
-  final bool isDefault;
-
-  String get oneLine => [region, city, street, apartment]
-      .whereType<String>()
-      .where((s) => s.isNotEmpty)
-      .join(', ');
-}
-
 /// Topshirish punkti (`GET /api/pickup-points`).
 ///
 /// `name` KO'P TILLI (`PickupPoint.name` bazada `Json`), `region`,

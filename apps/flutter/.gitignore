@@ -21,3 +21,7 @@ ios/.symlinks/
 # qolsa Flutter jim ravishda eski matnni ko'rsatardi. Flutter loyihasi
 # skaffold qilingach CI'ga sinxronlik tekshiruvi qo'shiladi.
 shared/assets/i18n/
+
+# Ekran suratlari — `flutter test tool/screens.dart --update-goldens`
+# bilan istalgan vaqt qayta chiziladi. Repoda binary saqlashning hojati yo'q.
+*/tool/shots/
