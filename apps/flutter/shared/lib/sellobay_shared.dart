@@ -5,6 +5,8 @@
 /// Sabab: docs/adr/0009-flutter-mobil-ilovalar.md
 library;
 
+export 'src/addresses/address_repository.dart';
+export 'src/addresses/saved_address.dart';
 export 'src/api/api_client.dart';
 export 'src/api/api_exception.dart';
 export 'src/api/sellobay_config.dart';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import 'addresses_screen.dart';
+
 /// Profil: ma'lumotlar, til va chiqish.
 ///
 /// Ilgari chiqish tugmasi FAQAT katalog AppBar'ida edi, til esa umuman
@@ -171,7 +173,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         )
                       : Text(context.t('profile.saveChanges')),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 26),
+                _linkTile(
+                  context,
+                  icon: Icons.location_on_outlined,
+                  labelKey: 'profile.nav.addresses',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const AddressesScreen()),
+                  ),
+                ),
+                const SizedBox(height: 26),
                 _section(context.t('localeSwitcher.label')),
                 _localePicker(context, user.locale),
                 const SizedBox(height: 30),
@@ -258,6 +269,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onSelected: _localeSaving ? null : (_) => _setLocale(code),
             ),
         ],
+      );
+
+  Widget _linkTile(
+    BuildContext context, {
+    required IconData icon,
+    required String labelKey,
+    required VoidCallback onTap,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: SellobayColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.t(labelKey),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 20, color: SellobayColors.mutedText),
+            ],
+          ),
+        ),
       );
 
   Widget _section(String text) => Padding(

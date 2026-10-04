@@ -208,6 +208,7 @@ SellobayRuntime buildRuntime(
     catalog: catalog,
     cart: cartStore,
     checkout: CheckoutRepository(client.api),
+    addresses: AddressRepository(client.api),
     orders: OrdersRepository(client.api),
     courier: CourierRepository(client.api),
     cartSync: CartSync(

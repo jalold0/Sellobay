@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sellobay_customer/src/home_tabs.dart';
+import 'package:sellobay_customer/src/screens/addresses_screen.dart';
 import 'package:sellobay_customer/src/screens/checkout_screen.dart';
 import 'package:sellobay_customer/src/screens/home_shell.dart';
 import 'package:sellobay_customer/src/screens/login_screen.dart';
@@ -392,6 +393,35 @@ FakeBackend _profileBackend() => FakeBackend((options, body) {
       return rawJson(_productsJson);
     });
 
+FakeBackend _addressesBackend() => FakeBackend((options, body) => apiOk({
+      'items': [
+        {
+          'id': 'a1',
+          'label': 'Uy',
+          'type': 'HOME',
+          'recipientName': 'Dilnoza Karimova',
+          'phone': '+998901234567',
+          'region': 'Toshkent',
+          'city': 'Yunusobod',
+          'street': "Amir Temur shoh ko'chasi 1",
+          'apartment': '25-uy',
+          'isDefault': true,
+        },
+        {
+          'id': 'a2',
+          'label': 'Ish',
+          'type': 'WORK',
+          'recipientName': 'Dilnoza Karimova',
+          'phone': '+998901234567',
+          'region': 'Toshkent',
+          'city': 'Chilonzor',
+          'street': 'Bunyodkor 12',
+          'apartment': null,
+          'isDefault': false,
+        },
+      ],
+    }));
+
 FakeBackend _ordersBackend() => FakeBackend((options, body) {
       if (options.path == '/api/orders') {
         return rawJson(json.encode({
@@ -484,6 +514,11 @@ void main() {
   testWidgets(
     '09 buyurtmalar',
     (t) => shootTab(t, '09-orders', HomeTab.orders, backend: _ordersBackend()),
+  );
+
+  testWidgets(
+    '12 manzillar',
+    (t) => shoot(t, '12-addresses', const AddressesScreen(), backend: _addressesBackend()),
   );
 
   testWidgets(

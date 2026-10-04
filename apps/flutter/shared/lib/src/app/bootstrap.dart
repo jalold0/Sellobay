@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../api/api_client.dart';
 import '../api/sellobay_config.dart';
+import '../addresses/address_repository.dart';
 import '../auth/auth_controller.dart';
 import '../auth/auth_repository.dart';
 import '../auth/auth_scope.dart';
@@ -29,6 +30,7 @@ class SellobayRuntime {
     required this.cart,
     required this.cartSync,
     required this.checkout,
+    required this.addresses,
     required this.orders,
     required this.courier,
     required this.config,
@@ -42,6 +44,7 @@ class SellobayRuntime {
   final CartStore cart;
   final CartSync cartSync;
   final CheckoutRepository checkout;
+  final AddressRepository addresses;
   final OrdersRepository orders;
 
   /// Kuryer ilovasi uchun. Mijoz ilovasida ishlatilmaydi.
@@ -105,6 +108,7 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
     cart: cart,
     cartSync: cartSync,
     checkout: CheckoutRepository(api),
+    addresses: AddressRepository(api),
     orders: OrdersRepository(api),
     courier: CourierRepository(api),
     config: config,
