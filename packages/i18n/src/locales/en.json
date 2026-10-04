@@ -940,6 +940,8 @@
     "emptyDesc": "Tap the heart on a product card to save items you like"
   },
   "reviews": {
+    "emptyTitle": "You have not written any reviews yet",
+    "emptyDesc": "Leave a review for products you received",
     "formTitle": "Write a review",
     "ratingLabel": "Your rating",
     "titleLabel": "Title (optional)",

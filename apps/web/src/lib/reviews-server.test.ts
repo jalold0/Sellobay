@@ -36,6 +36,15 @@ const {
 
 const ACTIVE_PRODUCT = { id: 'p1', status: 'ACTIVE' };
 
+/// Birinchi chaqiruvdagi `data` — qat'iy rejimda indeks `undefined`
+/// bo'lishi mumkin, shuning uchun bitta joyda ochiladi.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function firstCallData(spy: { mock: { calls: any[][] } }): any {
+  const call = spy.mock.calls[0];
+  if (!call) throw new Error('chaqiruv bo`lmadi');
+  return call[0].data;
+}
+
 function reviewRow(over: Record<string, unknown> = {}) {
   return {
     id: 'r1',
@@ -129,7 +138,7 @@ describe('sharh yozish', () => {
 
     await createReview({ userId: 'u1', productId: 'p1', rating: 5, body: '  Zo`r  ' });
 
-    const data = db.review.create.mock.calls[0][0].data;
+    const data = firstCallData(db.review.create);
     expect(data.isApproved).toBe(true);
     expect(data.isVerifiedPurchase).toBe(true);
     expect(data.orderId).toBe('o1');
@@ -144,7 +153,7 @@ describe('sharh yozish', () => {
 
     await createReview({ userId: 'u1', productId: 'p1', rating: 5, title: '   ', body: '' });
 
-    const data = db.review.create.mock.calls[0][0].data;
+    const data = firstCallData(db.review.create);
     expect(data.title).toBeNull();
     expect(data.body).toBeNull();
   });
@@ -162,7 +171,7 @@ describe('mahsulot bahosi qayta hisoblanadi', () => {
 
     await createReview({ userId: 'u1', productId: 'p1', rating: 4 });
 
-    const data = db.product.update.mock.calls[0][0].data;
+    const data = firstCallData(db.product.update);
     // `Decimal` nollarni qisqartiradi — qiymatni solishtiramiz.
     expect(Number(data.rating)).toBe(4);
     expect(data.reviewCount).toBe(2);
@@ -181,7 +190,7 @@ describe('mahsulot bahosi qayta hisoblanadi', () => {
 
     await createReview({ userId: 'u1', productId: 'p1', rating: 4 });
 
-    expect(Number(db.product.update.mock.calls[0][0].data.rating)).toBe(4.33);
+    expect(Number(firstCallData(db.product.update).rating)).toBe(4.33);
   });
 
   it('sharh qolmasa baho NOLGA tushadi', async () => {
@@ -190,7 +199,7 @@ describe('mahsulot bahosi qayta hisoblanadi', () => {
 
     await deleteReview('u1', 'r1');
 
-    const data = db.product.update.mock.calls[0][0].data;
+    const data = firstCallData(db.product.update);
     expect(Number(data.rating)).toBe(0);
     expect(data.reviewCount).toBe(0);
   });

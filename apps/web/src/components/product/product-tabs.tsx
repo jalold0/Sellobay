@@ -20,6 +20,8 @@ import { formatRelative } from '../../lib/format';
 import { type Locale, pickLocale, productImage } from '../../lib/mock-data';
 import { type ProductFullDetail } from '../../lib/product-details';
 
+import { ReviewForm } from './review-form';
+
 interface Props {
   detail: ProductFullDetail;
   locale: Locale;
@@ -94,8 +96,11 @@ export function ProductTabs({ detail, locale }: Props) {
         <TabsContent value="reviews">
           {reviews.length === 0 ? (
             /* Sharh yo'q — ilgari bu yerda o'ylab topilgan sharhlar ko'rsatilardi. */
-            <div className="text-muted-foreground rounded-xl border border-dashed px-6 py-10 text-center text-sm">
-              {t('noReviews')}
+            <div className="text-muted-foreground space-y-4 rounded-xl border border-dashed px-6 py-10 text-center text-sm">
+              <p>{t('noReviews')}</p>
+              <div className="flex justify-center">
+                <ReviewForm productId={product.id} slug={product.slug} />
+              </div>
             </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-3">
@@ -127,6 +132,7 @@ export function ProductTabs({ detail, locale }: Props) {
                 </div>
               </aside>
               <div className="space-y-4 md:col-span-2">
+                <ReviewForm productId={product.id} slug={product.slug} />
                 {reviews.map((r) => (
                   <article key={r.id} className="bg-card rounded-xl border p-4">
                     <div className="flex items-center justify-between">

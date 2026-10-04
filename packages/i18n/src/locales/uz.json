@@ -947,6 +947,8 @@
     "emptyDesc": "Yoqtirgan mahsulotlaringizni saqlash uchun kartochkadagi yurakcha tugmasini bosing"
   },
   "reviews": {
+    "emptyTitle": "Hali sharh yozmagansiz",
+    "emptyDesc": "Yetkazib olingan mahsulotlarga sharh qoldiring",
     "formTitle": "Sharh yozish",
     "ratingLabel": "Bahoyingiz",
     "titleLabel": "Sarlavha (ixtiyoriy)",
