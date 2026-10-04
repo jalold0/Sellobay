@@ -132,6 +132,20 @@ android sdk install "cmake/3.22.1"
 ya'ni jim yiqiladi, skript esa muvaffaqiyat deb o'ylaydi. O'rnatilganini
 `$ANDROID_HOME/ndk/` papkasiga qarab tekshiring.
 
+### Gradle xotirasi
+
+`gradle.properties` da `-Xmx3G` turadi, Flutter shablonidagi `-Xmx8G`
+emas. Shablon qiymati 8 GB dan kam RAM'li mashinada AAPT2 bosqichida
+Windows'ning `Insufficient system resources` (1450) xatosini beradi:
+
+```
+Execution failed for task ':shared_preferences_android:verifyReleaseResources'
+```
+
+Xato TASODIFIY ko'rinadi — har safar boshqa resurs faylida uziladi, shu
+sababli kod muammosiga o'xshaydi. Shuningdek ikkita ilovani BIR VAQTDA
+qurmang: har bir Gradle demoni o'z heap'ini oladi.
+
 ### INTERNET ruxsati
 
 `main/AndroidManifest.xml` dagi `INTERNET` ruxsatini O'CHIRMANG. Flutter
