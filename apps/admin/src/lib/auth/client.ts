@@ -626,3 +626,44 @@ export interface DashboardData {
 export function fetchDashboard() {
   return api<DashboardData>('/api/dashboard');
 }
+
+// --- Qaytarishlar: kuryerga topshiriq ochish -------------------------------
+//
+// Mijoz qaytarishni so'raganda buyurtma `RETURNED` bo'ladi, lekin mahsulot
+// hali mijozda turadi. Kuryer topshirig'i AVTOMATIK ochilmaydi — asossiz
+// so'rov ham kuryerni yo'lga chiqarardi. Admin shu ro'yxatda ko'rib,
+// tasdiqlaydi.
+
+export interface ReturnLocalizedText {
+  uz?: string;
+  ru?: string;
+  en?: string;
+}
+
+export interface PendingReturnItem {
+  id: string;
+  number: string;
+  grandTotal: string;
+  returnedAt: string;
+  itemCount: number;
+  items: Array<{ id: string; quantity: number; nameSnapshot: ReturnLocalizedText }>;
+  recipientName: string | null;
+  recipientPhone: string | null;
+}
+
+export function listPendingReturns() {
+  return api<{ items: PendingReturnItem[] }>('/api/returns');
+}
+
+/**
+ * Qaytarishni tasdiqlaydi: kuryerga topshiriq(lar) ochiladi.
+ *
+ * Bir nechta bo'lishi mumkin — buyurtmadagi mahsulotlar har xil
+ * sotuvchiga tegishli bo'lsa, har bir ombor uchun alohida topshiriq.
+ */
+export function dispatchReturn(orderId: string) {
+  return api<{ created: number; deliveryIds: string[]; alreadyExisted: boolean }>(
+    `/api/returns/${orderId}/dispatch`,
+    { method: 'POST' },
+  );
+}

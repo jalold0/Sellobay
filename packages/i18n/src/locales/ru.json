@@ -1260,6 +1260,10 @@
     "loadMore": "Загрузить ещё",
     "vehicle": "Транспорт",
     "ratingLabel": "Рейтинг",
+    "returnTask": "Возврат",
+    "pickupFrom": "Адрес забора",
+    "returnTo": "Склад возврата",
+    "returnHint": "Заберите товар у клиента и сдайте на указанный склад.",
     "unclaimed": "Новая",
     "status": {
       "ASSIGNED": "Назначено",

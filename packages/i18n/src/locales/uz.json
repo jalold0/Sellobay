@@ -1260,6 +1260,10 @@
     "loadMore": "Yana yuklash",
     "vehicle": "Transport",
     "ratingLabel": "Reyting",
+    "returnTask": "Qaytarish",
+    "pickupFrom": "Olib ketish manzili",
+    "returnTo": "Qaytariladigan ombor",
+    "returnHint": "Mahsulotni mijozdan olib, ko'rsatilgan omborga topshiring.",
     "unclaimed": "Yangi",
     "status": {
       "ASSIGNED": "Biriktirildi",

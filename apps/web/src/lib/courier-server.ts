@@ -99,8 +99,10 @@ export function isTerminalDeliveryStatus(status: DeliveryStatus): boolean {
 
 const deliverySelect = {
   id: true,
+  kind: true,
   status: true,
   method: true,
+  pickupAddress: true,
   destinationAddress: true,
   destinationLat: true,
   destinationLng: true,
@@ -124,6 +126,14 @@ const deliverySelect = {
       items: { select: { id: true, quantity: true, nameSnapshot: true } },
     },
   },
+  // Qaytarish topshirig'idagi mahsulotlar — buyurtmaning BIR QISMI.
+  // Bo'sh bo'lsa (`OUTBOUND`) butun buyurtma olib boriladi.
+  items: {
+    select: {
+      quantity: true,
+      orderItem: { select: { id: true, nameSnapshot: true } },
+    },
+  },
 } satisfies Prisma.DeliverySelect;
 
 export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySelect }>;
@@ -134,10 +144,15 @@ export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySel
  * Eksport qilingan — sof funksiya va testda bazasiz tekshiriladi.
  */
 export function serializeDelivery(d: DeliveryRow) {
+  const returnItems = d.items ?? [];
   return {
     id: d.id,
+    /// `OUTBOUND` — do'kondan mijozga, `RETURN` — mijozdan omborga.
+    kind: d.kind,
     status: d.status,
     method: d.method,
+    /// `RETURN` da — mijozning manzili (shu yerdan OLIB KETILADI).
+    pickupAddress: d.pickupAddress,
     destinationAddress: d.destinationAddress,
     destinationLat: d.destinationLat === null ? null : Number(d.destinationLat),
     destinationLng: d.destinationLng === null ? null : Number(d.destinationLng),
@@ -174,12 +189,23 @@ export function serializeDelivery(d: DeliveryRow) {
       notes: d.order.notes,
       recipientName: d.order.shippingAddress?.recipientName ?? null,
       recipientPhone: d.order.shippingAddress?.phone ?? null,
-      itemCount: d.order.items.length,
-      items: d.order.items.map((i) => ({
-        id: i.id,
-        quantity: i.quantity,
-        nameSnapshot: i.nameSnapshot,
-      })),
+      // Qaytarishda buyurtmaning FAQAT bir qismi olinadi (mahsulotlar
+      // har xil omborga ketishi mumkin). Shunda ro'yxat topshiriqning
+      // o'zidan olinadi, buyurtmadan emas — aks holda kuryer boshqa
+      // manzilga ketadigan mahsulotni ham olib ketardi.
+      itemCount: returnItems.length > 0 ? returnItems.length : d.order.items.length,
+      items:
+        returnItems.length > 0
+          ? returnItems.map((i) => ({
+              id: i.orderItem.id,
+              quantity: i.quantity,
+              nameSnapshot: i.orderItem.nameSnapshot,
+            }))
+          : d.order.items.map((i) => ({
+              id: i.id,
+              quantity: i.quantity,
+              nameSnapshot: i.nameSnapshot,
+            })),
     },
   };
 }

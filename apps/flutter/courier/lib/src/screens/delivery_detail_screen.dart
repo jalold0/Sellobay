@@ -94,16 +94,39 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
     if (!ok && mounted) _toast(context.t('courier.cannotOpen'));
   }
 
-  Future<void> _navigate(CourierDelivery d) async {
+  Future<void> _navigate({double? latitude, double? longitude, required String address}) async {
     final ok = await openFirst(
-      navigationUris(
-        latitude: d.latitude,
-        longitude: d.longitude,
-        address: d.destinationAddress,
-      ),
+      navigationUris(latitude: latitude, longitude: longitude, address: address),
     );
     if (!ok && mounted) _toast(context.t('courier.cannotOpen'));
   }
+
+  /// Sarlavha + manzil + «yo'l ko'rsatish» tugmasi.
+  List<Widget> _addressBlock(
+    BuildContext context, {
+    required String title,
+    required String address,
+    required double? latitude,
+    required double? longitude,
+  }) =>
+      [
+        _section(title),
+        Text(
+          address,
+          style: const TextStyle(fontSize: 14, height: 1.45, color: SellobayColors.ink),
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: () =>
+                _navigate(latitude: latitude, longitude: longitude, address: address),
+            icon: const Icon(Icons.directions_outlined, size: 18),
+            label: Text(context.t('courier.navigate')),
+          ),
+        ),
+        const SizedBox(height: 18),
+      ];
 
   /// Isbot suratini oladi va DARHOL yuklaydi.
   ///
@@ -224,20 +247,54 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
             ),
           ],
           const SizedBox(height: 22),
-          _section(context.t('courier.address')),
-          Text(
-            delivery.destinationAddress,
-            style: const TextStyle(fontSize: 14, height: 1.45, color: SellobayColors.ink),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => _navigate(delivery),
-              icon: const Icon(Icons.directions_outlined, size: 18),
-              label: Text(context.t('courier.navigate')),
+          // Qaytarishda YO'NALISH teskari: mahsulot mijozdan OLINADI va
+          // omborga topshiriladi. Ikkala manzil ham ko'rsatiladi, aks
+          // holda kuryer qayerga borishni bilmasdi.
+          if (delivery.isReturn) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: SellobayColors.destructive.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                context.t('courier.returnHint'),
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                  color: SellobayColors.destructive,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 18),
+            if (delivery.pickupAddress != null)
+              ..._addressBlock(
+                context,
+                title: context.t('courier.pickupFrom'),
+                address: delivery.pickupAddress!,
+                // Mijozning koordinatasi saqlanmaydi — matn bo'yicha
+                // qidiriladi. `destinationLat/Lng` qaytarishda OMBORGA
+                // tegishli, mijozga emas.
+                latitude: null,
+                longitude: null,
+              ),
+            ..._addressBlock(
+              context,
+              title: context.t('courier.returnTo'),
+              address: delivery.destinationAddress,
+              latitude: delivery.latitude,
+              longitude: delivery.longitude,
+            ),
+          ] else
+            ..._addressBlock(
+              context,
+              title: context.t('courier.address'),
+              address: delivery.destinationAddress,
+              latitude: delivery.latitude,
+              longitude: delivery.longitude,
+            ),
           if (delivery.recipientName != null) ...[
             const SizedBox(height: 20),
             _section(context.t('courier.recipient')),

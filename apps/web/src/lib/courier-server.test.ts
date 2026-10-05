@@ -116,6 +116,9 @@ describe('javobga o`girish', () => {
       deliveredAt: null,
       failureReason: null,
       proofPhotoUrl: null,
+      kind: 'OUTBOUND',
+      pickupAddress: null,
+      items: [],
       createdAt: new Date('2026-10-04T08:00:00.000Z'),
       courierId: null,
       order: {
@@ -149,6 +152,62 @@ describe('javobga o`girish', () => {
       'FAILED',
     ]);
     expect(serializeDelivery(row({ status: 'DELIVERED' })).nextStatuses).toEqual([]);
+  });
+
+  it('qaytarishda FAQAT shu topshiriqdagi mahsulotlar', () => {
+    // Buyurtma ikki omborga bo'linganda har bir topshiriq o'ziga
+    // tegishli mahsulotni ko'rsatishi kerak. Buyurtmaning to'liq
+    // ro'yxatini bersak, kuryer boshqa manzilga ketadigan mahsulotni
+    // ham olib ketardi.
+    const row2 = row({
+      kind: 'RETURN',
+      pickupAddress: 'Toshkent, Yunusobod 1',
+      items: [{ quantity: 2, orderItem: { id: 'oi-1', nameSnapshot: { uz: 'Nike' } } }],
+      order: {
+        id: 'o1',
+        number: 'ORD-1',
+        grandTotal: { toString: () => '620000' },
+        placedAt: new Date('2026-10-04T07:55:00.000Z'),
+        notes: null,
+        shippingAddress: null,
+        // Buyurtmada UCHTA mahsulot bor, topshiriqda esa bittasi.
+        items: [
+          { id: 'oi-1', quantity: 2, nameSnapshot: { uz: 'Nike' } },
+          { id: 'oi-2', quantity: 1, nameSnapshot: { uz: 'Adidas' } },
+          { id: 'oi-3', quantity: 5, nameSnapshot: { uz: 'Puma' } },
+        ],
+      },
+    });
+
+    const out = serializeDelivery(row2);
+    expect(out.kind).toBe('RETURN');
+    expect(out.pickupAddress).toBe('Toshkent, Yunusobod 1');
+    expect(out.order.items).toHaveLength(1);
+    expect(out.order.itemCount).toBe(1);
+    expect(out.order.items[0]?.id).toBe('oi-1');
+  });
+
+  it('oddiy yetkazishda BUTUN buyurtma ko`rsatiladi', () => {
+    // `DeliveryItem` faqat qaytarishda yoziladi; bo'sh bo'lsa
+    // buyurtmaning o'z ro'yxati ishlatiladi.
+    const out = serializeDelivery(
+      row({
+        order: {
+          id: 'o1',
+          number: 'ORD-1',
+          grandTotal: { toString: () => '620000' },
+          placedAt: new Date('2026-10-04T07:55:00.000Z'),
+          notes: null,
+          shippingAddress: null,
+          items: [
+            { id: 'oi-1', quantity: 2, nameSnapshot: { uz: 'Nike' } },
+            { id: 'oi-2', quantity: 1, nameSnapshot: { uz: 'Adidas' } },
+          ],
+        },
+      }),
+    );
+    expect(out.kind).toBe('OUTBOUND');
+    expect(out.order.items).toHaveLength(2);
   });
 
   it('isbot surati — BORLIGI qaytadi, yo`lning o`zi EMAS', () => {

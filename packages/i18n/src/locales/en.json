@@ -1260,6 +1260,10 @@
     "loadMore": "Load more",
     "vehicle": "Vehicle",
     "ratingLabel": "Rating",
+    "returnTask": "Return",
+    "pickupFrom": "Pickup address",
+    "returnTo": "Return warehouse",
+    "returnHint": "Collect the item from the customer and hand it over at the warehouse.",
     "unclaimed": "New",
     "status": {
       "ASSIGNED": "Assigned",

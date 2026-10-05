@@ -63,7 +63,9 @@ class CourierDelivery {
     required this.rawStatus,
     required this.claimed,
     required this.nextStatuses,
+    required this.isReturn,
     required this.method,
+    required this.pickupAddress,
     required this.destinationAddress,
     required this.latitude,
     required this.longitude,
@@ -98,7 +100,12 @@ class CourierDelivery {
           .map(DeliveryStatus.fromValue)
           .whereType<DeliveryStatus>()
           .toList(),
+      // Yo'nalishni SERVER aytadi. Buyurtma holatidan taxmin qilib
+      // bo'lmaydi: bitta buyurtmada avval yetkazish, keyin qaytarish
+      // bo'lishi mumkin va ikkalasi bir vaqtda mavjud bo'ladi.
+      isReturn: json['kind'] == 'RETURN',
       method: json['method'] as String? ?? '',
+      pickupAddress: json['pickupAddress'] as String?,
       destinationAddress: json['destinationAddress'] as String? ?? '',
       latitude: (json['destinationLat'] as num?)?.toDouble(),
       longitude: (json['destinationLng'] as num?)?.toDouble(),
@@ -130,7 +137,16 @@ class CourierDelivery {
   /// Shu yetkazish uchun ruxsat etilgan keyingi holatlar.
   final List<DeliveryStatus> nextStatuses;
 
+  /// Qaytarish topshirig'imi: mahsulot mijozdan OLINIB, omborga
+  /// topshiriladi. Oddiy yetkazishning teskarisi.
+  final bool isReturn;
+
   final String method;
+
+  /// Qaytarishda — mijozning manzili (shu yerdan olinadi).
+  /// Oddiy yetkazishda `null`.
+  final String? pickupAddress;
+
   final String destinationAddress;
   final double? latitude;
   final double? longitude;
