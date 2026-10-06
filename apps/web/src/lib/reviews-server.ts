@@ -15,20 +15,18 @@
 //     ko'rinmasdi;
 //   • bitta mijoz bitta mahsulotga BITTA sharh yozadi.
 
+import { ApiDomainError } from '@ecom/api-contract';
 import { Prisma } from '@ecom/database';
 
 import { prisma } from '@/lib/db';
 
-export class ReviewError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ReviewError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof ReviewError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class ReviewError extends ApiDomainError {}
 
 /** Sharh yozish huquqini beradigan buyurtma holatlari. */
 const PURCHASED_STATUSES = ['DELIVERED'] as const;

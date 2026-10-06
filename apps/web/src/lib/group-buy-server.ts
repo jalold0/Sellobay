@@ -7,6 +7,7 @@
 // qaytadan boshlanardi, "Qo'shilish" hech qayerga saqlanmasdi. Endi
 // hammasi GroupBuy/GroupBuyMember jadvallaridan o'qiladi.
 
+import { ApiDomainError } from '@ecom/api-contract';
 import {
   canJoin,
   discountPercent,
@@ -24,16 +25,13 @@ import { prisma } from '@/lib/db';
 import type { LocalizedText } from './mock-data';
 import type { Prisma } from '@ecom/database';
 
-export class GroupBuyError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'GroupBuyError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof GroupBuyError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class GroupBuyError extends ApiDomainError {}
 
 /** Mijozga ko'rsatiladigan guruh xaridi. Barcha son DB'dan keladi. */
 export interface GroupDealView {

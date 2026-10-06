@@ -7,20 +7,18 @@
 // karantindagi `graveyard/api` da edi. Natijada kuryer ilovasi
 // ko'rsatadigan ma'lumot umuman yo'q edi.
 
+import { ApiDomainError } from '@ecom/api-contract';
 import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
 
 import { prisma } from '@/lib/db';
 
-export class CourierError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'CourierError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof CourierError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class CourierError extends ApiDomainError {}
 
 /**
  * Holat o'tishlari — FAQAT oldinga.

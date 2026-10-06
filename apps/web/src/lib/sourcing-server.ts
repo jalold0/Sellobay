@@ -6,6 +6,7 @@
 //       narx taklif qiladi (QUOTED) → mijoz qabul/rad etadi (ACCEPTED/REJECTED) →
 //       to'lovdan keyin Order'ga aylanadi (ORDERED).
 
+import { ApiDomainError } from '@ecom/api-contract';
 import { randomInt } from 'crypto';
 
 import {
@@ -21,16 +22,13 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 
-export class SourcingError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'SourcingError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof SourcingError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class SourcingError extends ApiDomainError {}
 
 /** Taklif shuncha soatdan keyin kuchini yo'qotadi (kurs va Xitoy narxi o'zgaradi). */
 export const QUOTE_TTL_HOURS = 48;

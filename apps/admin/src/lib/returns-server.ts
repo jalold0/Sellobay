@@ -15,20 +15,18 @@
 // ochiladi. Avtomatik ochmaymiz: asossiz so'rov ham kuryerni yo'lga
 // chiqarardi.
 
+import { ApiDomainError } from '@ecom/api-contract';
 import { prisma } from '@/lib/db';
 
 import type { Prisma } from '@ecom/database';
 
-export class ReturnError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'ReturnError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof ReturnError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class ReturnError extends ApiDomainError {}
 
 /**
  * Mijozning manzilini bitta satrga yig'adi — kuryer shu yerdan oladi.

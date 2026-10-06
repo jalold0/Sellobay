@@ -2,6 +2,7 @@
 // HTTP'ga bog'liq emas — route (interface) faqat parse/auth/rate-limit qilib shu yerga keladi.
 // Biznes-xatolar OrderError bilan tashlanadi; route uni status/code'ga map qiladi.
 
+import { ApiDomainError } from '@ecom/api-contract';
 import { randomInt } from 'crypto';
 
 import {
@@ -37,16 +38,13 @@ import {
 import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
-export class OrderError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'OrderError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof OrderError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class OrderError extends ApiDomainError {}
 
 const itemSchema = z.object({
   // Mock/demo mahsulotlar UUID emas (p1..p12) — bunday eski savat elementi
