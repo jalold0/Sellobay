@@ -1,9 +1,11 @@
-import { NextRequest } from 'next/server';
-import { z } from 'zod';
 import { normalizeUzPhone } from '@ecom/utils';
-import { prisma } from '@/lib/db';
+import { z } from 'zod';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
+import { prisma } from '@/lib/db';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

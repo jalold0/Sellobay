@@ -2,7 +2,6 @@ import '@ecom/ui/globals.css';
 
 import { locales } from '@ecom/i18n';
 import { Toaster, TooltipProvider } from '@ecom/ui';
-import type { Metadata, Viewport } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
@@ -11,17 +10,19 @@ import { getMessages } from 'next-intl/server';
 import { CookieBanner } from '../../components/layout/cookie-banner';
 import { Footer } from '../../components/layout/footer';
 import { Header } from '../../components/layout/header';
-import { fetchStorefrontCategories } from '../../lib/catalog';
 import { ScrollToTop } from '../../components/layout/scroll-to-top';
 import { SkipLink } from '../../components/layout/skip-link';
 import { InstallPrompt } from '../../components/pwa/install-prompt';
 import { IosInstallSheet } from '../../components/pwa/ios-install-sheet';
 import { ServiceWorkerRegister } from '../../components/pwa/service-worker-register';
 import { StickyInstallBar } from '../../components/pwa/sticky-install-bar';
-import { QueryProvider } from '../../providers/query-provider';
 import { OrganizationJsonLd } from '../../components/seo/structured-data';
+import { fetchStorefrontCategories } from '../../lib/catalog';
+import { QueryProvider } from '../../providers/query-provider';
 import { StoreHydrator } from '../../store/hydrate';
 import { StoreSync } from '../../store/store-sync';
+
+import type { Metadata, Viewport } from 'next';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],

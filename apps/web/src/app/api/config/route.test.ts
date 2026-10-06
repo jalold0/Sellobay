@@ -8,6 +8,7 @@ import {
   TIERS,
 } from '@ecom/core-domain';
 import { locales } from '@ecom/i18n';
+import { NextRequest } from 'next/server';
 import { describe, expect, it } from 'vitest';
 
 import { GET } from './route';
@@ -22,7 +23,27 @@ import { GET } from './route';
  * test yiqiladi va Flutter klienti eskirgan qiymat olib qolmaydi.
  */
 describe('GET /api/config', () => {
-  const body = async () => (await GET().json()) as Record<string, any>;
+  /**
+   * Javob endi KONVERTDA: `{ success, data }`. Test `data` ni ochib
+   * beradi, shunda qolgan tekshiruvlar o'zgarmay qoladi va ular
+   * tekshiradigan narsa — qiymatlar `@ecom/core-domain` bilan bir xilmi
+   * — o'sha joyida turadi.
+   */
+  const body = async () => {
+    const req = new NextRequest('http://localhost/api/config');
+    const json = (await (await GET(req)).json()) as { success: boolean; data: Record<string, any> };
+    expect(json.success).toBe(true);
+    return json.data;
+  };
+
+  it('konvertda keladi — boshqa route`lar bilan BIR XIL', async () => {
+    // Ilgari bu yo'l xom javob qaytarardi va Flutter klientida
+    // alohida metod (`getRaw`) saqlashga majbur qilardi.
+    const req = new NextRequest('http://localhost/api/config');
+    const json = (await (await GET(req)).json()) as Record<string, unknown>;
+    expect(json).toHaveProperty('success', true);
+    expect(json).toHaveProperty('data');
+  });
 
   it('yetkazish narxlari core-domain bilan bir xil', async () => {
     const { shipping } = await body();

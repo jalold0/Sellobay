@@ -1,9 +1,11 @@
 // Session boshqaruvi: JWT issue/verify + refresh rotation + cookie set/clear
 import crypto from 'node:crypto';
-import { cookies, headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+
 import { signAccessToken, verifyToken, type AccessPayload } from '@ecom/auth';
+import { cookies, headers } from 'next/headers';
+
 import { prisma } from '@/lib/db';
+
 import {
   requireAccessSecret,
   ACCESS_TTL,
@@ -11,6 +13,8 @@ import {
   COOKIE_REFRESH,
   REFRESH_TTL_DAYS,
 } from './constants';
+
+import type { NextResponse } from 'next/server';
 
 const REFRESH_TTL_MS = REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000;
 

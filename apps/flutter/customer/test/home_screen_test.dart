@@ -57,16 +57,16 @@ FakeBackend _backend({
   List<Map<String, dynamic>>? popular,
 }) =>
     FakeBackend((options, body) {
-      if (options.path == '/api/categories') return rawJson(categories);
+      if (options.path == '/api/categories') return okJson(categories);
       if (options.path == '/api/products') {
         final q = options.queryParameters;
         if (q['featured'] == 'true') {
-          return rawJson(_page(featured ?? [_product('nike-air-max', 'Nike Air Max')]));
+          return okJson(_page(featured ?? [_product('nike-air-max', 'Nike Air Max')]));
         }
         if (q['sort'] == 'popular') {
-          return rawJson(_page(popular ?? [_product('puma-rs-x', 'Puma RS-X')]));
+          return okJson(_page(popular ?? [_product('puma-rs-x', 'Puma RS-X')]));
         }
-        return rawJson(_page(const []));
+        return okJson(_page(const []));
       }
       return apiErr(500, 'UNEXPECTED', options.path);
     });
@@ -181,7 +181,7 @@ void main() {
     // Katalog route'lari xatoni `{"error": "..."}` ko'rinishida
     // qaytaradi — `{success,error:{...}}` emas.
     final backend = FakeBackend(
-      (options, body) => rawJson('{"error":"Ichki xato"}', status: 500),
+      (options, body) => apiErr(500, 'INTERNAL', 'Ichki xato'),
     );
     await pumpHome(tester, backend);
 

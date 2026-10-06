@@ -2,11 +2,12 @@
 
 import { pickLocalized, type Locale } from '@ecom/i18n';
 import { Heart, Menu, ShoppingBag } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { SellobayMark } from '../brand/sellobay-mark';
+
 import { AnimatedSearch } from './animated-search';
 import { AuthMenu } from './auth-menu';
 import { CartBadge, WishlistBadge } from './cart-badge';

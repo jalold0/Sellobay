@@ -1,8 +1,9 @@
 import { Facebook, Instagram, Mail, MapPin, Phone, Send, Youtube } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import { SellobayMark } from '../brand/sellobay-mark';
+
 import { NewsletterForm } from './newsletter';
 
 type FooterLinkKey =

@@ -7,14 +7,11 @@
 // `mock-data.ts` dagi qotib yozilgan sonlarni ko'rsatardi, bu route esa
 // haqiqiy sonni qaytarardi — ikki manba bir-biriga zid edi.
 
-import { NextResponse } from 'next/server';
+import { withApi } from '@/lib/api-handler';
 
 import { fetchTopCategories } from '../../../lib/catalog';
 
 export const runtime = 'nodejs';
 export const revalidate = 300; // 5 daq cache
 
-export async function GET() {
-  const items = await fetchTopCategories();
-  return NextResponse.json({ items });
-}
+export const GET = withApi(async () => ({ items: await fetchTopCategories() }));

@@ -2,8 +2,8 @@
 
 import { Clock, Search, TrendingUp, X } from 'lucide-react';
 import Image from 'next/image';
-import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { pickLocale, type Locale, type LocalizedText } from '../../lib/mock-data';
@@ -76,14 +76,20 @@ export function AnimatedSearch({ className }: { className?: string }) {
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(q)}`);
+        // Javob endi konvertda: `{ success, data }` — barcha
+        // route'lar bilan bir xil.
         const json = (await res.json()) as {
-          products: SuggestProduct[];
-          categories: SuggestCategory[];
-          brands: SuggestBrand[];
+          success: boolean;
+          data?: {
+            products: SuggestProduct[];
+            categories: SuggestCategory[];
+            brands: SuggestBrand[];
+          };
         };
-        setProducts(json.products ?? []);
-        setCategories(json.categories ?? []);
-        setBrands(json.brands ?? []);
+        const data = json.success ? json.data : undefined;
+        setProducts(data?.products ?? []);
+        setCategories(data?.categories ?? []);
+        setBrands(data?.brands ?? []);
       } catch {
         // ignore
       }

@@ -164,7 +164,7 @@ void main() {
             case '/api/auth/me':
               return apiOk({'user': userJson(roles: ['CUSTOMER'])});
             case '/api/products':
-              return rawJson(json.encode({
+              return apiOk({
                 'items': [
                   {
                     ..._productJson(_uuidB, 'nike-air'),
@@ -174,7 +174,7 @@ void main() {
                 'page': 1,
                 'limit': 1,
                 'hasMore': false,
-              }));
+              });
             default:
               return rawJson(_serverCart([
                 _serverItem(_uuidA, 2),
@@ -204,8 +204,8 @@ void main() {
             case '/api/auth/me':
               return apiOk({'user': userJson(roles: ['CUSTOMER'])});
             case '/api/products':
-              return rawJson(json.encode(
-                  {'items': [], 'total': 0, 'page': 1, 'limit': 1, 'hasMore': false}));
+              return apiOk(
+                  {'items': [], 'total': 0, 'page': 1, 'limit': 1, 'hasMore': false});
             default:
               return rawJson(_serverCart([_serverItem(_uuidB, 5)]));
           }
@@ -339,8 +339,8 @@ void main() {
       // Server: id bo'yicha so'ralganda qamrov filtri qo'llanmaydi,
       // LEKIN `?scope=` aniq berilsa hurmat qilinadi. `scope=LOCAL`
       // qo'shsak, savatdagi global tovar javobga tushmay qolardi.
-      final backend = FakeBackend((options, body) => rawJson(
-          json.encode({'items': [], 'total': 0, 'page': 1, 'limit': 2, 'hasMore': false})));
+      final backend = FakeBackend((options, body) =>
+          apiOk({'items': [], 'total': 0, 'page': 1, 'limit': 2, 'hasMore': false}));
       final repo = CatalogRepository(buildClient(backend).api);
 
       await repo.fetchProductsByIds([_uuidA, _uuidB, _uuidA]);

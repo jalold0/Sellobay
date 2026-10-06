@@ -83,6 +83,14 @@ ResponseBody rawJson(String body, {int status = 200}) => ResponseBody.fromString
       },
     );
 
+/// Xom foydali yukni KONVERTGA o'raydi.
+///
+/// Fiksturalar o'qilishi uchun qulay bo'lsin deb saqlangan: ular
+/// serverning `data` qismini yozadi, o'ram esa shu yerda qo'shiladi.
+/// `apiOk` dan farqi — tayyor JSON SATRINI oladi, Map emas.
+ResponseBody okJson(String payload, {int status = 200}) =>
+    rawJson('{"success":true,"data":$payload}', status: status);
+
 /// `{ success: false, error: { code, message } }`.
 ResponseBody apiErr(
   int status,

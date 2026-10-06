@@ -75,8 +75,9 @@ export async function fetchProductsByIds(ids: readonly string[]): Promise<MockPr
         credentials: 'same-origin',
       });
       if (!res.ok) continue;
-      const data = (await res.json()) as { items?: ApiProduct[] };
-      out.push(...(data.items ?? []).map(toMockProduct));
+      const json = (await res.json()) as { success: boolean; data?: { items?: ApiProduct[] } };
+      if (!json.success) continue;
+      out.push(...(json.data?.items ?? []).map(toMockProduct));
     } catch {
       // Bir bo'lak kelmasa qolganini baribir qaytaramiz.
     }

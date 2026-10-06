@@ -27,36 +27,35 @@ import {
   TIERS,
 } from '@ecom/core-domain';
 import { locales } from '@ecom/i18n';
-import { NextResponse } from 'next/server';
+
+import { withApi } from '@/lib/api-handler';
 
 export const runtime = 'nodejs';
 // Qoidalar kamdan-kam o'zgaradi — 5 daqiqa kesh yetarli.
 export const revalidate = 300;
 
-export function GET() {
-  return NextResponse.json({
-    shipping: {
-      currency: 'UZS',
-      standardFee: SHIPPING_FEE,
-      expressFee: EXPRESS_FEE,
-      /** Shu summadan yuqori buyurtmada yetkazish bepul. */
-      freeThreshold: FREE_SHIPPING_THRESHOLD,
-    },
-    loyalty: {
-      /** 1 so'mga nechta coin (1 coin / 1000 so'm). */
-      coinPerSom: COIN_PER_SOM,
-      /** 1 coin necha so'mga teng (yechishda). */
-      coinValueSom: COIN_VALUE_SOM,
-      tiers: TIERS,
-    },
-    returns: {
-      /** Yetkazilgandan keyin necha kun ichida qaytarish mumkin. */
-      windowDays: RETURN_WINDOW_DAYS,
-    },
-    geo: {
-      /** Toshkent shahri chegarasi — yetkazish hududini tekshirish uchun. */
-      tashkentCityBbox: TASHKENT_CITY_BBOX,
-    },
-    locales,
-  });
-}
+export const GET = withApi(async () => ({
+  shipping: {
+    currency: 'UZS',
+    standardFee: SHIPPING_FEE,
+    expressFee: EXPRESS_FEE,
+    /** Shu summadan yuqori buyurtmada yetkazish bepul. */
+    freeThreshold: FREE_SHIPPING_THRESHOLD,
+  },
+  loyalty: {
+    /** 1 so'mga nechta coin (1 coin / 1000 so'm). */
+    coinPerSom: COIN_PER_SOM,
+    /** 1 coin necha so'mga teng (yechishda). */
+    coinValueSom: COIN_VALUE_SOM,
+    tiers: TIERS,
+  },
+  returns: {
+    /** Yetkazilgandan keyin necha kun ichida qaytarish mumkin. */
+    windowDays: RETURN_WINDOW_DAYS,
+  },
+  geo: {
+    /** Toshkent shahri chegarasi — yetkazish hududini tekshirish uchun. */
+    tashkentCityBbox: TASHKENT_CITY_BBOX,
+  },
+  locales,
+}));

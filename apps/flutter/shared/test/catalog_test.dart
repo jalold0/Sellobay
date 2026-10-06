@@ -220,7 +220,7 @@ void main() {
   group('CatalogRepository', () {
     test('o`ralmagan javobni o`qiydi va so`rovni to`g`ri yuboradi', () async {
       final backend = FakeBackend(
-        (options, body) => rawJson(_realProductsResponse),
+        (options, body) => okJson(_realProductsResponse),
       );
       final client = buildClient(backend);
       final repo = CatalogRepository(client.api);
@@ -238,7 +238,7 @@ void main() {
 
     test('404 — NOT_FOUND va serverning `error` matni', () async {
       final backend = FakeBackend(
-        (options, body) => rawJson('{"error":"Product not found"}', status: 404),
+        (options, body) => apiErr(404, 'NOT_FOUND', 'Mahsulot topilmadi'),
       );
       final repo = CatalogRepository(buildClient(backend).api);
 
@@ -247,27 +247,28 @@ void main() {
         throwsA(
           isA<ApiException>()
               .having((e) => e.code, 'code', 'NOT_FOUND')
-              .having((e) => e.message, 'message', 'Product not found'),
+              // Xabar endi KONVERTDAN keladi. Ilgari katalog
+              // route'lari xatoni `{ "error": "Product not found" }`
+              // ko'rinishida — ya'ni inglizcha va boshqa shaklda —
+              // qaytarardi.
+              .having((e) => e.message, 'message', 'Mahsulot topilmadi'),
         ),
       );
     });
 
-    test('katalog yo`lini `get()` bilan chaqirish XATO beradi', () async {
-      // `getRaw` nega kerakligini qulflaydi: muvaffaqiyatli javobda
-      // `success` maydoni yo'q, shuning uchun `get()` uni xato deb biladi.
+    test('katalog yo`li oddiy `get()` bilan O`QILADI', () async {
+      // Ilgari bu test TESKARISINI qo'riqlardi: katalog route'lari xom
+      // javob qaytargani uchun `get()` ularni xato deb bilardi va
+      // alohida `getRaw` metodi kerak bo'lardi. Endi barcha route'lar
+      // bitta konvertda, `getRaw` esa butunlay olib tashlandi.
       final backend = FakeBackend(
-        (options, body) => rawJson(_realProductsResponse),
+        (options, body) => okJson(_realProductsResponse),
       );
       final api = buildClient(backend).api;
 
-      // Kod `UNEXPECTED_RESPONSE`: javob bizning `{success,data}`
-      // shaklimizda emas. Ilgari bu `UNKNOWN` edi va «Noma'lum xato»
-      // deb ko'rsatilardi — deploy qilinmagan route ham, yiqilgan
-      // server ham shu matnni berardi.
-      await expectLater(
-        api.get<Map<String, dynamic>>('/api/products'),
-        throwsA(isA<ApiException>().having((e) => e.code, 'code', 'UNEXPECTED_RESPONSE')),
-      );
+      final data = await api.get<Map<String, dynamic>>('/api/products');
+      expect(data['items'], isA<List<dynamic>>());
+      expect(data['total'], isNotNull);
     });
   });
 }

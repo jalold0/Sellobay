@@ -1,7 +1,7 @@
 import { Button } from '@ecom/ui';
 import { Compass, Home, Search } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import type { Metadata } from 'next';
 

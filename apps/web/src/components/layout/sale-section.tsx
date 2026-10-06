@@ -2,8 +2,8 @@
 
 import { Button } from '@ecom/ui';
 import { ArrowRight, Flame } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { type Locale, type MockProduct, productImage } from '../../lib/mock-data';

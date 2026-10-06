@@ -1,6 +1,6 @@
 import { BadgeCheck, Clock3, PackageOpen, ShieldCheck, Sparkles, Truck } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 const TILES = [
   { key: 'authentic', href: '/help', Icon: BadgeCheck, tint: 'bg-[#F7E9EC] text-primary' },

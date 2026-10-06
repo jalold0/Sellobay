@@ -1,12 +1,15 @@
 import crypto from 'node:crypto';
-import { NextRequest } from 'next/server';
+
 import { generateOtpCode, hashOtp } from '@ecom/auth';
 import { normalizeUzPhone } from '@ecom/utils';
-import { prisma } from '@/lib/db';
-import { otpSendSchema } from '@/lib/auth/validators';
-import { apiError, apiOk } from '@/lib/auth/errors';
+
 import { OTP_RESEND_COOLDOWN_SEC, OTP_TTL_MINUTES } from '@/lib/auth/constants';
+import { apiError, apiOk } from '@/lib/auth/errors';
+import { otpSendSchema } from '@/lib/auth/validators';
+import { prisma } from '@/lib/db';
 import { enforceRateLimit } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

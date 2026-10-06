@@ -1,7 +1,7 @@
 // Sellobay — Mahsulotlar API
 // GET /api/products[?category=...&brand=...&featured=true&ids=uuid1,uuid2&limit=20&page=1]
 
-import { NextResponse } from 'next/server';
+import { withApi } from '@/lib/api-handler';
 
 import { scopeWhere, type CatalogScope } from '../../../lib/catalog';
 import { prisma } from '../../../lib/db';
@@ -12,7 +12,11 @@ import type { NextRequest } from 'next/server';
 export const runtime = 'nodejs'; // Prisma edge'da hali to'liq qo'llab-quvvatlanmaydi
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
+// `try/catch` YO'Q: `withApi()` kutilmagan xatoni o'zi ushlaydi,
+// Sentry'ga `requestId` bilan yuboradi va klientga HTML emas, JSON
+// qaytaradi. Ilgari bu yerdagi `catch` xom `{ error: "..." }`
+// qaytarardi — boshqa route'lardan farqli shakl.
+export const GET = withApi(async (req: NextRequest) => {
   const url = new URL(req.url);
   const category = url.searchParams.get('category');
   const brand = url.searchParams.get('brand');
@@ -37,129 +41,124 @@ export async function GET(req: NextRequest) {
         .filter((s) => /^[a-f0-9-]{36}$/i.test(s)) // UUID validation
     : null;
 
-  try {
-    const byIds = Boolean(ids && ids.length > 0);
+  const byIds = Boolean(ids && ids.length > 0);
 
-    // Aniq ID so'ralganda standart qamrov filtri QO'LLANMAYDI: mijoz mahsulotni
-    // nomma-nom so'radi (sevimlilar, savat sinxroni, oxirgi ko'rilganlar).
-    // Ilgari `scope` standart LOKAL bo'lgani uchun global tovar id bo'yicha
-    // so'ralganda ham qaytmasdi — sevimlilar ro'yxatidan jimgina yo'qolardi.
-    // `?scope=` aniq berilgan bo'lsa — hurmat qilinadi.
-    const applyScope = !byIds || scopeAsked;
+  // Aniq ID so'ralganda standart qamrov filtri QO'LLANMAYDI: mijoz mahsulotni
+  // nomma-nom so'radi (sevimlilar, savat sinxroni, oxirgi ko'rilganlar).
+  // Ilgari `scope` standart LOKAL bo'lgani uchun global tovar id bo'yicha
+  // so'ralganda ham qaytmasdi — sevimlilar ro'yxatidan jimgina yo'qolardi.
+  // `?scope=` aniq berilgan bo'lsa — hurmat qilinadi.
+  const applyScope = !byIds || scopeAsked;
 
-    const where: any = {
-      status: 'ACTIVE',
-      deletedAt: null,
-      ...(applyScope ? scopeWhere(scope) : {}),
-    };
-    if (byIds) where.id = { in: ids };
-    if (featured === 'true') where.isFeatured = true;
-    if (brand) where.brand = { slug: brand };
-    if (category) {
-      where.categories = { some: { category: { slug: category } } };
-    }
-    // Qidiruv: slug (lowercase) / name JSON (uz/ru/en) / SKU.
-    // Eslatma: JSON string_contains katta-kichik harfga SEZGIR — shu bois q'ning
-    // asl va bosh-harfli variantlarini ham sinaymiz (slug esa doim lowercase).
-    if (q.length >= 2) {
-      const qCap = q.charAt(0).toUpperCase() + q.slice(1);
-      where.OR = [
-        { slug: { contains: q.toLowerCase() } },
-        { name: { path: ['uz'], string_contains: q } },
-        { name: { path: ['ru'], string_contains: q } },
-        { name: { path: ['en'], string_contains: q } },
-        ...(qCap !== q
-          ? [
-              { name: { path: ['uz'], string_contains: qCap } },
-              { name: { path: ['ru'], string_contains: qCap } },
-              { name: { path: ['en'], string_contains: qCap } },
-            ]
-          : []),
-        { sku: { contains: q, mode: 'insensitive' } },
-      ];
-    }
-
-    const orderBy: Prisma.ProductOrderByWithRelationInput =
-      sort === 'price-asc'
-        ? { basePrice: 'asc' }
-        : sort === 'price-desc'
-          ? { basePrice: 'desc' }
-          : sort === 'popular'
-            ? { soldCount: 'desc' }
-            : sort === 'rating'
-              ? { rating: 'desc' }
-              : { publishedAt: 'desc' };
-
-    const [items, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          slug: true,
-          sku: true,
-          name: true,
-          basePrice: true,
-          compareAtPrice: true,
-          currency: true,
-          rating: true,
-          reviewCount: true,
-          soldCount: true,
-          isFeatured: true,
-          publishedAt: true,
-          brand: { select: { id: true, slug: true, name: true } },
-          images: {
-            select: { url: true, alt: true },
-            orderBy: { position: 'asc' },
-            take: 1,
-          },
-          categories: {
-            select: { category: { select: { slug: true, name: true } } },
-            take: 1,
-          },
-          variants: { select: { inventory: { select: { quantityOnHand: true } } } },
-        },
-      }),
-      prisma.product.count({ where }),
-    ]);
-
-    // Decimal → string (JSON serializatsiya uchun)
-    const serialized = items.map((p: (typeof items)[number]) => {
-      const stock = p.variants.reduce(
-        (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
-        0,
-      );
-      return {
-        id: p.id,
-        slug: p.slug,
-        sku: p.sku,
-        name: p.name,
-        price: p.basePrice.toString(),
-        oldPrice: p.compareAtPrice?.toString() ?? null,
-        currency: p.currency,
-        rating: Number(p.rating),
-        reviewCount: p.reviewCount,
-        soldCount: p.soldCount,
-        isFeatured: p.isFeatured,
-        brand: p.brand,
-        imageUrl: p.images[0]?.url ?? null,
-        category: p.categories[0]?.category ?? null,
-        stock,
-        inStock: stock > 0,
-      };
-    });
-
-    return NextResponse.json({
-      items: serialized,
-      total,
-      page,
-      limit,
-      hasMore: page * limit < total,
-    });
-  } catch (err) {
-    console.error('[api/products] error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  const where: any = {
+    status: 'ACTIVE',
+    deletedAt: null,
+    ...(applyScope ? scopeWhere(scope) : {}),
+  };
+  if (byIds) where.id = { in: ids };
+  if (featured === 'true') where.isFeatured = true;
+  if (brand) where.brand = { slug: brand };
+  if (category) {
+    where.categories = { some: { category: { slug: category } } };
   }
-}
+  // Qidiruv: slug (lowercase) / name JSON (uz/ru/en) / SKU.
+  // Eslatma: JSON string_contains katta-kichik harfga SEZGIR — shu bois q'ning
+  // asl va bosh-harfli variantlarini ham sinaymiz (slug esa doim lowercase).
+  if (q.length >= 2) {
+    const qCap = q.charAt(0).toUpperCase() + q.slice(1);
+    where.OR = [
+      { slug: { contains: q.toLowerCase() } },
+      { name: { path: ['uz'], string_contains: q } },
+      { name: { path: ['ru'], string_contains: q } },
+      { name: { path: ['en'], string_contains: q } },
+      ...(qCap !== q
+        ? [
+            { name: { path: ['uz'], string_contains: qCap } },
+            { name: { path: ['ru'], string_contains: qCap } },
+            { name: { path: ['en'], string_contains: qCap } },
+          ]
+        : []),
+      { sku: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  const orderBy: Prisma.ProductOrderByWithRelationInput =
+    sort === 'price-asc'
+      ? { basePrice: 'asc' }
+      : sort === 'price-desc'
+        ? { basePrice: 'desc' }
+        : sort === 'popular'
+          ? { soldCount: 'desc' }
+          : sort === 'rating'
+            ? { rating: 'desc' }
+            : { publishedAt: 'desc' };
+
+  const [items, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        slug: true,
+        sku: true,
+        name: true,
+        basePrice: true,
+        compareAtPrice: true,
+        currency: true,
+        rating: true,
+        reviewCount: true,
+        soldCount: true,
+        isFeatured: true,
+        publishedAt: true,
+        brand: { select: { id: true, slug: true, name: true } },
+        images: {
+          select: { url: true, alt: true },
+          orderBy: { position: 'asc' },
+          take: 1,
+        },
+        categories: {
+          select: { category: { select: { slug: true, name: true } } },
+          take: 1,
+        },
+        variants: { select: { inventory: { select: { quantityOnHand: true } } } },
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  // Decimal → string (JSON serializatsiya uchun)
+  const serialized = items.map((p: (typeof items)[number]) => {
+    const stock = p.variants.reduce(
+      (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
+      0,
+    );
+    return {
+      id: p.id,
+      slug: p.slug,
+      sku: p.sku,
+      name: p.name,
+      price: p.basePrice.toString(),
+      oldPrice: p.compareAtPrice?.toString() ?? null,
+      currency: p.currency,
+      rating: Number(p.rating),
+      reviewCount: p.reviewCount,
+      soldCount: p.soldCount,
+      isFeatured: p.isFeatured,
+      brand: p.brand,
+      imageUrl: p.images[0]?.url ?? null,
+      category: p.categories[0]?.category ?? null,
+      stock,
+      inStock: stock > 0,
+    };
+  });
+
+  return {
+    items: serialized,
+    total,
+    page,
+    limit,
+    hasMore: page * limit < total,
+  };
+});

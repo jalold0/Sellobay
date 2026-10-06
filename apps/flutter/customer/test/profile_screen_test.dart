@@ -93,9 +93,9 @@ FakeBackend _backend({
       if (options.path == '/api/auth/login') {
         return apiOk({'user': _user(), 'tokens': tokenPair('1')});
       }
-      if (options.path == '/api/categories') return rawJson('{"items":[]}');
+      if (options.path == '/api/categories') return okJson('{"items":[]}');
       if (options.path == '/api/products') {
-        return rawJson('{"items":[],"total":0,"page":1,"limit":24,"hasMore":false}');
+        return okJson('{"items":[],"total":0,"page":1,"limit":24,"hasMore":false}');
       }
       if (options.path == '/api/orders') return apiOk({'items': <Map<String, dynamic>>[]});
       if (options.path == '/api/cart') return apiOk({'cartId': 'c1', 'items': <Map<String, dynamic>>[]});

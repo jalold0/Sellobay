@@ -1,11 +1,10 @@
 'use client';
 
 import { Button, Card, Input, StatusBadge } from '@ecom/ui';
+import { type CurrencyCode } from '@ecom/utils';
 import { CheckCircle2, Loader2, Package, Phone, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
-
-import { type CurrencyCode } from '@ecom/utils';
 
 import { formatDateTime, formatMoney } from '../../../lib/format';
 import { ORDER_STATUS_TONE, type OrderStatus } from '../../../lib/order-status';

@@ -1,9 +1,10 @@
 import { EmptyState } from '@ecom/ui';
 import { Search } from 'lucide-react';
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
-import { redirect } from 'next/navigation';
+
+import type { Metadata } from 'next';
 
 interface PageProps {
   searchParams: { q?: string };

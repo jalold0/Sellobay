@@ -5,8 +5,8 @@ import { Crown, Gift, Package, Star } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
-import { formatNumber } from '../../../lib/format';
 import { me, updateProfile, type AuthUser } from '../../../lib/auth/client';
+import { formatNumber } from '../../../lib/format';
 
 interface ProfileForm {
   firstName: string;

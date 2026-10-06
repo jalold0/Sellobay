@@ -124,8 +124,8 @@ Future<void> pumpCatalog(WidgetTester tester, FakeBackend backend) async {
 }
 
 FakeBackend happyBackend({String? products}) => FakeBackend((options, body) {
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
-      return rawJson(products ?? productsJson());
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
+      return okJson(products ?? productsJson());
     });
 
 void main() {
@@ -179,13 +179,16 @@ void main() {
   testWidgets('server xatosi — xabar va qayta urinish', (tester) async {
     var fail = true;
     final backend = FakeBackend((options, body) {
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
-      if (fail) return rawJson('{"error":"Internal server error"}', status: 500);
-      return rawJson(productsJson());
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
+      if (fail) return apiErr(500, 'INTERNAL', 'Ichki xato');
+      return okJson(productsJson());
     });
     await pumpCatalog(tester, backend);
 
-    expect(find.text('Internal server error'), findsOneWidget);
+    // Serverning KONVERTDAGI matni ko'rsatiladi. Ilgari katalog
+    // route'lari xatoni `{ "error": "Internal server error" }`
+    // ko'rinishida — inglizcha va boshqa shaklda — qaytarardi.
+    expect(find.text('Ichki xato'), findsOneWidget);
     expect(find.text('Qayta urinish'), findsOneWidget);
 
     fail = false;
@@ -296,9 +299,9 @@ void main() {
 
   testWidgets('mahsulotga bosilsa sahifasi ochiladi', (tester) async {
     final backend = FakeBackend((options, body) {
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
       if (options.path == '/api/products/puma-rs-x-sneakers') {
-        return rawJson(json.encode({
+        return apiOk(({
           ...product(slug: 'puma-rs-x-sneakers', nameUz: 'Puma RS-X krossovkalar', price: '990000'),
           'description': {'uz': 'Qulay krossovka'},
           'shortDescription': null,
@@ -307,7 +310,7 @@ void main() {
           'seller': null,
         }));
       }
-      return rawJson(productsJson());
+      return okJson(productsJson());
     });
     await pumpCatalog(tester, backend);
 

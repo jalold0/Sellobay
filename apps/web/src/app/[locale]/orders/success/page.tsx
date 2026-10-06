@@ -2,9 +2,9 @@
 
 import { Button, Card } from '@ecom/ui';
 import { CheckCircle2, FileText, Package } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 export default function OrderSuccessPage() {
   const t = useTranslations('orderSuccess');

@@ -1,10 +1,11 @@
 import { normalizeUzPhone } from '@ecom/utils';
-import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 import { enforceRateLimit } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
