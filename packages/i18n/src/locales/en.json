@@ -878,7 +878,8 @@
       "discount": "Spent on discount",
       "daysAgo": "{days} days ago",
       "empty": "No coin history yet — make your first purchase!",
-      "checkin": "Daily check-in bonus"
+      "checkin": "Daily check-in bonus",
+      "today": "Today"
     }
   },
   "sale": {

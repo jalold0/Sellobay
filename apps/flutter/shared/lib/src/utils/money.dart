@@ -55,6 +55,16 @@ String formatMoney(Object? amount, {String currency = 'UZS'}) {
   }
 }
 
+/// `150000` -> `150 000` (valyuta belgisiSIZ).
+///
+/// NEGA KERAK: ba'zi tarjimalar valyutani O'ZI yozadi — masalan
+/// `loyalty.worth` = «≈ {som} so'm». Unga `formatMoney` berilsa
+/// «so'm so'm» chiqardi.
+String formatAmount(Object? amount) {
+  final value = amount is Decimal ? amount : parseMoney(amount);
+  return _fixed(value, 0, ' ');
+}
+
 /// Chegirma foizi. Eski narx yo'q yoki undan arzon bo'lmasa — 0.
 int discountPercent(Decimal price, Decimal? oldPrice) {
   if (oldPrice == null || oldPrice <= price || oldPrice == Decimal.zero) return 0;
