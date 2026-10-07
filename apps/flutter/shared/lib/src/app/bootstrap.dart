@@ -16,6 +16,7 @@ import '../catalog/catalog_repository.dart';
 import '../courier/courier_repository.dart';
 import '../checkout/checkout_repository.dart';
 import '../loyalty/loyalty_repository.dart';
+import '../promo/promo_repository.dart';
 import '../reviews/reviews_repository.dart';
 import '../wishlist/wishlist_repository.dart';
 import '../wishlist/wishlist_scope.dart';
@@ -38,6 +39,7 @@ class SellobayRuntime {
     required this.addresses,
     required this.orders,
     required this.loyalty,
+    required this.promo,
     required this.reviews,
     required this.wishlist,
     required this.courier,
@@ -55,6 +57,7 @@ class SellobayRuntime {
   final AddressRepository addresses;
   final OrdersRepository orders;
   final LoyaltyRepository loyalty;
+  final PromoRepository promo;
   final ReviewsRepository reviews;
   final WishlistStore wishlist;
 
@@ -122,6 +125,7 @@ Future<SellobayRuntime> bootstrapSellobay({String? requiredRole}) async {
     addresses: AddressRepository(api),
     orders: OrdersRepository(api),
     loyalty: LoyaltyRepository(api),
+    promo: PromoRepository(api),
     reviews: ReviewsRepository(api),
     wishlist: WishlistStore(repository: WishlistRepository(api), auth: auth),
     courier: CourierRepository(api),
