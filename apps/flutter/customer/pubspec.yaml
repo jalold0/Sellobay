@@ -48,6 +48,12 @@ dependencies:
   # Pul — har doim Decimal (CLAUDE.md). `sellobay_shared` orqali ham
   # keladi, lekin bu yerda TO'G'RIDAN-TO'G'RI ishlatiladi.
   decimal: ^3.2.4
+  flutter_map: ^7.0.2
+  vector_map_tiles: ^8.0.0
+  vector_map_tiles_pmtiles: ^1.5.0
+  geolocator: ^14.1.1
+  geocoding: ^5.0.0
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

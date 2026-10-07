@@ -1,4 +1,14 @@
 {
+  "map": {
+    "unavailable": "Xarita yuklanmadi. Manzilni qo'lda kiritishingiz mumkin.",
+    "pickTitle": "Manzilni xaritadan tanlang",
+    "dragHint": "Pinni manzilingizga suring",
+    "myLocation": "Mening joylashuvim",
+    "picked": "Xaritada belgilandi",
+    "confirm": "Shu manzilni tanlash",
+    "outsideCity": "Bu nuqta Toshkent shahri chegarasidan tashqarida",
+    "locationDenied": "Joylashuvga ruxsat berilmagan. Sozlamalardan yoqing."
+  },
   "common": {
     "appName": "Sellobay",
     "search": "Qidirish",

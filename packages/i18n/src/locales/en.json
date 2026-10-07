@@ -1,4 +1,14 @@
 {
+  "map": {
+    "unavailable": "The map could not load. You can enter the address manually.",
+    "pickTitle": "Pick the address on the map",
+    "dragHint": "Drag the pin to your address",
+    "myLocation": "My location",
+    "picked": "Marked on the map",
+    "confirm": "Use this address",
+    "outsideCity": "This point is outside Tashkent city limits",
+    "locationDenied": "Location permission denied. Enable it in settings."
+  },
   "common": {
     "appName": "Sellobay",
     "search": "Search",

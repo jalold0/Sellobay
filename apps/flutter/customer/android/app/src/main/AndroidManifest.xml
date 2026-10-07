@@ -9,6 +9,17 @@
          o'rnatilganda chiqadi. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Manzilni xaritadan tanlashdagi «mening joylashuvim» tugmasi.
+         IKKALASI ham e'lon qilinadi: foydalanuvchi faqat taxminiy
+         joylashuvga ruxsat bersa (Android 12+ da shunday tanlov bor),
+         aniq ruxsat bo'lmaydi va faqat FINE e'lon qilingan bo'lsa
+         tugma umuman ishlamay qolardi.
+
+         Ruxsat MAJBURIY EMAS: berilmasa pin qo'lda suriladi, manzilni
+         esa qo'lda yozish mumkin. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+
     <application
         android:label="Sellobay"
         android:name="${applicationName}"

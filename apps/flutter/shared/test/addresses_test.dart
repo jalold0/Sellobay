@@ -29,6 +29,8 @@ AddressInput _input({
   String? label = 'Uy',
   String? apartment = '25-uy',
   bool isDefault = false,
+  double? latitude,
+  double? longitude,
 }) =>
     AddressInput(
       label: label,
@@ -39,6 +41,8 @@ AddressInput _input({
       city: 'Yunusobod',
       street: 'Amir Temur 1',
       apartment: apartment,
+      latitude: latitude,
+      longitude: longitude,
       isDefault: isDefault,
     );
 
@@ -175,5 +179,57 @@ void main() {
 
     expect(backend.calls, ['/api/addresses']);
     expect(items.single.recipientName, 'Dilnoza Karimova');
+  });
+
+  group('koordinata', () {
+    test('tanlanmagan bo`lsa YUBORILMAYDI', () {
+      // `null` yuborsak, tahrirlashda mavjud koordinata o'chib
+      // ketardi: server `latitude: null` ni «tozalash» deb tushunadi.
+      final json = _input().toJson();
+      expect(json.containsKey('latitude'), isFalse);
+      expect(json.containsKey('longitude'), isFalse);
+    });
+
+    test('tanlangan bo`lsa yuboriladi', () {
+      final json = _input(latitude: 41.3111, longitude: 69.2797).toJson();
+      expect(json['latitude'], 41.3111);
+      expect(json['longitude'], 69.2797);
+    });
+
+    test('serverdan O`QILADI', () {
+      // Ilgari model bu maydonlarni butunlay tashlab yuborardi —
+      // server ularni ancha oldin qaytarardi, lekin ilova ko'rmasdi.
+      final a = SavedAddress.fromJson({
+        'id': 'a1',
+        'type': 'HOME',
+        'recipientName': 'Dilnoza',
+        'phone': '+998901234567',
+        'region': 'Toshkent',
+        'city': 'Yunusobod',
+        'street': 'Amir Temur 1',
+        'apartment': null,
+        'latitude': 41.3111,
+        'longitude': 69.2797,
+        'isDefault': true,
+      });
+      expect(a.latitude, 41.3111);
+      expect(a.longitude, 69.2797);
+    });
+
+    test('koordinatasiz manzil ham o`qiladi', () {
+      final a = SavedAddress.fromJson({
+        'id': 'a1',
+        'type': 'HOME',
+        'recipientName': 'Dilnoza',
+        'phone': '+998901234567',
+        'region': 'Toshkent',
+        'city': 'Yunusobod',
+        'street': 'Amir Temur 1',
+        'apartment': null,
+        'isDefault': false,
+      });
+      expect(a.latitude, isNull);
+      expect(a.longitude, isNull);
+    });
   });
 }
