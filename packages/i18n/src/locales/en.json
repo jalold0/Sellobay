@@ -89,6 +89,25 @@
     "headlineLine3": "on Sellobay.",
     "ctaCollection": "View collection"
   },
+  "help": {
+    "title": "Help centre",
+    "subtitle": "24/7 customer support",
+    "telegram": "Telegram",
+    "phone": "Phone",
+    "email": "Email",
+    "noChannels": "Contact channels are not configured yet",
+    "faqTitle": "Frequently asked questions",
+    "q1": "How do I track my order?",
+    "a1": "Profile → My orders shows the status of every order in real time.",
+    "q2": "How long does delivery take?",
+    "a2": "Within Tashkent 24–48 hours, express 3 hours. Regions 2–4 days.",
+    "q3": "How do I pay?",
+    "a3": "Click, Payme or card. Cash on delivery is also available.",
+    "q4": "Can I return an item?",
+    "a4": "Yes, within 14 days of delivery. Submit a request under My orders.",
+    "q5": "What are Sello Coins?",
+    "a5": "Bonus points from every purchase. 1 coin = 10 UZS, used as a discount on your next order."
+  },
   "home": {
     "categoriesTitle": "Categories",
     "categoriesSubtitle": "Choose your favorite category",

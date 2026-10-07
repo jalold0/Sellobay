@@ -96,6 +96,25 @@
     "trustReturn": "Tekshirib olish",
     "editorsPick": "Editor's pick"
   },
+  "help": {
+    "title": "Yordam markazi",
+    "subtitle": "24/7 qo'llab-quvvatlash xizmati",
+    "telegram": "Telegram",
+    "phone": "Telefon",
+    "email": "Email",
+    "noChannels": "Aloqa kanallari hali sozlanmagan",
+    "faqTitle": "Tez-tez so'raladigan savollar",
+    "q1": "Buyurtmamni qanday kuzataman?",
+    "a1": "Profil → Buyurtmalarim bo'limidan har bir buyurtma holatini real vaqtda ko'rishingiz mumkin.",
+    "q2": "Yetkazib berish qancha vaqt oladi?",
+    "a2": "Toshkent bo'yicha 24-48 soat, express 3 soat. Viloyatlarga 2-4 kun.",
+    "q3": "To‘lovni qanday amalga oshiraman?",
+    "a3": "Click, Payme yoki karta orqali. Yetkazib berishda naqd to'lov ham mumkin.",
+    "q4": "Mahsulotni qaytarish mumkinmi?",
+    "a4": "Ha, yetkazilgandan keyin 14 kun ichida. Profil → Buyurtmalarim dan so'rov qoldiring.",
+    "q5": "Sello Coins nima?",
+    "a5": "Har xariddan yig'iladigan bonus. 1 coin = 10 so'm, keyingi buyurtmada chegirma sifatida ishlatiladi."
+  },
   "home": {
     "categoriesTitle": "Kategoriyalar",
     "categoriesHeadline": "Nimadan boshlaymiz?",

@@ -58,4 +58,21 @@ export const GET = withApi(async () => ({
     tashkentCityBbox: TASHKENT_CITY_BBOX,
   },
   locales,
+  /**
+   * Qo'llab-quvvatlash kanallari.
+   *
+   * ENV dan o'qiladi va SOZLANMAGANI javobga tushmaydi: klient
+   * bo'sh tugma yoki to'qima raqam ko'rsatmasligi kerak. Ilgari
+   * footer'da `info@example.uz` turardi — o'rin egasi, haqiqiy
+   * manzil emas.
+   *
+   * Bu route `revalidate = 300` bilan keshlanadi, ya'ni ENV
+   * o'zgarsa qiymat 5 daqiqagacha eskirgan bo'lishi mumkin.
+   * Aloqa ma'lumoti kamdan-kam o'zgaradi — bu yetarli.
+   */
+  support: {
+    phone: process.env.SUPPORT_PHONE || null,
+    email: process.env.SUPPORT_EMAIL || null,
+    telegram: process.env.SUPPORT_TELEGRAM || null,
+  },
 }));

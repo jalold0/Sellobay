@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'addresses_screen.dart';
+import 'become_seller_screen.dart';
+import 'help_screen.dart';
 import 'loyalty_screen.dart';
 import 'personal_info_screen.dart';
 import 'promo_screen.dart';
@@ -155,6 +157,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   labelKey: 'pickupPoints.title',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const PickupPointsScreen()),
+                  ),
+                ),
+                _linkTile(
+                  context,
+                  icon: Icons.help_outline,
+                  labelKey: 'help.title',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const HelpScreen()),
+                  ),
+                ),
+                _linkTile(
+                  context,
+                  icon: Icons.storefront_outlined,
+                  labelKey: 'sell.title',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const BecomeSellerScreen()),
                   ),
                 ),
                 const SizedBox(height: 26),
