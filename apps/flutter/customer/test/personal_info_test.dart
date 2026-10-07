@@ -1,10 +1,14 @@
+// Shaxsiy ma'lumotlar ekrani — forma.
+//
+// Ilgari bu forma profil ekranining ICHIDA edi; u o'sib
+// borgani uchun alohida ekranga chiqarildi.
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sellobay_customer/src/home_tabs.dart';
 import 'package:sellobay_customer/src/screens/home_shell.dart';
-import 'package:sellobay_customer/src/screens/profile_screen.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:sellobay_shared/testing.dart';
 
@@ -136,6 +140,15 @@ Future<SellobayRuntime> pumpProfile(WidgetTester tester, FakeBackend backend) as
   return runtime;
 }
 
+
+/// Profilga kirib, «Shaxsiy ma'lumotlar» ekranini ochadi.
+Future<SellobayRuntime> pumpPersonalInfo(WidgetTester tester, FakeBackend backend) async {
+  final runtime = await pumpProfile(tester, backend);
+  await tester.tap(find.widgetWithText(InkWell, "Shaxsiy ma'lumotlar"));
+  await settleRoute(tester);
+  return runtime;
+}
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -143,100 +156,60 @@ void main() {
     await uz.load();
   });
 
-  testWidgets('profil foydalanuvchi ma`lumotini ko`rsatadi', (tester) async {
-    await pumpProfile(tester, _backend());
+  group('ma`lumotlarni saqlash', () {
+    testWidgets('PATCH yuboriladi va holat yangilanadi', (tester) async {
+      final backend = _backend(after: _user(firstName: 'Dilnoza', lastName: 'Karimova'));
+      await pumpPersonalInfo(tester, backend);
 
-    // Tahrirlash alohida ekranga chiqdi — profilda faqat ko'rsatish.
-    expect(find.text('Dilnoza'), findsOneWidget);
-    expect(find.text('D'), findsOneWidget); // bosh harf
-    expect(find.text('+998901234567'), findsOneWidget);
-    // Ballar serverdan — mahalliy hisob yo'q.
-    expect(find.textContaining('340'), findsOneWidget);
-  });
+      await tester.enterText(find.widgetWithText(TextField, 'Familiya'), 'Karimova');
+      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
+      await settle(tester);
 
-  testWidgets('chiqish FAQAT tasdiqdan keyin', (tester) async {
-    final runtime = await pumpProfile(tester, _backend());
-
-    // Profilda havolalar ko'payib, tugma ekrandan pastga tushdi.
-    await scrollTo(tester, find.widgetWithText(OutlinedButton, 'Chiqish'));
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Chiqish'));
-    await settleRoute(tester);
-    await tester.tap(find.text('Bekor qilish'));
-    await settleRoute(tester);
-    expect(runtime.auth.isSignedIn, isTrue);
-
-    await tester.ensureVisible(find.widgetWithText(OutlinedButton, 'Chiqish'));
-    // Suriluvchi joylashuv keyingi KADRDA yangilanadi — darhol bossak,
-    // koordinata eski bo'lib, bosish pastki panelga tushib ketardi.
-    await settle(tester);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Chiqish'));
-    await settleRoute(tester);
-    await tester.tap(find.widgetWithText(FilledButton, 'Chiqish'));
-    await settleRoute(tester);
-    expect(runtime.auth.isSignedIn, isFalse);
-  });
-
-  group('til', () {
-    testWidgets('tanlov SERVERDA saqlanadi va interfeys o`giriladi', (tester) async {
-      final backend = _backend(after: _user(locale: 'ru'));
-      final runtime = await pumpProfile(tester, backend);
-
-      await scrollTo(tester, find.text('Русский'));
-      await tester.tap(find.text('Русский'));
-      await settleAssets(tester);
-
-      expect(lastBody(backend)['locale'], 'ru');
-      // Tarjimalarni `SellobayScope` `user.locale` ga ergashib
-      // almashtiradi — ekran o'zi emas.
-      expect(runtime.locale.locale, 'ru');
-      await scrollToTop(tester);
-      expect(find.text('Личные данные'), findsOneWidget);
-      // AppBar ham, pastki paneldagi yorliq ham o'girilgan.
-      expect(find.text('Профиль'), findsNWidgets(2));
+      expect(backend.calls.where((c) => c == '/api/auth/me'), hasLength(2)); // GET + PATCH
+      final sent = lastBody(backend);
+      expect(sent['firstName'], 'Dilnoza');
+      expect(sent['lastName'], 'Karimova');
+      expect(find.text('Saqlandi'), findsWidgets);
     });
 
-    testWidgets('joriy til qayta yuborilmaydi', (tester) async {
+    testWidgets('bo`sh maydon `null` bo`lib ketadi — yuborilmay qolmaydi', (tester) async {
+      // Negativ nazorat: `_compact` nullarni tashlab yuboradi, shuning
+      // uchun profil uni ISHLATMAYDI. Aks holda ismni o'chirib bo'lmasdi.
+      final backend = _backend(after: _user(firstName: null));
+      await pumpPersonalInfo(tester, backend);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Ism'), '');
+      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
+      await settle(tester);
+
+      final sent = lastBody(backend);
+      expect(sent.containsKey('firstName'), isTrue);
+      expect(sent['firstName'], isNull);
+    });
+
+    testWidgets('yaroqsiz email — so`rov KETMAYDI', (tester) async {
       final backend = _backend();
-      await pumpProfile(tester, backend);
+      await pumpPersonalInfo(tester, backend);
 
-      // Profil ro'yxati uzayganda til chiplari ekrandan chiqib ketadi
-      // (dangasa `ListView`) — avval ularga suramiz.
-      await scrollTo(tester, find.text("O'zbekcha"));
-      await tester.tap(find.text("O'zbekcha"));
+      await tester.enterText(find.widgetWithText(TextField, 'Email'), 'dilnoza@');
+      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
       await settle(tester);
 
-      expect(backend.calls.where((c) => c == '/api/auth/me'), hasLength(1));
+      expect(backend.calls.where((c) => c == '/api/auth/me'), hasLength(1)); // faqat GET
     });
 
-    testWidgets('xato bo`lsa til O`ZGARMAYDI', (tester) async {
-      final backend = _backend(patch: () => apiErr(500, 'SERVER', 'Ichki xato'));
-      final runtime = await pumpProfile(tester, backend);
+    testWidgets('server «email band» desa — uning matni ko`rsatiladi', (tester) async {
+      final backend = _backend(
+        patch: () => apiErr(409, 'EMAIL_TAKEN', 'Bu email allaqachon band'),
+      );
+      await pumpPersonalInfo(tester, backend);
 
-      await scrollTo(tester, find.text('English'));
-      await tester.tap(find.text('English'));
+      await tester.enterText(find.widgetWithText(TextField, 'Email'), 'band@sellobay.uz');
+      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
       await settle(tester);
 
-      expect(runtime.locale.locale, 'uz');
-      await scrollToTop(tester);
-      expect(find.text('Ichki xato'), findsOneWidget);
+      expect(find.text('Bu email allaqachon band'), findsOneWidget);
     });
   });
 
-  testWidgets('profil ekrani to`g`ridan-to`g`ri ham ochiladi', (tester) async {
-    // Qobiqsiz — tarjima kalitlari sizib chiqmasligini tekshiramiz.
-    final runtime = buildRuntime(_backend(), locale: uz);
-    unawaited(runtime.auth.signInWithPassword(identifier: '+998901234567', password: 'parol1234'));
-    await tester.pumpWidget(
-      SellobayScope(
-        runtime: runtime,
-        child: MaterialApp(theme: buildSellobayTheme(), home: const ProfileScreen()),
-      ),
-    );
-    await settle(tester);
-
-    expect(find.text('Profil'), findsOneWidget);
-    expect(find.text("Shaxsiy ma'lumotlar"), findsOneWidget);
-    await scrollTo(tester, find.text('Til tanlash'));
-    expect(find.text('Til tanlash'), findsOneWidget);
-  });
 }

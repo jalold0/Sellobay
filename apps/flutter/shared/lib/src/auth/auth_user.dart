@@ -25,6 +25,8 @@ class AuthUser {
     this.lastName,
     this.avatarUrl,
     this.locale,
+    this.gender,
+    this.birthDate,
     this.status,
     this.loyaltyPoints = 0,
     this.roles = const <String>[],
@@ -38,6 +40,10 @@ class AuthUser {
         lastName: json['lastName'] as String?,
         avatarUrl: json['avatarUrl'] as String?,
         locale: json['locale'] as String?,
+        gender: json['gender'] as String?,
+        // Server `Date` ni ISO satr sifatida beradi; faqat sana qismi
+        // kerak, shuning uchun kesib olamiz.
+        birthDate: (json['birthDate'] as String?)?.split('T').first,
         status: json['status'] as String?,
         loyaltyPoints: (json['loyaltyPoints'] as num?)?.toInt() ?? 0,
         roles: (json['roles'] as List<dynamic>?)?.cast<String>() ?? const <String>[],
@@ -50,6 +56,17 @@ class AuthUser {
   final String? lastName;
   final String? avatarUrl;
   final String? locale;
+
+  /// `MALE` / `FEMALE` / `UNSPECIFIED`.
+  ///
+  /// XOM satr: server yangi qiymat qo'shsa eski ilova yiqilmasin.
+  /// Server bu maydonni ancha oldin qaytarardi va `PATCH` da qabul
+  /// ham qilardi — model uni o'qimasdi.
+  final String? gender;
+
+  /// `YYYY-MM-DD`. Vaqt qismi yo'q — bu SANA, moment emas.
+  final String? birthDate;
+
   final String? status;
   final int loyaltyPoints;
   final List<String> roles;

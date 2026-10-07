@@ -3,6 +3,7 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'addresses_screen.dart';
 import 'loyalty_screen.dart';
+import 'personal_info_screen.dart';
 import 'pickup_points_screen.dart';
 import 'track_order_screen.dart';
 import 'my_reviews_screen.dart';
@@ -21,11 +22,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _firstName = TextEditingController();
-  final _lastName = TextEditingController();
-  final _email = TextEditingController();
 
-  bool _saving = false;
   bool _localeSaving = false;
   String? _error;
 
@@ -34,62 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// Har `didChangeDependencies` da to'ldirsak, tilni almashtirgandan
   /// keyin auth yangilanadi va yozilayotgan matn ustiga eskisi
   /// qaytarilardi.
-  bool _filled = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_filled) return;
-    final user = AuthScope.of(context).user;
-    if (user == null) return;
-    _firstName.text = user.firstName ?? '';
-    _lastName.text = user.lastName ?? '';
-    _email.text = user.email ?? '';
-    _filled = true;
-  }
-
-  @override
-  void dispose() {
-    _firstName.dispose();
-    _lastName.dispose();
-    _email.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final email = _email.text.trim();
-    if (email.isNotEmpty) {
-      final issue = emailIssueKey(email);
-      if (issue != null) {
-        setState(() => _error = context.t(issue));
-        return;
-      }
-    }
-
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      await AuthScope.read(context).updateProfile(
-        firstName: _firstName.text,
-        lastName: _lastName.text,
-        email: email,
-      );
-      if (!mounted) return;
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t('profile.saved'))),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      // Server «email band» deyishi mumkin — uning matnini ko'rsatamiz.
-      setState(() {
-        _saving = false;
-        _error = context.errorText(e);
-      });
-    }
-  }
 
   Future<void> _setLocale(String code) async {
     final auth = AuthScope.read(context);
@@ -148,37 +89,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _header(context, user),
                 const SizedBox(height: 24),
                 FormErrorBanner(_error),
-                _section(context.t('profile.infoTitle')),
-                TextField(
-                  controller: _firstName,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(labelText: context.t('profile.fields.firstName')),
+                // Tahrirlash ALOHIDA ekranda: profil — navigatsiya,
+                // forma esa forma. Ilgari ikkalasi bir faylda edi va
+                // u o'sib borardi.
+                _linkTile(
+                  context,
+                  icon: Icons.person_outline,
+                  labelKey: 'profile.title',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const PersonalInfoScreen()),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _lastName,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(labelText: context.t('profile.fields.lastName')),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: InputDecoration(labelText: context.t('profile.fields.email')),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
-                        )
-                      : Text(context.t('profile.saveChanges')),
-                ),
-                const SizedBox(height: 26),
                 _linkTile(
                   context,
                   icon: Icons.favorite_border,

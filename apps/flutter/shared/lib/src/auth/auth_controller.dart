@@ -138,11 +138,15 @@ class AuthController extends ChangeNotifier {
     required String? firstName,
     required String? lastName,
     required String? email,
+    String? gender,
+    String? birthDate,
   }) async {
     final updated = await _repo.updateProfile(
       firstName: firstName,
       lastName: lastName,
       email: email,
+      gender: gender,
+      birthDate: birthDate,
     );
     await _repo.cacheUser(updated);
     _set(AuthStatus.signedIn, updated);

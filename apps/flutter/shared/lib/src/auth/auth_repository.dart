@@ -181,10 +181,18 @@ class AuthRepository {
   /// saqlangandek ko'rinib, eskisi qolib ketardi.
   ///
   /// Javob rollar bilan keladi (route `current.roles` ni qo'shadi).
+  /// [gender] — `MALE` / `FEMALE` / `UNSPECIFIED`.
+  /// [birthDate] — `YYYY-MM-DD`.
+  ///
+  /// BERILMAGAN maydon so'rovga QO'SHILMAYDI: server `null` ni
+  /// «tozalash» deb tushunadi va til almashtirganda tug'ilgan kun
+  /// o'chib ketardi.
   Future<AuthUser> updateProfile({
     required String? firstName,
     required String? lastName,
     required String? email,
+    String? gender,
+    String? birthDate,
   }) async {
     final data = await _api.patch<Map<String, dynamic>>(
       '/api/auth/me',
@@ -192,6 +200,8 @@ class AuthRepository {
         'firstName': _blankToNull(firstName),
         'lastName': _blankToNull(lastName),
         'email': _blankToNull(email),
+        'gender': ?gender,
+        'birthDate': ?birthDate,
       },
     );
     return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
