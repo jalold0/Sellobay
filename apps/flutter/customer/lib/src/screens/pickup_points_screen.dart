@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../map/pickup_marker.dart';
 import '../map/sellobay_map.dart';
 
 /// Olib ketish punktlari — xarita va ro'yxat.
@@ -150,7 +151,10 @@ class _PickupPointsScreenState extends State<PickupPointsScreen> {
                 if (p.hasCoordinates)
                   MapMarker(
                     point: LatLng(p.latitude!, p.longitude!),
-                    label: p.name.pick(locale),
+                    child: PickupMarker(
+                      code: p.code,
+                      selected: p.id == _focused?.id,
+                    ),
                     onTap: () => setState(() => _focused = p),
                   ),
             ],

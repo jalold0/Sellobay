@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sellobay_customer/src/map/pickup_marker.dart';
 import 'package:sellobay_customer/src/map/sellobay_map.dart';
 import 'package:sellobay_customer/src/screens/pickup_points_screen.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
@@ -216,6 +217,21 @@ void main() {
       // Server yangi tur qo'shsa, eski ilova yiqilmasligi kerak.
       final p = PickupPoint.fromJson(_point(id: 'p1', name: 'PVZ', type: 'LOCKER'));
       expect(p.type, 'LOCKER');
+    });
+  });
+
+  group('xarita belgisi', () {
+    test('kod qisqartiriladi — viloyat va raqam qoladi', () {
+      // Bir shaharda bir nechta punkt bo'lganda mijoz xaritadagi
+      // belgini ro'yxatdagi qator bilan solishtiradi.
+      expect(PickupMarker.shortCode('PVZ-TAS-001'), 'TAS-001');
+      expect(PickupMarker.shortCode('PVZ-SAM-001'), 'SAM-001');
+    });
+
+    test('kutilmagan formatda kod BUTUNLAY ko`rsatiladi', () {
+      // Qisqartirishga urinib bo'sh satr chiqarmaymiz.
+      expect(PickupMarker.shortCode('ABC'), 'ABC');
+      expect(PickupMarker.shortCode('PVZ-001'), 'PVZ-001');
     });
   });
 }

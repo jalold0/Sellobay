@@ -58,6 +58,13 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   late LatLng _center = widget.initial ?? _tashkent;
   late LatLng _picked = widget.initial ?? _tashkent;
 
+  /// Xarita zumi.
+  ///
+  /// «Mening joylashuvim» bosilganda uy darajasiga yaqinlashtiramiz:
+  /// foydalanuvchi oldin uzoqlashtirgan bo'lsa, shunchaki markazni
+  /// ko'chirish yetarli emas — u qaysi uy ekanini ko'rmaydi.
+  double _zoom = 17;
+
   String? _addressLine;
   bool _locating = false;
   bool _geocoding = false;
@@ -139,6 +146,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         _locating = false;
         _center = here;
         _picked = here;
+        _zoom = 17.5;
       });
       _scheduleGeocode();
     } catch (_) {
@@ -169,6 +177,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   center: _center,
                   pin: _picked,
                   onPick: _onPick,
+                  // Uy darajasi: mijoz aynan qaysi uy ekanini
+                  // ko'rsatishi kerak, ko'cha emas.
+                  zoom: _zoom,
                 ),
                 Positioned(
                   right: 14,

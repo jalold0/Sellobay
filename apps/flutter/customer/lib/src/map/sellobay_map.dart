@@ -53,15 +53,34 @@ class SellobayMap extends StatefulWidget {
 }
 
 /// Xaritadagi belgi.
+///
+/// Ko'rinishni CHAQIRUVCHI beradi ([child]): shunda `SellobayMap`
+/// umumiy bo'lib qoladi va punkt, manzil yoki kelajakdagi boshqa
+/// belgilarning dizayni o'z fayllarida yashaydi.
 class MapMarker {
-  const MapMarker({required this.point, required this.label, this.onTap});
+  const MapMarker({
+    required this.point,
+    required this.child,
+    this.size = const Size(44, 52),
+    this.onTap,
+  });
 
   final LatLng point;
-  final String label;
+  final Widget child;
+
+  /// Belgi egallaydigan joy. Kichik bo'lsa matn qirqiladi.
+  final Size size;
+
   final VoidCallback? onTap;
 }
 
 class _SellobayMapState extends State<SellobayMap> {
+  /// Eng yaqin zum — uy/hovli darajasi.
+  ///
+  /// Plitkalar z14 gacha, lekin vektor geometriya kattalashtirilib
+  /// chiziladi, shuning uchun bundan yuqorisi ham o'qilarli qoladi.
+  static const _maxZoom = 19.0;
+
   /// Plitka provayderi BIR MARTA ochiladi va keshlanadi.
   ///
   /// `fromSource` pmtiles arxivining sarlavhasini o'qiydi (tarmoq
@@ -93,10 +112,15 @@ class _SellobayMapState extends State<SellobayMap> {
   @override
   void didUpdateWidget(SellobayMap old) {
     super.didUpdateWidget(old);
-    // Markaz tashqaridan o'zgarsa, xaritani o'sha yerga suramiz —
+    // Markaz yoki zum tashqaridan o'zgarsa, xaritani ko'chiramiz —
     // lekin FAQAT xarita tayyor bo'lsa.
-    if (_ready && widget.center != old.center) {
-      _controller.move(widget.center, _controller.camera.zoom);
+    if (!_ready) return;
+    final zoomChanged = widget.zoom != old.zoom;
+    if (widget.center != old.center || zoomChanged) {
+      // Zum tashqaridan berilmagan bo'lsa, foydalanuvchi qo'lda
+      // o'rnatgan darajani SAQLAYMIZ — aks holda u har siljishda
+      // qayta o'zgarib, bezovta qilardi.
+      _controller.move(widget.center, zoomChanged ? widget.zoom : _controller.camera.zoom);
     }
   }
 
@@ -136,9 +160,17 @@ class _SellobayMapState extends State<SellobayMap> {
           options: MapOptions(
             initialCenter: widget.center,
             initialZoom: widget.zoom,
-            // Zumni arxiv qo'llab-quvvatlaydigan darajadan oshirmaymiz —
-            // aks holda bo'sh plitka chiqadi.
-            maxZoom: provider.maximumZoom.toDouble(),
+            // Zum arxiv darajasidan YUQORIROQ bo'lishi mumkin.
+            //
+            // pmtiles arxivida `max_zoom = 14` — bu mahalla darajasi,
+            // uy darajasi emas. Ilgari men xaritaning chegarasini
+            // aynan shunga bog'lagandim va manzil tanlashda kerakli
+            // darajaga yaqinlashtirib bo'lmasdi.
+            //
+            // Vektor plitkalar bunga yo'l qo'yadi: geometriya z14
+            // plitkadan olinadi va KATTALASHTIRIB chiziladi — rastr
+            // kabi bulanib ketmaydi.
+            maxZoom: _maxZoom,
             minZoom: provider.minimumZoom.toDouble(),
             interactionOptions: InteractionOptions(
               flags: widget.interactive ? InteractiveFlag.all : InteractiveFlag.none,
@@ -153,6 +185,8 @@ class _SellobayMapState extends State<SellobayMap> {
               // Vektor plitkalar har kadrda qayta chizilmasin — telefonda
               // bu batareyani tez yeydi.
               layerMode: VectorTileLayerMode.vector,
+              // Qatlam ham shu darajagacha chizadi.
+              maximumZoom: _maxZoom,
             ),
             if (widget.points.isNotEmpty)
               MarkerLayer(
@@ -160,16 +194,11 @@ class _SellobayMapState extends State<SellobayMap> {
                   for (final p in widget.points)
                     Marker(
                       point: p.point,
-                      width: 40,
-                      height: 40,
-                      child: GestureDetector(
-                        onTap: p.onTap,
-                        child: const Icon(
-                          Icons.store_mall_directory,
-                          size: 30,
-                          color: SellobayColors.primary,
-                        ),
-                      ),
+                      width: p.size.width,
+                      height: p.size.height,
+                      // Belgining uchi nuqtaga tegsin, markazi emas.
+                      alignment: Alignment.topCenter,
+                      child: GestureDetector(onTap: p.onTap, child: p.child),
                     ),
                 ],
               ),
