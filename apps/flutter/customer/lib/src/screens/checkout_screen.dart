@@ -1,6 +1,8 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
+
+import 'pickup_points_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -522,35 +524,81 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ],
       );
 
+  /// Punkt tanlash — ro'yxat emas, ALOHIDA EKRAN.
+  ///
+  /// Ilgari bu `DropdownButton` edi. 8 ta shahardagi 12 ta punkt
+  /// ochiluvchi ro'yxatga sig'maydi va mijoz qaysi punkt o'ziga
+  /// yaqinligini tushunmasdi: manzil, ish vaqti va mo'ljal
+  /// ko'rinmasdi. Endi xaritali ekran ochiladi.
   Widget _pickupPicker(BuildContext context) {
-    if (_pickupPoints.isEmpty) {
-      // Punktlar hali ulanmagan bo'lishi mumkin — to'qima ro'yxat
-      // ko'rsatmaymiz.
-      return Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          context.t('checkout.shipping.pickupSoon'),
-          style: const TextStyle(fontSize: 12.5, height: 1.5, color: SellobayColors.mutedText),
-        ),
-      );
-    }
+    final point = _pickupPoint;
     final locale = SellobayRuntimeScope.of(context).locale.locale;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: DropdownButtonFormField<PickupPoint>(
-        initialValue: _pickupPoint,
-        isExpanded: true,
-        decoration: InputDecoration(labelText: context.t('checkout.shipping.selectPickup')),
-        items: [
-          for (final point in _pickupPoints)
-            DropdownMenuItem(
-              value: point,
-              child: Text('${point.name.pick(locale)} · ${point.address}', overflow: TextOverflow.ellipsis),
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (point != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: SellobayColors.soft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    point.name.pick(locale),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    point.address,
+                    style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+                  ),
+                  if (point.workingHours != null && point.workingHours!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        point.workingHours!,
+                        style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+                      ),
+                    ),
+                ],
+              ),
             ),
+            const SizedBox(height: 8),
+          ],
+          OutlinedButton.icon(
+            onPressed: _openPickupPoints,
+            icon: const Icon(Icons.map_outlined, size: 18),
+            label: Text(
+              context.t(point == null
+                  ? 'checkout.shipping.selectPickup'
+                  : 'pickupPoints.title'),
+            ),
+          ),
         ],
-        onChanged: (value) => setState(() => _pickupPoint = value),
       ),
     );
+  }
+
+  Future<void> _openPickupPoints() async {
+    final picked = await Navigator.of(context).push<PickupPoint>(
+      MaterialPageRoute(
+        builder: (_) => PickupPointsScreen(
+          selectable: true,
+          // Formada yozilgan shahar oldindan tanlanadi — mijoz
+          // odatda o'sha shahardagi punktdan olib ketadi. Bo'sh
+          // bo'lsa barcha shaharlar ko'rsatiladi.
+          initialCity: _city.text.trim().isEmpty ? null : _city.text.trim(),
+        ),
+      ),
+    );
+    if (picked != null && mounted) setState(() => _pickupPoint = picked);
   }
 
   Widget _paymentOptions(BuildContext context) {

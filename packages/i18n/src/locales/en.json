@@ -1,4 +1,14 @@
 {
+  "pickupPoints": {
+    "title": "Pickup points",
+    "empty": "No pickup points found",
+    "select": "Choose this point",
+    "allCities": "All cities",
+    "workingHours": "Working hours",
+    "landmark": "Landmark",
+    "onMap": "On the map",
+    "count": "{count} points"
+  },
   "map": {
     "unavailable": "The map could not load. You can enter the address manually.",
     "pickTitle": "Pick the address on the map",

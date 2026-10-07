@@ -126,6 +126,12 @@ class PickupPoint {
     required this.street,
     required this.phone,
     required this.workingHours,
+    this.district,
+    this.building,
+    this.landmark,
+    this.latitude,
+    this.longitude,
+    this.type = 'PVZ',
   });
 
   factory PickupPoint.fromJson(Map<String, dynamic> json) => PickupPoint(
@@ -137,6 +143,13 @@ class PickupPoint {
         street: json['street'] as String? ?? '',
         phone: json['phone'] as String?,
         workingHours: json['workingHours'] as String?,
+        district: json['district'] as String?,
+        building: json['building'] as String?,
+        landmark: json['landmark'] as String?,
+        // Server `Decimal` ni songa o'girib yuboradi.
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
+        type: json['type'] as String? ?? 'PVZ',
       );
 
   final String id;
@@ -148,7 +161,29 @@ class PickupPoint {
   final String? phone;
   final String? workingHours;
 
-  String get address => [city, street].where((s) => s.isNotEmpty).join(', ');
+  final String? district;
+  final String? building;
+
+  /// Mo'ljal — «Metro yonida» kabi. Kuryer emas, MIJOZ o'zi topib
+  /// boradi, shuning uchun bu matn ko'rsatilishi muhim.
+  final String? landmark;
+
+  /// Xaritadagi joyi.
+  ///
+  /// Server bu maydonlarni boshidan qaytarardi, lekin model ularni
+  /// o'qimasdi — shu sababli punktlarni xaritada ko'rsatib bo'lmasdi.
+  final double? latitude;
+  final double? longitude;
+
+  /// `PVZ` / `POSTAMAT` / `OFFICE`.
+  ///
+  /// Xom satr: server yangi tur qo'shsa, eski ilova yiqilmasin.
+  final String type;
+
+  bool get hasCoordinates => latitude != null && longitude != null;
+
+  String get address =>
+      [city, street, building].where((s) => s != null && s.isNotEmpty).join(', ');
 }
 
 /// Promokod tekshiruvi (`POST /api/promo/validate`).

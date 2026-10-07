@@ -255,6 +255,9 @@ void main() {
       final backend = _backend();
       await pumpProfile(tester, backend);
 
+      // Profil ro'yxati uzayganda til chiplari ekrandan chiqib ketadi
+      // (dangasa `ListView`) — avval ularga suramiz.
+      await scrollTo(tester, find.text("O'zbekcha"));
       await tester.tap(find.text("O'zbekcha"));
       await settle(tester);
 

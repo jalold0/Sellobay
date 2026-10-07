@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'addresses_screen.dart';
+import 'pickup_points_screen.dart';
 import 'track_order_screen.dart';
 import 'my_reviews_screen.dart';
 import 'wishlist_screen.dart';
@@ -207,6 +208,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   labelKey: 'profile.nav.addresses',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const AddressesScreen()),
+                  ),
+                ),
+                _linkTile(
+                  context,
+                  icon: Icons.storefront_outlined,
+                  labelKey: 'pickupPoints.title',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const PickupPointsScreen()),
                   ),
                 ),
                 const SizedBox(height: 26),

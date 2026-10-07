@@ -1,4 +1,14 @@
 {
+  "pickupPoints": {
+    "title": "Olib ketish punktlari",
+    "empty": "Punktlar topilmadi",
+    "select": "Shu punktni tanlash",
+    "allCities": "Barcha shaharlar",
+    "workingHours": "Ish vaqti",
+    "landmark": "Mo'ljal",
+    "onMap": "Xaritada",
+    "count": "{count} ta punkt"
+  },
   "map": {
     "unavailable": "Xarita yuklanmadi. Manzilni qo'lda kiritishingiz mumkin.",
     "pickTitle": "Manzilni xaritadan tanlang",

@@ -44,6 +44,10 @@ class SellobayMap extends StatefulWidget {
   final double zoom;
   final bool interactive;
 
+  /// Plitkalarni tarmoqdan olishni o'chiradi — FAQAT testda.
+  @visibleForTesting
+  static bool tilesEnabled = true;
+
   @override
   State<SellobayMap> createState() => _SellobayMapState();
 }
@@ -70,21 +74,44 @@ class _SellobayMapState extends State<SellobayMap> {
   @override
   void initState() {
     super.initState();
-    _provider ??= PmTilesVectorTileProvider.fromSource(AppConfig.pmtilesUrl);
+    if (SellobayMap.tilesEnabled) {
+      _provider ??= PmTilesVectorTileProvider.fromSource(AppConfig.pmtilesUrl);
+    }
   }
+
+  /// `FlutterMap` kamida bir marta chizilganmi.
+  ///
+  /// `MapController` chizilmagan xaritada ISTISNO otadi:
+  ///   «You need to have the FlutterMap widget rendered at least once
+  ///    before using the MapController»
+  ///
+  /// Bu haqiqiy yiqilish yo'li edi: plitkalar hali yuklanayotganda
+  /// (yoki umuman yuklanmaganda) markaz tashqaridan o'zgarsa —
+  /// masalan «mening joylashuvim» bosilsa — ekran qulardi.
+  bool _ready = false;
 
   @override
   void didUpdateWidget(SellobayMap old) {
     super.didUpdateWidget(old);
-    // Markaz tashqaridan o'zgarsa (masalan «mening joylashuvim»),
-    // xaritani o'sha yerga suramiz.
-    if (widget.center != old.center) {
+    // Markaz tashqaridan o'zgarsa, xaritani o'sha yerga suramiz —
+    // lekin FAQAT xarita tayyor bo'lsa.
+    if (_ready && widget.center != old.center) {
       _controller.move(widget.center, _controller.camera.zoom);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Widget testida tarmoq yo'q: plitkalar so'ralsa, so'rov hech
+    // qachon tugamaydi va STATIK kesh keyingi testlarga ham o'tib
+    // ketadi — testlar bir-biriga ta'sir qiladi. Shuning uchun
+    // o'chirib qo'yish mumkin: ekranning qolgan qismi (ro'yxat,
+    // filtr, tanlash) baribir tekshiriladi.
+    if (!SellobayMap.tilesEnabled) {
+      _ready = false;
+      return _fallback(context, context.t('map.unavailable'));
+    }
+
     return FutureBuilder<PmTilesVectorTileProvider>(
       future: _provider,
       builder: (context, snapshot) {
@@ -116,6 +143,7 @@ class _SellobayMapState extends State<SellobayMap> {
             interactionOptions: InteractionOptions(
               flags: widget.interactive ? InteractiveFlag.all : InteractiveFlag.none,
             ),
+            onMapReady: () => _ready = true,
             onTap: widget.onPick == null ? null : (_, point) => widget.onPick!(point),
           ),
           children: [
