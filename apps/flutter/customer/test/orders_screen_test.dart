@@ -164,6 +164,32 @@ void main() {
     expect(find.textContaining('ORD-'), findsNothing);
   });
 
+  testWidgets('Lokal/Global kaliti buyurtmalarni ajratadi', (tester) async {
+    final backend = _backend(orders: [
+      {..._summary(), 'scope': 'LOCAL'},
+      {..._summary(), 'id': 'bbbbbbbb-2222-4222-8222-222222222222', 'number': 'ORD-GLOBAL-1', 'scope': 'GLOBAL'},
+    ]);
+    await pump(tester, backend, const OrdersScreen());
+
+    expect(find.text('ORD-2026-00012345'), findsOneWidget);
+    expect(find.text('ORD-GLOBAL-1'), findsNothing);
+
+    await tester.tap(find.text('Global'));
+    await settle(tester);
+
+    expect(find.text('ORD-GLOBAL-1'), findsOneWidget);
+    expect(find.text('ORD-2026-00012345'), findsNothing);
+  });
+
+  testWidgets('global buyurtma yo`q — alohida bo`sh holat', (tester) async {
+    await pump(tester, _backend(), const OrdersScreen());
+
+    await tester.tap(find.text('Global'));
+    await settle(tester);
+
+    expect(find.text("Global buyurtmalar yo'q"), findsOneWidget);
+  });
+
   testWidgets('xato — qayta urinish tugmasi', (tester) async {
     final backend = FakeBackend((options, body) => apiErr(500, 'SERVER', 'Ichki xato'));
     await pump(tester, backend, const OrdersScreen());

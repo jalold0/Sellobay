@@ -18,6 +18,7 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   List<OrderSummary> _orders = const [];
+  OrderScope _scope = OrderScope.local;
   bool _loading = true;
   Object? _error;
 
@@ -52,9 +53,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(context.t('profile.ordersPage.title'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _body(context),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: SegmentedButton<OrderScope>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: OrderScope.local,
+                  label: Text(context.t('profile.ordersPage.scopeLocal')),
+                ),
+                ButtonSegment(
+                  value: OrderScope.global,
+                  icon: const Icon(Icons.public, size: 16),
+                  label: Text(context.t('profile.ordersPage.scopeGlobal')),
+                ),
+              ],
+              selected: {_scope},
+              onSelectionChanged: (v) => setState(() => _scope = v.first),
+            ),
+          ),
+          Expanded(child: RefreshIndicator(onRefresh: _load, child: _body(context))),
+        ],
       ),
     );
   }
@@ -79,12 +100,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     }
 
-    if (_orders.isEmpty) {
+    final shown = _orders.where((o) => o.scope == _scope).toList();
+    if (shown.isEmpty) {
+      final global = _scope == OrderScope.global;
       return _message(
         context,
-        icon: Icons.receipt_long_outlined,
-        title: context.t('profile.ordersPage.emptyTitle'),
-        subtitle: context.t('profile.ordersPage.emptyDesc'),
+        icon: global ? Icons.public : Icons.receipt_long_outlined,
+        title: context.t(global ? 'profile.ordersPage.emptyGlobalTitle' : 'profile.ordersPage.emptyTitle'),
+        subtitle: context.t(global ? 'profile.ordersPage.emptyGlobalDesc' : 'profile.ordersPage.emptyDesc'),
       );
     }
 
@@ -93,16 +116,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      itemCount: _orders.length,
+      itemCount: shown.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) => _OrderCard(
-        order: _orders[index],
+        order: shown[index],
         locale: locale,
         baseUrl: baseUrl,
         onTap: () async {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => OrderDetailScreen(orderId: _orders[index].id),
+              builder: (_) => OrderDetailScreen(orderId: shown[index].id),
             ),
           );
           // Detalda bekor qilingan bo'lishi mumkin — ro'yxatni yangilaymiz.

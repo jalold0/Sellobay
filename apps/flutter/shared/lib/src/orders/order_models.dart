@@ -147,6 +147,9 @@ class OrderAddress {
       [region, city, street, apartment].whereType<String>().where((s) => s.isNotEmpty).join(', ');
 }
 
+/// Buyurtma qayerdan: ombordan (lokal) yoki Xitoydan (global).
+enum OrderScope { local, global }
+
 /// Ro'yxatdagi buyurtma (`GET /api/orders`).
 class OrderSummary {
   const OrderSummary({
@@ -160,6 +163,7 @@ class OrderSummary {
     required this.itemCount,
     required this.items,
     required this.paymentReview,
+    this.scope = OrderScope.local,
   });
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
@@ -178,10 +182,13 @@ class OrderSummary {
             .toList(),
         // Karta orqali to'lov cheki admin tasdiqini kutmoqdami.
         paymentReview: json['paymentReview'] as bool? ?? false,
+        // Noma'lum yoki yo'q qiymat — lokal (eski server javobi).
+        scope: json['scope'] == 'GLOBAL' ? OrderScope.global : OrderScope.local,
       );
 
   final String id;
   final String number;
+  final OrderScope scope;
 
   /// Ilova biladigan holat. Noma'lum qiymatda `null`.
   final OrderStatus? status;
