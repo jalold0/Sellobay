@@ -10,6 +10,7 @@ import 'promo_screen.dart';
 import 'pickup_points_screen.dart';
 import 'track_order_screen.dart';
 import 'my_reviews_screen.dart';
+import 'orders_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Profil: ma'lumotlar, til va chiqish.
@@ -117,6 +118,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   labelKey: 'profile.nav.reviews',
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const MyReviewsScreen()),
+                  ),
+                ),
+                _linkTile(
+                  context,
+                  icon: Icons.assignment_return_outlined,
+                  labelKey: 'profile.nav.returns',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const OrdersScreen(returnsOnly: true)),
                   ),
                 ),
                 _linkTile(

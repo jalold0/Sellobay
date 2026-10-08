@@ -1245,6 +1245,9 @@
   },
   "returnsPage": {
     "metaTitle": "Qaytarish va to'lash",
+    "listEmptyTitle": "Qaytarishlar yo'q",
+    "listEmptyDesc": "Qaytargan buyurtmalaringiz shu yerda ko'rinadi",
+    "refundPending": "Pul qaytarilishi kutilmoqda — operator 3-5 ish kunida ishlaydi",
     "heroTitle": "Qaytarish va pul qaytarish",
     "heroDesc": "Mahsulotni yetkazib berilganda tekshirib oling — maqul kelmasa o'sha joyning o'zida qaytaring. Yoki yetkazilgandan keyin {days} kun ichida qaytarib bering.",
     "howTitle": "Qanday qaytarish",

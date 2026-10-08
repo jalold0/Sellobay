@@ -1245,6 +1245,9 @@
   },
   "returnsPage": {
     "metaTitle": "Returns & refunds",
+    "listEmptyTitle": "No returns",
+    "listEmptyDesc": "Orders you return will appear here",
+    "refundPending": "Refund pending — an operator processes it within 3–5 business days",
     "heroTitle": "Returns and refunds",
     "heroDesc": "Check the item on delivery — if it isn't right, hand it back on the spot. Or return it within {days} days of delivery.",
     "howTitle": "How to return",

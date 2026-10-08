@@ -10,7 +10,12 @@ import 'order_detail_screen.dart';
 /// shuning uchun bu yerda varaqlash yo'q va "hammasi shu" deb da'vo
 /// qilinmaydi.
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  const OrdersScreen({super.key, this.returnsOnly = false});
+
+  /// «Qaytarishlar»: faqat qaytarilgan/pul qaytarilgan buyurtmalar.
+  /// Alohida endpoint yo'q — qaytarish buyurtma holati (`RETURNED` →
+  /// `REFUNDED`), shuning uchun `/api/orders` dan filtrlanadi.
+  final bool returnsOnly;
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -52,10 +57,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.t('profile.ordersPage.title'))),
+      appBar: AppBar(
+        title: Text(context.t(widget.returnsOnly ? 'profile.nav.returns' : 'profile.ordersPage.title')),
+      ),
       body: Column(
         children: [
-          Padding(
+          if (!widget.returnsOnly)
+            Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: SegmentedButton<OrderScope>(
               showSelectedIcon: false,
@@ -100,7 +108,19 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     }
 
-    final shown = _orders.where((o) => o.scope == _scope).toList();
+    final shown = widget.returnsOnly
+        ? _orders
+            .where((o) => o.status == OrderStatus.returned || o.status == OrderStatus.refunded)
+            .toList()
+        : _orders.where((o) => o.scope == _scope).toList();
+    if (shown.isEmpty && widget.returnsOnly) {
+      return _message(
+        context,
+        icon: Icons.assignment_return_outlined,
+        title: context.t('returnsPage.listEmptyTitle'),
+        subtitle: context.t('returnsPage.listEmptyDesc'),
+      );
+    }
     if (shown.isEmpty) {
       final global = _scope == OrderScope.global;
       return _message(
@@ -217,6 +237,22 @@ class _OrderCard extends StatelessWidget {
               Text(
                 formatOrderDate(order.placedAt!),
                 style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+              ),
+            ],
+            // Pul refundi qo'lda ishlanadi (`REFUNDED` bo'lgunicha kutiladi).
+            if (order.status == OrderStatus.returned) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.hourglass_empty, size: 14, color: SellobayColors.accent),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      context.t('returnsPage.refundPending'),
+                      style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+                    ),
+                  ),
+                ],
               ),
             ],
             if (order.paymentReview) ...[
