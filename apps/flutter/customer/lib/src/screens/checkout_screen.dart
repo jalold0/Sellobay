@@ -6,8 +6,12 @@ import 'pickup_points_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/checkout/checkout_address_section.dart';
+import '../widgets/checkout/checkout_coins_row.dart';
+import '../widgets/checkout/checkout_delivery_section.dart';
+import '../widgets/checkout/checkout_promo_row.dart';
 import '../widgets/checkout/checkout_summary.dart';
-import '../widgets/checkout/payment_card_row.dart';
+import '../widgets/checkout/manual_card_panel.dart';
 import 'order_success_screen.dart';
 
 /// Buyurtmani rasmiylashtirish.
@@ -410,182 +414,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
 
-  Widget _savedAddresses(BuildContext context) => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final address in _addresses)
-            ActionChip(
-              label: Text(address.label?.isNotEmpty == true ? address.label! : address.city),
-              onPressed: () => _applyAddress(address),
-              backgroundColor: SellobayColors.soft,
-              side: const BorderSide(color: SellobayColors.border),
-            ),
-        ],
+  Widget _savedAddresses(BuildContext context) => CheckoutSavedAddresses(
+        addresses: _addresses,
+        onPick: _applyAddress,
       );
 
-  Widget _addressForm(BuildContext context) => Column(
-        children: [
-          TextField(
-            controller: _name,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(labelText: context.t('checkout.address.firstName')),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              labelText: context.t('checkout.address.phone'),
-              hintText: context.t('checkout.address.phonePlaceholder'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _region,
-                  decoration: InputDecoration(
-                    labelText: context.t('checkout.address.region'),
-                    hintText: context.t('checkout.address.regionPlaceholder'),
-                  ),
-                  onChanged: (_) => _pickupPoints = const [],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _city,
-                  decoration: InputDecoration(
-                    labelText: context.t('checkout.address.city'),
-                    hintText: context.t('checkout.address.cityPlaceholder'),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _street,
-            decoration: InputDecoration(
-              labelText: context.t('checkout.address.street'),
-              hintText: context.t('checkout.address.streetPlaceholder'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _apartment,
-            decoration: InputDecoration(
-              labelText: context.t('checkout.address.apartment'),
-              hintText: context.t('checkout.address.apartmentPlaceholder'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _notes,
-            maxLines: 2,
-            decoration: InputDecoration(
-              labelText: context.t('checkout.address.notes'),
-              hintText: context.t('checkout.address.notesPlaceholder'),
-            ),
-          ),
-        ],
+  Widget _addressForm(BuildContext context) => CheckoutAddressForm(
+        name: _name,
+        phone: _phone,
+        region: _region,
+        city: _city,
+        street: _street,
+        apartment: _apartment,
+        notes: _notes,
+        // Viloyat o'zgarsa yuklangan punktlar eskiradi.
+        onRegionChanged: () => _pickupPoints = const [],
       );
 
-  Widget _deliveryOptions(BuildContext context) => Column(
-        children: [
-          RadioGroup<DeliveryMethod>(
-            groupValue: _delivery,
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() => _delivery = value);
-              if (value == DeliveryMethod.pickupPoint) _loadPickupPoints();
-            },
-            child: Column(
-              children: [
-                for (final method in DeliveryMethod.values)
-                  RadioListTile<DeliveryMethod>(
-                    value: method,
-                    contentPadding: EdgeInsets.zero,
-                    title:
-                        Text(context.t(method.labelKey), style: const TextStyle(fontSize: 14.5)),
-                    subtitle: method.isTashkentOnly
-                        ? Text(
-                            context.t('checkout.shipping.expressTashkent'),
-                            style:
-                                const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
-                          )
-                        : null,
-                  ),
-              ],
-            ),
-          ),
-          if (_delivery == DeliveryMethod.pickupPoint) _pickupPicker(context),
-        ],
+  Widget _deliveryOptions(BuildContext context) => CheckoutDeliverySection(
+        method: _delivery,
+        onMethodChanged: (value) {
+          setState(() => _delivery = value);
+          // Punktlar FAQAT kerak bo'lganda yuklanadi — har checkout
+          // ochilishida emas.
+          if (value == DeliveryMethod.pickupPoint) _loadPickupPoints();
+        },
+        pickupPoint: _pickupPoint,
+        onChoosePickup: _openPickupPoints,
       );
-
-  /// Punkt tanlash — ro'yxat emas, ALOHIDA EKRAN.
-  ///
-  /// Ilgari bu `DropdownButton` edi. 8 ta shahardagi 12 ta punkt
-  /// ochiluvchi ro'yxatga sig'maydi va mijoz qaysi punkt o'ziga
-  /// yaqinligini tushunmasdi: manzil, ish vaqti va mo'ljal
-  /// ko'rinmasdi. Endi xaritali ekran ochiladi.
-  Widget _pickupPicker(BuildContext context) {
-    final point = _pickupPoint;
-    final locale = SellobayRuntimeScope.of(context).locale.locale;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (point != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: SellobayColors.soft,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    point.name.pick(locale),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    point.address,
-                    style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
-                  ),
-                  if (point.workingHours != null && point.workingHours!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        point.workingHours!,
-                        style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-          ],
-          OutlinedButton.icon(
-            onPressed: _openPickupPoints,
-            icon: const Icon(Icons.map_outlined, size: 18),
-            label: Text(
-              context.t(point == null
-                  ? 'checkout.shipping.selectPickup'
-                  : 'pickupPoints.title'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _openPickupPoints() async {
     final picked = await Navigator.of(context).push<PickupPoint>(
@@ -651,111 +507,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  /// Qo'lda karta to'lovi: kartalar, chek va izoh.
-  ///
-  /// Ko'rinishi WEB bilan bir xil (`payment-section.tsx`): summa,
-  /// nusxalanadigan karta raqamlari, chek yuklash va ixtiyoriy izoh.
-  Widget _manualCardPanel(BuildContext context) {
-    final cards = _options?.cards ?? const <PaymentCard>[];
-    final totals = _totals(context);
-
-    return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: SellobayColors.primary.withValues(alpha: 0.03),
-        border: Border.all(color: SellobayColors.primary.withValues(alpha: 0.30)),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.t('checkout.payment.cardTransferTitle'),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: SellobayColors.ink,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            context.t('checkout.payment.cardTransferHint'),
-            style: const TextStyle(fontSize: 12, height: 1.45, color: SellobayColors.mutedText),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    context.t('checkout.payment.amountToTransfer'),
-                    style: const TextStyle(fontSize: 13, color: SellobayColors.mutedText),
-                  ),
-                ),
-                Text(
-                  // Summa SERVER qayta hisoblaydi; bu yerda mijoz
-                  // ko'rayotgan jamisi turadi.
-                  formatMoney(totals.total),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: SellobayColors.ink,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          for (final card in cards) ...[
-            const SizedBox(height: 8),
-            PaymentCardRow(card: card),
-          ],
-          const SizedBox(height: 12),
-          _receiptPicker(context),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _paymentNote,
-            maxLength: 200,
-            decoration: InputDecoration(
-              labelText: context.t('checkout.payment.receiptNoteLabel'),
-              hintText: context.t('checkout.payment.receiptNotePlaceholder'),
-              counterText: '',
-              fillColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _receiptPicker(BuildContext context) {
-    final done = _receiptPath != null;
-    final label = _receiptBusy
-        ? 'checkout.payment.receiptProcessing'
-        : done
-            ? 'checkout.payment.receiptUploaded'
-            : 'checkout.payment.uploadReceipt';
-
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: _receiptBusy ? null : _pickReceipt,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(46),
-          backgroundColor: Colors.white,
-          foregroundColor: done ? SellobayColors.success : SellobayColors.ink,
-          side: BorderSide(color: done ? SellobayColors.success : SellobayColors.border),
-        ),
-        icon: Icon(done ? Icons.check_circle_outline : Icons.receipt_long_outlined, size: 18),
-        label: Text(context.t(label)),
-      ),
-    );
-  }
+  /// Qo'lda karta to'lovi — alohida vidjet.
+  Widget _manualCardPanel(BuildContext context) => ManualCardPanel(
+        cards: _options?.cards ?? const <PaymentCard>[],
+        amount: _totals(context).total,
+        noteController: _paymentNote,
+        receiptUploaded: _receiptPath != null,
+        receiptBusy: _receiptBusy,
+        onPickReceipt: _pickReceipt,
+      );
 
   /// Chekni tanlaydi va DARHOL yuklaydi.
   ///
@@ -795,79 +555,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  Widget _promoRow(BuildContext context) {
-    final promo = _promo;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _promoField,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(hintText: context.t('cart.promoPlaceholder')),
-              ),
-            ),
-            const SizedBox(width: 10),
-            OutlinedButton(
-              onPressed: _checkingPromo ? null : _applyPromo,
-              style: OutlinedButton.styleFrom(minimumSize: const Size(96, 52)),
-              child: Text(
-                _checkingPromo ? context.t('cart.promoChecking') : context.t('cart.promoApply'),
-              ),
-            ),
-          ],
-        ),
-        if (promo != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              promo.valid
-                  ? context.t('checkout.promoAppliedChip', params: {'code': promo.code ?? ''})
-                  : promo.message ?? context.t('cart.promoInvalid'),
-              style: TextStyle(
-                fontSize: 12.5,
-                color: promo.valid ? SellobayColors.success : SellobayColors.destructive,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  Widget _promoRow(BuildContext context) => CheckoutPromoRow(
+        controller: _promoField,
+        onApply: _applyPromo,
+        checking: _checkingPromo,
+        result: _promo,
+      );
 
-  /// Sello Coins bilan to'lash.
+  /// Sello Coins kaliti — alohida vidjet.
   ///
-  /// Web'dagi kabi BITTA kalit: mumkin bo'lgan hammasi ishlatiladi
-  /// (`checkout-flow.tsx`). Qisman yechish serverda ham, web'da ham
-  /// yo'q — ikki xil xulq yaratmaymiz.
+  /// Nechta coin ishlatish mumkinligini SHU YERDA hisoblaymiz: bu
+  /// uchun savat jami va serverdan kelgan kurs kerak.
   Widget _coinsRow(BuildContext context) {
     final totals = _totals(context);
     final redeemable = _redeemableCoins(context, totals);
-    // Ishlatadigan coin yo'q bo'lsa bo'lim umuman ko'rsatilmaydi:
-    // nolga teng kalitni bosib ko'rgan mijoz nima bo'lmaganini
-    // tushunmasdi.
-    if (redeemable <= 0) return const SizedBox.shrink();
-
-    final som = Decimal.fromInt(redeemable * (_coinValueSom(context) ?? 0));
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: SwitchListTile(
-        value: _useCoins,
-        onChanged: (v) => setState(() => _useCoins = v),
-        contentPadding: EdgeInsets.zero,
-        title: Text(
-          context.t('checkout.useCoinsTitle'),
-          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          context.t(
-            'checkout.useCoinsAvail',
-            params: {'coins': redeemable, 'som': formatMoney(som)},
-          ),
-          style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
-        ),
-      ),
+    return CheckoutCoinsRow(
+      redeemable: redeemable,
+      valueSom: Decimal.fromInt(redeemable * (_coinValueSom(context) ?? 0)),
+      enabled: _useCoins,
+      onChanged: (v) => setState(() => _useCoins = v),
     );
   }
 
