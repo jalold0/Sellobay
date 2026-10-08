@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'pickup_points_screen.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/checkout/checkout_summary.dart';
+import '../widgets/checkout/payment_card_row.dart';
 import 'order_success_screen.dart';
 
 /// Buyurtmani rasmiylashtirish.
@@ -712,7 +713,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           for (final card in cards) ...[
             const SizedBox(height: 8),
-            _cardRow(context, card),
+            PaymentCardRow(card: card),
           ],
           const SizedBox(height: 12),
           _receiptPicker(context),
@@ -731,55 +732,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ),
     );
   }
-
-  Widget _cardRow(BuildContext context, PaymentCard card) => Container(
-        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    card.number,
-                    // `fontFamily: 'monospace'` ATAYLAB yo'q: Android'da
-                    // u platforma shriftiga tushadi, iOS'da esa bunday
-                    // oila yo'q va jim e'tiborsiz qoldiriladi. Raqam
-                    // guruhlari allaqachon bo'sh joy bilan ajratilgan,
-                    // oraliqni kattalashtirish yetarli.
-                    style: const TextStyle(
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                      color: SellobayColors.ink,
-                    ),
-                  ),
-                  Text(
-                    [card.holder, ?card.bank].join(' - '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11.5, color: SellobayColors.mutedText),
-                  ),
-                ],
-              ),
-            ),
-            TextButton(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: card.number));
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.t('checkout.payment.copied'))),
-                );
-              },
-              child: Text(context.t('checkout.payment.copyCard')),
-            ),
-          ],
-        ),
-      );
 
   Widget _receiptPicker(BuildContext context) {
     final done = _receiptPath != null;
@@ -919,88 +871,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Xulosa — alohida vidjet (`checkout_summary.dart`).
+  ///
+  /// Bu yerda faqat chegirmalar HISOBLANADI; chizish vidjetda.
   Widget _summary(BuildContext context, CartTotals totals) {
-    final discount = _promo?.valid == true ? _promo!.discount : null;
     final coins = _coinsToRedeem(context, totals);
-    final coinDiscount = Decimal.fromInt(coins * (_coinValueSom(context) ?? 0));
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SellobayColors.soft,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          _row(context.t('checkout.summaryItems'), formatMoney(totals.subtotal)),
-          if (totals.shippingFee != null)
-            _row(
-              context.t('checkout.summaryShipping'),
-              totals.isFreeShipping
-                  ? context.t('checkout.shipping.free')
-                  : formatMoney(totals.shippingFee),
-            ),
-          if (discount != null) _row(context.t('checkout.promoDiscount'), '−${formatMoney(discount)}'),
-          if (coinDiscount > Decimal.zero)
-            _row(context.t('checkout.coinDiscount'), '−${formatMoney(coinDiscount)}'),
-          const Divider(height: 18),
-          _row(
-            context.t('checkout.summaryTotal'),
-            // Taxminiy: yakuniy summani server qayta hisoblaydi.
-            formatMoney(totals.total - (discount ?? Decimal.zero) - coinDiscount),
-            bold: true,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            // Yakuniy summani server qayta hisoblaydi — bu taxmin.
-            context.t('checkout.sslNote'),
-            style: const TextStyle(fontSize: 11, color: SellobayColors.mutedText),
-          ),
-        ],
-      ),
+    return CheckoutSummary(
+      totals: totals,
+      promoDiscount: _promo?.valid == true ? _promo!.discount : null,
+      coinDiscount: Decimal.fromInt(coins * (_coinValueSom(context) ?? 0)),
     );
   }
-
-  /// Xulosa qatori.
-  ///
-  /// Yorliq ham, qiymat ham siqiladi: ikkalasi ham qat'iy bo'lsa,
-  /// uzunroq matn (masalan «Sello Coins chegirmasi» + yetti xonali
-  /// summa) qatorni toshirib yuborardi — tor ekranda yoki matn
-  /// kattalashtirilganda.
-  Widget _row(String label, String value, {bool bold = false}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: bold ? 15 : 13.5,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                  color: bold ? SellobayColors.ink : SellobayColors.mutedText,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: bold ? 17 : 13.5,
-                    fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-                    color: SellobayColors.ink,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
 
   Widget _submitBar(BuildContext context, CartTotals totals) => SafeArea(
         child: Padding(
