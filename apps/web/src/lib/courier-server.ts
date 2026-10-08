@@ -9,6 +9,7 @@
 
 import { ApiDomainError } from '@ecom/api-contract';
 import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
+import { getPushService } from '@ecom/push';
 
 import { prisma } from '@/lib/db';
 
@@ -368,6 +369,9 @@ export async function updateDeliveryStatus(
   }
 
   const now = new Date();
+  // Tranzaksiya ichida o'zgargan bo'lsagina push yuboriladi (qayta yozilmagan
+  // yoki yopiq buyurtmaga hech narsa ketmaydi).
+  let orderChangedTo: OrderStatus | null = null;
   await prisma.$transaction(async (tx) => {
     // Shart bilan yangilash: parallel so'rov holatni allaqachon
     // o'zgartirgan bo'lsa, 0 qator tegadi va biz to'xtaymiz.
@@ -416,6 +420,7 @@ export async function updateDeliveryStatus(
         },
       });
       if (changed.count > 0) {
+        orderChangedTo = orderNext;
         await tx.orderStatusHistory.create({
           data: {
             orderId: current.orderId,
@@ -426,6 +431,10 @@ export async function updateDeliveryStatus(
       }
     }
   });
+
+  // Push COMMIT'DAN KEYIN: tranzaksiya qaytarilsa mijozga yolg'on xabar ketmasin.
+  // `notifyOrderStatus` xato tashlamaydi — kuryer javobini buzmaydi.
+  if (orderChangedTo) await getPushService().notifyOrderStatus(current.orderId, orderChangedTo);
 
   const row = await prisma.delivery.findUniqueOrThrow({
     where: { id: deliveryId },
