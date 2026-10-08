@@ -8,6 +8,8 @@
          ishlab chiqish paytida KO'RINMAYDI — faqat reliz APK telefonga
          o'rnatilganda chiqadi. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+: bildirishnoma ko'rsatish uchun ruxsat so'raladi. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <!-- Manzilni xaritadan tanlashdagi «mening joylashuvim» tugmasi.
          IKKALASI ham e'lon qilinadi: foydalanuvchi faqat taxminiy

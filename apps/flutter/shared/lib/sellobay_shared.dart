@@ -39,6 +39,8 @@ export 'src/loyalty/loyalty_repository.dart';
 export 'src/orders/order_models.dart';
 export 'src/orders/orders_repository.dart';
 export 'src/promo/promo_repository.dart';
+export 'src/push/push_registrar.dart';
+export 'src/push/push_repository.dart';
 export 'src/reviews/review_models.dart';
 export 'src/reviews/reviews_repository.dart';
 export 'src/wishlist/wishlist_repository.dart';
