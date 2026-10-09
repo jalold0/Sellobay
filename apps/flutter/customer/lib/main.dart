@@ -4,23 +4,34 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'src/app.dart';
 import 'src/push/firebase_token_source.dart';
+import 'src/push/link_sources.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Tarjimalar yuklanadi, sessiya tiklash esa fonda ketadi — qarang
   // `bootstrapSellobay`.
   final runtime = await bootstrapSellobay();
-  await _startPush(runtime);
-  runApp(SellobayCustomerApp(runtime: runtime));
+  final pushReady = await _startPush(runtime);
+  runApp(
+    SellobayCustomerApp(
+      runtime: runtime,
+      linkSources: [
+        // To'lovdan qaytish: `sellobay://orders/<id>`.
+        AppLinksOrderSource(),
+        // Bildirishnoma bosilishi — faqat Firebase sozlangan bo'lsa.
+        if (pushReady) PushTapOrderSource(),
+      ],
+    ),
+  );
 }
 
 /// Push ixtiyoriy: Firebase sozlanmagan bo'lsa (`google-services.json`
 /// yo'q — CI, yangi klon) ilova push'siz ishlayveradi.
-Future<void> _startPush(SellobayRuntime runtime) async {
+Future<bool> _startPush(SellobayRuntime runtime) async {
   try {
     await Firebase.initializeApp();
   } catch (_) {
-    return;
+    return false;
   }
   PushRegistrar(
     auth: runtime.auth,
@@ -28,4 +39,5 @@ Future<void> _startPush(SellobayRuntime runtime) async {
     source: FirebaseTokenSource(),
     appName: 'customer',
   ).start();
+  return true;
 }

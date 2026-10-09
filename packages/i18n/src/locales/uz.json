@@ -986,7 +986,8 @@
     "title": "Rahmat! Buyurtmangiz qabul qilindi",
     "subtitle": "Buyurtmangizni tasdiqlash uchun operator siz bilan tez orada bog'lanadi.",
     "orderNumber": "Buyurtma raqami",
-    "goToOrders": "Buyurtmalarimga o'tish"
+    "goToOrders": "Buyurtmalarimga o'tish",
+    "openInApp": "Ilovada ochish"
   },
   "wallet": {
     "title": "Hamyon"
