@@ -7,11 +7,16 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
 - **Backend:** `apps/web` Next.js 14 App Router API route'lari (`src/app/api/**`) —
   HAQIQIY va deploy qilingan backend. Biznes-logika `apps/web/src/lib/*-server.ts` da,
   sof domen `@ecom/core-domain` paketida. Mobil ham shu API'ga ulanadi.
-  (NestJS `apps/api`/`apps/wms` — ishlatilmagan skelet edi, `graveyard/` ga karantinlangan;
+  (Eski NestJS `apps/api`/`apps/wms` — ishlatilmagan skelet edi, `graveyard/` ga karantinlangan;
   qarang `graveyard/README.md`.)
+- **NestJS mikroservislar (`apps/backend`, ADR 0012, YANGI — bosqichma-bosqich):** gateway + auth +
+  catalog + orders, RabbitMQ, Redis, TypeORM, Docker. Hozir gateway eski Next.js API'ga proksi qiladi;
+  route ko'chirilgach eski Next.js route **o'chiriladi** (bitta route — bitta egasi, aks holda
+  «split-brain» — `graveyard/README.md` ogohlantirishi). Qarang `apps/backend/README.md`.
 - **Frontend (web):** Next.js 14 App Router + Tailwind + shadcn/ui (`@ecom/ui`)
 - **Mobile:** Expo (React Native, Expo Router)
-- **DB:** PostgreSQL (Neon) — ORM faqat Prisma orqali
+- **DB:** PostgreSQL (Neon) — sxema va migratsiya faqat Prisma (`packages/database`); `apps/backend`
+  (NestJS) TypeORM'ni faqat MAVJUD sxema ustidan o'qish/yozish uchun ishlatadi, `synchronize` HECH QACHON
 - **Cache/Queue:** Redis + BullMQ (rejalashtirilgan — hozircha `unstable_cache`)
 - **Search:** Elasticsearch (rejalashtirilgan — hozircha DB query)
 - **i18n:** `@ecom/i18n` — har doim `pickLocalized()` orqali, hardcode YO'Q
@@ -50,6 +55,24 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
 - DDD — har bir bounded context o'z modulida
 - Hech qachon vaqtinchalik workaround qoldirmang
 - Har bir muhim arxitektura qarori uchun ADR yozing (`docs/adr/`)
+
+## Dizayn (UI/UX)
+
+Har qanday UI ishida (web, admin, seller, Flutter ekranlari, matn/mikrokopi) avval
+`frontend-design` skill'ini ishga tushiring (`.claude/skills/frontend-design/`,
+Anthropic'ning rasmiy skill'i). Uning mohiyati: reja → brif bilan solishtirish →
+qurish → o'z ishini tanqid qilish; standart «shablon» yechimlardan qoching;
+yagona joyda jasoratli bo'ling, qolgani sokin; xato va bo'sh holat — yo'l
+ko'rsatish; CTA aniq fe'l bilan.
+
+**Brend birinchi:** skill «brif so'zi har doim g'olib» deydi. Sellobay'ning
+brendi allaqachon belgilangan (`SellobayColors`, `@ecom/ui` tokenlari, Playfair
+serif sarlavhalar) — uni buzmang, undan chetga chiqish faqat foydalanuvchi so'rasa.
+Flutter'da: ranglar/shriftlar faqat `buildSellobayTheme()` orqali, matn faqat
+`@ecom/i18n` kalitlari bilan (qo'lda yozilmaydi), skeleton/animatsiya
+«animatsiyani kamaytirish»ni hisobga oladi. Ekranni o'zgartirgach
+`flutter test tool/screens.dart --update-goldens` bilan suratga olib, ko'zdan
+kechiring.
 
 ## Lokal ishga tushirish tartibi
 

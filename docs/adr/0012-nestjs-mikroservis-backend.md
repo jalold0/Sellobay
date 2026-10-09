@@ -36,8 +36,12 @@ auth-service  catalog-service  orders-service  ... (keyingi bosqichlar)
 
 - **Gateway** — yagona kirish nuqtasi. Hali ko'chirilmagan route'larni eski Next.js
   API'ga **proksi qiladi** (strangler pattern): ilovalar hech qachon to'xtamaydi.
-- **Sinxron** so'rovlar gateway → servis (TCP transport). **Asinxron** ishlar
-  (push, SMS, email, keyinchalik hisobotlar) — RabbitMQ hodisalari orqali.
+- **Sinxron** so'rovlar gateway → servis **ichki HTTP** orqali (reverse proxy). Servislar
+  hozirgi REST shartnomasini (yo'llar, status kodlari, `{ success, data }` konverti) O'ZGARTIRMAY
+  saqlaydi — Flutter va web klientlari tegilmaydi, har servis `supertest` bilan mustaqil
+  testlanadi. (Dastlab TCP transport rejalashtirilgan edi; 98 ta REST route'ni TCP xabarlariga
+  qayta moslash foydasiz qatlam bo'lardi.) **Asinxron** ishlar (push, SMS, email, hisobotlar) —
+  RabbitMQ hodisalari orqali.
 - **Redis** — tezlik cheklovi, katalog keshi, idempotency kalitlari, OTP qayta-yuborish
   hisoblagichi. Servislar holatni xotirada saqlamaydi.
 
@@ -77,18 +81,26 @@ shartnomalari 1-bosqichdayoq belgilanadi.
 
 ### 5. Texnologiyalar
 
-NestJS 11 (TypeScript strict), `@nestjs/microservices` (TCP + RMQ), `@nestjs/typeorm` +
-TypeORM + `pg`, `ioredis`, `amqplib`, `class-validator` / Zod (`@ecom/api-contract`),
-`@nestjs/terminus` (health), `pino` (log), `jest` + `testcontainers`-siz oddiy
-Docker Compose test muhiti. Docker: har servis uchun umumiy ko'p bosqichli
-`Dockerfile` (`APP=gateway|auth|catalog|orders`).
+NestJS **11** (TypeScript strict, CommonJS), `@nestjs/typeorm` + TypeORM **0.3** + `pg`,
+`ioredis` 5, `amqp-connection-manager` + `amqplib`, `http-proxy-middleware` 3, `jose` 5 (mavjud
+`@ecom/auth` tokenlari bilan bir xil HS256), Zod 3 (`@ecom/api-contract` bilan sxema ulashish),
+`jest` + `supertest`. Docker: bitta ko'p bosqichli `Dockerfile` (`APP=gateway|auth|catalog|orders`),
+production rasmda faqat `--prod` bog'liqliklar, root bo'lmagan foydalanuvchi.
+
+**Nega Nest 12 / TypeORM 1.x emas:** ular yangi chiqqan va ESM-only (`"type": "module"`); dekoratorlar,
+jest va mavjud CJS paketlari bilan ishlash murakkablashadi. Nest 11 qo'llab-quvvatlanadigan «legacy»
+liniya; ESM'ga o'tish keyinroq, alohida qaror.
 
 ### 6. Xavfsizlik va ishonchlilik
 
 - JWT (`jose`, `@ecom/auth` bilan bir xil kalit/format — mavjud tokenlar ishlayveradi).
 - Gateway rate-limit (Redis), servislar tashqariga ochilmaydi (faqat Docker tarmog'i).
 - Idempotency: buyurtma yaratish kaliti Redis + `Order.idempotencyKey` (mavjud ustun).
-- Hodisalar: RabbitMQ'da `durable` navbat + `dead-letter` navbat; consumer idempotent.
+- Hodisalar: RabbitMQ'da `durable` navbat + `dead-letter` navbat (qayta urinishsiz — zaharli xabar
+  navbatni to'xtatmasin); `messageId` bo'yicha consumer idempotent bo'ladi. OTP kabi maxfiy hodisa
+  60 soniyada o'chadi va logga yozilmaydi.
+- Gateway → servis: `x-user-id`/`x-user-roles` sarlavhalarini FAQAT gateway qo'yadi (mijozdan kelganini
+  o'chiradi); servislar `INTERNAL_API_KEY`siz so'rovni rad etadi; har servis faqat o'ziga kerak sirlarni oladi.
 - Sog'liq: har servis `/health` (DB, Redis, RabbitMQ).
 
 ## Oqibatlar va tan olingan xavflar
