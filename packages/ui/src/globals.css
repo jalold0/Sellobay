@@ -31,13 +31,19 @@
     --muted: 30 25% 97%; /* #FAF6F4 — UMBRA editorial soft bg */
     --muted-foreground: 240 4% 42%; /* #6B6B73 */
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 154 63% 33%; /* #1F8A5B — bepul yetkazish, yetkazildi, to'landi */
-    --warning: 38 92% 50%;
+    /* Holat ranglari oq fonda AA (4.5:1) dan o'tadi — o'lchangan, tanlanmagan.
+       Eski qiymatlar yiqilardi: destructive 3.78:1, warning 2.13:1, success 4.39:1. */
+    --destructive: 355 72% 42%; /* #B81E2B — 6.44:1. Ohang bordoga og'dirilgan:
+                                   sof qizil brend qirmizisi yonida begona turardi. */
+    --destructive-foreground: 0 0% 100%; /* oq / #B81E2B = 6.44:1 */
+    --success: 154 63% 32%; /* #1E8558 — 4.61:1. Bepul yetkazish, yetkazildi, to'landi. */
+    --warning: 38 78% 35%; /* #9F6C14 — 4.54:1. Bronza: oltin aksent bilan bir oilada. */
 
-    --border: 30 15% 91%; /* #EAEAEC warm tone */
-    --input: 30 15% 91%;
+    --border: 30 15% 91%; /* #EAEAEC — ajratgich va karta chekkasi, bezak */
+    /* Input --border dan QORAROQ, va ataylab. Maydon foni sahifa foni bilan
+       bir xil (oq), shuning uchun chegara maydonni ko'rsatuvchi yagona belgi —
+       WCAG 1.4.11 bo'yicha 3:1 shart. Eski qiymat 1.22:1 edi: oq ustida oq. */
+    --input: 30 15% 57%; /* #A29181 — 3.04:1, o'tadigan eng ochi */
     --ring: 345 58% 21%;
 
     --radius: 0.875rem; /* 14px — slightly bigger for premium feel */
@@ -62,10 +68,6 @@
     --crimson-chip: 348 71% 97%; /* #FDF3F5 — crimson chip foni */
     --success-chip: 144 38% 95%; /* #EDF7F1 — yashil chip foni */
 
-    /* UMBRA-style editorial soft tones */
-    --editorial-bg: 30 35% 97%; /* warm cream */
-    --editorial-pink: 12 100% 97%; /* soft blush */
-    --editorial-amber: 30 80% 92%; /* warm amber tint */
 
     --footer-bg: 240 9% 4%; /* Brand black */
   }
@@ -85,10 +87,15 @@
     --accent-foreground: 351 100% 18%;
     --muted: 240 7% 17%;
     --muted-foreground: 240 5% 65%;
-    --destructive: 0 63% 31%;
+    /* Qorong'u fonda holat ranglari — yorug' qiymat MEROS BO'LMAYDI,
+       shuning uchun har biri shu yerda qayta beriladi. Avval success va
+       warning bu blokda yo'q edi va yorug' qiymati qorong'uda yiqilardi. */
+    --destructive: 355 70% 55%; /* #DD3C49 — 4.56:1 (eski #811D1D 2.02:1 edi) */
     --destructive-foreground: 0 0% 98%;
-    --border: 240 7% 17%;
-    --input: 240 7% 17%;
+    --success: 154 55% 52%; /* #41C88E — 9.36:1 */
+    --warning: 38 80% 55%; /* #E8A530 — 9.34:1 */
+    --border: 240 7% 17%; /* bezak ajratgich */
+    --input: 240 7% 39%; /* #5C5C6A — 3.03:1 (eski 1.36:1) */
     --ring: 345 55% 30%;
   }
 
@@ -119,7 +126,15 @@
 }
 
 @layer utilities {
-  /* ===== Sellobay brand gradients ===== */
+  /* Bu qatlamda FAQAT ishlatilayotgan utilitalar turadi.
+     Oldin 16 ta bezak klassi bor edi va ularning hech biri hech qayerda
+     chaqirilmasdi: tilt-left/right, drift, fade-up, card-lift,
+     editorial-card, border-premium, nav-underline, uchta gradient va
+     glass'ning ikki varianti. Ular CSS'ni kattalashtirardi va yangi
+     ishlayotgan odamga "dizayn tizimi shunaqa" degan yolg'on signal berardi.
+     Kerak bo'lsa git tarixida turibdi. */
+
+  /* Sarlavha banneri va footer foni — 6 ta faylda. */
   .bg-bordeaux-gradient {
     background: linear-gradient(
       135deg,
@@ -129,188 +144,26 @@
     );
   }
 
-  .bg-hero-gradient {
-    background: linear-gradient(
-      140deg,
-      hsl(var(--brand-black)) 0%,
-      hsl(var(--brand-bordeaux-deep)) 50%,
-      hsl(var(--brand-bordeaux)) 100%
-    );
-  }
-
-  /* UMBRA-style editorial light background */
-  .bg-editorial {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--editorial-bg)) 0%,
-      hsl(var(--editorial-pink)) 50%,
-      hsl(var(--editorial-bg)) 100%
-    );
-  }
-  .bg-editorial-warm {
-    background: linear-gradient(135deg, hsl(var(--editorial-bg)) 0%, hsl(var(--editorial-amber)) 100%);
-  }
-
-  /* Premium gold accent */
-  .bg-gold-gradient {
-    background: linear-gradient(90deg, transparent 0%, hsl(var(--brand-gold)) 50%, transparent 100%);
-  }
-  .text-gold-gradient {
-    background: linear-gradient(
-      90deg,
-      hsl(var(--brand-gold)) 0%,
-      hsl(var(--brand-gold-bright)) 50%,
-      hsl(var(--brand-gold)) 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  /* Brand gradient — buttons, badges */
-  .bg-brand-gradient {
-    background: linear-gradient(135deg, hsl(var(--brand-bordeaux)) 0%, hsl(var(--brand-bordeaux-bright)) 100%);
-  }
-
-  /* Glass morphism */
+  /* Rasm ustidagi suzuvchi panel. */
   .glass {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     background-color: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.18);
   }
-  .glass-light {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    background-color: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-  }
-  .glass-dark {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(10, 10, 12, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
 
-  /* Nav hover underline */
-  .nav-underline {
-    position: relative;
-  }
-  .nav-underline::after {
-    content: '';
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 4px;
-    height: 2px;
-    background-color: hsl(var(--primary));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.2s ease;
-  }
-  .nav-underline:hover::after {
-    transform: scaleX(1);
-  }
-
-  /* Card lift */
-  .card-lift {
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease,
-      border-color 0.2s ease;
-  }
-  .card-lift:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 60px -15px rgba(10, 10, 12, 0.2);
-  }
-
-  /* Premium editorial card — UMBRA inspired */
-  .editorial-card {
-    position: relative;
-    border-radius: 24px;
-    overflow: hidden;
-    background: #fff;
-    box-shadow: 0 30px 60px -25px rgba(10, 10, 12, 0.15), 0 8px 24px -8px rgba(10, 10, 12, 0.08);
-    transition:
-      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .editorial-card:hover {
-    transform: translateY(-8px) scale(1.01);
-    box-shadow: 0 40px 80px -25px rgba(10, 10, 12, 0.22), 0 12px 32px -8px rgba(83, 22, 37, 0.1);
-  }
-
-  /* Tilt variants — UMBRA-style asymmetric layout */
-  .tilt-left {
-    transform: rotate(-3deg);
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .tilt-left:hover {
-    transform: rotate(-1deg) translateY(-8px);
-  }
-  .tilt-right {
-    transform: rotate(2.5deg);
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .tilt-right:hover {
-    transform: rotate(0.5deg) translateY(-8px);
-  }
-
-  /* Flash sale glow */
+  /* Flash-aksiya hisoblagichi — diqqatni bir joyga tortadigan yagona
+     to'xtovsiz harakat. prefers-reduced-motion yuqorida o'chiradi. */
   .flash-glow {
     animation: flash-pulse 2s ease-in-out infinite;
   }
   @keyframes flash-pulse {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 10px hsl(var(--brand-gold) / 0.5);
     }
     50% {
       box-shadow: 0 0 24px hsl(var(--brand-gold) / 0.9);
     }
-  }
-
-  /* Staggered entrance */
-  .fade-up {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  @keyframes fade-up {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Slow drift — for editorial images subtle motion */
-  .drift {
-    animation: drift 8s ease-in-out infinite;
-  }
-  @keyframes drift {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-12px);
-    }
-  }
-
-  /* Premium border (gold accent) */
-  .border-premium {
-    position: relative;
-  }
-  .border-premium::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: linear-gradient(135deg, hsl(var(--brand-gold)) 0%, transparent 50%, hsl(var(--brand-gold)) 100%);
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
   }
 }

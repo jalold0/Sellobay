@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'sellobay_type.dart';
+
 /// Brend ranglari — `packages/ui/src/globals.css` dagi tokenlardan.
 ///
 /// Qiymatlar o'sha fayldagi izohlarda yozilgan HEX'lar (dizayner manbasi),
@@ -48,6 +50,12 @@ ThemeData buildSellobayTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: Colors.white,
+    // Oila BIR joyda beriladi. Flutter'da Text o'z uslubini ambient
+    // uslub ustiga qo'shadi (merge), shuning uchun ilovadagi mavjud
+    // 238 ta "fontSize:" chaqiruvi ham shu oilani oladi — ularning
+    // birortasini ham qayta yozish shart emas.
+    fontFamily: SellobayType.sans,
+    textTheme: buildSellobayTextTheme(),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.white,
       foregroundColor: SellobayColors.ink,
@@ -65,11 +73,20 @@ ThemeData buildSellobayTheme() {
       focusedErrorBorder: border(SellobayColors.destructive, 1.5),
       hintStyle: const TextStyle(color: SellobayColors.mutedText),
     ),
+    // Tugma matni labelLarge dan KELMAYDI: u slotni Chip va Tab ham
+    // o'qiydi, shuning uchun u yerda Material o'lchami qoldirilgan.
+    // Bu yerdagi uslub mavzunikini merge qilmay almashtiradi —
+    // demak oila QO'LDA ko'rsatiladi, aks holda tugma matni yolg'iz
+    // o'zi platforma shriftiga tushib qolardi.
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(52),
         shape: const RoundedRectangleBorder(borderRadius: radius),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        textStyle: const TextStyle(
+          fontFamily: SellobayType.sans,
+          fontSize: SellobayType.bodyLg,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
