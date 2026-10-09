@@ -26,6 +26,7 @@ import 'package:sellobay_customer/src/screens/order_success_screen.dart';
 import 'package:sellobay_customer/src/screens/otp_screen.dart';
 import 'package:sellobay_customer/src/screens/product_screen.dart';
 import 'package:sellobay_customer/src/screens/wishlist_screen.dart';
+import 'package:sellobay_customer/src/widgets/skeleton.dart';
 import 'package:sellobay_customer/src/screens/register_screen.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:sellobay_shared/testing.dart';
@@ -554,6 +555,20 @@ void main() {
       const OtpScreen(
         challenge: OtpChallenge(phone: '+998901234567', expiresInSec: 120, resendAfterSec: 60),
       ),
+    ),
+  );
+
+  // Yuklanish holati: tarmoq javobi umuman kelmaydi, skeleton ko'rinadi.
+  testWidgets(
+    '14 skeleton: bosh sahifa',
+    (t) => shoot(t, '14-skeleton-home', const Scaffold(body: HomeSkeleton())),
+  );
+  testWidgets(
+    '15 skeleton: katalog va buyurtmalar',
+    (t) => shoot(
+      t,
+      '15-skeleton-catalog',
+      const Scaffold(body: SingleChildScrollView(child: ProductGridSkeleton())),
     ),
   );
 

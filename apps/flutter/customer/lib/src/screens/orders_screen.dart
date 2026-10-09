@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../widgets/order_status_chip.dart';
+import '../widgets/skeleton.dart';
 import 'order_detail_screen.dart';
 import 'track_order_screen.dart';
 
@@ -149,13 +150,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   Widget _body(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: SizedBox(
-          width: 26,
-          height: 26,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
-        ),
-      );
+      return const OrderListSkeleton();
     }
 
     if (_error != null) {

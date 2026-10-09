@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../widgets/product_card.dart';
+import '../widgets/skeleton.dart';
 import 'product_screen.dart';
 
 /// Sevimlilar.
@@ -78,12 +79,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
     final products = _products;
     if (products == null) {
-      return const Center(
-        child: SizedBox(
-          width: 26,
-          height: 26,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
-        ),
+      return const SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: ProductGridSkeleton(count: 4),
       );
     }
 

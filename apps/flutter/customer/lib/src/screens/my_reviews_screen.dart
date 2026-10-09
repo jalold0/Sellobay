@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../widgets/review_tile.dart';
+import '../widgets/skeleton.dart';
 import 'product_screen.dart';
 
 /// «Mening sharhlarim».
@@ -99,13 +100,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
 
     final reviews = _reviews;
     if (reviews == null) {
-      return const Center(
-        child: SizedBox(
-          width: 26,
-          height: 26,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
-        ),
-      );
+      return const ReviewListSkeleton();
     }
 
     if (reviews.isEmpty) {

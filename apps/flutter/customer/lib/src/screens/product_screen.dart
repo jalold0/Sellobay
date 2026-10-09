@@ -7,6 +7,7 @@ import '../widgets/review_tile.dart';
 import 'review_form_screen.dart';
 
 import '../widgets/cart_button.dart';
+import '../widgets/skeleton.dart';
 import '../widgets/wishlist_button.dart';
 import 'cart_screen.dart';
 
@@ -127,13 +128,7 @@ class _ProductScreenState extends State<ProductScreen> {
         ],
       ),
       body: switch ((_loading, _error, product)) {
-        (true, _, _) => const Center(
-            child: SizedBox(
-              width: 26,
-              height: 26,
-              child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
-            ),
-          ),
+        (true, _, _) => const ProductDetailSkeleton(),
         (_, final Object error, _) => _errorView(context, error),
         (_, _, final ProductDetail p) => _detail(context, p),
         _ => const SizedBox.shrink(),

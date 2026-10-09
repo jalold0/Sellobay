@@ -3,6 +3,7 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../home_tabs.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeleton.dart';
 import 'product_screen.dart';
 import 'wishlist_screen.dart';
 
@@ -88,13 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _body(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: SizedBox(
-          width: 26,
-          height: 26,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
-        ),
-      );
+      return const HomeSkeleton();
     }
 
     if (_error != null) {
