@@ -1,6 +1,6 @@
-import type { Metadata } from 'next';
-
 import { DownloadView } from '../../../components/download/download-view';
+
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Ilovani yuklab olish',

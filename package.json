@@ -33,7 +33,10 @@
     "docker:down": "docker compose -f infrastructure/docker/docker-compose.yml down",
     "docker:logs": "docker compose -f infrastructure/docker/docker-compose.yml logs -f",
     "prepare": "husky",
-    "flutter:i18n": "tsx scripts/flutter-i18n-sync.ts"
+    "flutter:i18n": "tsx scripts/flutter-i18n-sync.ts",
+    "api:openapi": "pnpm --filter @ecom/api-contract openapi",
+    "api:dart": "pnpm --filter @ecom/api-contract dart",
+    "api:gen": "pnpm api:openapi && pnpm api:dart"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

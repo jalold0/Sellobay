@@ -36,6 +36,29 @@ class DeliveryCard extends StatelessWidget {
           children: [
             Row(
               children: [
+                // Qaytarish topshirig'i ro'yxatda DARHOL ajralib
+                // tursin: kuryer uni oddiy yetkazish deb o'ylab borsa,
+                // mijozdan mahsulot olish o'rniga unga topshirmoqchi
+                // bo'lardi.
+                if (delivery.isReturn) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: SellobayColors.destructive.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      context.t('courier.returnTask'),
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                        color: SellobayColors.destructive,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                ],
                 Expanded(
                   child: Text(
                     delivery.orderNumber,

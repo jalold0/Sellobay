@@ -23,6 +23,18 @@ class AppConfig {
   /// (emulyator uchun host mashina shu manzilda).
   static const devBaseUrl = 'http://10.0.2.2:3000';
 
+  /// Xarita plitkalari — Protomaps pmtiles arxivi (O'zbekiston).
+  ///
+  /// Bitta fayl, HTTP Range so'rovlari bilan o'qiladi: alohida plitka
+  /// serveri ham, uning xarajati ham yo'q. Fayl bizning R2 bucket'da,
+  /// shuning uchun tashqi xarita xizmatining limiti yoki narxiga
+  /// bog'liq emasmiz.
+  ///
+  /// Expo ilovasi ham AYNI shu manbani ishlatadi — ikki ilova bir xil
+  /// xaritani ko'rsatadi.
+  static const pmtilesUrl =
+      'https://pub-a8adf525367442ce88806dc6dd797272.r2.dev/uzbekistan.pmtiles';
+
   /// Backend manzili.
   ///
   /// `--dart-define=API_BASE_URL=...` bilan almashtiriladi:

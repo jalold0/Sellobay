@@ -1,4 +1,24 @@
 {
+  "pickupPoints": {
+    "title": "Olib ketish punktlari",
+    "empty": "Punktlar topilmadi",
+    "select": "Shu punktni tanlash",
+    "allCities": "Barcha shaharlar",
+    "workingHours": "Ish vaqti",
+    "landmark": "Mo'ljal",
+    "onMap": "Xaritada",
+    "count": "{count} ta punkt"
+  },
+  "map": {
+    "unavailable": "Xarita yuklanmadi. Manzilni qo'lda kiritishingiz mumkin.",
+    "pickTitle": "Manzilni xaritadan tanlang",
+    "dragHint": "Pinni manzilingizga suring",
+    "myLocation": "Mening joylashuvim",
+    "picked": "Xaritada belgilandi",
+    "confirm": "Shu manzilni tanlash",
+    "outsideCity": "Bu nuqta Toshkent shahri chegarasidan tashqarida",
+    "locationDenied": "Joylashuvga ruxsat berilmagan. Sozlamalardan yoqing."
+  },
   "common": {
     "appName": "Sellobay",
     "search": "Qidirish",
@@ -27,6 +47,7 @@
     "yes": "Ha",
     "no": "Yo'q",
     "all": "Barchasi",
+    "unexpectedResponse": "Server kutilmagan javob qaytardi ({status}). Birozdan keyin urinib ko'ring.",
     "networkError": "Internet aloqasi yo'q. Ulanishni tekshiring.",
     "notConnectedYet": "Bu bo'lim hali ulanmagan"
   },
@@ -74,6 +95,25 @@
     "trustAuthentic": "100% asl mahsulot",
     "trustReturn": "Tekshirib olish",
     "editorsPick": "Editor's pick"
+  },
+  "help": {
+    "title": "Yordam markazi",
+    "subtitle": "24/7 qo'llab-quvvatlash xizmati",
+    "telegram": "Telegram",
+    "phone": "Telefon",
+    "email": "Email",
+    "noChannels": "Aloqa kanallari hali sozlanmagan",
+    "faqTitle": "Tez-tez so'raladigan savollar",
+    "q1": "Buyurtmamni qanday kuzataman?",
+    "a1": "Profil → Buyurtmalarim bo'limidan har bir buyurtma holatini real vaqtda ko'rishingiz mumkin.",
+    "q2": "Yetkazib berish qancha vaqt oladi?",
+    "a2": "Toshkent bo'yicha 24-48 soat, express 3 soat. Viloyatlarga 2-4 kun.",
+    "q3": "To‘lovni qanday amalga oshiraman?",
+    "a3": "Click, Payme yoki karta orqali. Yetkazib berishda naqd to'lov ham mumkin.",
+    "q4": "Mahsulotni qaytarish mumkinmi?",
+    "a4": "Ha, yetkazilgandan keyin 14 kun ichida. Profil → Buyurtmalarim dan so'rov qoldiring.",
+    "q5": "Sello Coins nima?",
+    "a5": "Har xariddan yig'iladigan bonus. 1 coin = 10 so'm, keyingi buyurtmada chegirma sifatida ishlatiladi."
   },
   "home": {
     "categoriesTitle": "Kategoriyalar",
@@ -738,6 +778,10 @@
       "title": "Buyurtmalarim",
       "emptyTitle": "Hali buyurtmalar yo'q",
       "emptyDesc": "Birinchi buyurtmangizni amalga oshiring",
+      "scopeLocal": "Lokal",
+      "scopeGlobal": "Global",
+      "emptyGlobalTitle": "Global buyurtmalar yo'q",
+      "emptyGlobalDesc": "Xitoydan buyurtma qilsangiz, shu yerda ko'rinadi",
       "itemsCount": "{count} ta mahsulot",
       "detail": "Batafsil",
       "filterAll": "Barchasi",
@@ -864,7 +908,8 @@
       "discount": "Chegirmaga ishlatildi",
       "daysAgo": "{days} kun oldin",
       "empty": "Hali coin tarixi yo'q — birinchi xaridingizni qiling!",
-      "checkin": "Kunlik kirish bonusi"
+      "checkin": "Kunlik kirish bonusi",
+      "today": "Bugun"
     }
   },
   "sale": {
@@ -1200,6 +1245,9 @@
   },
   "returnsPage": {
     "metaTitle": "Qaytarish va to'lash",
+    "listEmptyTitle": "Qaytarishlar yo'q",
+    "listEmptyDesc": "Qaytargan buyurtmalaringiz shu yerda ko'rinadi",
+    "refundPending": "Pul qaytarilishi kutilmoqda — operator 3-5 ish kunida ishlaydi",
     "heroTitle": "Qaytarish va pul qaytarish",
     "heroDesc": "Mahsulotni yetkazib berilganda tekshirib oling — maqul kelmasa o'sha joyning o'zida qaytaring. Yoki yetkazilgandan keyin {days} kun ichida qaytarib bering.",
     "howTitle": "Qanday qaytarish",
@@ -1253,6 +1301,16 @@
     "statsFailed": "Bajarilmadi",
     "statsActive": "Qo'lda",
     "statsAllTime": "Jami yetkazilgan",
+    "profileTitle": "Profil",
+    "history": "Topshiriqlar tarixi",
+    "historyEmpty": "Hali tugagan topshiriq yo'q",
+    "loadMore": "Yana yuklash",
+    "vehicle": "Transport",
+    "ratingLabel": "Reyting",
+    "returnTask": "Qaytarish",
+    "pickupFrom": "Olib ketish manzili",
+    "returnTo": "Qaytariladigan ombor",
+    "returnHint": "Mahsulotni mijozdan olib, ko'rsatilgan omborga topshiring.",
     "unclaimed": "Yangi",
     "status": {
       "ASSIGNED": "Biriktirildi",

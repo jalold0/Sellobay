@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+
 import { getCurrentUser } from '@/lib/auth/session';
+
 import { ProfileShell } from '../../../components/profile/profile-shell';
 
 export default async function ProfileLayout({

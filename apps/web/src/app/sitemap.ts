@@ -2,7 +2,6 @@ import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../lib/ca
 
 import type { BrandSummary, CategorySummary } from '../lib/catalog';
 import type { MockProduct } from '../lib/mock-data';
-
 import type { MetadataRoute } from 'next';
 
 // Sitemap ISR bilan yangilanadi. Aks holda u build paytidagi katalog

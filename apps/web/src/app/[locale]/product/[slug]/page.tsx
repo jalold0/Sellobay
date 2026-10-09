@@ -1,5 +1,4 @@
 import { ChevronRight } from 'lucide-react';
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
@@ -13,12 +12,14 @@ import {
   fetchProducts,
 } from '../../../../lib/catalog';
 import { type Locale, type MockProduct, pickLocale, productImage } from '../../../../lib/mock-data';
-import { notFoundMetadata } from '../../../../lib/seo';
 import {
   buildProductDetail,
   getProductDetail,
   getRelatedProducts,
 } from '../../../../lib/product-details';
+import { notFoundMetadata } from '../../../../lib/seo';
+
+import type { Metadata } from 'next';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 

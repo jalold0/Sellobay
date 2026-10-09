@@ -15,8 +15,9 @@ import {
   ShoppingCart,
   Store,
   Tags,
-  Users,
   type LucideIcon,
+  Undo2,
+  Users,
 } from 'lucide-react';
 
 import type { UserRole } from './auth';
@@ -48,6 +49,12 @@ export const adminNav: NavItem[] = [
     icon: ReceiptText,
     group: 'Savdo',
     badgeKey: 'pendingPayments',
+  },
+  {
+    href: '/orders/returns',
+    label: 'Qaytarishlar',
+    icon: Undo2,
+    group: 'Savdo',
   },
   { href: '/orders/global', label: 'Global zayavkalar', icon: Globe, group: 'Savdo' },
   { href: '/settings/global', label: 'Global sozlamalar', icon: Globe, group: 'Tizim' },

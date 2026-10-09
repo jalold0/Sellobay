@@ -7,6 +7,7 @@
 // CANCELLED / RETURNED / REFUNDED bu yerda EMAS — mijoz cancel/return route'lari (apps/web)
 // zaxirani qaytaradi; refund alohida oqim.
 
+import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -85,6 +86,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     throw e;
   }
+
+  // Push COMMIT'DAN KEYIN; xato tashlamaydi, javobni buzmaydi.
+  await getPushService().notifyOrderStatus(order.id, next);
 
   return apiOk({
     id: order.id,

@@ -164,6 +164,54 @@ void main() {
     expect(find.textContaining('ORD-'), findsNothing);
   });
 
+  testWidgets('Lokal/Global kaliti buyurtmalarni ajratadi', (tester) async {
+    final backend = _backend(orders: [
+      {..._summary(), 'scope': 'LOCAL'},
+      {..._summary(), 'id': 'bbbbbbbb-2222-4222-8222-222222222222', 'number': 'ORD-GLOBAL-1', 'scope': 'GLOBAL'},
+    ]);
+    await pump(tester, backend, const OrdersScreen());
+
+    expect(find.text('ORD-2026-00012345'), findsOneWidget);
+    expect(find.text('ORD-GLOBAL-1'), findsNothing);
+
+    await tester.tap(find.text('Global'));
+    await settle(tester);
+
+    expect(find.text('ORD-GLOBAL-1'), findsOneWidget);
+    expect(find.text('ORD-2026-00012345'), findsNothing);
+  });
+
+  testWidgets('global buyurtma yo`q — alohida bo`sh holat', (tester) async {
+    await pump(tester, _backend(), const OrdersScreen());
+
+    await tester.tap(find.text('Global'));
+    await settle(tester);
+
+    expect(find.text("Global buyurtmalar yo'q"), findsOneWidget);
+  });
+
+  testWidgets('qaytarishlar — faqat RETURNED/REFUNDED, kalit yo`q', (tester) async {
+    final backend = _backend(orders: [
+      _summary(status: 'DELIVERED'),
+      {..._summary(status: 'RETURNED'), 'id': 'bbbbbbbb-2222-4222-8222-222222222222', 'number': 'ORD-RET-1'},
+      {..._summary(status: 'REFUNDED'), 'id': 'cccccccc-3333-4333-8333-333333333333', 'number': 'ORD-REF-1'},
+    ]);
+    await pump(tester, backend, const OrdersScreen(returnsOnly: true));
+
+    expect(find.text('ORD-RET-1'), findsOneWidget);
+    expect(find.text('ORD-REF-1'), findsOneWidget);
+    expect(find.text('ORD-2026-00012345'), findsNothing);
+    expect(find.byType(SegmentedButton<OrderScope>), findsNothing);
+    // Faqat RETURNED da refund kutilmoqda deyiladi.
+    expect(find.textContaining('Pul qaytarilishi kutilmoqda'), findsOneWidget);
+  });
+
+  testWidgets('qaytarish yo`q — bo`sh holat', (tester) async {
+    await pump(tester, _backend(), const OrdersScreen(returnsOnly: true));
+
+    expect(find.text("Qaytarishlar yo'q"), findsOneWidget);
+  });
+
   testWidgets('xato — qayta urinish tugmasi', (tester) async {
     final backend = FakeBackend((options, body) => apiErr(500, 'SERVER', 'Ichki xato'));
     await pump(tester, backend, const OrdersScreen());

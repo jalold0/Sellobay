@@ -10,7 +10,12 @@ import 'order_detail_screen.dart';
 /// shuning uchun bu yerda varaqlash yo'q va "hammasi shu" deb da'vo
 /// qilinmaydi.
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  const OrdersScreen({super.key, this.returnsOnly = false});
+
+  /// «Qaytarishlar»: faqat qaytarilgan/pul qaytarilgan buyurtmalar.
+  /// Alohida endpoint yo'q — qaytarish buyurtma holati (`RETURNED` →
+  /// `REFUNDED`), shuning uchun `/api/orders` dan filtrlanadi.
+  final bool returnsOnly;
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -18,6 +23,7 @@ class OrdersScreen extends StatefulWidget {
 
 class _OrdersScreenState extends State<OrdersScreen> {
   List<OrderSummary> _orders = const [];
+  OrderScope _scope = OrderScope.local;
   bool _loading = true;
   Object? _error;
 
@@ -51,10 +57,33 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.t('profile.ordersPage.title'))),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _body(context),
+      appBar: AppBar(
+        title: Text(context.t(widget.returnsOnly ? 'profile.nav.returns' : 'profile.ordersPage.title')),
+      ),
+      body: Column(
+        children: [
+          if (!widget.returnsOnly)
+            Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: SegmentedButton<OrderScope>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: OrderScope.local,
+                  label: Text(context.t('profile.ordersPage.scopeLocal')),
+                ),
+                ButtonSegment(
+                  value: OrderScope.global,
+                  icon: const Icon(Icons.public, size: 16),
+                  label: Text(context.t('profile.ordersPage.scopeGlobal')),
+                ),
+              ],
+              selected: {_scope},
+              onSelectionChanged: (v) => setState(() => _scope = v.first),
+            ),
+          ),
+          Expanded(child: RefreshIndicator(onRefresh: _load, child: _body(context))),
+        ],
       ),
     );
   }
@@ -79,12 +108,26 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     }
 
-    if (_orders.isEmpty) {
+    final shown = widget.returnsOnly
+        ? _orders
+            .where((o) => o.status == OrderStatus.returned || o.status == OrderStatus.refunded)
+            .toList()
+        : _orders.where((o) => o.scope == _scope).toList();
+    if (shown.isEmpty && widget.returnsOnly) {
       return _message(
         context,
-        icon: Icons.receipt_long_outlined,
-        title: context.t('profile.ordersPage.emptyTitle'),
-        subtitle: context.t('profile.ordersPage.emptyDesc'),
+        icon: Icons.assignment_return_outlined,
+        title: context.t('returnsPage.listEmptyTitle'),
+        subtitle: context.t('returnsPage.listEmptyDesc'),
+      );
+    }
+    if (shown.isEmpty) {
+      final global = _scope == OrderScope.global;
+      return _message(
+        context,
+        icon: global ? Icons.public : Icons.receipt_long_outlined,
+        title: context.t(global ? 'profile.ordersPage.emptyGlobalTitle' : 'profile.ordersPage.emptyTitle'),
+        subtitle: context.t(global ? 'profile.ordersPage.emptyGlobalDesc' : 'profile.ordersPage.emptyDesc'),
       );
     }
 
@@ -93,16 +136,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      itemCount: _orders.length,
+      itemCount: shown.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) => _OrderCard(
-        order: _orders[index],
+        order: shown[index],
         locale: locale,
         baseUrl: baseUrl,
         onTap: () async {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => OrderDetailScreen(orderId: _orders[index].id),
+              builder: (_) => OrderDetailScreen(orderId: shown[index].id),
             ),
           );
           // Detalda bekor qilingan bo'lishi mumkin — ro'yxatni yangilaymiz.
@@ -194,6 +237,22 @@ class _OrderCard extends StatelessWidget {
               Text(
                 formatOrderDate(order.placedAt!),
                 style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+              ),
+            ],
+            // Pul refundi qo'lda ishlanadi (`REFUNDED` bo'lgunicha kutiladi).
+            if (order.status == OrderStatus.returned) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.hourglass_empty, size: 14, color: SellobayColors.accent),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      context.t('returnsPage.refundPending'),
+                      style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+                    ),
+                  ),
+                ],
               ),
             ],
             if (order.paymentReview) ...[

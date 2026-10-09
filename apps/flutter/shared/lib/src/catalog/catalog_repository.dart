@@ -103,15 +103,18 @@ class ProductQuery {
 
 /// Katalog endpointlari ustidagi yupqa qatlam.
 ///
-/// DIQQAT: bu route'lar `{success,data}` ga O'RALMAGAN — [ApiClient.getRaw]
-/// ishlatiladi. Sabab va oqibati `getRaw` izohida.
+/// Barcha route'lar BIR XIL konvertda (`{success,data}`) javob beradi,
+/// shuning uchun oddiy [ApiClient.get] ishlatiladi. Ilgari katalog
+/// yo'llari xom javob qaytarardi va alohida `getRaw` metodi kerak
+/// bo'lardi — noto'g'risini chaqirish muvaffaqiyatli javobni ham xato
+/// deb ko'rsatardi.
 class CatalogRepository {
   CatalogRepository(this._api);
 
   final ApiClient _api;
 
   Future<ProductPage> fetchProducts(ProductQuery query) async {
-    final json = await _api.getRaw<Map<String, dynamic>>(
+    final json = await _api.get<Map<String, dynamic>>(
       '/api/products',
       query: query.toQueryParameters(),
     );
@@ -131,7 +134,7 @@ class CatalogRepository {
   Future<List<ProductSummary>> fetchProductsByIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
     final unique = ids.toSet().toList();
-    final json = await _api.getRaw<Map<String, dynamic>>(
+    final json = await _api.get<Map<String, dynamic>>(
       '/api/products',
       query: {
         'ids': unique.join(','),
@@ -147,7 +150,7 @@ class CatalogRepository {
 
   /// Bitta mahsulot. Topilmasa `ApiException(code: 'NOT_FOUND')`.
   Future<ProductDetail> fetchProduct(String slug) async {
-    final json = await _api.getRaw<Map<String, dynamic>>('/api/products/$slug');
+    final json = await _api.get<Map<String, dynamic>>('/api/products/$slug');
     return ProductDetail.fromJson(json);
   }
 
@@ -157,7 +160,7 @@ class CatalogRepository {
   /// kategoriyani ko'rishi kerak. Mijoz ekranida [fetchStorefrontCategories]
   /// ishlating.
   Future<List<CategorySummary>> fetchCategories() async {
-    final json = await _api.getRaw<Map<String, dynamic>>('/api/categories');
+    final json = await _api.get<Map<String, dynamic>>('/api/categories');
     return (json['items'] as List<dynamic>? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(CategorySummary.fromJson)
@@ -181,7 +184,7 @@ class CatalogRepository {
   }
 
   Future<List<BrandSummary>> fetchBrands() async {
-    final json = await _api.getRaw<Map<String, dynamic>>('/api/brands');
+    final json = await _api.get<Map<String, dynamic>>('/api/brands');
     return (json['items'] as List<dynamic>? ?? const [])
         .cast<Map<String, dynamic>>()
         .map(BrandSummary.fromJson)

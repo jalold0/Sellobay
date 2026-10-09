@@ -1,0 +1,8 @@
+{
+  "extends": "@ecom/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "scripts/**/*"]
+}

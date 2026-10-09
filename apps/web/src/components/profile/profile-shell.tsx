@@ -2,11 +2,13 @@
 
 import { Avatar, AvatarFallback, AvatarImage, cn, toast } from '@ecom/ui';
 import { CreditCard, Gift, Heart, MapPin, Package, Settings, Star, User } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
 import { logout } from '@/lib/auth/client';
+
 import type { AuthUser } from '@/lib/auth/client';
 
 type NavKey =

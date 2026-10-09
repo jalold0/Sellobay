@@ -89,9 +89,9 @@ String _detailJson({String price = '300000'}) => json.encode({
 const _categoriesJson = '{"items":[]}';
 
 FakeBackend catalogBackend({String price = '300000'}) => FakeBackend((options, body) {
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
-      if (options.path.startsWith('/api/products/')) return rawJson(_detailJson(price: price));
-      return rawJson(_listJson(price: price));
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
+      if (options.path.startsWith('/api/products/')) return okJson(_detailJson(price: price));
+      return okJson(_listJson(price: price));
     });
 
 Future<SellobayRuntime> pumpCatalog(

@@ -4,6 +4,7 @@
 
 import { randomInt } from 'crypto';
 
+import { ApiDomainError } from '@ecom/api-contract';
 import {
   SHIPPING_FEE,
   EXPRESS_FEE,
@@ -18,8 +19,8 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
-import { orderOwnerKey, scopeIdempotencyKey } from '@/lib/idempotency';
 import { getGlobalSettings } from '@/lib/global-settings';
+import { orderOwnerKey, scopeIdempotencyKey } from '@/lib/idempotency';
 import {
   deductStockForOrder,
   InsufficientStockError,
@@ -37,16 +38,13 @@ import {
 import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
-export class OrderError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'OrderError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof OrderError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class OrderError extends ApiDomainError {}
 
 const itemSchema = z.object({
   // Mock/demo mahsulotlar UUID emas (p1..p12) — bunday eski savat elementi

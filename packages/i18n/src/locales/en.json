@@ -1,4 +1,24 @@
 {
+  "pickupPoints": {
+    "title": "Pickup points",
+    "empty": "No pickup points found",
+    "select": "Choose this point",
+    "allCities": "All cities",
+    "workingHours": "Working hours",
+    "landmark": "Landmark",
+    "onMap": "On the map",
+    "count": "{count} points"
+  },
+  "map": {
+    "unavailable": "The map could not load. You can enter the address manually.",
+    "pickTitle": "Pick the address on the map",
+    "dragHint": "Drag the pin to your address",
+    "myLocation": "My location",
+    "picked": "Marked on the map",
+    "confirm": "Use this address",
+    "outsideCity": "This point is outside Tashkent city limits",
+    "locationDenied": "Location permission denied. Enable it in settings."
+  },
   "common": {
     "appName": "Sellobay",
     "search": "Search",
@@ -27,6 +47,7 @@
     "yes": "Yes",
     "no": "No",
     "all": "All",
+    "unexpectedResponse": "The server returned an unexpected response ({status}). Please try again later.",
     "networkError": "No internet connection. Check your network.",
     "notConnectedYet": "This section is not connected yet"
   },
@@ -67,6 +88,25 @@
     "editorsPick": "Editor's pick",
     "headlineLine3": "on Sellobay.",
     "ctaCollection": "View collection"
+  },
+  "help": {
+    "title": "Help centre",
+    "subtitle": "24/7 customer support",
+    "telegram": "Telegram",
+    "phone": "Phone",
+    "email": "Email",
+    "noChannels": "Contact channels are not configured yet",
+    "faqTitle": "Frequently asked questions",
+    "q1": "How do I track my order?",
+    "a1": "Profile → My orders shows the status of every order in real time.",
+    "q2": "How long does delivery take?",
+    "a2": "Within Tashkent 24–48 hours, express 3 hours. Regions 2–4 days.",
+    "q3": "How do I pay?",
+    "a3": "Click, Payme or card. Cash on delivery is also available.",
+    "q4": "Can I return an item?",
+    "a4": "Yes, within 14 days of delivery. Submit a request under My orders.",
+    "q5": "What are Sello Coins?",
+    "a5": "Bonus points from every purchase. 1 coin = 10 UZS, used as a discount on your next order."
   },
   "home": {
     "categoriesTitle": "Categories",
@@ -731,6 +771,10 @@
       "title": "My orders",
       "emptyTitle": "No orders yet",
       "emptyDesc": "Place your first order",
+      "scopeLocal": "Local",
+      "scopeGlobal": "Global",
+      "emptyGlobalTitle": "No global orders",
+      "emptyGlobalDesc": "Orders from China will appear here",
       "itemsCount": "{count} items",
       "detail": "Details",
       "filterAll": "All",
@@ -857,7 +901,8 @@
       "discount": "Spent on discount",
       "daysAgo": "{days} days ago",
       "empty": "No coin history yet — make your first purchase!",
-      "checkin": "Daily check-in bonus"
+      "checkin": "Daily check-in bonus",
+      "today": "Today"
     }
   },
   "sale": {
@@ -1200,6 +1245,9 @@
   },
   "returnsPage": {
     "metaTitle": "Returns & refunds",
+    "listEmptyTitle": "No returns",
+    "listEmptyDesc": "Orders you return will appear here",
+    "refundPending": "Refund pending — an operator processes it within 3–5 business days",
     "heroTitle": "Returns and refunds",
     "heroDesc": "Check the item on delivery — if it isn't right, hand it back on the spot. Or return it within {days} days of delivery.",
     "howTitle": "How to return",
@@ -1253,6 +1301,16 @@
     "statsFailed": "Failed",
     "statsActive": "In progress",
     "statsAllTime": "Delivered in total",
+    "profileTitle": "Profile",
+    "history": "Delivery history",
+    "historyEmpty": "No completed deliveries yet",
+    "loadMore": "Load more",
+    "vehicle": "Vehicle",
+    "ratingLabel": "Rating",
+    "returnTask": "Return",
+    "pickupFrom": "Pickup address",
+    "returnTo": "Return warehouse",
+    "returnHint": "Collect the item from the customer and hand it over at the warehouse.",
     "unclaimed": "New",
     "status": {
       "ASSIGNED": "Assigned",

@@ -1,10 +1,10 @@
 'use client';
 
-import { Sheet, SheetContent, SheetTrigger } from '@ecom/ui';
 import { pickLocalized, type Locale } from '@ecom/i18n';
+import { Sheet, SheetContent, SheetTrigger } from '@ecom/ui';
 import { ChevronRight, Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react';
-import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import type { CategorySummary } from '../../lib/catalog';

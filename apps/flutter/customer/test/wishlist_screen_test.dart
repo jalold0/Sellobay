@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -48,7 +47,7 @@ FakeBackend _backend({
       }
       if (options.path == '/api/products') {
         final requested = (options.queryParameters['ids'] as String? ?? '').split(',');
-        return rawJson(json.encode({
+        return apiOk(({
           'items': [
             if (requested.contains(_p1)) _product(_p1, 'Nike Air Max', 'nike-air-max'),
             if (requested.contains(_p2)) _product(_p2, 'Puma RS-X', 'puma-rs-x'),

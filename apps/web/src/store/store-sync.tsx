@@ -13,6 +13,7 @@ import * as React from 'react';
 import { fetchProductsByIds } from '../lib/api-products';
 import { me } from '../lib/auth/client';
 import { type Locale } from '../lib/mock-data';
+
 import { useCart, type CartItem } from './cart';
 import { useWishlist } from './wishlist';
 

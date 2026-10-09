@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
+
+import '../map/location_picker_screen.dart';
 
 /// Manzil qo'shish yoki tahrirlash.
 ///
@@ -32,6 +35,10 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   late bool _isDefault = widget.existing?.isDefault ?? false;
   bool get _defaultLocked => widget.existing?.isDefault ?? false;
 
+  /// Xaritadan tanlangan nuqta.
+  late double? _latitude = widget.existing?.latitude;
+  late double? _longitude = widget.existing?.longitude;
+
   bool _saving = false;
   String? _error;
 
@@ -41,6 +48,32 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  /// Xaritani ochadi va qaytgan natijani formaga yozadi.
+  ///
+  /// Geokodlashdan kelgan matn — TAXMIN: u faqat BO'SH maydonlarni
+  /// to'ldiradi. Mijoz allaqachon yozgan manzilni ustiga yozib
+  /// yuborsak, aniqroq ma'lumot yo'qolardi.
+  Future<void> _pickOnMap() async {
+    final picked = await Navigator.of(context).push<PickedLocation>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initial: _latitude != null && _longitude != null
+              ? LatLng(_latitude!, _longitude!)
+              : null,
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() {
+      _latitude = picked.latitude;
+      _longitude = picked.longitude;
+      if (_region.text.trim().isEmpty && picked.region != null) _region.text = picked.region!;
+      if (_city.text.trim().isEmpty && picked.city != null) _city.text = picked.city!;
+      if (_street.text.trim().isEmpty && picked.street != null) _street.text = picked.street!;
+    });
   }
 
   Future<void> _save() async {
@@ -74,6 +107,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       city: _city.text,
       street: _street.text,
       apartment: _apartment.text,
+      latitude: _latitude,
+      longitude: _longitude,
       isDefault: _isDefault,
     );
 
@@ -129,6 +164,22 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
           _field(_street, 'profile.addressesPage.street',
               hintKey: 'profile.addressesPage.streetPlaceholder'),
           _field(_apartment, 'profile.addressesPage.apartment'),
+          const SizedBox(height: 4),
+          // Xaritadan tanlash — MAJBURIY EMAS: internet sekin bo'lsa
+          // yoki xarita yuklanmasa, manzilni qo'lda kiritib saqlash
+          // baribir ishlashi kerak.
+          OutlinedButton.icon(
+            onPressed: _saving ? null : _pickOnMap,
+            icon: Icon(
+              _latitude == null ? Icons.map_outlined : Icons.check_circle_outline,
+              size: 18,
+              color: _latitude == null ? null : SellobayColors.success,
+            ),
+            label: Text(
+              context.t(_latitude == null ? 'map.pickTitle' : 'map.picked'),
+            ),
+          ),
+          const SizedBox(height: 10),
           CheckboxListTile(
             value: _isDefault,
             // Yoqilgan holatdan qaytarib bo'lmaydi — yuqoridagi izohga qarang.

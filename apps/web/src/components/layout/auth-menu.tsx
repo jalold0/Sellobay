@@ -13,10 +13,11 @@ import {
   toast,
 } from '@ecom/ui';
 import { LogOut, Package, User as UserIcon, Heart, Settings } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
 import { logout, me, type AuthUser } from '@/lib/auth/client';
 
 export function AuthMenu() {

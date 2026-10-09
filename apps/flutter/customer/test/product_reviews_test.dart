@@ -84,7 +84,7 @@ FakeBackend _backend({
       if (options.path == '/api/reviews') {
         return create?.call(body) ?? apiOk({'review': _review(id: 'new', userId: 'me')});
       }
-      if (options.path == '/api/products/nike-air-max') return rawJson(_detailJson);
+      if (options.path == '/api/products/nike-air-max') return okJson(_detailJson);
       return apiErr(500, 'UNEXPECTED', options.path);
     });
 

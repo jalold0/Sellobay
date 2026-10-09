@@ -1,11 +1,13 @@
-import { NextRequest } from 'next/server';
 import { verifyPassword } from '@ecom/auth';
 import { normalizeUzPhone } from '@ecom/utils';
-import { prisma } from '@/lib/db';
-import { loginSchema } from '@/lib/auth/validators';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { createSession, requestMeta, setCookies } from '@/lib/auth/session';
+import { loginSchema } from '@/lib/auth/validators';
+import { prisma } from '@/lib/db';
 import { enforceRateLimit } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

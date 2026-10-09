@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+
 import { getCurrentUser } from '@/lib/auth/session';
+
 import { RegisterForm } from '../../../components/auth/register-form';
 
 export const metadata = { title: "Ro'yxatdan o'tish" };

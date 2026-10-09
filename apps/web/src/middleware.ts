@@ -1,7 +1,10 @@
-import createIntlMiddleware from 'next-intl/middleware';
-import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { NextResponse } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
+
 import { COOKIE_ACCESS, COOKIE_REFRESH, accessSecretOrNull } from '@/lib/auth/constants';
+
+import type { NextRequest } from 'next/server';
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
 type Locale = (typeof LOCALES)[number];

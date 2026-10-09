@@ -138,11 +138,15 @@ class AuthController extends ChangeNotifier {
     required String? firstName,
     required String? lastName,
     required String? email,
+    String? gender,
+    String? birthDate,
   }) async {
     final updated = await _repo.updateProfile(
       firstName: firstName,
       lastName: lastName,
       email: email,
+      gender: gender,
+      birthDate: birthDate,
     );
     await _repo.cacheUser(updated);
     _set(AuthStatus.signedIn, updated);
@@ -159,7 +163,14 @@ class AuthController extends ChangeNotifier {
     _set(AuthStatus.signedIn, updated);
   }
 
+  /// Chiqishdan OLDIN chaqiriladi (chiqqach so'rovlar 401 oladi) —
+  /// masalan, push tokenni serverdan o'chirish. Xatosi chiqishni to'xtatmaydi.
+  Future<void> Function()? beforeSignOut;
+
   Future<void> signOut() async {
+    try {
+      await beforeSignOut?.call();
+    } catch (_) {}
     await _repo.logout();
     _set(AuthStatus.signedOut, null);
   }

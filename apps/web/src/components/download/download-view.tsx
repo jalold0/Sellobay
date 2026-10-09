@@ -31,8 +31,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-import { PlatformCard, FeatureItem } from './platform-card';
 import { PageHero } from '../static/page-hero';
+
+import { PlatformCard, FeatureItem } from './platform-card';
 
 // EAS Build orqali yaratilgan APK fayli URL'i.
 // EAS Build sozlanmagan paytda placeholder ishlatamiz.

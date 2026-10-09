@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../widgets/delivery_card.dart';
+import 'courier_profile_screen.dart';
 import 'delivery_detail_screen.dart';
 
 /// Kuryerning topshiriqlari.
@@ -88,9 +89,11 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
         title: Text(context.t('courier.deliveriesTitle')),
         actions: [
           IconButton(
-            tooltip: context.t('profile.signOut'),
-            onPressed: () => AuthScope.read(context).signOut(),
-            icon: const Icon(Icons.logout),
+            tooltip: context.t('courier.profileTitle'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const CourierProfileScreen()),
+            ),
+            icon: const Icon(Icons.person_outline),
           ),
         ],
       ),

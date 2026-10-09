@@ -49,6 +49,8 @@ dependencies:
   # Yetkazish isboti surati — KAMERADAN olinadi (galereyadan emas:
   # isbot topshirish paytida olinishi kerak).
   image_picker: ^1.2.0
+  firebase_core: ^4.15.0
+  firebase_messaging: ^16.7.0
 
 dev_dependencies:
   flutter_test:

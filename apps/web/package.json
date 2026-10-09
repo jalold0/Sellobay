@@ -15,10 +15,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ecom/api-contract": "workspace:*",
     "@ecom/auth": "workspace:*",
     "@ecom/core-domain": "workspace:*",
     "@ecom/database": "workspace:*",
     "@ecom/i18n": "workspace:*",
+    "@ecom/push": "workspace:*",
     "@ecom/storage": "workspace:*",
     "@ecom/types": "workspace:*",
     "@ecom/ui": "workspace:*",

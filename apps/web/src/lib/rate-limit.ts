@@ -7,9 +7,9 @@
 // Fixed-window algoritm: kalit = nom:IP:oynaBoshi. Qo'shimcha paket YO'Q
 // (Upstash oddiy fetch orqali chaqiriladi).
 
-import type { NextRequest } from 'next/server';
-
 import { apiError } from '@/lib/auth/errors';
+
+import type { NextRequest } from 'next/server';
 
 interface LimitConfig {
   /** Oyna ichida ruxsat etilgan maksimal so'rovlar. */

@@ -30,6 +30,8 @@ class SavedAddress {
     required this.city,
     required this.street,
     required this.apartment,
+    this.latitude,
+    this.longitude,
     required this.isDefault,
   });
 
@@ -43,6 +45,10 @@ class SavedAddress {
         city: json['city'] as String? ?? '',
         street: json['street'] as String? ?? '',
         apartment: json['apartment'] as String?,
+        // Server `Decimal` ni son sifatida beradi; `num` dan o'tkazamiz
+        // — JSON'da u int ham, double ham bo'lishi mumkin.
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
         isDefault: json['isDefault'] as bool? ?? false,
       );
 
@@ -55,6 +61,15 @@ class SavedAddress {
   final String city;
   final String street;
   final String? apartment;
+
+  /// Xaritadan tanlangan nuqta.
+  ///
+  /// NEGA MUHIM: koordinatasiz kuryer manzilni matndan o'zi topishi
+  /// kerak bo'ladi, yetkazish hududini tekshirish (`tashkentCityBbox`)
+  /// esa umuman ishlamaydi. Server bu maydonlarni ancha oldin qabul
+  /// qilardi, lekin Dart modeli ularni tashlab yuborardi.
+  final double? latitude;
+  final double? longitude;
   final bool isDefault;
 
   String get oneLine => [region, city, street, apartment]
@@ -77,6 +92,8 @@ class AddressInput {
     required this.city,
     required this.street,
     this.apartment,
+    this.latitude,
+    this.longitude,
     this.isDefault = false,
   });
 
@@ -88,6 +105,15 @@ class AddressInput {
   final String city;
   final String street;
   final String? apartment;
+
+  /// Xaritadan tanlangan nuqta.
+  ///
+  /// NEGA MUHIM: koordinatasiz kuryer manzilni matndan o'zi topishi
+  /// kerak bo'ladi, yetkazish hududini tekshirish (`tashkentCityBbox`)
+  /// esa umuman ishlamaydi. Server bu maydonlarni ancha oldin qabul
+  /// qilardi, lekin Dart modeli ularni tashlab yuborardi.
+  final double? latitude;
+  final double? longitude;
   final bool isDefault;
 
   /// Bo'sh matn `null` ga aylanadi.
@@ -103,6 +129,10 @@ class AddressInput {
         'city': city.trim(),
         'street': street.trim(),
         'apartment': _orNull(apartment),
+        // Tanlanmagan bo'lsa yubormaymiz: `null` yuborsak, tahrirlashda
+        // mavjud koordinata o'chib ketardi.
+        'latitude': ?latitude,
+        'longitude': ?longitude,
         'isDefault': isDefault,
       };
 

@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 import { type MockProduct } from '../../lib/mock-data';
 

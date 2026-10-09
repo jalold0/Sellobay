@@ -1,5 +1,6 @@
 import { messages } from '@ecom/i18n';
 import { getRequestConfig } from 'next-intl/server';
+
 import type { AbstractIntlMessages } from 'next-intl';
 
 const LOCALES = ['uz', 'ru', 'en'] as const;

@@ -2,13 +2,14 @@
 // Foydalanuvchi buyurtma yaratgach (status PENDING), online to'lov uchun shu
 // endpoint chaqiriladi va Click/Payme checkout sahifasiga yo'naltiriladi.
 
-import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { buildCheckoutUrl, isOnlineProvider, type PaymentProvider } from '@/lib/payments';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   });
   if (!order) return apiError(404, 'NOT_FOUND', 'Buyurtma topilmadi');
   if (order.status !== 'PENDING') {
-    return apiError(409, 'ALREADY_PROCESSED', "Buyurtma allaqachon qayta ishlangan");
+    return apiError(409, 'ALREADY_PROCESSED', 'Buyurtma allaqachon qayta ishlangan');
   }
 
   // Naqd / offline — redirect yo'q, buyurtma yetkazishda to'lanadi

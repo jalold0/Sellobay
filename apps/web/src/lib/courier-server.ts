@@ -7,20 +7,19 @@
 // karantindagi `graveyard/api` da edi. Natijada kuryer ilovasi
 // ko'rsatadigan ma'lumot umuman yo'q edi.
 
-import { Prisma, type DeliveryStatus } from '@ecom/database';
+import { ApiDomainError } from '@ecom/api-contract';
+import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
+import { getPushService } from '@ecom/push';
 
 import { prisma } from '@/lib/db';
 
-export class CourierError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'CourierError';
-  }
-}
+/**
+ * `ApiDomainError` dan meros: `withApi()` uni BOSHQA domen xatolari
+ * bilan birga, bitta joyda ushlaydi. Ilgari har route o'zining
+ * `catch (e) { if (e instanceof CourierError) ... }` blokini yozardi va
+ * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
+ */
+export class CourierError extends ApiDomainError {}
 
 /**
  * Holat o'tishlari — FAQAT oldinga.
@@ -40,6 +39,49 @@ const TRANSITIONS: Record<DeliveryStatus, DeliveryStatus[]> = {
   RETURNED: [],
 };
 
+/**
+ * Yetkazish holati -> BUYURTMA holati.
+ *
+ * NEGA KERAK: ilgari buyurtma holatiga faqat `DELIVERED` da tegilardi
+ * va `OrderStatusHistory` ga butun kodda shu yagona joy yozardi.
+ * Natijada mijoz kuzatuvida buyurtma «Kutilmoqda» dan to'g'ridan-to'g'ri
+ * «Yetkazildi» ga sakrardi: kuryer olgani ham, yo'lga chiqqani ham
+ * ko'rinmasdi, garchi `DeliveryEvent` da hammasi yozilgan bo'lsa ham.
+ *
+ * `FAILED` ataylab YO'Q: urinish muvaffaqiyatsiz bo'lgani buyurtmani
+ * bekor qilmaydi — ertaga qayta urinish mumkin. Qarorni admin qabul
+ * qiladi.
+ */
+const ORDER_STATUS_FOR: Partial<Record<DeliveryStatus, OrderStatus>> = {
+  PICKED_UP: 'SHIPPED',
+  IN_TRANSIT: 'OUT_FOR_DELIVERY',
+  // `ARRIVED` ham `OUT_FOR_DELIVERY`: mijoz uchun «kuryer yo'lda» va
+  // «kuryer eshik oldida» bitta holat. Buyurtma enumida alohida
+  // qiymat yo'q, qo'shish esa migratsiya talab qilardi.
+  ARRIVED: 'OUT_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED',
+};
+
+/**
+ * Yetkazish holatiga mos buyurtma holati (yoki `null` — tegilmaydi).
+ *
+ * Eksport qilingan: sof funksiya, testda bazasiz tekshiriladi.
+ */
+export function orderStatusFor(delivery: DeliveryStatus): OrderStatus | null {
+  return ORDER_STATUS_FOR[delivery] ?? null;
+}
+
+/** Tarixdagi izoh — kuryer qaysi qadamni bosgani ko'rinib tursin. */
+const ORDER_COMMENT: Partial<Record<DeliveryStatus, string>> = {
+  PICKED_UP: 'Kuryer buyurtmani oldi',
+  IN_TRANSIT: "Kuryer yo'lga chiqdi",
+  ARRIVED: 'Kuryer manzilga yetib keldi',
+  DELIVERED: 'Kuryer yetkazdi',
+};
+
+/** Yopilgan buyurtma QAYTA OCHILMAYDI. */
+const CLOSED_ORDER_STATUSES: OrderStatus[] = ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERED'];
+
 /** Shu holatdan keyin mumkin bo'lgan holatlar. */
 export function nextDeliveryStatuses(current: DeliveryStatus): DeliveryStatus[] {
   return TRANSITIONS[current] ?? [];
@@ -56,8 +98,10 @@ export function isTerminalDeliveryStatus(status: DeliveryStatus): boolean {
 
 const deliverySelect = {
   id: true,
+  kind: true,
   status: true,
   method: true,
+  pickupAddress: true,
   destinationAddress: true,
   destinationLat: true,
   destinationLng: true,
@@ -81,6 +125,14 @@ const deliverySelect = {
       items: { select: { id: true, quantity: true, nameSnapshot: true } },
     },
   },
+  // Qaytarish topshirig'idagi mahsulotlar — buyurtmaning BIR QISMI.
+  // Bo'sh bo'lsa (`OUTBOUND`) butun buyurtma olib boriladi.
+  items: {
+    select: {
+      quantity: true,
+      orderItem: { select: { id: true, nameSnapshot: true } },
+    },
+  },
 } satisfies Prisma.DeliverySelect;
 
 export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySelect }>;
@@ -91,10 +143,15 @@ export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySel
  * Eksport qilingan — sof funksiya va testda bazasiz tekshiriladi.
  */
 export function serializeDelivery(d: DeliveryRow) {
+  const returnItems = d.items ?? [];
   return {
     id: d.id,
+    /// `OUTBOUND` — do'kondan mijozga, `RETURN` — mijozdan omborga.
+    kind: d.kind,
     status: d.status,
     method: d.method,
+    /// `RETURN` da — mijozning manzili (shu yerdan OLIB KETILADI).
+    pickupAddress: d.pickupAddress,
     destinationAddress: d.destinationAddress,
     destinationLat: d.destinationLat === null ? null : Number(d.destinationLat),
     destinationLng: d.destinationLng === null ? null : Number(d.destinationLng),
@@ -131,12 +188,23 @@ export function serializeDelivery(d: DeliveryRow) {
       notes: d.order.notes,
       recipientName: d.order.shippingAddress?.recipientName ?? null,
       recipientPhone: d.order.shippingAddress?.phone ?? null,
-      itemCount: d.order.items.length,
-      items: d.order.items.map((i) => ({
-        id: i.id,
-        quantity: i.quantity,
-        nameSnapshot: i.nameSnapshot,
-      })),
+      // Qaytarishda buyurtmaning FAQAT bir qismi olinadi (mahsulotlar
+      // har xil omborga ketishi mumkin). Shunda ro'yxat topshiriqning
+      // o'zidan olinadi, buyurtmadan emas — aks holda kuryer boshqa
+      // manzilga ketadigan mahsulotni ham olib ketardi.
+      itemCount: returnItems.length > 0 ? returnItems.length : d.order.items.length,
+      items:
+        returnItems.length > 0
+          ? returnItems.map((i) => ({
+              id: i.orderItem.id,
+              quantity: i.quantity,
+              nameSnapshot: i.orderItem.nameSnapshot,
+            }))
+          : d.order.items.map((i) => ({
+              id: i.id,
+              quantity: i.quantity,
+              nameSnapshot: i.nameSnapshot,
+            })),
     },
   };
 }
@@ -301,6 +369,9 @@ export async function updateDeliveryStatus(
   }
 
   const now = new Date();
+  // Tranzaksiya ichida o'zgargan bo'lsagina push yuboriladi (qayta yozilmagan
+  // yoki yopiq buyurtmaga hech narsa ketmaydi).
+  let orderChangedTo: OrderStatus | null = null;
   await prisma.$transaction(async (tx) => {
     // Shart bilan yangilash: parallel so'rov holatni allaqachon
     // o'zgartirgan bo'lsa, 0 qator tegadi va biz to'xtaymiz.
@@ -328,27 +399,42 @@ export async function updateDeliveryStatus(
       },
     });
 
-    if (next === 'DELIVERED') {
-      // Bekor qilingan yoki allaqachon yopilgan buyurtmani qayta
-      // ochmaymiz — shart bilan yangilaymiz.
-      const closed = await tx.order.updateMany({
+    // Buyurtma holati yetkazish holatiga ERGASHADI.
+    const orderNext = ORDER_STATUS_FOR[next];
+    if (orderNext != null) {
+      const changed = await tx.order.updateMany({
         where: {
           id: current.orderId,
-          status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERED'] },
+          status: {
+            notIn: CLOSED_ORDER_STATUSES,
+            // O'sha holatning O'ZIGA qayta yozmaymiz: `IN_TRANSIT` ham,
+            // `ARRIVED` ham `OUT_FOR_DELIVERY` ga olib keladi va
+            // tarixda ikkita bir xil qator paydo bo'lardi.
+            not: orderNext,
+          },
         },
-        data: { status: 'DELIVERED', deliveredAt: now },
+        data: {
+          status: orderNext,
+          ...(orderNext === 'SHIPPED' ? { shippedAt: now } : {}),
+          ...(orderNext === 'DELIVERED' ? { deliveredAt: now } : {}),
+        },
       });
-      if (closed.count > 0) {
+      if (changed.count > 0) {
+        orderChangedTo = orderNext;
         await tx.orderStatusHistory.create({
           data: {
             orderId: current.orderId,
-            status: 'DELIVERED',
-            comment: 'Kuryer yetkazdi',
+            status: orderNext,
+            comment: ORDER_COMMENT[next] ?? null,
           },
         });
       }
     }
   });
+
+  // Push COMMIT'DAN KEYIN: tranzaksiya qaytarilsa mijozga yolg'on xabar ketmasin.
+  // `notifyOrderStatus` xato tashlamaydi — kuryer javobini buzmaydi.
+  if (orderChangedTo) await getPushService().notifyOrderStatus(current.orderId, orderChangedTo);
 
   const row = await prisma.delivery.findUniqueOrThrow({
     where: { id: deliveryId },
@@ -421,5 +507,51 @@ export async function courierStats(userId: string) {
     today: { delivered: todayDelivered, failed: todayFailed },
     active,
     allTimeDelivered,
+  };
+}
+
+/**
+ * Kuryerning TUGAGAN topshiriqlari — tarix.
+ *
+ * `listCourierDeliveries` ataylab faqat faol topshiriqlarni beradi:
+ * kuryer kun davomida o'nlab yetkazish qiladi va ularni asosiy
+ * ro'yxatda qoldirsak, bugungi ish ko'rinmay ketardi. Tarix esa
+ * alohida ekranda, sahifalab o'qiladi.
+ *
+ * Kursor — `id`, `updatedAt` emas: bir soniyada bir nechta yozuv
+ * yangilansa, vaqt bo'yicha sahifalash ularning bir qismini
+ * tashlab ketardi yoki ikki marta ko'rsatardi.
+ */
+export async function listCourierHistory(
+  userId: string,
+  opts: { cursor?: string; limit?: number } = {},
+) {
+  const courier = await prisma.courier.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  if (!courier) return { items: [], nextCursor: null };
+
+  const limit = Math.min(Math.max(opts.limit ?? 20, 1), 50);
+
+  const rows = await prisma.delivery.findMany({
+    where: {
+      courierId: courier.id,
+      status: { in: ['DELIVERED', 'FAILED', 'RETURNED'] },
+    },
+    // Eng yangisi tepada.
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    // Keyingisi borligini bilish uchun bittasini ORTIQCHA so'raymiz.
+    take: limit + 1,
+    ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+    select: deliverySelect,
+  });
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+
+  return {
+    items: page.map(serializeDelivery),
+    nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
   };
 }

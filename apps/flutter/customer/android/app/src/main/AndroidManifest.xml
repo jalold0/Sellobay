@@ -8,6 +8,19 @@
          ishlab chiqish paytida KO'RINMAYDI — faqat reliz APK telefonga
          o'rnatilganda chiqadi. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+: bildirishnoma ko'rsatish uchun ruxsat so'raladi. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Manzilni xaritadan tanlashdagi «mening joylashuvim» tugmasi.
+         IKKALASI ham e'lon qilinadi: foydalanuvchi faqat taxminiy
+         joylashuvga ruxsat bersa (Android 12+ da shunday tanlov bor),
+         aniq ruxsat bo'lmaydi va faqat FINE e'lon qilingan bo'lsa
+         tugma umuman ishlamay qolardi.
+
+         Ruxsat MAJBURIY EMAS: berilmasa pin qo'lda suriladi, manzilni
+         esa qo'lda yozish mumkin. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <application
         android:label="Sellobay"

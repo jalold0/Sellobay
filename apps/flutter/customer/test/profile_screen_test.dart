@@ -93,9 +93,9 @@ FakeBackend _backend({
       if (options.path == '/api/auth/login') {
         return apiOk({'user': _user(), 'tokens': tokenPair('1')});
       }
-      if (options.path == '/api/categories') return rawJson('{"items":[]}');
+      if (options.path == '/api/categories') return okJson('{"items":[]}');
       if (options.path == '/api/products') {
-        return rawJson('{"items":[],"total":0,"page":1,"limit":24,"hasMore":false}');
+        return okJson('{"items":[],"total":0,"page":1,"limit":24,"hasMore":false}');
       }
       if (options.path == '/api/orders') return apiOk({'items': <Map<String, dynamic>>[]});
       if (options.path == '/api/cart') return apiOk({'cartId': 'c1', 'items': <Map<String, dynamic>>[]});
@@ -146,8 +146,8 @@ void main() {
   testWidgets('profil foydalanuvchi ma`lumotini ko`rsatadi', (tester) async {
     await pumpProfile(tester, _backend());
 
-    // Forma serverdagi qiymat bilan oldindan to'ldiriladi.
-    expect(find.widgetWithText(TextField, 'Dilnoza'), findsOneWidget);
+    // Tahrirlash alohida ekranga chiqdi — profilda faqat ko'rsatish.
+    expect(find.text('Dilnoza'), findsOneWidget);
     expect(find.text('D'), findsOneWidget); // bosh harf
     expect(find.text('+998901234567'), findsOneWidget);
     // Ballar serverdan — mahalliy hisob yo'q.
@@ -176,62 +176,6 @@ void main() {
     expect(runtime.auth.isSignedIn, isFalse);
   });
 
-  group('ma`lumotlarni saqlash', () {
-    testWidgets('PATCH yuboriladi va holat yangilanadi', (tester) async {
-      final backend = _backend(after: _user(firstName: 'Dilnoza', lastName: 'Karimova'));
-      await pumpProfile(tester, backend);
-
-      await tester.enterText(find.widgetWithText(TextField, 'Familiya'), 'Karimova');
-      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
-      await settle(tester);
-
-      expect(backend.calls.where((c) => c == '/api/auth/me'), hasLength(2)); // GET + PATCH
-      final sent = lastBody(backend);
-      expect(sent['firstName'], 'Dilnoza');
-      expect(sent['lastName'], 'Karimova');
-      expect(find.text('Saqlandi'), findsWidgets);
-    });
-
-    testWidgets('bo`sh maydon `null` bo`lib ketadi — yuborilmay qolmaydi', (tester) async {
-      // Negativ nazorat: `_compact` nullarni tashlab yuboradi, shuning
-      // uchun profil uni ISHLATMAYDI. Aks holda ismni o'chirib bo'lmasdi.
-      final backend = _backend(after: _user(firstName: null));
-      await pumpProfile(tester, backend);
-
-      await tester.enterText(find.widgetWithText(TextField, 'Ism'), '');
-      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
-      await settle(tester);
-
-      final sent = lastBody(backend);
-      expect(sent.containsKey('firstName'), isTrue);
-      expect(sent['firstName'], isNull);
-    });
-
-    testWidgets('yaroqsiz email — so`rov KETMAYDI', (tester) async {
-      final backend = _backend();
-      await pumpProfile(tester, backend);
-
-      await tester.enterText(find.widgetWithText(TextField, 'Email'), 'dilnoza@');
-      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
-      await settle(tester);
-
-      expect(backend.calls.where((c) => c == '/api/auth/me'), hasLength(1)); // faqat GET
-    });
-
-    testWidgets('server «email band» desa — uning matni ko`rsatiladi', (tester) async {
-      final backend = _backend(
-        patch: () => apiErr(409, 'EMAIL_TAKEN', 'Bu email allaqachon band'),
-      );
-      await pumpProfile(tester, backend);
-
-      await tester.enterText(find.widgetWithText(TextField, 'Email'), 'band@sellobay.uz');
-      await tester.tap(find.widgetWithText(FilledButton, "O'zgarishlarni saqlash"));
-      await settle(tester);
-
-      expect(find.text('Bu email allaqachon band'), findsOneWidget);
-    });
-  });
-
   group('til', () {
     testWidgets('tanlov SERVERDA saqlanadi va interfeys o`giriladi', (tester) async {
       final backend = _backend(after: _user(locale: 'ru'));
@@ -246,7 +190,7 @@ void main() {
       // almashtiradi — ekran o'zi emas.
       expect(runtime.locale.locale, 'ru');
       await scrollToTop(tester);
-      expect(find.text('Данные профиля'), findsOneWidget);
+      expect(find.text('Личные данные'), findsOneWidget);
       // AppBar ham, pastki paneldagi yorliq ham o'girilgan.
       expect(find.text('Профиль'), findsNWidgets(2));
     });
@@ -255,6 +199,9 @@ void main() {
       final backend = _backend();
       await pumpProfile(tester, backend);
 
+      // Profil ro'yxati uzayganda til chiplari ekrandan chiqib ketadi
+      // (dangasa `ListView`) — avval ularga suramiz.
+      await scrollTo(tester, find.text("O'zbekcha"));
       await tester.tap(find.text("O'zbekcha"));
       await settle(tester);
 
@@ -288,7 +235,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('Profil'), findsOneWidget);
-    expect(find.text("Profil ma'lumotlari"), findsOneWidget);
+    expect(find.text("Shaxsiy ma'lumotlar"), findsOneWidget);
     await scrollTo(tester, find.text('Til tanlash'));
     expect(find.text('Til tanlash'), findsOneWidget);
   });

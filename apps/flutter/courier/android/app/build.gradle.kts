@@ -47,3 +47,10 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// `google-services.json` repoga kirmaydi (Firebase loyihasi egasidan olinadi).
+// Fayl yo'q mashinada (CI, yangi klon) plagin o'tkazib yuboriladi va ilova
+// push'siz yig'iladi — aks holda build "File is missing" bilan yiqilardi.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}

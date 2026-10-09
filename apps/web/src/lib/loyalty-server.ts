@@ -1,10 +1,10 @@
 // Sellobay — Sello Coins server logikasi (faqat API route'lardan import qilinadi).
 // Pure iqtisod helperlar `loyalty.ts` da (client+server). Bu yerda Prisma yozuvlari.
 
-import type { Prisma } from '@ecom/database';
-
 import { prisma } from './db';
 import { coinsForOrder } from './loyalty';
+
+import type { Prisma } from '@ecom/database';
 
 export const CHECKIN_REWARD = 5;
 

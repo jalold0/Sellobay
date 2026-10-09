@@ -2,8 +2,8 @@
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@ecom/ui';
 import { ChevronDown, Globe } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 const LOCALES = [
   { code: 'uz', label: "O'zbek", flag: '🇺🇿' },

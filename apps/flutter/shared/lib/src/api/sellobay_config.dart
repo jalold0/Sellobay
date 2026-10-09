@@ -76,6 +76,35 @@ class LoyaltyConfig {
       );
 }
 
+/// Qo'llab-quvvatlash kanallari.
+///
+/// Har biri IXTIYORIY: sozlanmagan kanal serverdan `null` keladi va
+/// ilovada tugma umuman ko'rsatilmaydi. To'qima raqam yoki ishlamay-
+/// digan tugmadan ko'ra, yo'qligi ma'qul.
+class SupportChannels {
+  const SupportChannels({this.phone, this.email, this.telegram});
+
+  factory SupportChannels.fromJson(Map<String, dynamic>? json) => SupportChannels(
+        phone: _orNull(json?['phone']),
+        email: _orNull(json?['email']),
+        telegram: _orNull(json?['telegram']),
+      );
+
+  final String? phone;
+  final String? email;
+
+  /// Foydalanuvchi nomi yoki to'liq havola — ikkalasi ham bo'lishi
+  /// mumkin, shuning uchun havolani klient yig'adi.
+  final String? telegram;
+
+  bool get isEmpty => phone == null && email == null && telegram == null;
+
+  static String? _orNull(Object? value) {
+    final text = value is String ? value.trim() : null;
+    return text == null || text.isEmpty ? null : text;
+  }
+}
+
 class GeoBbox {
   const GeoBbox({
     required this.latMin,
@@ -106,6 +135,7 @@ class SellobayConfig {
     required this.loyalty,
     required this.returnWindowDays,
     required this.tashkentCityBbox,
+    this.support = const SupportChannels(),
     required this.locales,
   });
 
@@ -115,6 +145,9 @@ class SellobayConfig {
   /// Yetkazilgandan keyin necha kun ichida qaytarish mumkin.
   final int returnWindowDays;
   final GeoBbox tashkentCityBbox;
+
+  /// Qo'llab-quvvatlash kanallari — yordam markazida ishlatiladi.
+  final SupportChannels support;
   final List<String> locales;
 
   factory SellobayConfig.fromJson(Map<String, dynamic> json) => SellobayConfig(
@@ -124,6 +157,7 @@ class SellobayConfig {
             ((json['returns'] as Map<String, dynamic>)['windowDays'] as num).toInt(),
         tashkentCityBbox: GeoBbox.fromJson(
             (json['geo'] as Map<String, dynamic>)['tashkentCityBbox'] as Map<String, dynamic>),
+        support: SupportChannels.fromJson(json['support'] as Map<String, dynamic>?),
         locales: (json['locales'] as List<dynamic>).cast<String>(),
       );
 

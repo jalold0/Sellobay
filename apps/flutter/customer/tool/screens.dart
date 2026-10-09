@@ -396,7 +396,7 @@ FakeBackend _catalogBackend() => FakeBackend((options, body) {
       }
       if (options.path == '/api/categories') return rawJson(_categoriesJson);
       if (options.path == '/api/products/nike-air-max') return rawJson(_detailJson);
-      return rawJson(_productsJson);
+      return okJson(_productsJson);
     });
 
 /// Bosh sahifa: `featured` va `popular` ALOHIDA ro'yxat — ikkala
@@ -416,7 +416,7 @@ FakeBackend _homeBackend() => FakeBackend((options, body) {
           'hasMore': false,
         }));
       }
-      return rawJson(_productsJson);
+      return okJson(_productsJson);
     });
 
 FakeBackend _checkoutBackend({bool cards = false}) => FakeBackend((options, body) {
@@ -477,14 +477,14 @@ FakeBackend _profileBackend() => FakeBackend((options, body) {
       if (options.path == '/api/cart') {
         return apiOk({'cartId': 'c1', 'items': <Map<String, dynamic>>[]});
       }
-      return rawJson(_productsJson);
+      return okJson(_productsJson);
     });
 
 FakeBackend _wishlistBackend() => FakeBackend((options, body) {
       if (options.path == '/api/wishlist') {
         return apiOk({'productIds': ['puma-rs-x', 'nike-air-max']});
       }
-      return rawJson(_productsJson);
+      return okJson(_productsJson);
     });
 
 FakeBackend _addressesBackend() => FakeBackend((options, body) => apiOk({
