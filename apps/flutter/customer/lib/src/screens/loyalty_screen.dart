@@ -11,7 +11,10 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 /// `LoyaltyRepository` allaqachon yozilgan bo'lsa ham: uni faqat
 /// checkout ishlatardi (coin yechish uchun).
 class LoyaltyScreen extends StatefulWidget {
-  const LoyaltyScreen({super.key});
+  const LoyaltyScreen({super.key, this.embedded = false});
+
+  /// Hamyon ekranining tabi sifatida: o'z `Scaffold`i va AppBar'i yo'q.
+  final bool embedded;
 
   @override
   State<LoyaltyScreen> createState() => _LoyaltyScreenState();
@@ -80,10 +83,14 @@ class _LoyaltyScreenState extends State<LoyaltyScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(context.t('loyalty.title'))),
-        body: RefreshIndicator(onRefresh: _load, child: _body(context)),
-      );
+  Widget build(BuildContext context) {
+    final body = RefreshIndicator(onRefresh: _load, child: _body(context));
+    if (widget.embedded) return body;
+    return Scaffold(
+      appBar: AppBar(title: Text(context.t('loyalty.title'))),
+      body: body,
+    );
+  }
 
   Widget _body(BuildContext context) {
     if (_loading) {

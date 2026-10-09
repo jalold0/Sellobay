@@ -7,6 +7,7 @@ import '../widgets/review_tile.dart';
 import 'review_form_screen.dart';
 
 import '../widgets/cart_button.dart';
+import '../widgets/wishlist_button.dart';
 import 'cart_screen.dart';
 
 /// Mahsulot sahifasi.
@@ -120,7 +121,10 @@ class _ProductScreenState extends State<ProductScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(product?.brandName ?? ''),
-        actions: const [CartButton()],
+        actions: [
+          if (product != null) WishlistButton(productId: product.id),
+          const CartButton(),
+        ],
       ),
       body: switch ((_loading, _error, product)) {
         (true, _, _) => const Center(
@@ -488,17 +492,27 @@ class _ProductScreenState extends State<ProductScreen> {
     // serverda yiqilgandan ko'ra shunisi rost.
     final canOrder = product.inStock && (product.variants.isEmpty || variant?.inStock == true);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-        child: FilledButton(
-          onPressed: canOrder ? () => _addToCart(context, product, variant) : null,
-          child: Text(
-            canOrder
-                ? context.t('product.addToCart')
-                : variant == null && product.variants.isNotEmpty
-                    ? context.t('product.selectSize')
-                    : context.t('product.outOfStock'),
+    // Panel va kontent orasida chegara: ro'yxat panel ostidan
+    // o'tayotganini ko'rsatadi.
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: SellobayColors.border)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: FilledButton(
+            onPressed: canOrder
+                ? () => _addToCart(context, product, variant)
+                : null,
+            child: Text(
+              canOrder
+                  ? context.t('product.addToCart')
+                  : variant == null && product.variants.isNotEmpty
+                  ? context.t('product.selectSize')
+                  : context.t('product.outOfStock'),
+            ),
           ),
         ),
       ),
