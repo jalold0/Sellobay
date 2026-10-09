@@ -394,17 +394,17 @@ FakeBackend _catalogBackend() => FakeBackend((options, body) {
           'eligibility': null,
         });
       }
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
-      if (options.path == '/api/products/nike-air-max') return rawJson(_detailJson);
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
+      if (options.path == '/api/products/nike-air-max') return okJson(_detailJson);
       return okJson(_productsJson);
     });
 
 /// Bosh sahifa: `featured` va `popular` ALOHIDA ro'yxat — ikkala
 /// javlon bir xil bo'lsa surat chalg'itardi.
 FakeBackend _homeBackend() => FakeBackend((options, body) {
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
       if (options.queryParameters['sort'] == 'popular') {
-        return rawJson(json.encode({
+        return okJson(json.encode({
           'items': [
             _product(slug: 'adidas-ultraboost', nameUz: 'Adidas Ultraboost', price: '1250000', brand: 'Adidas'),
             _product(slug: 'reebok-classic', nameUz: 'Reebok Classic Leather', price: '640000', brand: 'Reebok'),
@@ -473,7 +473,7 @@ FakeBackend _profileBackend() => FakeBackend((options, body) {
         return apiOk({'user': _me(), 'tokens': tokenPair('1')});
       }
       if (options.path == '/api/auth/me') return apiOk({'user': _me()});
-      if (options.path == '/api/categories') return rawJson(_categoriesJson);
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
       if (options.path == '/api/cart') {
         return apiOk({'cartId': 'c1', 'items': <Map<String, dynamic>>[]});
       }

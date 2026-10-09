@@ -9,7 +9,10 @@ import '../widgets/coupon_card.dart';
 /// shu savat uchun tekshiradi, bu esa foydalanuvchiga biriktirilgan
 /// kodlar ro'yxatini ko'rsatadi.
 class PromoScreen extends StatefulWidget {
-  const PromoScreen({super.key});
+  const PromoScreen({super.key, this.embedded = false});
+
+  /// Hamyon ekranining tabi sifatida: o'z `Scaffold`i va AppBar'i yo'q.
+  final bool embedded;
 
   @override
   State<PromoScreen> createState() => _PromoScreenState();
@@ -120,23 +123,38 @@ class _PromoScreenState extends State<PromoScreen> {
     );
   }
 
+  /// «Qo'shish» tugmasi: ro'yxat yuklangandagina.
+  Widget? _addBar(BuildContext context) => _loading || _error != null
+      ? null
+      : SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: FilledButton.icon(
+              onPressed: _openAddSheet,
+              icon: const Icon(Icons.local_offer_outlined, size: 18),
+              label: Text(context.t('promo.add')),
+            ),
+          ),
+        );
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(context.t('promo.title'))),
-        body: RefreshIndicator(onRefresh: _load, child: _body(context)),
-        bottomNavigationBar: _loading || _error != null
-            ? null
-            : SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: FilledButton.icon(
-                    onPressed: _openAddSheet,
-                    icon: const Icon(Icons.local_offer_outlined, size: 18),
-                    label: Text(context.t('promo.add')),
-                  ),
-                ),
-              ),
+  Widget build(BuildContext context) {
+    final body = RefreshIndicator(onRefresh: _load, child: _body(context));
+    final bar = _addBar(context);
+    if (widget.embedded) {
+      return Column(
+        children: [
+          Expanded(child: body),
+          ?bar,
+        ],
       );
+    }
+    return Scaffold(
+      appBar: AppBar(title: Text(context.t('promo.title'))),
+      body: body,
+      bottomNavigationBar: bar,
+    );
+  }
 
   Widget _body(BuildContext context) {
     if (_loading) {

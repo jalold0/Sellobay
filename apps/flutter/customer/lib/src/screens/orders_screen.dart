@@ -3,6 +3,7 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../widgets/order_status_chip.dart';
 import 'order_detail_screen.dart';
+import 'track_order_screen.dart';
 
 /// Buyurtmalarim.
 ///
@@ -10,19 +11,46 @@ import 'order_detail_screen.dart';
 /// shuning uchun bu yerda varaqlash yo'q va "hammasi shu" deb da'vo
 /// qilinmaydi.
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key, this.returnsOnly = false});
+  const OrdersScreen({super.key, this.initialFilter = OrdersFilter.all});
 
-  /// «Qaytarishlar»: faqat qaytarilgan/pul qaytarilgan buyurtmalar.
-  /// Alohida endpoint yo'q — qaytarish buyurtma holati (`RETURNED` →
-  /// `REFUNDED`), shuning uchun `/api/orders` dan filtrlanadi.
-  final bool returnsOnly;
+  final OrdersFilter initialFilter;
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
 }
 
+/// Ro'yxat filtri.
+///
+/// «Qaytarishlar» alohida ekran emas: alohida endpoint yo'q, qaytarish
+/// buyurtma holati (`RETURNED` → `REFUNDED`), shuning uchun u shu
+/// ro'yxatning bir ko'rinishi. Ilgari profilda alohida havola edi.
+enum OrdersFilter {
+  all,
+  active,
+  delivered,
+  returns;
+
+  bool matches(OrderSummary o) => switch (this) {
+    OrdersFilter.all => true,
+    // Yo'lda: hali yopilmagan va yetkazilmagan.
+    OrdersFilter.active =>
+      o.status != null && !o.status!.isClosed && !o.status!.isDelivered,
+    OrdersFilter.delivered => o.status?.isDelivered ?? false,
+    OrdersFilter.returns =>
+      o.status == OrderStatus.returned || o.status == OrderStatus.refunded,
+  };
+
+  String get labelKey => switch (this) {
+    OrdersFilter.all => 'profile.ordersPage.filterAll',
+    OrdersFilter.active => 'profile.ordersPage.filterOnTheWay',
+    OrdersFilter.delivered => 'profile.ordersPage.filterDelivered',
+    OrdersFilter.returns => 'profile.nav.returns',
+  };
+}
+
 class _OrdersScreenState extends State<OrdersScreen> {
   List<OrderSummary> _orders = const [];
+  late OrdersFilter _filter = widget.initialFilter;
   OrderScope _scope = OrderScope.local;
   bool _loading = true;
   Object? _error;
@@ -56,32 +84,63 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Global buyurtmasi yo'q mijozga Lokal/Global kaliti keraksiz shovqin.
+    final hasGlobal = _orders.any((o) => o.scope == OrderScope.global);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.t(widget.returnsOnly ? 'profile.nav.returns' : 'profile.ordersPage.title')),
+        title: Text(context.t('profile.ordersPage.title')),
+        actions: [
+          // Raqam va telefon bo'yicha kuzatish (mehmon buyurtmasi ham).
+          IconButton(
+            tooltip: context.t('nav.trackOrder'),
+            icon: const Icon(Icons.local_shipping_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TrackOrderScreen()),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
-          if (!widget.returnsOnly)
-            Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: SegmentedButton<OrderScope>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                  value: OrderScope.local,
-                  label: Text(context.t('profile.ordersPage.scopeLocal')),
-                ),
-                ButtonSegment(
-                  value: OrderScope.global,
-                  icon: const Icon(Icons.public, size: 16),
-                  label: Text(context.t('profile.ordersPage.scopeGlobal')),
-                ),
+          SizedBox(
+            height: 52,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              children: [
+                for (final f in OrdersFilter.values) ...[
+                  ChoiceChip(
+                    label: Text(context.t(f.labelKey)),
+                    showCheckmark: false,
+                    selected: _filter == f,
+                    onSelected: (_) => setState(() => _filter = f),
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ],
-              selected: {_scope},
-              onSelectionChanged: (v) => setState(() => _scope = v.first),
             ),
           ),
+          if (hasGlobal)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: SegmentedButton<OrderScope>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: OrderScope.local,
+                    label: Text(context.t('profile.ordersPage.scopeLocal')),
+                  ),
+                  ButtonSegment(
+                    value: OrderScope.global,
+                    icon: const Icon(Icons.public, size: 16),
+                    label: Text(context.t('profile.ordersPage.scopeGlobal')),
+                  ),
+                ],
+                selected: {_scope},
+                onSelectionChanged: (v) => setState(() => _scope = v.first),
+              ),
+            ),
           Expanded(child: RefreshIndicator(onRefresh: _load, child: _body(context))),
         ],
       ),
@@ -108,27 +167,35 @@ class _OrdersScreenState extends State<OrdersScreen> {
       );
     }
 
-    final shown = widget.returnsOnly
-        ? _orders
-            .where((o) => o.status == OrderStatus.returned || o.status == OrderStatus.refunded)
-            .toList()
-        : _orders.where((o) => o.scope == _scope).toList();
-    if (shown.isEmpty && widget.returnsOnly) {
-      return _message(
-        context,
-        icon: Icons.assignment_return_outlined,
-        title: context.t('returnsPage.listEmptyTitle'),
-        subtitle: context.t('returnsPage.listEmptyDesc'),
-      );
-    }
+    // Global buyurtma bo'lmasa kalit ko'rinmaydi, shuning uchun u holda
+    // hamma buyurtma bitta ro'yxatda (global tanlangan qolib ketmasin).
+    final hasGlobal = _orders.any((o) => o.scope == OrderScope.global);
+    final shown = _orders
+        .where((o) => !hasGlobal || o.scope == _scope)
+        .where(_filter.matches)
+        .toList();
+
     if (shown.isEmpty) {
-      final global = _scope == OrderScope.global;
-      return _message(
-        context,
-        icon: global ? Icons.public : Icons.receipt_long_outlined,
-        title: context.t(global ? 'profile.ordersPage.emptyGlobalTitle' : 'profile.ordersPage.emptyTitle'),
-        subtitle: context.t(global ? 'profile.ordersPage.emptyGlobalDesc' : 'profile.ordersPage.emptyDesc'),
-      );
+      return switch (_filter) {
+        OrdersFilter.returns => _message(
+          context,
+          icon: Icons.assignment_return_outlined,
+          title: context.t('returnsPage.listEmptyTitle'),
+          subtitle: context.t('returnsPage.listEmptyDesc'),
+        ),
+        _ when hasGlobal && _scope == OrderScope.global => _message(
+          context,
+          icon: Icons.public,
+          title: context.t('profile.ordersPage.emptyGlobalTitle'),
+          subtitle: context.t('profile.ordersPage.emptyGlobalDesc'),
+        ),
+        _ => _message(
+          context,
+          icon: Icons.receipt_long_outlined,
+          title: context.t('profile.ordersPage.emptyTitle'),
+          subtitle: context.t('profile.ordersPage.emptyDesc'),
+        ),
+      };
     }
 
     final locale = SellobayRuntimeScope.of(context).locale.locale;

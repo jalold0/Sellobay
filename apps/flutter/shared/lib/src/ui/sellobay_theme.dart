@@ -108,6 +108,25 @@ ThemeData buildSellobayTheme() {
       side: const BorderSide(color: SellobayColors.border),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
     ),
+    // Segmentli tugma ham M3'ning pushti `secondaryContainer`ini oladi:
+    // chiplar bilan bir xil brend ranglari. `TextStyle` yana BERILMAYDI.
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? SellobayColors.primary.withValues(alpha: 0.10)
+              : Colors.white,
+        ),
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? SellobayColors.primary
+              : SellobayColors.ink,
+        ),
+        side: const WidgetStatePropertyAll(
+          BorderSide(color: SellobayColors.border),
+        ),
+      ),
+    ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
   );
 }
