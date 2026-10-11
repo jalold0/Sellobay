@@ -24,7 +24,8 @@ export function done() {
 export async function createTestOrder(provider = 'CLICK') {
   const pr = await fetch(`${BASE}/api/products?limit=1`);
   const pj = await pr.json();
-  const product = pj.items?.[0];
+  // Katalog route'lari yagona konvertga o'tgan: { success, data: { items } }
+  const product = (pj.data?.items ?? pj.items)?.[0];
   if (!product) throw new Error('Mahsulot topilmadi — avval DB seed qiling');
 
   const body = {
@@ -68,6 +69,17 @@ export function clickSign({
     action +
     signTime;
   return createHash('md5').update(base).digest('hex');
+}
+
+/** Buyurtma statusini ochiq kuzatish endpointi orqali o'qiydi (guest buyurtma uchun ham). */
+export async function trackStatus(number, phone = '+998901234567') {
+  const r = await fetch(`${BASE}/api/orders/track`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ number, phone }),
+  });
+  const j = await r.json();
+  return j.data?.order?.status ?? null;
 }
 
 export async function postForm(path, params) {
