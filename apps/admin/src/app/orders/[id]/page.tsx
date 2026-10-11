@@ -45,7 +45,6 @@ import {
 } from '../../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../../components/status/payment-status-badge';
 import {
-  forwardStatuses,
   getOrderDetail,
   reviewPayment,
   updateOrderStatus,
@@ -144,7 +143,8 @@ export default function OrderDetailPage() {
     );
   }
 
-  const nextStatuses = forwardStatuses(order.status);
+  // Server to'lov holatini hisobga olib beradi — PATCH ham aynan shu qoidani tekshiradi.
+  const nextStatuses = order.allowedNextStatuses;
   const showManualCard = order.manualCard?.pending;
 
   return (

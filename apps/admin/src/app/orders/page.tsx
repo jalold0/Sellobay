@@ -29,7 +29,6 @@ import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { OrderStatusBadge, ORDER_STATUS_LABELS } from '../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../components/status/payment-status-badge';
 import {
-  forwardStatuses,
   listOrders,
   updateOrderStatus,
   type AdminOrder,
@@ -173,7 +172,9 @@ export default function AdminOrdersPage() {
         id: 'actions',
         header: () => <div className="text-right">Amal</div>,
         cell: ({ row }) => {
-          const next = forwardStatuses(row.original.status);
+          // Server to'lov holatini hisobga olib beradi (masalan to'lanmagan Click buyurtmasi
+          // faqat CONFIRMED gacha, PAID esa hech qachon qo'lda emas).
+          const next = row.original.allowedNextStatuses;
           if (next.length === 0) {
             return <div className="text-muted-foreground text-right text-xs">—</div>;
           }

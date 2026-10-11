@@ -9,3 +9,4 @@ export * from './global-settings.ts';
 export * from './loyalty.ts';
 export * from './zone.ts';
 export * from './group-buy.ts';
+export * from './order-fulfillment.ts';

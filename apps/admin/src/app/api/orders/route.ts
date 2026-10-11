@@ -1,5 +1,6 @@
 // GET /api/orders — barcha buyurtmalar (admin). Faqat ADMIN/SUPER_ADMIN.
 
+import { adminFulfillmentTargets, orderPaymentState } from '@ecom/core-domain';
 import { NextRequest } from 'next/server';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -42,9 +43,9 @@ export async function GET(req: NextRequest) {
       user: { select: { firstName: true, lastName: true, phone: true, email: true } },
       shippingAddress: { select: { city: true } },
       _count: { select: { items: true } },
+      // Hammasi (oxirgisi ko'rsatish uchun, barchasi — to'lov holatini aniqlash uchun)
       payments: {
         orderBy: { createdAt: 'desc' },
-        take: 1,
         select: { provider: true, status: true },
       },
     },
@@ -65,6 +66,8 @@ export async function GET(req: NextRequest) {
       status: o.status,
       paymentStatus: payment?.status ?? (o.paidAt ? 'PAID' : 'PENDING'),
       paymentProvider: payment?.provider ?? '—',
+      // Status menyusi shu ro'yxatdan quriladi — server PATCH'da aynan shu qoidani tekshiradi.
+      allowedNextStatuses: adminFulfillmentTargets(o.status, orderPaymentState(o)),
       grandTotal: Number(o.grandTotal),
       itemCount: o._count.items,
       deliveryMethod: o.deliveryMethod,
