@@ -27,7 +27,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # package.json engines (24.x) va GitLab CI (node:24) bilan bir xil
+          node-version: 24
           cache: 'pnpm'
 
       - name: Install dependencies
