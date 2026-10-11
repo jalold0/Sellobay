@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sellobay_customer/src/screens/order_detail_screen.dart';
 import 'package:sellobay_customer/src/screens/orders_screen.dart';
+import 'package:sellobay_customer/src/screens/track_order_screen.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:sellobay_shared/testing.dart';
 
@@ -181,22 +182,123 @@ void main() {
     expect(find.text('ORD-2026-00012345'), findsNothing);
   });
 
-  testWidgets('global buyurtma yo`q — alohida bo`sh holat', (tester) async {
+  testWidgets('global buyurtma yo`q — Lokal/Global kaliti ko`rinmaydi', (
+    tester,
+  ) async {
     await pump(tester, _backend(), const OrdersScreen());
 
+    expect(find.byType(SegmentedButton<OrderScope>), findsNothing);
+    expect(find.text('ORD-2026-00012345'), findsWidgets);
+  });
+
+  testWidgets('global buyurtma bor, lekin global filtrda — bo`sh holat matni', (
+    tester,
+  ) async {
+    final backend = _backend(
+      orders: [
+        {..._summary(), 'scope': 'LOCAL'},
+        {
+          ..._summary(),
+          'id': 'bbbbbbbb-2222-4222-8222-222222222222',
+          'number': 'ORD-G',
+          'scope': 'GLOBAL',
+        },
+      ],
+    );
+    await pump(tester, backend, const OrdersScreen());
+
     await tester.tap(find.text('Global'));
+    await settle(tester);
+    // «Yetkazilgan» global buyurtmada yo'q — global bo'sh matn.
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Yetkazilgan'));
+    await settle(tester);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Yetkazilgan'));
     await settle(tester);
 
     expect(find.text("Global buyurtmalar yo'q"), findsOneWidget);
   });
 
-  testWidgets('qaytarishlar — faqat RETURNED/REFUNDED, kalit yo`q', (tester) async {
-    final backend = _backend(orders: [
-      _summary(status: 'DELIVERED'),
-      {..._summary(status: 'RETURNED'), 'id': 'bbbbbbbb-2222-4222-8222-222222222222', 'number': 'ORD-RET-1'},
-      {..._summary(status: 'REFUNDED'), 'id': 'cccccccc-3333-4333-8333-333333333333', 'number': 'ORD-REF-1'},
-    ]);
-    await pump(tester, backend, const OrdersScreen(returnsOnly: true));
+  testWidgets('filtr chiplari: Yo`lda / Yetkazilgan / Qaytarishlar', (
+    tester,
+  ) async {
+    String id(int n) => 'aaaaaaaa-0000-4000-8000-00000000000$n';
+    final backend = _backend(
+      orders: [
+        {..._summary(status: 'PENDING'), 'id': id(1), 'number': 'ORD-PEND'},
+        {..._summary(status: 'DELIVERED'), 'id': id(2), 'number': 'ORD-DONE'},
+        {..._summary(status: 'RETURNED'), 'id': id(3), 'number': 'ORD-RET'},
+        {..._summary(status: 'CANCELLED'), 'id': id(4), 'number': 'ORD-CANC'},
+      ],
+    );
+    await pump(tester, backend, const OrdersScreen());
+
+    // Barchasi
+    for (final n in ['ORD-PEND', 'ORD-DONE', 'ORD-RET', 'ORD-CANC']) {
+      expect(find.text(n), findsOneWidget);
+    }
+
+    Future<void> pick(String chip) async {
+      // Chiplar qatori gorizontal suriladi — ekran kengligidan chiqib ketgani bor.
+      await tester.ensureVisible(find.widgetWithText(ChoiceChip, chip));
+      await settle(tester);
+      await tester.tap(find.widgetWithText(ChoiceChip, chip));
+      await settle(tester);
+    }
+
+    await pick("Yo'lda");
+    expect(find.text('ORD-PEND'), findsOneWidget);
+    expect(
+      [
+        find.text('ORD-DONE'),
+        find.text('ORD-RET'),
+        find.text('ORD-CANC'),
+      ].map((f) => f.evaluate().length),
+      [0, 0, 0],
+    );
+
+    await pick('Yetkazilgan');
+    expect(find.text('ORD-DONE'), findsOneWidget);
+    expect(find.text('ORD-PEND'), findsNothing);
+
+    await pick('Qaytarishlar');
+    expect(find.text('ORD-RET'), findsOneWidget);
+    expect(find.text('ORD-DONE'), findsNothing);
+  });
+
+  testWidgets('AppBardagi belgi raqam bo`yicha kuzatishni ochadi', (
+    tester,
+  ) async {
+    await pump(tester, _backend(), const OrdersScreen());
+
+    await tester.tap(find.byIcon(Icons.local_shipping_outlined));
+    await settle(tester);
+
+    expect(find.byType(TrackOrderScreen), findsOneWidget);
+  });
+
+  testWidgets('qaytarishlar — faqat RETURNED/REFUNDED, kalit yo`q', (
+    tester,
+  ) async {
+    final backend = _backend(
+      orders: [
+        _summary(status: 'DELIVERED'),
+        {
+          ..._summary(status: 'RETURNED'),
+          'id': 'bbbbbbbb-2222-4222-8222-222222222222',
+          'number': 'ORD-RET-1',
+        },
+        {
+          ..._summary(status: 'REFUNDED'),
+          'id': 'cccccccc-3333-4333-8333-333333333333',
+          'number': 'ORD-REF-1',
+        },
+      ],
+    );
+    await pump(
+      tester,
+      backend,
+      const OrdersScreen(initialFilter: OrdersFilter.returns),
+    );
 
     expect(find.text('ORD-RET-1'), findsOneWidget);
     expect(find.text('ORD-REF-1'), findsOneWidget);
@@ -207,7 +309,11 @@ void main() {
   });
 
   testWidgets('qaytarish yo`q — bo`sh holat', (tester) async {
-    await pump(tester, _backend(), const OrdersScreen(returnsOnly: true));
+    await pump(
+      tester,
+      _backend(),
+      const OrdersScreen(initialFilter: OrdersFilter.returns),
+    );
 
     expect(find.text("Qaytarishlar yo'q"), findsOneWidget);
   });

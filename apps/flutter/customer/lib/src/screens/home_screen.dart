@@ -3,7 +3,9 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../home_tabs.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeleton.dart';
 import 'product_screen.dart';
+import 'wishlist_screen.dart';
 
 /// Bosh sahifa.
 ///
@@ -67,20 +69,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.t('common.appName'))),
+      appBar: AppBar(
+        title: Text(context.t('common.appName')),
+        actions: [
+          // Sevimlilar ilgari faqat profil ichida edi: eng ko'p ishlatiladigan
+          // ro'yxat uchun ikki bosish ortiqcha.
+          IconButton(
+            tooltip: context.t('wishlist.title'),
+            icon: const Icon(Icons.favorite_border),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const WishlistScreen()),
+            ),
+          ),
+        ],
+      ),
       body: RefreshIndicator(onRefresh: _load, child: _body(context)),
     );
   }
 
   Widget _body(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: SizedBox(
-          width: 26,
-          height: 26,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
-        ),
-      );
+      return const HomeSkeleton();
     }
 
     if (_error != null) {

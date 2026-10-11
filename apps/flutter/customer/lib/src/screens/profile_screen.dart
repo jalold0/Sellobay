@@ -4,13 +4,10 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 import 'addresses_screen.dart';
 import 'become_seller_screen.dart';
 import 'help_screen.dart';
-import 'loyalty_screen.dart';
 import 'personal_info_screen.dart';
-import 'promo_screen.dart';
 import 'pickup_points_screen.dart';
-import 'track_order_screen.dart';
 import 'my_reviews_screen.dart';
-import 'orders_screen.dart';
+import 'wallet_screen.dart';
 import 'wishlist_screen.dart';
 
 /// Profil: ma'lumotlar, til va chiqish.
@@ -93,96 +90,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _header(context, user),
                 const SizedBox(height: 24),
                 FormErrorBanner(_error),
+                // Guruhlar: ilgari 10 ta teng vaznli havola ketma-ket edi.
+                // Buyurtmalar, qaytarishlar va kuzatish «Buyurtmalar»
+                // bo'limida (pastki panel), hamyon esa bitta ekranda.
+                _group(context.t('profile.groupAccount')),
                 // Tahrirlash ALOHIDA ekranda: profil — navigatsiya,
-                // forma esa forma. Ilgari ikkalasi bir faylda edi va
-                // u o'sib borardi.
+                // forma esa forma.
                 _linkTile(
                   context,
                   icon: Icons.person_outline,
                   labelKey: 'profile.title',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const PersonalInfoScreen()),
-                  ),
-                ),
-                _linkTile(
-                  context,
-                  icon: Icons.favorite_border,
-                  labelKey: 'profile.nav.wishlist',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const WishlistScreen()),
-                  ),
-                ),
-                _linkTile(
-                  context,
-                  icon: Icons.rate_review_outlined,
-                  labelKey: 'profile.nav.reviews',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const MyReviewsScreen()),
-                  ),
-                ),
-                _linkTile(
-                  context,
-                  icon: Icons.assignment_return_outlined,
-                  labelKey: 'profile.nav.returns',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const OrdersScreen(returnsOnly: true)),
-                  ),
-                ),
-                _linkTile(
-                  context,
-                  icon: Icons.local_shipping_outlined,
-                  labelKey: 'nav.trackOrder',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const TrackOrderScreen()),
-                  ),
+                  onTap: () => _open(const PersonalInfoScreen()),
                 ),
                 _linkTile(
                   context,
                   icon: Icons.location_on_outlined,
                   labelKey: 'profile.nav.addresses',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const AddressesScreen()),
-                  ),
+                  onTap: () => _open(const AddressesScreen()),
+                ),
+                const SizedBox(height: 18),
+                _group(context.t('profile.groupActivity')),
+                _linkTile(
+                  context,
+                  icon: Icons.account_balance_wallet_outlined,
+                  labelKey: 'wallet.title',
+                  onTap: () => _open(const WalletScreen()),
                 ),
                 _linkTile(
                   context,
-                  icon: Icons.local_offer_outlined,
-                  labelKey: 'profile.nav.promo',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const PromoScreen()),
-                  ),
+                  icon: Icons.favorite_border,
+                  labelKey: 'profile.nav.wishlist',
+                  onTap: () => _open(const WishlistScreen()),
                 ),
                 _linkTile(
                   context,
-                  icon: Icons.card_giftcard,
-                  labelKey: 'profile.nav.loyalty',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const LoyaltyScreen()),
-                  ),
+                  icon: Icons.rate_review_outlined,
+                  labelKey: 'profile.nav.reviews',
+                  onTap: () => _open(const MyReviewsScreen()),
                 ),
+                const SizedBox(height: 18),
+                _group(context.t('profile.groupMore')),
                 _linkTile(
                   context,
                   icon: Icons.storefront_outlined,
                   labelKey: 'pickupPoints.title',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const PickupPointsScreen()),
-                  ),
+                  onTap: () => _open(const PickupPointsScreen()),
                 ),
                 _linkTile(
                   context,
                   icon: Icons.help_outline,
                   labelKey: 'help.title',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const HelpScreen()),
-                  ),
+                  onTap: () => _open(const HelpScreen()),
                 ),
                 _linkTile(
                   context,
-                  icon: Icons.storefront_outlined,
+                  icon: Icons.sell_outlined,
                   labelKey: 'sell.title',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const BecomeSellerScreen()),
-                  ),
+                  onTap: () => _open(const BecomeSellerScreen()),
                 ),
                 const SizedBox(height: 26),
                 _section(context.t('localeSwitcher.label')),
@@ -244,15 +208,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: const TextStyle(fontSize: 13, color: SellobayColors.mutedText),
                 ),
               ],
-              const SizedBox(height: 6),
-              Text(
-                // Ballar serverdan keladi; mahalliy hisob yo'q.
-                '${context.t('profile.stats.points')}: ${user.loyaltyPoints}',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 8),
+              // Ballar serverdan keladi; mahalliy hisob yo'q. Bosilsa hamyon.
+              ActionChip(
+                visualDensity: VisualDensity.compact,
+                avatar: const Icon(
+                  Icons.stars_rounded,
+                  size: 16,
                   color: SellobayColors.accent,
                 ),
+                label: Text(
+                  '${context.t('profile.stats.points')}: ${user.loyaltyPoints}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onPressed: () => _open(const WalletScreen()),
               ),
             ],
           ),
@@ -299,6 +271,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       );
+
+  void _open(Widget screen) =>
+      Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => screen));
+
+  /// Guruh sarlavhasi — ro'yxatni bo'laklarga ajratadi.
+  Widget _group(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+        color: SellobayColors.mutedText,
+      ),
+    ),
+  );
 
   Widget _section(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
