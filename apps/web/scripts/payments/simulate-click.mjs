@@ -2,7 +2,7 @@
 // Talab: dev server CLICK_SECRET_KEY (test qiymat) bilan ishga tushirilgan bo'lsin,
 //        shu qiymat bu skript env'ida ham bo'lsin.
 
-import { BASE, clickSign, createTestOrder, done, log, postForm } from './_helpers.mjs';
+import { BASE, clickSign, createTestOrder, done, log, postForm, trackStatus } from './_helpers.mjs';
 
 const secret = process.env.CLICK_SECRET_KEY;
 if (!secret) {
@@ -59,6 +59,9 @@ res = await postForm(P, {
   merchant_prepare_id: prepareId,
   amount: amount1,
   action: '1',
+  // Click Complete'da har doim to'lov natijasini yuboradi: 0 = muvaffaqiyatli
+  error: '0',
+  error_note: 'Success',
   sign_time: signTime,
   sign_string: comp,
 });
@@ -72,6 +75,8 @@ res = await postForm(P, {
   merchant_prepare_id: prepareId,
   amount: amount1,
   action: '1',
+  error: '0',
+  error_note: 'Success',
   sign_time: signTime,
   sign_string: comp,
 });
@@ -135,5 +140,81 @@ res = await postForm(P, {
   sign_string: sX,
 });
 log(res.error === -5, 'Mavjud bo‘lmagan order → not found (-5)', res);
+
+// --- Click to'lovni bekor qilgan Complete (error < 0) → -9, buyurtma PENDING qoladi ---
+// Click Complete'ni to'lov yiqilganda ham yuboradi (masalan -5017: mablag' yetarli emas).
+// Imzo `error`ni qamramaydi, shuning uchun uni alohida o'qish SHART.
+async function prepareOrder(order, transId) {
+  const amount = String(order.grandTotalSom);
+  const sign = clickSign({
+    clickTransId: transId,
+    serviceId,
+    secret,
+    merchantTransId: order.id,
+    amount,
+    action: '0',
+    signTime,
+  });
+  const r = await postForm(P, {
+    click_trans_id: transId,
+    service_id: serviceId,
+    merchant_trans_id: order.id,
+    amount,
+    action: '0',
+    error: '0',
+    error_note: 'Success',
+    sign_time: signTime,
+    sign_string: sign,
+  });
+  return r.merchant_prepare_id;
+}
+async function completeOrder(order, transId, prepareId, extra) {
+  const amount = String(order.grandTotalSom);
+  const sign = clickSign({
+    clickTransId: transId,
+    serviceId,
+    secret,
+    merchantTransId: order.id,
+    merchantPrepareId: prepareId,
+    amount,
+    action: '1',
+    signTime,
+  });
+  return postForm(P, {
+    click_trans_id: transId,
+    service_id: serviceId,
+    merchant_trans_id: order.id,
+    merchant_prepare_id: prepareId,
+    amount,
+    action: '1',
+    sign_time: signTime,
+    sign_string: sign,
+    ...extra,
+  });
+}
+
+const o3 = await createTestOrder('CLICK');
+const ct3 = 'CLICK-TEST-' + Date.now() + '-fail';
+const prep3 = await prepareOrder(o3, ct3);
+res = await completeOrder(o3, ct3, prep3, { error: '-5017', error_note: 'Insufficient funds' });
+log(res.error === -9, 'Complete error=-5017 → transaction cancelled (-9)', res);
+let st = await trackStatus(o3.number);
+log(st === 'PENDING', 'Yiqilgan Click to‘lovidan keyin buyurtma PENDING qoladi', st);
+
+// Click `error`siz Complete yubormaydi — bunday so'rov PAID qilmasligi kerak
+const ct3b = 'CLICK-TEST-' + Date.now() + '-noerr';
+const prep3b = await prepareOrder(o3, ct3b);
+res = await completeOrder(o3, ct3b, prep3b, {});
+log(res.error === -8, 'Complete `error` maydonisiz → request error (-8)', res);
+st = await trackStatus(o3.number);
+log(st === 'PENDING', '`error`siz Complete buyurtmani PAID qilmaydi', st);
+
+// Mijoz qayta to'laydi (yangi click_trans_id) — endi muvaffaqiyatli
+const ct3c = 'CLICK-TEST-' + Date.now() + '-retry';
+const prep3c = await prepareOrder(o3, ct3c);
+res = await completeOrder(o3, ct3c, prep3c, { error: '0', error_note: 'Success' });
+log(res.error === 0, 'Qayta urinish (error=0) → OK', res);
+st = await trackStatus(o3.number);
+log(st === 'PAID', 'Qayta urinishdan keyin buyurtma PAID', st);
 
 done();

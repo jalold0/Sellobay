@@ -32,7 +32,9 @@ paydo bo'ladi.
 ## Nima tekshiriladi
 
 **Click:** Prepare→Complete (PAID), takroriy Complete → already paid (-4), noto'g'ri imzo
-(-1), noto'g'ri summa (-2), mavjud bo'lmagan order (-5).
+(-1), noto'g'ri summa (-2), mavjud bo'lmagan order (-5), Click yiqilgan to'lov haqida
+xabar bergan Complete (`error=-5017`) → transaction cancelled (-9) va buyurtma PENDING
+qoladi, `error` maydonisiz Complete → request error (-8), keyin qayta to'lov → PAID.
 
 **Payme:** CheckPerform→Create→Perform (PAID)→Check, idempotentlik, noto'g'ri summa (-31001),
 mavjud bo'lmagan order (-31050), noto'g'ri auth (-32504), noma'lum metod (-32601), to'langan
