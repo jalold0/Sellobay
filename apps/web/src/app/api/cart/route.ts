@@ -8,7 +8,6 @@ import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 
-import type { Prisma } from '@ecom/database';
 import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -83,10 +82,16 @@ export async function PUT(req: NextRequest) {
     productIds.length > 0
       ? await prisma.product.findMany({
           where: { id: { in: productIds }, status: 'ACTIVE' },
-          select: { id: true, basePrice: true },
+          select: { id: true, basePrice: true, variants: { select: { id: true, price: true } } },
         })
       : [];
   const priceByProduct = new Map(products.map((p) => [p.id, p.basePrice]));
+  const variantPrice = new Map(
+    products.flatMap((p) => p.variants.map((v) => [v.id, v.price] as const)),
+  );
+  // Savatdagi narx snapshot'i checkout bilan bir xil: variantning o'z narxi, bo'lmasa basePrice.
+  const unitPriceFor = (it: { productId: string; variantId?: string | null }) =>
+    (it.variantId ? variantPrice.get(it.variantId) : null) ?? priceByProduct.get(it.productId)!;
 
   // Faqat haqiqiy mahsulotlarni qabul qilamiz
   const validClientItems = clientItems.filter((i) => priceByProduct.has(i.productId));
@@ -114,7 +119,7 @@ export async function PUT(req: NextRequest) {
               productId: it.productId,
               variantId: it.variantId ?? null,
               quantity: it.quantity,
-              unitPrice: priceByProduct.get(it.productId)!,
+              unitPrice: unitPriceFor(it),
             },
           });
         }
@@ -131,7 +136,7 @@ export async function PUT(req: NextRequest) {
             productId: it.productId,
             variantId: it.variantId ?? null,
             quantity: it.quantity,
-            unitPrice: priceByProduct.get(it.productId) as Prisma.Decimal,
+            unitPrice: unitPriceFor(it),
           })),
         });
       }

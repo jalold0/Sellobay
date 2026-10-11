@@ -66,6 +66,9 @@ export function ProductDetail({ detail, locale }: Props) {
   const toggleWishlist = useWishlist((s) => s.toggle);
 
   const selectedColor = colors.find((c) => c.id === color);
+  // `selectedVariant` dan OLDIN: u shu qiymatni ishlatadi (keyin e'lon qilinsa —
+  // faqat o'lchamli mahsulotda ReferenceError, sahifa yiqiladi).
+  const selectedSize = sizes.find((s) => s.id === size);
 
   // Tanlangan rang/o'lchamga mos HAQIQIY variant. Ilgari savatga faqat
   // yorliqlar (color/size matni) qo'shilardi va buyurtma standart variantga
@@ -77,8 +80,12 @@ export function ProductDetail({ detail, locale }: Props) {
         (colors.length === 0 || v.color === selectedColor?.label) &&
         (sizes.length === 0 || v.size === selectedSize?.label),
     ) ?? (variants.length === 1 ? variants[0] : undefined);
-  const selectedSize = sizes.find((s) => s.id === size);
-  const discount = discountPercent(product.price, product.oldPrice);
+  // Variantning o'z narxi bo'lsa — o'sha; checkout ham aynan shuni oladi.
+  const unitPrice = selectedVariant?.price ?? product.price;
+  // Eski narx faqat joriy (variant) narxdan baland bo'lsa ko'rsatiladi.
+  const oldPrice =
+    product.oldPrice !== undefined && product.oldPrice > unitPrice ? product.oldPrice : undefined;
+  const discount = discountPercent(unitPrice, oldPrice);
 
   const handleAdd = (buyNow = false) => {
     if (sizes.length > 0 && !size) {
@@ -96,8 +103,8 @@ export function ProductDetail({ detail, locale }: Props) {
       slug: product.slug,
       imageSeed: product.imageSeed,
       imageUrl: gallery[0]?.url ?? product.imageUrl,
-      unitPrice: product.price,
-      oldPrice: product.oldPrice,
+      unitPrice,
+      oldPrice,
       currency: product.currency,
       quantity,
       isGlobal: product.isGlobal,
@@ -209,12 +216,12 @@ export function ProductDetail({ detail, locale }: Props) {
           {/* Price */}
           <div className="flex items-end gap-3 border-y py-5">
             <div>
-              {product.oldPrice && (
+              {oldPrice && (
                 <div className="text-muted-foreground text-sm line-through">
-                  {formatMoney(product.oldPrice)}
+                  {formatMoney(oldPrice)}
                 </div>
               )}
-              <div className="text-foreground text-3xl font-bold">{formatMoney(product.price)}</div>
+              <div className="text-foreground text-3xl font-bold">{formatMoney(unitPrice)}</div>
             </div>
             {discount > 0 && (
               <Badge className="bg-rose-600 text-white hover:bg-rose-600">−{discount}%</Badge>
@@ -386,8 +393,8 @@ export function ProductDetail({ detail, locale }: Props) {
         show={showSticky}
         name={name}
         imageSrc={gallery[0]?.url ?? productImage(product.imageSeed, 100)}
-        price={product.price}
-        oldPrice={product.oldPrice}
+        price={unitPrice}
+        oldPrice={oldPrice}
         inStock={product.inStock}
         onAdd={() => handleAdd(false)}
       />

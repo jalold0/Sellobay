@@ -296,6 +296,8 @@ export async function createOrder(
         select: {
           id: true,
           isActive: true,
+          // Variantning o'z narxi (bo'lmasa mahsulotning basePrice'i) — sahifada shu ko'rsatiladi
+          price: true,
           inventory: { select: { id: true, warehouseId: true, quantityOnHand: true } },
         },
       },
@@ -368,8 +370,9 @@ export async function createOrder(
     }
 
     // Varyantni aniqlash
+    // Aniq tanlangan variant faol bo'lishi shart — sahifada faqat faollari ko'rsatiladi.
     const variant = it.variantId
-      ? p.variants.find((v) => v.id === it.variantId)
+      ? p.variants.find((v) => v.id === it.variantId && v.isActive)
       : (p.variants.find((v) => v.isActive) ?? p.variants[0]);
     if (it.variantId && !variant) {
       throw new OrderError(400, 'VARIANT_NOT_FOUND', 'Tanlangan variant topilmadi');
@@ -391,10 +394,15 @@ export async function createOrder(
       );
     }
 
+    // Katalog narxi — variantning o'z narxi, bo'lmasa mahsulotning basePrice'i.
+    // Mahsulot sahifasi (web va ilova) aynan shuni ko'rsatadi. Ilgari bu yerda
+    // har doim basePrice olinardi: seller variantga alohida narx qo'ysa, mijoz
+    // sahifada ko'rganidan boshqa summani to'lardi (audit K6).
+    const listPrice = variant.price ?? p.basePrice;
     // Guruh narxi faqat katalog narxidan PAST bo'lsa qo'llanadi — aks holda
     // eski snapshot mijozga zarar keltirmasin.
     const groupPrice = groupPriceByProduct.get(p.id);
-    const unitPrice = groupPrice && groupPrice.lessThan(p.basePrice) ? groupPrice : p.basePrice;
+    const unitPrice = groupPrice && groupPrice.lessThan(listPrice) ? groupPrice : listPrice;
     const totalPrice = unitPrice.mul(it.quantity);
     subtotal = subtotal.add(totalPrice);
     orderItemsData.push({

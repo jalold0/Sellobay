@@ -263,6 +263,8 @@ export interface ProductVariantRow {
   size: string | null;
   stock: number;
   inStock: boolean;
+  /** Variantning o'z narxi; null — mahsulot narxi amal qiladi. Checkout ham shunday hisoblaydi. */
+  price: number | null;
 }
 
 export interface ProductDetailExtras {
@@ -336,6 +338,7 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
           orderBy: { position: 'asc' },
           select: {
             id: true,
+            price: true,
             inventory: { select: { quantityOnHand: true } },
             attributes: {
               select: { valueString: true, attribute: { select: { slug: true } } },
@@ -368,7 +371,14 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
           sizeMap.set(a.valueString, (sizeMap.get(a.valueString) ?? false) || inStock);
         }
       }
-      variants.push({ id: v.id, color, size, stock, inStock });
+      variants.push({
+        id: v.id,
+        color,
+        size,
+        stock,
+        inStock,
+        price: v.price === null ? null : Number(v.price),
+      });
     }
     return {
       galleryUrls,
