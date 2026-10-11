@@ -344,25 +344,6 @@ export function listOrders(status?: string) {
   return api<{ items: AdminOrder[] }>(`/api/orders${qs}`);
 }
 
-// Fulfillment kanonik tartibi — status faqat OLDINGA suriladi (backend ham shuni tekshiradi).
-const FULFILLMENT_FLOW: AdminOrderStatus[] = [
-  'PENDING',
-  'CONFIRMED',
-  'PAID',
-  'PROCESSING',
-  'PACKED',
-  'SHIPPED',
-  'OUT_FOR_DELIVERY',
-  'DELIVERED',
-];
-
-/** Berilgan statusdan keyin qo'yish mumkin bo'lgan (oldingi) statuslar. Flow'da bo'lmasa (masalan
- *  CANCELLED/RETURNED) — bo'sh (bu endpoint orqali o'zgartirib bo'lmaydi). */
-export function forwardStatuses(current: string): AdminOrderStatus[] {
-  const i = FULFILLMENT_FLOW.indexOf(current as AdminOrderStatus);
-  return i === -1 ? [] : FULFILLMENT_FLOW.slice(i + 1);
-}
-
 export interface OrderStatusUpdateResult {
   id: string;
   number: string;
@@ -415,6 +396,8 @@ export interface AdminOrderDetail {
   customerPhone: string;
   paymentStatus: AdminPaymentStatus;
   paymentProvider: string;
+  /** Server hisoblagan keyingi statuslar (to'lov holatini hisobga olib). Bo'sh — o'zgartirib bo'lmaydi. */
+  allowedNextStatuses: AdminOrderStatus[];
   subtotal: number;
   shippingTotal: number;
   discountTotal: number;
@@ -486,6 +469,8 @@ export interface AdminOrder {
   status: AdminOrderStatus;
   paymentStatus: AdminPaymentStatus;
   paymentProvider: string;
+  /** Server hisoblagan keyingi statuslar (to'lov holatini hisobga olib). Bo'sh — o'zgartirib bo'lmaydi. */
+  allowedNextStatuses: AdminOrderStatus[];
   grandTotal: number;
   itemCount: number;
   deliveryMethod: string;

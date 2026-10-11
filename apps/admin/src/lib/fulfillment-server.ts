@@ -2,39 +2,17 @@
 // Faqat admin API route'idan chaqiriladi. inventory-server / loyalty-server pattern'i:
 // funksiyalar `tx: Prisma.TransactionClient` qabul qiladi — chaqiruvchi $transaction'ni ochadi.
 
+// O'tish qonuniyligi (qaysi statusga, qaysi to'lov holatida) — @ecom/core-domain
+// `order-fulfillment` da; bu fayl faqat DB yon ta'sirlarini qo'llaydi.
+
+import {
+  COD_PROVIDER,
+  settlesCodPayment,
+  type FulfillmentStatus,
+  type OrderPaymentState,
+} from '@ecom/core-domain';
+
 import type { Prisma } from '@ecom/database';
-
-// Kanonik fulfillment tartibi — o'tish faqat OLDINGA (indeks ortishi) ruxsat etiladi.
-export const FULFILLMENT_FLOW = [
-  'PENDING',
-  'CONFIRMED',
-  'PAID',
-  'PROCESSING',
-  'PACKED',
-  'SHIPPED',
-  'OUT_FOR_DELIVERY',
-  'DELIVERED',
-] as const;
-
-export type FulfillmentStatus = (typeof FULFILLMENT_FLOW)[number];
-
-// Bu endpoint orqali qo'yish mumkin bo'lgan target statuslar (PENDING'ga qaytarib bo'lmaydi).
-export const FULFILLMENT_TARGETS: FulfillmentStatus[] = [
-  'CONFIRMED',
-  'PAID',
-  'PROCESSING',
-  'PACKED',
-  'SHIPPED',
-  'OUT_FOR_DELIVERY',
-  'DELIVERED',
-];
-
-/** `from` statusdan `to` ga oldinga o'tish mumkinmi? (from FLOW'da bo'lishi va to undan keyin). */
-export function canTransition(from: string, to: FulfillmentStatus): boolean {
-  const f = FULFILLMENT_FLOW.indexOf(from as FulfillmentStatus);
-  const t = FULFILLMENT_FLOW.indexOf(to);
-  return f !== -1 && t > f;
-}
 
 export interface FulfillmentOrder {
   id: string;
@@ -62,17 +40,21 @@ export class ConcurrentTransitionError extends Error {
  * Status o'tishining DB yon ta'sirlarini bitta $transaction ichida qo'llaydi:
  *   • status + OrderStatusHistory
  *   • SHIPPED/OUT_FOR_DELIVERY → shippedAt (agar hali bo'lmasa)
- *   • DELIVERED → deliveredAt + soldCount++ (yetkazilgan = sotilgan) va COD bo'lsa Payment PAID.
- * Transition qonuniyligi (canTransition) chaqiruvchida tekshirilishi shart.
+ *   • DELIVERED → deliveredAt + soldCount++ (yetkazilgan = sotilgan) va naqd (COD) buyurtmada
+ *     COD to'lovi PAID + order.paidAt/paidTotal.
+ * Transition qonuniyligi (canAdminTransition) chaqiruvchida tekshirilishi shart.
  */
 export async function applyFulfillmentTransition(
   tx: Prisma.TransactionClient,
   order: FulfillmentOrder,
   next: FulfillmentStatus,
+  payment: OrderPaymentState,
   opts: { changedBy?: string | null; comment?: string } = {},
 ): Promise<FulfillmentResult> {
   const now = new Date();
-  const codSettled = next === 'DELIVERED' && !order.paidAt;
+  // Faqat naqd buyurtma yetkazilganda "pul olindi" deb yoziladi. Ilgari `!order.paidAt`
+  // edi — to'lanmagan Click/Payme/UZCARD buyurtmasi ham DELIVERED'da PAID bo'lib qolardi.
+  const codSettled = settlesCodPayment(next, payment);
 
   // Skalyar maydonlar — ATOMIK shartli UPDATE bilan yoziladi (nested yozuvsiz).
   const scalar: Record<string, unknown> = { status: next };
@@ -81,7 +63,7 @@ export async function applyFulfillmentTransition(
   }
   if (next === 'DELIVERED') {
     scalar.deliveredAt = now;
-    // COD — yetkazilganda naqd olindi. Faqat hali to'lanmagan bo'lsa (onlayn allaqachon PAID).
+    // COD — yetkazilganda naqd olindi.
     if (codSettled) {
       scalar.paidAt = now;
       scalar.paidTotal = order.grandTotal;
@@ -109,9 +91,10 @@ export async function applyFulfillmentTransition(
     },
   });
 
-  if (next === 'DELIVERED' && codSettled) {
+  if (codSettled) {
+    // Faqat naqd to'lov yozuvi — boshqa provayderlarning PENDING yozuvlariga tegilmaydi.
     await tx.payment.updateMany({
-      where: { orderId: order.id, status: 'PENDING' },
+      where: { orderId: order.id, provider: COD_PROVIDER, status: 'PENDING' },
       data: { status: 'PAID', paidAt: now },
     });
   }

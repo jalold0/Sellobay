@@ -1,6 +1,8 @@
 // GET /api/orders/[id] — buyurtma to'liq tafsiloti (admin). Faqat ADMIN/SUPER_ADMIN.
 // Detal sahifasi shu endpoint'dan real ma'lumot oladi (mock EMAS).
 
+import { adminFulfillmentTargets, orderPaymentState } from '@ecom/core-domain';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
@@ -30,6 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       discountTotal: true,
       grandTotal: true,
       placedAt: true,
+      paidAt: true,
       deliveryMethod: true,
       notes: true,
       guestPhone: true,
@@ -66,9 +69,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         orderBy: { changedAt: 'asc' },
         select: { status: true, comment: true, changedAt: true },
       },
+      // Hammasi (oxirgisi ko'rsatish uchun, barchasi — to'lov holatini aniqlash uchun)
       payments: {
         orderBy: { createdAt: 'desc' },
-        take: 1,
         select: { id: true, provider: true, status: true, rawPayload: true },
       },
     },
@@ -92,6 +95,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     customerPhone: o.user?.phone ?? o.guestPhone ?? '',
     paymentStatus: payment?.status ?? 'PENDING',
     paymentProvider: payment?.provider ?? '—',
+    // Status menyusi shu ro'yxatdan quriladi — server PATCH'da aynan shu qoidani tekshiradi.
+    allowedNextStatuses: adminFulfillmentTargets(o.status, orderPaymentState(o)),
     subtotal: Number(o.subtotal),
     shippingTotal: Number(o.shippingTotal),
     discountTotal: Number(o.discountTotal),
