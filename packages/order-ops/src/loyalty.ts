@@ -73,6 +73,23 @@ export async function settleOrderLoyalty(
  * Kechiktirilgan cashback'ni beradi (masalan karta to'lovi tasdiqlanganda). Idempotent:
  * shu buyurtma bo'yicha ORDER_EARN allaqachon bo'lsa — hech narsa qilmaydi.
  */
+/**
+ * Buyurtma uchun cashback — pul HAQIQATAN tushganda (Click/Payme to'lovi, chek tasdig'i,
+ * naqd — yetkazilganda). Ilgari coin buyurtma yaratilgan zahoti berilardi: to'lanmagan yoki
+ * keyin bekor qilinadigan buyurtmadan ham coin yig'ish mumkin edi (audit O1). Idempotent.
+ */
+export async function grantOrderEarnForOrder(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+): Promise<number> {
+  const order = await tx.order.findUnique({
+    where: { id: orderId },
+    select: { userId: true, grandTotal: true, number: true },
+  });
+  if (!order?.userId) return 0;
+  return grantOrderEarn(tx, order.userId, order.grandTotal.toNumber(), order.number);
+}
+
 export async function grantOrderEarn(
   tx: Prisma.TransactionClient,
   userId: string,

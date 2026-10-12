@@ -66,26 +66,33 @@ export function meSeller() {
 /** Mahsulot nomi — DB'da Json, shakli { uz, ru?, en? }. */
 export type LocalizedName = Partial<Record<'uz' | 'ru' | 'en', string>>;
 
+/** Inventar qatori — HAR VARIANT alohida (bir variantli tovarda `variantLabel` = null). */
 export interface InventoryRow {
-  id: string;
+  variantId: string;
+  productId: string;
   sku: string;
   name: LocalizedName;
-  basePrice: number;
+  variantLabel: string | null;
+  price: number;
   imageUrl: string;
   stock: number;
   reserved: number;
-  variantCount: number;
-  /** Ko'p variantli mahsulotda umumiy sonni bitta qiymatga yozib bo'lmaydi. */
-  editable: boolean;
+  /** Shundan kam qolsa «kam qoldi» deb belgilanadi. */
+  reorderPoint: number;
 }
 
 export function listInventory() {
   return api<{ items: InventoryRow[] }>('/api/inventory');
 }
 
-/** Zaxirani yangilaydi. `quantity` — yakuniy son (ayirma emas). */
-export function updateInventory(updates: Array<{ productId: string; quantity: number }>) {
-  return api<{ updated: number; skipped: string[] }>('/api/inventory', {
+/**
+ * Zaxirani yangilaydi. `quantity` — yakuniy son, `expected` — sahifada ko'rilgan son:
+ * shu orada buyurtma tushib o'zgargan bo'lsa server 409 STOCK_CHANGED qaytaradi.
+ */
+export function updateInventory(
+  updates: Array<{ variantId: string; quantity: number; expected: number }>,
+) {
+  return api<{ updated: number }>('/api/inventory', {
     method: 'PATCH',
     body: JSON.stringify({ updates }),
   });

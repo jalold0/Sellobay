@@ -11,6 +11,7 @@ import {
   GlobalOrderTracker,
   type CustomerGlobalView,
 } from '../../../../../components/global/global-order-tracker';
+import { ReceiptResubmit } from '../../../../../components/orders/receipt-resubmit';
 import { formatDate as fmtDate, formatMoney } from '../../../../../lib/format';
 
 type OrderStatus =
@@ -35,6 +36,8 @@ interface OrderDetail {
   paymentProvider: string | null;
   paymentStatus: string | null;
   paymentReview: boolean;
+  /** Karta cheki rad etilgan — yangisini yuborish mumkin (sabab va muddat bilan). */
+  receiptResubmit: { reason: string | null; deadline: string | null } | null;
   subtotal: string;
   shippingTotal: string;
   discountTotal: string;
@@ -229,6 +232,16 @@ export default function OrderDetailPage() {
           <div className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
             {t('reviewNote')}
           </div>
+        ) : null}
+
+        {/* Chek rad etilgan — yangisini yuborish (audit O4) */}
+        {order.receiptResubmit ? (
+          <ReceiptResubmit
+            orderId={order.id}
+            reason={order.receiptResubmit.reason}
+            deadline={order.receiptResubmit.deadline}
+            onSent={() => void load()}
+          />
         ) : null}
 
         {/* Global (Xitoy) buyurtma — o'z kuzatuv chizig'i */}

@@ -2,7 +2,7 @@ import { exportPKCS8, generateKeyPair } from 'jose';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createFcmClient, parseServiceAccount } from './fcm';
-import { buildOrderStatusMessage, createPushService } from './service';
+import { buildOrderStatusMessage, buildPaymentReviewMessage, createPushService } from './service';
 
 import type { FcmClient, ServiceAccount } from './fcm';
 import type { PushDb } from './service';
@@ -210,5 +210,24 @@ describe('buildOrderStatusMessage', () => {
     const m = buildOrderStatusMessage({ id: 'o1', number: 'ORD-1' }, 'SHIPPED', 'xx');
     expect(m.body).toBe("Yo'lda");
     expect(m.data).toEqual({ type: 'order', orderId: 'o1', status: 'SHIPPED' });
+  });
+});
+
+describe('notifyPaymentReview (karta cheki natijasi)', () => {
+  it('rad etilsa — mijoz tilida «yangi chek yuklang», ilova buyurtmani ochadi', async () => {
+    const { db } = fakeDb();
+    const { client, sent } = clientReturning({});
+    await createPushService(db, client).notifyPaymentReview('o1', false);
+    expect(sent).toHaveLength(2);
+    expect(sent[0]!.body).toContain('чек');
+    const m = buildPaymentReviewMessage({ id: 'o1', number: 'ORD-1' }, false, 'uz');
+    expect(m.data).toEqual({ type: 'order', orderId: 'o1', status: 'PAYMENT_REJECTED' });
+  });
+  it('mehmon buyurtmasi yoki sozlanmagan — hech narsa yubormaydi', async () => {
+    const { db } = fakeDb({ order: { number: 'ORD-1', userId: null, user: null } });
+    const { client, sent } = clientReturning({});
+    await createPushService(db, client).notifyPaymentReview('o1', true);
+    await createPushService(fakeDb().db, null).notifyPaymentReview('o1', true);
+    expect(sent).toHaveLength(0);
   });
 });

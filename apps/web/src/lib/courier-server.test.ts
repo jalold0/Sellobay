@@ -145,6 +145,26 @@ describe('javobga o`girish', () => {
     expect(serializeDelivery(row({ courierId: 'c1' })).claimed).toBe(true);
   });
 
+  it('mijoz ismi, telefoni va izohi faqat topshiriqni olgan kuryerga (P5)', () => {
+    const order = {
+      id: 'o1',
+      number: 'ORD-1',
+      grandTotal: { toString: () => '620000' },
+      placedAt: new Date('2026-10-04T07:55:00.000Z'),
+      notes: 'Domofon 12',
+      shippingAddress: { recipientName: 'Ali Valiyev', phone: '+998901234567' },
+      items: [],
+    };
+    const free = serializeDelivery(row({ courierId: null, order })).order;
+    expect([free.recipientName, free.recipientPhone, free.notes]).toEqual([null, null, null]);
+    const mine = serializeDelivery(row({ courierId: 'c1', order })).order;
+    expect([mine.recipientName, mine.recipientPhone, mine.notes]).toEqual([
+      'Ali Valiyev',
+      '+998901234567',
+      'Domofon 12',
+    ]);
+  });
+
   it('`nextStatuses` holatdan hisoblanadi', () => {
     expect(serializeDelivery(row({ status: 'IN_TRANSIT' })).nextStatuses).toEqual([
       'ARRIVED',

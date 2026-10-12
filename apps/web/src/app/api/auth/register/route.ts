@@ -44,41 +44,46 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(password);
 
-  const user = await prisma.user.create({
-    data: {
-      email: normalizedEmail ?? null,
-      phone: normalizedPhone,
-      passwordHash,
-      firstName,
-      lastName,
-      locale,
-      // Sotuvchi: tasdiq kutilmoqda (admin approval). Mijoz: darhol faol.
-      status: isSeller ? 'PENDING' : 'ACTIVE',
-      emailVerifiedAt: null,
-      roles: {
-        create: isSeller ? [{ role: 'CUSTOMER' }, { role: 'SELLER' }] : [{ role: 'CUSTOMER' }],
-      },
-    },
-    select: { id: true, email: true, phone: true, firstName: true, lastName: true },
-  });
-
-  // Sotuvchi sifatida ariza — Seller entity (PENDING) yaratamiz, admin tasdiqlashi shart
-  if (isSeller) {
-    const displayName = [firstName, lastName].filter(Boolean).join(' ').trim() || 'Sotuvchi';
-    await prisma.seller.create({
+  // Foydalanuvchi va sotuvchi profili BITTA tranzaksiyada (audit O10): ilgari ikkinchisi
+  // yiqilsa, sotuvchi profili yo'q «sotuvchi» foydalanuvchi qolib, qayta ro'yxatdan o'ta olmasdi.
+  const user = await prisma.$transaction(async (tx) => {
+    const created = await tx.user.create({
       data: {
-        ownerUserId: user.id,
-        legalName: legalName ?? shopName ?? displayName,
-        brandName: shopName ?? displayName,
-        tin: tin ?? null,
-        bankName: bankName ?? null,
-        bankAccount: bankAccount ?? null,
-        email: normalizedEmail,
+        email: normalizedEmail ?? null,
         phone: normalizedPhone,
-        status: 'PENDING',
+        passwordHash,
+        firstName,
+        lastName,
+        locale,
+        // Sotuvchi: tasdiq kutilmoqda (admin approval). Mijoz: darhol faol.
+        status: isSeller ? 'PENDING' : 'ACTIVE',
+        emailVerifiedAt: null,
+        roles: {
+          create: isSeller ? [{ role: 'CUSTOMER' }, { role: 'SELLER' }] : [{ role: 'CUSTOMER' }],
+        },
       },
+      select: { id: true, email: true, phone: true, firstName: true, lastName: true },
     });
-  }
+
+    // Sotuvchi sifatida ariza — Seller entity (PENDING) yaratamiz, admin tasdiqlashi shart
+    if (isSeller) {
+      const displayName = [firstName, lastName].filter(Boolean).join(' ').trim() || 'Sotuvchi';
+      await tx.seller.create({
+        data: {
+          ownerUserId: created.id,
+          legalName: legalName ?? shopName ?? displayName,
+          brandName: shopName ?? displayName,
+          tin: tin ?? null,
+          bankName: bankName ?? null,
+          bankAccount: bankAccount ?? null,
+          email: normalizedEmail,
+          phone: normalizedPhone,
+          status: 'PENDING',
+        },
+      });
+    }
+    return created;
+  });
 
   // Sotuvchi PENDING — sessiya bermaymiz, admin tasdiqlagandan keyin login qiladi
   if (isSeller) {

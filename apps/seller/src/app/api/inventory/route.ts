@@ -1,15 +1,16 @@
 // Sotuvchi paneli — ombor (inventar) API.
-//   GET   /api/inventory — joriy sotuvchining mahsulotlari va ularning zaxirasi
-//   PATCH /api/inventory — bir nechta mahsulot zaxirasini yangilash
+//   GET   /api/inventory — joriy sotuvchining tovarlari, HAR VARIANT alohida qator
+//   PATCH /api/inventory — variantlar zaxirasini yangilash
 //
-// Ilgari sotuvchi inventar sahifasi mock ro'yxatni ko'rsatib, "Saqlash" bosilganda
-// faqat "Stok yangilandi" toast'ini chiqarardi — hech qanday so'rov ketmasdi va
-// bazada hech nima o'zgarmasdi. Sotuvchi tugagan tovarni "bor" deb qoldirsa,
-// sayt uni sotishda davom etardi (oversell).
+// Zaxira modeli @ecom/order-ops inventory bilan bir xil: InventoryItem VARIANT bo'yicha
+// kalitlanadi, MVP'da bitta ombor (WH-TASHKENT-MAIN).
 //
-// Zaxira modeli apps/web/src/lib/inventory-server.ts bilan bir xil:
-// InventoryItem VARIANT bo'yicha kalitlanadi, mahsulot zaxirasi = variantlar
-// yig'indisi, MVP'da bitta ombor (WH-TASHKENT-MAIN).
+// Audit O3 tuzatishlari:
+//   • ko'p variantli tovar ham tahrirlanadi — har variant o'z qatori;
+//   • yozish SHARTLI: sotuvchi ko'rgan qiymat (`expected`) hali o'sha bo'lsagina. Ilgari mutlaq
+//     qiymat lock'siz yozilardi — shu orada tushgan buyurtma kamaytirgan zaxira jimgina qayta
+//     «tiklanib», oversell bo'lardi;
+//   • «kam qoldi» chegarasi — variantning `reorderPoint` qiymati (ilgari qattiq 10).
 
 import { z } from 'zod';
 
@@ -24,31 +25,36 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const MAIN_WAREHOUSE_CODE = 'WH-TASHKENT-MAIN';
+/** reorderPoint qo'yilmagan (0) eski qatorlar uchun — yaratishdagi standart bilan bir xil. */
+const DEFAULT_REORDER_POINT = 10;
 
 const patchSchema = z.object({
   updates: z
     .array(
       z.object({
-        productId: z.string().uuid(),
+        variantId: z.string().uuid(),
         // Yakuniy zaxira (ayirma emas) — sahifada sotuvchi aniq sonni kiritadi.
         quantity: z.number().int().min(0).max(1_000_000),
+        // Sotuvchi sahifada ko'rgan qiymat — shu orada o'zgargan bo'lsa yozilmaydi.
+        expected: z.number().int().min(0),
       }),
     )
-    .min(1, "Hech bo'lmaganda bitta mahsulot kerak")
-    .max(200),
+    .min(1, "Hech bo'lmaganda bitta qator kerak")
+    .max(500),
 });
 
-/** Joriy foydalanuvchining sotuvchi profili. Yo'q bo'lsa null. */
-async function currentSeller(userId: string) {
-  return prisma.seller.findUnique({ where: { ownerUserId: userId }, select: { id: true } });
+class StockChangedError extends Error {
+  constructor(readonly skus: string[]) {
+    super('STOCK_CHANGED');
+  }
 }
 
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
 
-  const seller = await currentSeller(user.id);
-  if (!seller) return apiOk({ items: [] });
+  const { seller, err } = await requireSeller(user.id, 'read');
+  if (err) return apiOk({ items: [] });
 
   const products = await prisma.product.findMany({
     where: { sellerId: seller.id, deletedAt: null },
@@ -61,38 +67,44 @@ export async function GET() {
       basePrice: true,
       images: { select: { url: true }, take: 1, orderBy: { position: 'asc' } },
       variants: {
+        orderBy: { position: 'asc' },
         select: {
           id: true,
-          inventory: { select: { quantityOnHand: true, quantityReserved: true } },
+          sku: true,
+          price: true,
+          attributes: { select: { valueString: true } },
+          inventory: {
+            where: { warehouse: { code: MAIN_WAREHOUSE_CODE } },
+            select: { quantityOnHand: true, quantityReserved: true, reorderPoint: true },
+          },
         },
       },
     },
   });
 
   return apiOk({
-    items: products.map((p) => {
-      const stock = p.variants.reduce(
-        (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
-        0,
-      );
-      const reserved = p.variants.reduce(
-        (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityReserved, 0),
-        0,
-      );
-      return {
-        id: p.id,
-        sku: p.sku,
-        name: p.name,
-        basePrice: Number(p.basePrice),
-        imageUrl: p.images[0]?.url ?? '',
-        stock,
-        reserved,
-        // Bir nechta variantli mahsulotda umumiy sonni bitta qiymatga
-        // yozib bo'lmaydi — bunday qatorlar UI'da tahrirlanmaydi.
-        variantCount: p.variants.length,
-        editable: p.variants.length === 1,
-      };
-    }),
+    items: products.flatMap((p) =>
+      p.variants.map((v) => {
+        const inv = v.inventory[0];
+        const label = v.attributes
+          .map((a) => a.valueString)
+          .filter((x): x is string => Boolean(x))
+          .join(' / ');
+        return {
+          variantId: v.id,
+          productId: p.id,
+          sku: v.sku,
+          name: p.name,
+          // Bir variantli tovarda yorliq bo'sh — qator tovarning o'zi.
+          variantLabel: p.variants.length > 1 ? label || v.sku : null,
+          price: Number(v.price ?? p.basePrice),
+          imageUrl: p.images[0]?.url ?? '',
+          stock: inv?.quantityOnHand ?? 0,
+          reserved: inv?.quantityReserved ?? 0,
+          reorderPoint: inv?.reorderPoint || DEFAULT_REORDER_POINT,
+        };
+      }),
+    ),
   });
 }
 
@@ -100,38 +112,30 @@ export async function PATCH(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
 
-  // Zaxirani faqat FAOL sotuvchi o'zgartiradi (ilgari holat tekshirilmasdi — audit Y4).
+  // Zaxirani faqat FAOL sotuvchi o'zgartiradi (audit Y4).
   const { seller, err } = await requireSeller(user.id, 'write');
   if (err) return err;
 
-  const body = await req.json().catch(() => null);
-  const parsed = patchSchema.safeParse(body);
+  const parsed = patchSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri ma'lumot");
   }
   const { updates } = parsed.data;
 
-  // Bir mahsulot ikki marta kelmasin — aks holda oxirgisi jim g'olib bo'lardi.
-  const seen = new Set<string>();
-  for (const u of updates) {
-    if (seen.has(u.productId)) {
-      return apiError(400, 'VALIDATION', 'Bitta mahsulot ro`yxatda ikki marta kelgan');
-    }
-    seen.add(u.productId);
+  const ids = new Set(updates.map((u) => u.variantId));
+  if (ids.size !== updates.length) {
+    return apiError(400, 'VALIDATION', 'Bitta variant ro`yxatda ikki marta kelgan');
   }
 
-  // MUHIM: faqat SHU sotuvchining mahsulotlari. Aks holda sotuvchi boshqa
-  // sotuvchining zaxirasini o'zgartira olardi (IDOR).
-  const products = await prisma.product.findMany({
-    where: { id: { in: [...seen] }, sellerId: seller.id, deletedAt: null },
-    select: { id: true, sku: true, variants: { select: { id: true } } },
+  // MUHIM: faqat SHU sotuvchining variantlari (IDOR).
+  const variants = await prisma.productVariant.findMany({
+    where: { id: { in: [...ids] }, product: { sellerId: seller.id, deletedAt: null } },
+    select: { id: true, sku: true },
   });
-  const byId = new Map(products.map((p) => [p.id, p]));
-
-  const foreign = [...seen].filter((id) => !byId.has(id));
-  if (foreign.length > 0) {
-    return apiError(403, 'FORBIDDEN', 'Ro`yxatda sizga tegishli bo`lmagan mahsulot bor');
+  if (variants.length !== ids.size) {
+    return apiError(403, 'FORBIDDEN', 'Ro`yxatda sizga tegishli bo`lmagan tovar bor');
   }
+  const skuById = new Map(variants.map((v) => [v.id, v.sku]));
 
   const warehouse = await prisma.warehouse.findUnique({
     where: { code: MAIN_WAREHOUSE_CODE },
@@ -145,62 +149,69 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const skipped: string[] = [];
-  let updated = 0;
-
-  await prisma.$transaction(async (tx) => {
-    for (const u of updates) {
-      const product = byId.get(u.productId)!;
-
-      // Ko'p variantli mahsulotda umumiy sonni bitta qiymatga yozib bo'lmaydi —
-      // qaysi variantga tegishli ekani noma'lum. Jim o'zgartirmaymiz.
-      if (product.variants.length !== 1) {
-        skipped.push(product.sku);
-        continue;
-      }
-      const variantId = product.variants[0]!.id;
-
-      const existing = await tx.inventoryItem.findFirst({
-        where: { variantId, warehouseId: warehouse.id },
-        select: { id: true, quantityOnHand: true },
-      });
-
-      const before = existing?.quantityOnHand ?? 0;
-      const delta = u.quantity - before;
-      if (delta === 0) continue;
-
-      if (existing) {
-        await tx.inventoryItem.update({
-          where: { id: existing.id },
-          data: { quantityOnHand: u.quantity },
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const changed: string[] = [];
+      let count = 0;
+      for (const u of updates) {
+        if (u.quantity === u.expected) continue;
+        const sku = skuById.get(u.variantId)!;
+        const existing = await tx.inventoryItem.findFirst({
+          where: { variantId: u.variantId, warehouseId: warehouse.id },
+          select: { id: true },
         });
-      } else {
-        await tx.inventoryItem.create({
+        if (existing) {
+          // SHARTLI yozuv: zaxira hali sotuvchi ko'rgan qiymatda bo'lsagina.
+          const res = await tx.inventoryItem.updateMany({
+            where: { id: existing.id, quantityOnHand: u.expected },
+            data: { quantityOnHand: u.quantity },
+          });
+          if (res.count === 0) {
+            changed.push(sku);
+            continue;
+          }
+        } else {
+          if (u.expected !== 0) {
+            changed.push(sku);
+            continue;
+          }
+          await tx.inventoryItem.create({
+            data: {
+              warehouseId: warehouse.id,
+              variantId: u.variantId,
+              locationId: null,
+              quantityOnHand: u.quantity,
+              reorderPoint: DEFAULT_REORDER_POINT,
+            },
+          });
+        }
+        // Audit izi — kim, qachon, qanchaga o'zgartirdi.
+        await tx.stockMovement.create({
           data: {
             warehouseId: warehouse.id,
-            variantId,
-            locationId: null,
-            quantityOnHand: u.quantity,
+            variantId: u.variantId,
+            type: 'ADJUSTMENT',
+            quantity: u.quantity - u.expected,
+            reference: sku,
+            reason: 'SELLER_MANUAL_ADJUSTMENT',
+            performedBy: user.id,
           },
         });
+        count++;
       }
-
-      // Audit izi — kim, qachon, qanchaga o'zgartirdi. Zaxira tarixisiz
-      // kelishmovchilikni keyin tekshirib bo'lmaydi.
-      await tx.stockMovement.create({
-        data: {
-          warehouseId: warehouse.id,
-          variantId,
-          type: 'ADJUSTMENT',
-          quantity: delta,
-          reference: product.sku,
-          reason: 'SELLER_MANUAL_ADJUSTMENT',
-          performedBy: user.id,
-        },
-      });
-      updated++;
+      // Hammasi yoki hech biri: aralash holat sotuvchini chalg'itardi.
+      if (changed.length > 0) throw new StockChangedError(changed);
+      return count;
+    });
+    return apiOk({ updated });
+  } catch (e) {
+    if (e instanceof StockChangedError) {
+      return apiError(
+        409,
+        'STOCK_CHANGED',
+        `Shu orada zaxira o‘zgardi (buyurtma tushgan bo‘lishi mumkin): ${e.skus.join(', ')}. Yangi qiymatlarni ko‘rib, qayta saqlang.`,
+      );
     }
-  });
-
-  return apiOk({ updated, skipped });
+    throw e;
+  }
 }

@@ -7,7 +7,12 @@ import type { PushDb, PushService } from './service';
 
 export { createFcmClient, parseServiceAccount } from './fcm';
 export type { FcmClient, PushMessage, SendResult, ServiceAccount } from './fcm';
-export { buildOrderStatusMessage, createPushService, NOTIFIABLE_ORDER_STATUSES } from './service';
+export {
+  buildOrderStatusMessage,
+  buildPaymentReviewMessage,
+  createPushService,
+  NOTIFIABLE_ORDER_STATUSES,
+} from './service';
 export type { PushDb, PushService } from './service';
 
 let instance: PushService | undefined;

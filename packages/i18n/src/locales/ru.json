@@ -827,7 +827,17 @@
       "cancel": "Отменить заказ",
       "cancelConfirm": "Подтвердить отмену заказа?",
       "cancelled": "Заказ отменён",
-      "notFound": "Заказ не найден"
+      "notFound": "Заказ не найден",
+      "receiptRejectedTitle": "Чек об оплате отклонён",
+      "receiptRejectedReason": "Причина: {reason}",
+      "receiptRejectedDeadline": "Загрузите новый чек до {date}, иначе заказ будет отменён.",
+      "receiptRejectedHint": "Проверьте перевод на карту и загрузите чётко читаемый чек.",
+      "receiptPick": "Выберите фото чека",
+      "receiptNote": "Комментарий (необязательно)",
+      "receiptSubmit": "Отправить новый чек",
+      "receiptSending": "Отправляем…",
+      "receiptSent": "Чек отправлен — администратор проверит",
+      "receiptMissing": "Сначала выберите фото чека"
     },
     "premiumCard": {
       "label": "Sellobay Premium",
@@ -1344,5 +1354,9 @@
       "DELIVERED": "Доставил",
       "FAILED": "Не удалось доставить"
     }
+  },
+  "push": {
+    "paymentConfirmed": "Оплата картой подтверждена — заказ собирается",
+    "paymentRejected": "Чек отклонён. Откройте заказ и загрузите новый чек"
   }
 }

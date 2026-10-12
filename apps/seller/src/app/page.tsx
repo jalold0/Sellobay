@@ -63,6 +63,8 @@ interface ProductRow {
   status: string;
   soldCount: number;
   stock: number;
+  /** Biror varianti o'z chegarasidan (reorderPoint) kam qolgan. */
+  lowStock: boolean;
   imageUrl: string;
 }
 
@@ -129,7 +131,7 @@ export default function SellerDashboard() {
     ['PENDING', 'CONFIRMED', 'PAID'].includes(o.status),
   ).length;
   const activeProducts = products.filter((p) => p.status === 'ACTIVE').length;
-  const lowStock = products.filter((p) => p.stock <= 10 && p.status === 'ACTIVE').length;
+  const lowStock = products.filter((p) => p.lowStock && p.status === 'ACTIVE').length;
   // Sharhlar soni bo'yicha vaznli o'rtacha (server hisoblaydi); sharh yo'q bo'lsa «—».
   const avgRating = stats?.kpi.rating != null ? stats.kpi.rating.toFixed(1) : '—';
   const revenueSeries = stats?.revenueSeries ?? [];
@@ -175,7 +177,8 @@ export default function SellerDashboard() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Diqqat: {lowStock} ta mahsulot tugayapti</AlertTitle>
           <AlertDescription>
-            Stokni to`ldiring — aks holda buyurtmalar avtomatik bekor qilinadi.
+            Zaxira tugasa tovar vitrinada «sotuvda yo`q» bo`lib qoladi — «Inventar» bo`limida
+            to`ldiring.
           </AlertDescription>
         </Alert>
       ) : null}

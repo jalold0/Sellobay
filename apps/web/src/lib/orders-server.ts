@@ -6,6 +6,7 @@ import { randomInt } from 'crypto';
 
 import { ApiDomainError } from '@ecom/api-contract';
 import {
+  coinsForOrder,
   SHIPPING_FEE,
   EXPRESS_FEE,
   FREE_SHIPPING_THRESHOLD,
@@ -498,32 +499,34 @@ export async function createOrder(
   }
   const baseTotal = subtotal.add(shippingTotal); // chegirmagacha
 
-  // 4. Manzil saqlash (faqat ro'yxatdan o'tgan user uchun)
-  let shippingAddressId: string | null = null;
-  if (currentUser) {
-    const address = await prisma.userAddress.create({
-      data: {
-        userId: currentUser.id,
-        recipientName: input.recipientName,
-        phone: input.phone,
-        region: input.region,
-        city: input.city,
-        street: input.street,
-        apartment: input.apartment ?? null,
-        latitude: input.latitude ?? null,
-        longitude: input.longitude ?? null,
-      },
-      select: { id: true },
-    });
-    shippingAddressId = address.id;
-  }
-
   // 5. Order + OrderItems + Ombor + Sello Coins (atomik $transaction)
   //    Order, ombor kamaytirish (DISPATCH), redeem (spend) va earn yozuvlari birga
   //    commit/rollback — balans va zaxira hech qachon buyurtmalar bilan nomuvofiq bo'lmaydi.
   const orderNumber = await generateOrderNumber();
   const txResult = await prisma
     .$transaction(async (tx) => {
+      // 5-. Manzil (faqat ro'yxatdan o'tgan user uchun) — TRANZAKSIYA ICHIDA. Ilgari undan oldin
+      //     yozilardi: buyurtma keyin yiqilsa (zaxira, takroriy so'rov, promo) manzil yetim
+      //     qolib, har urinishda «Manzillarim» ro'yxati ko'payib borardi (audit P6).
+      let shippingAddressId: string | null = null;
+      if (currentUser) {
+        const address = await tx.userAddress.create({
+          data: {
+            userId: currentUser.id,
+            recipientName: input.recipientName,
+            phone: input.phone,
+            region: input.region,
+            city: input.city,
+            street: input.street,
+            apartment: input.apartment ?? null,
+            latitude: input.latitude ?? null,
+            longitude: input.longitude ?? null,
+          },
+          select: { id: true },
+        });
+        shippingAddressId = address.id;
+      }
+
       // 5a. Promokod — TX ichida tekshirib qo'llaymiz (usedCount race'siz)
       let promoDiscount = new Prisma.Decimal(0);
       let promoApplied: string | null = null;
@@ -693,22 +696,17 @@ export async function createOrder(
         }
       }
 
-      // 5d. Sello Coins settle (earn to'langan summa bo'yicha, spend redeemed)
-      //     Karta orqali qo'lda to'lov (UZCARD) uchun earn KECHIKTIRILADI — admin to'lovni
-      //     tasdiqlaganda beriladi (to'lanmagan buyurtmadan coin "farming" oldini oladi).
-      //     Redeem (spend) esa darrov qo'llanadi (balansni bloklaydi, double-spend bo'lmaydi).
+      // 5d. Sello Coins: sarflangani (redeem) darrov yechiladi — balans bloklanadi, double-spend
+      //     bo'lmaydi. Cashback (earn) esa PUL TUSHGANDA beriladi: Click/Payme to'lovida, chek
+      //     tasdig'ida, naqd — yetkazilganda (`grantOrderEarnForOrder`). Ilgari naqd/Click/Payme'da
+      //     buyurtma yaratilgan zahoti berilardi — to'lanmagan buyurtmadan coin yig'ish mumkin edi
+      //     (audit O1). Javobdagi `coinsEarned` — VA'DA («+N coin olasiz»), hisobga hali tushmagan.
       let earned = 0;
       if (currentUser) {
-        const isManualCard = input.paymentProvider === MANUAL_CARD_PROVIDER;
-        const settled = await settleOrderLoyalty(
-          tx,
-          currentUser.id,
-          grandTotal.toNumber(),
-          redeemed,
-          orderNumber,
-          { grantEarn: !isManualCard },
-        );
-        earned = settled.earned;
+        await settleOrderLoyalty(tx, currentUser.id, grandTotal.toNumber(), redeemed, orderNumber, {
+          grantEarn: false,
+        });
+        earned = coinsForOrder(grandTotal.toNumber());
       }
 
       // 5e. Offline (naqd/karta yetkazishda) to'lov — strukturaviy Payment yozuvi

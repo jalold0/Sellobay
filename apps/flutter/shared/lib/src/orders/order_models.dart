@@ -222,6 +222,7 @@ class OrderDetail {
     required this.paymentStatus,
     required this.payment,
     required this.paymentReview,
+    this.receiptResubmit,
     required this.placedAt,
     required this.deliveredAt,
     required this.editable,
@@ -251,6 +252,9 @@ class OrderDetail {
       paymentStatus: order['paymentStatus'] as String?,
       payment: PaymentStatus.fromValue(order['paymentStatus'] as String?),
       paymentReview: order['paymentReview'] as bool? ?? false,
+      receiptResubmit: order['receiptResubmit'] == null
+          ? null
+          : ReceiptResubmit.fromJson(order['receiptResubmit'] as Map<String, dynamic>),
       placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
       deliveredAt: DateTime.tryParse(order['deliveredAt'] as String? ?? ''),
       editable: order['editable'] as bool? ?? false,
@@ -289,6 +293,9 @@ class OrderDetail {
   /// Tanilgan holat; `null` bo'lsa [paymentStatus] xom holida chiqadi.
   final PaymentStatus? payment;
   final bool paymentReview;
+
+  /// Karta cheki rad etilgan — yangisini yuborish mumkin. `null` — kerak emas.
+  final ReceiptResubmit? receiptResubmit;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
   final bool editable;
@@ -299,6 +306,21 @@ class OrderDetail {
   final List<OrderLine> items;
 
   bool get hasDiscount => discountTotal > Decimal.zero;
+}
+
+/// Rad etilgan karta cheki: admin izohi va yangi chek yuborish muddati.
+///
+/// Muddat o'tsa server buyurtmani avtomatik bekor qiladi (rad etilgandan 24 soat).
+class ReceiptResubmit {
+  const ReceiptResubmit({required this.reason, required this.deadline});
+
+  factory ReceiptResubmit.fromJson(Map<String, dynamic> json) => ReceiptResubmit(
+        reason: json['reason'] as String?,
+        deadline: DateTime.tryParse(json['deadline'] as String? ?? '')?.toLocal(),
+      );
+
+  final String? reason;
+  final DateTime? deadline;
 }
 
 /// Raqam + telefon bo'yicha kuzatilgan buyurtma (`POST /api/orders/track`).

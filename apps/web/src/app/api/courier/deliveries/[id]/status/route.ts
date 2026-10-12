@@ -23,7 +23,16 @@ const schema = z.object({
   // `/api/uploads/delivery-proof` qaytargan ICHKI yo'l (ochiq havola
   // emas). Qaysi holatlarga ruxsat etilishini `updateDeliveryStatus`
   // hal qiladi — qoida bitta joyda tursin.
-  proofPhotoUrl: z.string().trim().min(1).max(500).optional(),
+  // Faqat o'sha yuklash route'i bergan yo'l: boshqa papka (masalan mijoz cheki) yoki `..`
+  // bilan yasalgan yo'l yozilmaydi (audit P5).
+  proofPhotoUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((p) => p.startsWith('delivery-proofs/') && !p.includes('..'), {
+      message: 'Surat «yetkazish isboti» yuklash orqali biriktirilishi kerak',
+    })
+    .optional(),
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {

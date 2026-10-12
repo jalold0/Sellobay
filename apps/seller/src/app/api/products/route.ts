@@ -5,6 +5,7 @@
 
 import { isValidCompareAtPrice } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
+import { isOwnPublicImageUrl } from '@ecom/storage';
 import { slugify } from '@ecom/utils';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -35,8 +36,30 @@ const createSchema = z
     categorySlug: z.string().trim().min(1),
     brandSlug: z.string().trim().min(1).optional().nullable(),
     // Eski 1 ta rasm uchun yoki yangi ko'p rasm uchun:
-    imageUrl: z.string().trim().url().optional().nullable(),
-    imageUrls: z.array(z.string().trim().url()).max(8).optional(),
+    // Faqat panel orqali yuklangan rasm (bizning Blob do'konimiz) — tashqi URL emas (audit O10).
+    imageUrl: z
+      .string()
+      .trim()
+      .url()
+      .refine(
+        isOwnPublicImageUrl,
+        "Rasmni «Rasm yuklash» tugmasi orqali qo'shing (tashqi havola qabul qilinmaydi)",
+      )
+      .optional()
+      .nullable(),
+    imageUrls: z
+      .array(
+        z
+          .string()
+          .trim()
+          .url()
+          .refine(
+            isOwnPublicImageUrl,
+            "Rasmni «Rasm yuklash» tugmasi orqali qo'shing (tashqi havola qabul qilinmaydi)",
+          ),
+      )
+      .max(8)
+      .optional(),
     // Variantlar (ixtiyoriy): har biri rang+o'lcham yoki bittasi
     variants: z
       .array(
@@ -144,6 +167,16 @@ export async function POST(req: NextRequest) {
 
   // Ixtiyoriy variantlar (rang/o'lcham). Yo'q bo'lsa — bitta "default" variant beramiz.
   const variantInputs = (input.variants ?? []).filter((v) => v.color || v.size);
+  // Shtrix-kod variantga tegishli (ProductVariant.barcode). Ilgari qabul qilinib, jimgina
+  // tashlab yuborilardi (audit O10). Variantli tovarda har variantning o'z kodi bo'ladi.
+  const barcode = input.barcode?.trim() || null;
+  if (barcode && variantInputs.length > 0) {
+    return apiError(
+      400,
+      'VALIDATION',
+      'Variantli tovarda shtrix-kod har variant uchun alohida — hozircha uni bo‘sh qoldiring',
+    );
+  }
 
   // Mahsulot + rasmlar + variant(lar) + ombor zaxirasi — hammasi ATOMIK ($transaction).
   // Sabab: web/mobile checkout mahsulotni FAQAT varyant + InventoryItem (quantityOnHand>0)
@@ -284,7 +317,7 @@ export async function POST(req: NextRequest) {
       } else {
         // Varyant berilmagan — mahsulot uchun bitta "default" varyant + zaxira.
         const variant = await tx.productVariant.create({
-          data: { productId: created.id, sku: input.sku, position: 0, isActive: true },
+          data: { productId: created.id, sku: input.sku, barcode, position: 0, isActive: true },
           select: { id: true },
         });
         await stockVariant(variant.id, input.stock);
@@ -295,6 +328,13 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     // Variant SKU (`${sku}-${suffix}`) globally @unique — bir xil rang/o'lcham yoki mavjud SKU
     // bilan to'qnashuv P2002 beradi. Umumiy 500 o'rniga tushunarli 409 qaytaramiz.
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError &&
+      e.code === 'P2002' &&
+      String(e.meta?.target ?? '').includes('barcode')
+    ) {
+      return apiError(409, 'BARCODE_TAKEN', 'Bu shtrix-kod boshqa tovarda ishlatilgan');
+    }
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       return apiError(
         409,
@@ -341,7 +381,9 @@ export async function GET() {
         take: 1,
         orderBy: { position: 'asc' },
       },
-      variants: { select: { inventory: { select: { quantityOnHand: true } } } },
+      variants: {
+        select: { inventory: { select: { quantityOnHand: true, reorderPoint: true } } },
+      },
     },
   });
 
@@ -367,6 +409,10 @@ export async function GET() {
       stock: p.variants.reduce(
         (sum, v) => sum + v.inventory.reduce((s, inv) => s + inv.quantityOnHand, 0),
         0,
+      ),
+      // Biror varianti o'z chegarasidan (reorderPoint; qo'yilmagan bo'lsa 10) kam qolgan.
+      lowStock: p.variants.some((v) =>
+        v.inventory.some((inv) => inv.quantityOnHand <= (inv.reorderPoint || 10)),
       ),
       createdAt: p.createdAt,
       imageUrl: p.images[0]?.url ?? '',
