@@ -9,10 +9,14 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
   sof domen `@ecom/core-domain` paketida. Mobil ham shu API'ga ulanadi.
   (NestJS `apps/api`/`apps/wms` — ishlatilmagan skelet edi, `graveyard/` ga karantinlangan;
   qarang `graveyard/README.md`.)
+  **O'tish davri (ADR 0012):** NestJS gateway va servislar bosqichma-bosqich qo'shiladi.
+  Domen yangi servisga ko'chirilmaguncha uning yagona egasi `apps/web`. Sxema faqat
+  Prisma migratsiyalari bilan o'zgaradi; TypeORM mavjud jadvallarga moslanadi.
 - **Frontend (web):** Next.js 14 App Router + Tailwind + shadcn/ui (`@ecom/ui`)
 - **Mobile:** Expo (React Native, Expo Router)
 - **DB:** PostgreSQL (Neon) — ORM faqat Prisma orqali
-- **Cache/Queue:** Redis + BullMQ (rejalashtirilgan — hozircha `unstable_cache`)
+- **Cache/Queue:** Redis + RabbitMQ (ADR 0012; lokal staging'da `pnpm docker:up` ko'taradi,
+  kod hali ishlatmaydi — hozircha `unstable_cache`)
 - **Search:** Elasticsearch (rejalashtirilgan — hozircha DB query)
 - **i18n:** `@ecom/i18n` — har doim `pickLocalized()` orqali, hardcode YO'Q
 - **Auth:** `@ecom/auth` — argon2 (parol), jose (JWT)

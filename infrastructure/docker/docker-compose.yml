@@ -1,5 +1,11 @@
 name: ecommerce
 
+# Lokal staging infratuzilmasi (ADR 0012).
+#   `pnpm docker:up`                     → postgres + redis + rabbitmq (asosiy)
+#   `docker compose --profile extras up` → + elasticsearch, minio, mailhog
+# `extras` dagilar hozir kodda ishlatilmaydi (CLAUDE.md: "rejalashtirilgan") va
+# ko'p RAM oladi, shuning uchun standart holatda ko'tarilmaydi.
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -10,12 +16,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ecommerce']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -26,16 +32,37 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 10
 
+  # Servislararo xabarlar (navbatlar, hodisalar) — NestJS gateway/servislar uchun (ADR 0012).
+  # Boshqaruv paneli: http://localhost:15672 (faqat lokal staging hisobi).
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ecom-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: sellobay
+      RABBITMQ_DEFAULT_PASS: sellobay
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
   elasticsearch:
+    profiles: ['extras']
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     container_name: ecom-elasticsearch
     restart: unless-stopped
@@ -44,16 +71,17 @@ services:
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - "9200:9200"
+      - '9200:9200'
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:9200/_cluster/health || exit 1']
       interval: 10s
       timeout: 5s
       retries: 10
 
   minio:
+    profiles: ['extras']
     image: minio/minio:latest
     container_name: ecom-minio
     restart: unless-stopped
@@ -62,26 +90,28 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - '9000:9000'
+      - '9001:9001'
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       interval: 10s
       timeout: 5s
       retries: 10
 
   mailhog:
+    profiles: ['extras']
     image: mailhog/mailhog:latest
     container_name: ecom-mailhog
     restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - '1025:1025'
+      - '8025:8025'
 
 volumes:
   postgres-data:
   redis-data:
+  rabbitmq-data:
   elasticsearch-data:
   minio-data:
