@@ -1,4 +1,4 @@
-node_modules
+**/node_modules
 .next
 .turbo
 .expo
@@ -14,3 +14,15 @@ coverage
 *.log
 .DS_Store
 Thumbs.db
+
+# NestJS backend rasmi (apps/backend/Dockerfile) butun repo kontekstini oladi — og'irlarni chiqarib tashlaymiz.
+apps/flutter
+apps/mobile
+graveyard
+docs
+**/.next
+**/dist
+**/.turbo
+**/.dart_tool
+**/build
+**/*.tsbuildinfo

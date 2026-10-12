@@ -30,10 +30,22 @@ const inter = Inter({
   display: 'swap',
 });
 
-// Playfair Display — Sellobay SB monogram va premium sarlavhalar uchun elegant serif
+// Playfair Display — Sellobay logotipi va bo'lim sarlavhalari.
+//
+// subsets'ga 'cyrillic' QO'SHILDI. Next.js'da subsets qaysi @font-face
+// qo'shilishini emas, qaysisi PRELOAD qilinishini belgilaydi: kirillcha
+// face baribir yuklanardi, lekin preload ro'yxatiga tushmagani uchun
+// /ru sahifasida kech kelardi va sarlavhalar ko'z oldida almashardi.
+// Inter'da 'cyrillic' bor edi, Playfair'da yo'q — nomutanosiblik.
+//
+// Og'irliklar 600 va 700 gacha qisqartirildi. 500 va 900 yuklanardi,
+// lekin repo bo'ylab bironta ham font-serif ular bilan ishlatilmagan;
+// og'irliksiz font-serif esa faqat <h1>/<h2> da uchraydi — u yerda
+// brauzer standarti 700. Ikki og'irlik olib tashlanishi kirillchani
+// qo'shishdan kelgan preload o'sishini qoplaydi.
 const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '900'],
+  subsets: ['latin', 'cyrillic'],
+  weight: ['600', '700'],
   variable: '--font-serif',
   display: 'swap',
 });

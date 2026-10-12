@@ -1,0 +1,68 @@
+{
+  "name": "@ecom/backend",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Sellobay NestJS mikroservis backend: gateway, auth, catalog, orders (ADR 0012)",
+  "scripts": {
+    "build": "nest build",
+    "dev:gateway": "nest start --entryFile gateway/main --watch",
+    "dev:auth": "nest start --entryFile auth/main --watch",
+    "dev:catalog": "nest start --entryFile catalog/main --watch",
+    "dev:orders": "nest start --entryFile orders/main --watch",
+    "start:gateway": "node dist/gateway/main.js",
+    "start:auth": "node dist/auth/main.js",
+    "start:catalog": "node dist/catalog/main.js",
+    "start:orders": "node dist/orders/main.js",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.2.7",
+    "@nestjs/core": "^11.2.7",
+    "@nestjs/platform-express": "^11.2.7",
+    "@nestjs/typeorm": "^11.0.3",
+    "amqp-connection-manager": "^4.1.15",
+    "amqplib": "^0.10.9",
+    "http-proxy-middleware": "^3.0.7",
+    "ioredis": "^5.11.1",
+    "jose": "^5.2.4",
+    "pg": "^8.13.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^0.3.31",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@ecom/eslint-config": "workspace:*",
+    "@nestjs/cli": "^11.0.24",
+    "@nestjs/testing": "^11.2.7",
+    "@types/amqplib": "^0.10.5",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.0.0",
+    "@types/supertest": "^6.0.3",
+    "jest": "^29.7.0",
+    "supertest": "^7.3.1",
+    "ts-jest": "^29.4.14",
+    "typescript": "^5.4.5"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "<rootDir>/../tsconfig.json"
+        }
+      ]
+    },
+    "testEnvironment": "node"
+  }
+}

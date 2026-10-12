@@ -1,0 +1,215 @@
+# Sellobay NestJS mikroservis stack'i (ADR 0012): lokal Docker.
+#
+#   cp infrastructure/docker/backend.env.example infrastructure/docker/.env.backend   # va to'ldiring
+#   docker compose -f infrastructure/docker/docker-compose.backend.yml \
+#       --env-file infrastructure/docker/.env.backend up -d --build
+#
+# Tashqariga FAQAT gateway (4000), RabbitMQ paneli (15672) va Postgres (5432) chiqadi — oxirgi ikkisi
+# faqat 127.0.0.1 ga (shu kompyuterdan). auth/catalog/orders ichki tarmoqda: ularga faqat gateway
+# `INTERNAL_API_KEY` bilan murojaat qiladi.
+#
+# Eng kam huquq: har servis FAQAT o'ziga kerak sirlarni oladi (gateway bazaga ulanmaydi,
+# catalog JWT kalitini bilmaydi). Xotira cheklangan: kompyuterda ~7.5 GB RAM, jami stack ~2.2 GB.
+
+name: sellobay-backend
+
+x-common-env: &common-env
+  NODE_ENV: production
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY kerak}
+  REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD kerak}@redis:6379
+
+x-database-url: &database-url postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}
+x-rabbitmq-url: &rabbitmq-url amqp://${RABBITMQ_USER:?}:${RABBITMQ_PASSWORD:?}@rabbitmq:5672
+
+x-service: &service
+  restart: unless-stopped
+  mem_limit: 256m
+  networks: [backend]
+
+x-health: &health
+  interval: 10s
+  timeout: 5s
+  retries: 6
+  start_period: 20s
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # Faqat shu kompyuterdan: `pnpm db:migrate` / `pnpm db:seed` uchun.
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --maxmemory
+      - 96mb
+      # Faqat muddatli kalitlar (rate-limit, kesh) o'chiriladi; idempotency kabi muhimlari emas.
+      - --maxmemory-policy
+      - volatile-lru
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "$$REDIS_PASSWORD" ping 2>/dev/null | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 128m
+    networks: [backend]
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - '127.0.0.1:15672:15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    mem_limit: 512m
+    networks: [backend]
+
+  auth:
+    <<: *service
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      args: { APP: auth }
+    environment:
+      <<: *common-env
+      PORT: '4001'
+      DATABASE_URL: *database-url
+      RABBITMQ_URL: *rabbitmq-url
+      # Token IMZOLAYDI (gateway esa tekshiradi): ikkalasida bir xil.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET kerak}
+      JWT_ACCESS_EXPIRES_IN: 15m
+    healthcheck:
+      <<: *health
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4001/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  catalog:
+    <<: *service
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      args: { APP: catalog }
+    environment:
+      <<: *common-env
+      PORT: '4002'
+      DATABASE_URL: *database-url
+    healthcheck:
+      <<: *health
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4002/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  orders:
+    <<: *service
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      args: { APP: orders }
+    environment:
+      <<: *common-env
+      PORT: '4003'
+      DATABASE_URL: *database-url
+      RABBITMQ_URL: *rabbitmq-url
+    healthcheck:
+      <<: *health
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4003/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  gateway:
+    <<: *service
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      args: { APP: gateway }
+    environment:
+      <<: *common-env
+      PORT: '4000'
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET kerak}
+      AUTH_URL: http://auth:4001
+      CATALOG_URL: http://catalog:4002
+      ORDERS_URL: http://orders:4003
+      LEGACY_URL: ${LEGACY_URL:-https://sellobay-web.vercel.app}
+      # Bo'sh = hammasi eski API'da. Servis tayyor bo'lgach qo'shiladi: auth,catalog,orders
+      NEST_ROUTES: ${NEST_ROUTES:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    ports:
+      - '4000:4000'
+    healthcheck:
+      <<: *health
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+    depends_on:
+      redis: { condition: service_healthy }
+
+networks:
+  backend:
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:

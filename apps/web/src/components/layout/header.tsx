@@ -105,9 +105,15 @@ export function Header({ categories }: Props) {
               <WishlistBadge />
               <span className="text-[10.5px] font-semibold text-[#55555c]">{nav('wishlist')}</span>
             </Link>
+            {/* min-h-11/min-w-11 = 44px teginish nishoni.
+                Mobilda sevimlilar va kirish yashiriladi, savatcha esa
+                yorlig'ini yo'qotadi va yolg'iz 22px ikonka bo'lib qoladi —
+                ya'ni xarid ilovasidagi eng ko'p bosiladigan tugma WCAG 2.5.8
+                talab qiladigan 24px dan ham kichik edi. Ikonka o'lchami
+                o'zgarmaydi, atrofidagi bosiladigan maydon kengayadi. */}
             <Link
               href="/cart"
-              className="relative flex flex-col items-center gap-[3px]"
+              className="relative flex min-h-11 min-w-11 flex-col items-center justify-center gap-[3px]"
               aria-label={nav('cart')}
             >
               <ShoppingBag size={22} strokeWidth={1.8} className="text-brand-ink" />

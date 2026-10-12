@@ -49,6 +49,7 @@ export 'src/wishlist/wishlist_store.dart';
 export 'src/ui/form_error.dart';
 export 'src/ui/product_thumbnail.dart';
 export 'src/ui/sellobay_theme.dart';
+export 'src/ui/sellobay_type.dart';
 export 'src/utils/dates.dart';
 export 'src/utils/idempotency.dart';
 export 'src/utils/money.dart';

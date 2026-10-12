@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    // Production build TOZA bo'lishi shart: `incremental` + Nest'ning `deleteOutDir` birga
+    // ishlaganda eski tsbuildinfo fayllarni "yangilangan" deb hisoblab, o'chirilgan dist'ni
+    // qayta yozmaydi (dist/common/config.js yo'q bo'lib qolgan edi).
+    "incremental": false,
+    "tsBuildInfoFile": null
+  },
+  "exclude": ["node_modules", "dist", "src/**/*.spec.ts"]
+}

@@ -7,16 +7,21 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
 - **Backend:** `apps/web` Next.js 14 App Router API route'lari (`src/app/api/**`) —
   HAQIQIY va deploy qilingan backend. Biznes-logika `apps/web/src/lib/*-server.ts` da,
   sof domen `@ecom/core-domain` paketida. Mobil ham shu API'ga ulanadi.
-  (NestJS `apps/api`/`apps/wms` — ishlatilmagan skelet edi, `graveyard/` ga karantinlangan;
+  (Eski NestJS `apps/api`/`apps/wms` — ishlatilmagan skelet edi, `graveyard/` ga karantinlangan;
   qarang `graveyard/README.md`.)
-  **O'tish davri (ADR 0012):** NestJS gateway va servislar bosqichma-bosqich qo'shiladi.
-  Domen yangi servisga ko'chirilmaguncha uning yagona egasi `apps/web`. Sxema faqat
-  Prisma migratsiyalari bilan o'zgaradi; TypeORM mavjud jadvallarga moslanadi.
+- **NestJS mikroservislar (`apps/backend`, ADR 0012, YANGI — bosqichma-bosqich):** gateway + auth +
+  catalog + orders, RabbitMQ, Redis, TypeORM, Docker. Hozir gateway eski Next.js API'ga proksi qiladi;
+  domen yangi servisga ko'chirilmaguncha uning yagona egasi `apps/web`. Route ko'chirilgach eski
+  Next.js route **o'chiriladi** (bitta route — bitta egasi, aks holda «split-brain» —
+  `graveyard/README.md` ogohlantirishi). Qarang `apps/backend/README.md`.
 - **Frontend (web):** Next.js 14 App Router + Tailwind + shadcn/ui (`@ecom/ui`)
 - **Mobile:** Expo (React Native, Expo Router)
-- **DB:** PostgreSQL (Neon) — ORM faqat Prisma orqali
-- **Cache/Queue:** Redis + RabbitMQ (ADR 0012; lokal staging'da `pnpm docker:up` ko'taradi,
-  kod hali ishlatmaydi — hozircha `unstable_cache`)
+- **DB:** PostgreSQL (Neon) — sxema va migratsiya faqat Prisma (`packages/database`); `apps/backend`
+  (NestJS) TypeORM'ni faqat MAVJUD sxema ustidan o'qish/yozish uchun ishlatadi, `synchronize` HECH QACHON
+- **Cache/Queue:** Redis + RabbitMQ (ADR 0012) — NestJS stack'ida ishlatiladi; `apps/web` hali
+  `unstable_cache` bilan. Docker: `pnpm docker:up` — web'ni lokal ishlab chiqish infratuzilmasi,
+  `infrastructure/docker/docker-compose.backend.yml` — to'liq NestJS staging (ikkalasi 5432 ni
+  band qiladi, bir vaqtda ko'tarilmaydi)
 - **Search:** Elasticsearch (rejalashtirilgan — hozircha DB query)
 - **i18n:** `@ecom/i18n` — har doim `pickLocalized()` orqali, hardcode YO'Q
 - **Auth:** `@ecom/auth` — argon2 (parol), jose (JWT)
@@ -54,6 +59,24 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
 - DDD — har bir bounded context o'z modulida
 - Hech qachon vaqtinchalik workaround qoldirmang
 - Har bir muhim arxitektura qarori uchun ADR yozing (`docs/adr/`)
+
+## Dizayn (UI/UX)
+
+Har qanday UI ishida (web, admin, seller, Flutter ekranlari, matn/mikrokopi) avval
+`frontend-design` skill'ini ishga tushiring (`.claude/skills/frontend-design/`,
+Anthropic'ning rasmiy skill'i). Uning mohiyati: reja → brif bilan solishtirish →
+qurish → o'z ishini tanqid qilish; standart «shablon» yechimlardan qoching;
+yagona joyda jasoratli bo'ling, qolgani sokin; xato va bo'sh holat — yo'l
+ko'rsatish; CTA aniq fe'l bilan.
+
+**Brend birinchi:** skill «brif so'zi har doim g'olib» deydi. Sellobay'ning
+brendi allaqachon belgilangan (`SellobayColors`, `@ecom/ui` tokenlari, Playfair
+serif sarlavhalar) — uni buzmang, undan chetga chiqish faqat foydalanuvchi so'rasa.
+Flutter'da: ranglar/shriftlar faqat `buildSellobayTheme()` orqali, matn faqat
+`@ecom/i18n` kalitlari bilan (qo'lda yozilmaydi), skeleton/animatsiya
+«animatsiyani kamaytirish»ni hisobga oladi. Ekranni o'zgartirgach
+`flutter test tool/screens.dart --update-goldens` bilan suratga olib, ko'zdan
+kechiring.
 
 ## Lokal ishga tushirish tartibi
 

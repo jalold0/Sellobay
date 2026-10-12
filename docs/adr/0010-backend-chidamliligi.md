@@ -1,8 +1,8 @@
 # ADR 0010 — Backend qatlamli mustahkamlanadi; har klient uchun alohida servis OCHILMAYDI
 
 - **Sana:** 2026-10-06
-- **Holat:** Qisman almashtirildi — ADR 0012 (2026-10-12): NestJS gateway va servislar
-  bosqichma-bosqich qo'shiladi. Pooler, rate-limit va Sentry bo'yicha xulosalar kuchida.
+- **Holat:** Qisman almashtirildi — [ADR 0012](0012-nestjs-mikroservis-backend.md): NestJS gateway
+  va servislar bosqichma-bosqich qo'shiladi. Pooler, rate-limit va Sentry bo'yicha xulosalar kuchida.
 - **Kontekst:** «Har bir klient ilovasi uchun alohida servis kerak, gateway bo'lsin,
   server xatosi bo'lganda qolganlari yiqilmasin» degan talab.
 
