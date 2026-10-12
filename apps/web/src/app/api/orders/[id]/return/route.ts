@@ -1,5 +1,6 @@
 // POST /api/orders/[id]/return — yetkazilgan buyurtmani qaytarish.
-// Gibrid siyosat: DELIVERED holatda, yetkazilgandan 14 kun ichida (qonuniy asos).
+// Siyosat (ADR 0015): asosiysi — topshirishda joyida tekshirib qaytarish; undan keyin DELIVERED
+// holatda, yetkazilgandan RETURN_WINDOW_DAYS (10) kun ichida — qonun, 18-modda.
 //   • Punktda tekshirib rad etish yoki uyga yetkazilganini muddat ichida qaytarish.
 //   • Sello Coins (cashback revoke + ishlatilgan coin refund) + promokod atomik qaytariladi.
 //   • ZAXIRA bu yerda QAYTMAYDI — tovar hali mijozda. U omborga yetib kelganda qaytadi:
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       'Faqat yetkazilgan (yoki punktda olingan) buyurtmani qaytarish mumkin',
     );
   }
-  // 14 kunlik qaytarish oynasi — yetkazilgan sanadan (yo'q bo'lsa buyurtma sanasidan) boshlab.
+  // Qaytarish oynasi — yetkazilgan sanadan (yo'q bo'lsa buyurtma sanasidan) boshlab.
   // deliveredAt null bo'lsa ham oyna qo'llanadi (aks holda muddat cheklovi butunlay chetlab o'tiladi).
   const returnRef = order.deliveredAt ?? order.placedAt;
   if (Date.now() - returnRef.getTime() > RETURN_WINDOW_MS) {

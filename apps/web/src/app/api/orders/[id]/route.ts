@@ -1,7 +1,7 @@
 // GET   /api/orders/[id] — bitta buyurtma (egasi uchun)
 // PATCH /api/orders/[id] — PENDING buyurtmani tahrirlash (manzil/telefon/izoh/yetkazish usuli)
 
-import { canResubmitReceipt, unpaidOrderDeadline } from '@ecom/core-domain';
+import { canResubmitReceipt, RETURN_WINDOW_DAYS, unpaidOrderDeadline } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
 import { z } from 'zod';
 
@@ -96,8 +96,9 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
 
 type OrderRow = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
 
-// Qaytarish oynasi (gibrid siyosat) — yetkazilgan buyurtma 14 kun ichida qaytariladi
-const RETURN_WINDOW_DAYS = 14;
+// Qaytarish oynasi (ADR 0015): joyida tekshirish + yetkazilgandan keyin RETURN_WINDOW_DAYS kun.
+// Son @ecom/core-domain dan — return route va /api/config bilan bitta manba (ilgari bu yerda
+// alohida 14 turardi).
 // Qaytarish oynasi yetkazilgan sanadan (yo'q bo'lsa buyurtma sanasidan) hisoblanadi —
 // return route bilan bir xil (deliveredAt null bo'lganda ham muddat qo'llanadi).
 function isReturnable(

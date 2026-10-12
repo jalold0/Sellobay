@@ -1,0 +1,63 @@
+# ADR 0015 — Logistika (bitta 3PL), sotuvchiga to'lov, qaytarish, fulfillment modellari
+
+- **Sana:** 2026-10-12
+- **Holat:** Qabul qilingan (egasi tasdiqladi)
+- **Kontekst:** 2026-09 auditining oxirgi uch bandi (Y5, Y12, O9) mahsulot qarorini talab qilardi.
+  Egasi quyidagilarni tanladi; bu ADR ularni texnik qarorga aylantiradi.
+
+## Qarorlar
+
+### 1. Qaytarish — joyida tekshirish + 10 kun (qonun minimumi)
+
+- Asosiy yo'l: mijoz tovarni **topshirish paytida** tekshiradi (Toshkentda kuryer oldida,
+  viloyatda punkt/filialda) va yoqmasa o'sha yerda qaytaradi — qaytarish logistikasi yo'q.
+- Topshirilgandan keyin: **10 kun** (14 emas) — ishlatilmagan, qadog'i butun sifatli tovar uchun.
+  Asos: «Iste'molchilarning huquqlarini himoya qilish to'g'risida»gi qonun, 18-modda (sifatli
+  nooziq-ovqat tovari — 10 kun). 13-modda (nuqsonli tovar — kafolat yoki 6 oy) alohida ariza
+  bilan; 28-1-modda (masofadan savdo) — qabul qilishda tekshirish huquqi, qaytarish xarajati
+  sotuvchida. «Faqat joyida» varianti 18-moddaga zid bo'lgani uchun tanlanmadi.
+- `RETURN_WINDOW_DAYS = 10` (`@ecom/core-domain`) — hamma joy shu yerdan o'qiydi.
+
+### 2. Sotuvchiga to'lov (Y12)
+
+- Komissiya va xizmat haqi **yetkazilgan paytda** hisoblanadi (hisob daftariga yoziladi).
+- Pul qaytarish muddati (10 kun) tugagach «yechish mumkin» bo'ladi — Uzum ham faqat 10 kundan
+  oldin topshirilgan tovar uchun to'laydi.
+- To'lov **oyiga 2 marta** (1 va 16-sana): o'sha kungacha «yechish mumkin» bo'lgan qoldiq bitta
+  to'lovga yig'iladi, admin bank o'tkazmasini qilib, raqamini kiritadi.
+- Qaytarilgan tovar — teskari yozuvlar (sotuv, komissiya, xizmat haqi qaytariladi).
+- Hisob daftari — o'zgarmas yozuvlar (`SellerLedgerEntry`), balans = yig'indi; har yozuvda
+  idempotentlik kaliti (`reference @unique`).
+
+### 3. Fulfillment modellari (Y5)
+
+- **FBS** — sotuvchi buyurtmani tasdiqlab, o'zi qadoqlaydi va belgilangan muddatda omborga
+  olib keladi. **FBO** — tovar bizning omborda, biz yig'amiz va qadoqlaymiz.
+- Komissiya va har dona uchun xizmat haqi modelga qarab farq qiladi — `GlobalSetting`
+  (`id = 'marketplace'`) da, deploy'siz admin'dan o'zgaradi.
+- Bitta buyurtmada bir necha sotuvchi bo'lsa — har biri uchun **sotuvchi jo'natmasi**
+  (`SellerShipment`); hammasi omborga kelgach buyurtma **bitta** yetkazish bo'lib jo'naydi.
+
+### 4. Logistika — barcha yuk bitta 3PL orqali (O9)
+
+- Mahalliy va global — oxirgi masofa bitta logistika kompaniyasi (3PL) orqali. Global: kargo
+  omborimizgacha, keyin 3PL.
+- Kod provayderdan mustaqil: `ShippingProvider` interfeysi (jo'natma yaratish, bekor qilish,
+  holat webhook'i). Shartnoma va API hujjati kelguncha **«qo'lda» provayder**: admin trek
+  raqamini kiritadi va holatni belgilaydi. Fargo/BTS API'lari ochiq e'lon qilinmagan.
+- `Delivery` ga 3PL maydonlari qo'shiladi (provayder, tashqi id, trek, yorliq, xom holat).
+- Joyida rad etish — `Delivery.status = RETURNED` (jo'natuvchiga qaytdi), zaxira omborga
+  qaytganda tiklanadi.
+- O'z kuryer ilovamiz zaxira sifatida qoladi, asosiy yo'l emas.
+
+### 5. Narx taklifi → to'lov sahifasi
+
+- Mijoz taklifni qabul qilsa, ko'rinmaydigan global tovar (`GlobalSource.sourcingRequestId`)
+  yaratiladi va mijoz to'lov sahifasiga o'tadi (manzil + oldindan to'lov). To'langach so'rov
+  `ORDERED`, buyurtma bilan bog'lanadi. Avtomatik to'lovsiz buyurtma tanlanmadi.
+
+## Migratsiya
+
+Hamma sxema o'zgarishi **bitta qo'shimcha migratsiyada** (faqat yangi jadval/ustun, standart
+qiymat bilan) — eski kod bilan mos. Prod Neon'ga merge'dan OLDIN qo'llanadi:
+`pnpm db:migrate:deploy` (prod `DATABASE_URL` bilan). Vercel build migratsiya qilmaydi.

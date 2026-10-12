@@ -13,7 +13,7 @@ export const FREE_SHIPPING_THRESHOLD = 500_000;
  * mijozga ko'rinadigan «Qaytarish» sahifasida umuman aytilmasdi — ya'ni
  * foydalanuvchi o'zida bor huquqni bilmasdi.
  */
-export const RETURN_WINDOW_DAYS = 14;
+export const RETURN_WINDOW_DAYS = 10;
 
 export type DeliveryMethod = 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
 
