@@ -827,7 +827,17 @@
       "cancel": "Cancel order",
       "cancelConfirm": "Confirm order cancellation?",
       "cancelled": "Order cancelled",
-      "notFound": "Order not found"
+      "notFound": "Order not found",
+      "receiptRejectedTitle": "Payment receipt rejected",
+      "receiptRejectedReason": "Reason: {reason}",
+      "receiptRejectedDeadline": "Upload a new receipt before {date}, otherwise the order will be cancelled.",
+      "receiptRejectedHint": "Check the card transfer and upload a clearly readable receipt.",
+      "receiptPick": "Choose a receipt photo",
+      "receiptNote": "Note (optional)",
+      "receiptSubmit": "Send new receipt",
+      "receiptSending": "Sending…",
+      "receiptSent": "Receipt sent — an admin will review it",
+      "receiptMissing": "Choose a receipt photo first"
     },
     "premiumCard": {
       "label": "Sellobay Premium",
@@ -1344,5 +1354,9 @@
       "DELIVERED": "Delivered",
       "FAILED": "Could not deliver"
     }
+  },
+  "push": {
+    "paymentConfirmed": "Your card payment is confirmed — the order is being prepared",
+    "paymentRejected": "Receipt rejected. Open the order and upload a new receipt"
   }
 }

@@ -55,6 +55,16 @@ class OrdersRepository {
     );
   }
 
+  /// Rad etilgan karta cheki o'rniga yangisini yuborish. [receiptPath] —
+  /// `ApiClient.uploadReceipt` qaytargan ichki yo'l. Server holatni o'zi
+  /// tekshiradi (`409 NOT_RESUBMITTABLE` — kerak emas yoki allaqachon yuborilgan).
+  Future<void> resubmitReceipt(String id, {required String receiptPath, String? note}) async {
+    await _api.post<Map<String, dynamic>>(
+      '/api/orders/$id/receipt',
+      body: {'receipt': receiptPath, 'note': ?note},
+    );
+  }
+
   /// Qaytarishni so'rash. Oynani server tekshiradi (`returnable`).
   Future<void> requestReturn(String id, {String? reason}) async {
     await _api.post<Map<String, dynamic>>(

@@ -1,6 +1,7 @@
 // GET   /api/orders/[id] — bitta buyurtma (egasi uchun)
 // PATCH /api/orders/[id] — PENDING buyurtmani tahrirlash (manzil/telefon/izoh/yetkazish usuli)
 
+import { canResubmitReceipt, unpaidOrderDeadline } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
 import { z } from 'zod';
 
@@ -86,8 +87,8 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
   },
   payments: {
     orderBy: { createdAt: 'desc' },
-    take: 1,
-    select: { provider: true, status: true },
+    take: 5,
+    select: { provider: true, status: true, failedAt: true, rawPayload: true },
   },
   // Global (Xitoy) buyurtma bosqichi — mijozga ko'rsatiladigan qism
   globalFulfillment: { select: globalFulfillmentSelect },
@@ -109,8 +110,24 @@ function isReturnable(
   return Date.now() - ref.getTime() <= RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 }
 
+/** Admin rad etganda yozgan izoh (to'lov yozuvida, `rawPayload.rejection.comment`). */
+function rejectionComment(raw: Prisma.JsonValue | null): string | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const rejection = (raw as Prisma.JsonObject).rejection;
+  if (!rejection || typeof rejection !== 'object' || Array.isArray(rejection)) return null;
+  const comment = (rejection as Prisma.JsonObject).comment;
+  return typeof comment === 'string' && comment.trim() ? comment : null;
+}
+
 function serialize(o: OrderRow, tariffs?: Parameters<typeof toCustomerGlobalView>[1]) {
   const pay = o.payments[0];
+  // Karta cheki rad etilgan — mijoz muddat ichida yangisini yuklay oladi (audit O4).
+  const resubmit = canResubmitReceipt(o)
+    ? {
+        reason: rejectionComment(pay?.rawPayload ?? null),
+        deadline: unpaidOrderDeadline(o)?.toISOString() ?? null,
+      }
+    : null;
   return {
     id: o.id,
     number: o.number,
@@ -120,6 +137,7 @@ function serialize(o: OrderRow, tariffs?: Parameters<typeof toCustomerGlobalView
     // Karta orqali to'lov cheki admin tasdiqini kutmoqdami?
     paymentReview:
       pay?.provider === 'UZCARD' && pay?.status === 'PENDING' && o.status !== 'CANCELLED',
+    receiptResubmit: resubmit,
     subtotal: o.subtotal.toString(),
     shippingTotal: o.shippingTotal.toString(),
     discountTotal: o.discountTotal.toString(),

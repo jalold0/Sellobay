@@ -6,6 +6,8 @@
 
 import { COD_PROVIDER, orderPaymentState } from '@ecom/core-domain';
 
+import { grantOrderEarnForOrder } from './loyalty';
+
 import type { Prisma } from '@ecom/database';
 
 export interface DeliveredResult {
@@ -17,7 +19,7 @@ export interface DeliveredResult {
 
 /**
  * Buyurtma DELIVERED'ga o'tgan $transaction ichida chaqiriladi:
- *   • naqd buyurtma — COD Payment PAID + order.paidAt/paidTotal (pul kuryerda olindi);
+ *   • naqd buyurtma — COD Payment PAID + order.paidAt/paidTotal (pul kuryerda olindi) va cashback;
  *   • soldCount++ (yetkazilgan = sotilgan; qaytarilsa return route kamaytiradi).
  *
  * Bir marta chaqirilishi CHAQIRUVCHINING atomik status o'tishi bilan kafolatlanadi
@@ -52,6 +54,8 @@ export async function settleDeliveredOrder(
         data: { status: 'PAID', paidAt: now },
       });
       codSettled = true;
+      // Naqd buyurtmada pul shu yerda tushdi — cashback ham endi (audit O1).
+      await grantOrderEarnForOrder(tx, orderId);
     }
   }
 

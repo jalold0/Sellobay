@@ -95,3 +95,20 @@ export function canAdminCancel(status: string): boolean {
 export function settlesCodPayment(next: string, payment: OrderPaymentState): boolean {
   return next === 'DELIVERED' && payment === 'COD_PENDING';
 }
+
+/**
+ * Mijoz yangi karta chekini yubora oladimi (audit O4). Ilgari chek rad etilsa buyurtma
+ * PENDING'da qotardi — qayta yuborishning yo'li yo'q edi, K4 esa 24 soatdan keyin bekor qilardi.
+ * `payments` — eng yangisi birinchi.
+ */
+export function canResubmitReceipt(input: {
+  status: string;
+  paidAt: Date | string | null;
+  payments: readonly PaymentSnapshot[];
+}): boolean {
+  if (input.status !== 'PENDING' && input.status !== 'CONFIRMED') return false;
+  if (input.paidAt) return false;
+  if (input.payments.some((p) => p.status === 'PENDING' || p.status === 'PAID')) return false;
+  const latest = input.payments[0];
+  return latest?.provider === 'UZCARD' && latest.status === 'FAILED';
+}

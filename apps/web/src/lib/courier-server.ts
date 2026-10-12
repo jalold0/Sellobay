@@ -187,6 +187,10 @@ export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySel
  */
 export function serializeDelivery(d: DeliveryRow) {
   const returnItems = d.items ?? [];
+  // Mijozning ismi, telefoni va izohi FAQAT topshiriqni olgan kuryerga. Ilgari har bir kuryer
+  // bo'sh ro'yxatdagi 50 tagacha buyurtma egasining ma'lumotini ko'rardi (audit P5). Manzil
+  // qoladi — kuryer qaysi topshiriqni olishni shunga qarab tanlaydi.
+  const claimed = d.courierId !== null;
   return {
     id: d.id,
     /// `OUTBOUND` — do'kondan mijozga, `RETURN` — mijozdan omborga.
@@ -220,7 +224,7 @@ export function serializeDelivery(d: DeliveryRow) {
      * server aytadi: aks holda ilova egasiz topshiriq ustida
      * "Biriktirildi" deb yozib turadi.
      */
-    claimed: d.courierId !== null,
+    claimed,
     /** Keyingi mumkin bo'lgan holatlar — klient tugmalarni shunga qarab chizadi. */
     nextStatuses: nextDeliveryStatuses(d.status),
     order: {
@@ -228,9 +232,9 @@ export function serializeDelivery(d: DeliveryRow) {
       number: d.order.number,
       grandTotal: d.order.grandTotal.toString(),
       placedAt: d.order.placedAt.toISOString(),
-      notes: d.order.notes,
-      recipientName: d.order.shippingAddress?.recipientName ?? null,
-      recipientPhone: d.order.shippingAddress?.phone ?? null,
+      notes: claimed ? d.order.notes : null,
+      recipientName: claimed ? (d.order.shippingAddress?.recipientName ?? null) : null,
+      recipientPhone: claimed ? (d.order.shippingAddress?.phone ?? null) : null,
       // Qaytarishda buyurtmaning FAQAT bir qismi olinadi (mahsulotlar
       // har xil omborga ketishi mumkin). Shunda ro'yxat topshiriqning
       // o'zidan olinadi, buyurtmadan emas — aks holda kuryer boshqa

@@ -50,3 +50,12 @@
   qilish oqimida qoladi — zaxira tovar kelganda qaytadi.
 - Navbat: admin «Qaytarishlar» sahifasida «Pul qaytarilishi kerak».
 - Avtomatik gateway refund (Click/Payme Merchant API) — merchant kalitlari ulangach alohida ish.
+
+## Yangilanish (2026-10-12): cashback pul tushganda (O1)
+
+- Sello Coins cashback buyurtma yaratilganda EMAS, pul haqiqatan tushganda beriladi:
+  Click to'lovi, Payme `PerformTransaction`, karta cheki tasdig'i, naqd — yetkazilganda
+  (`grantOrderEarnForOrder`, idempotent). Sarflangan coin esa darhol yechiladi (double-spend yo'q).
+- Buyurtma javobidagi `coinsEarned` — va'da («+N coin olasiz»), hisobga hali tushmagan.
+- Payme perform atomik: to'lov va buyurtma holati shartli yangilanadi, biri o'tmasa ikkalasi
+  ham qaytariladi (P6).

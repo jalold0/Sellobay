@@ -14,6 +14,7 @@
 // Yo'l `/create`: `/api/products` allaqachon GET (ro'yxat) uchun band va
 // unga POST qo'shish moderatsiya route'i bilan chalkashardi.
 
+import { isOwnPublicImageUrl } from '@ecom/storage';
 import { z } from 'zod';
 
 import { assertAdmin, slugify } from '@/lib/api-guard';
@@ -42,7 +43,20 @@ const createSchema = z.object({
   weightGrams: z.number().int().min(0).max(1_000_000).optional().nullable(),
   categoryId: z.string().uuid('Kategoriya tanlanmagan'),
   brandId: z.string().uuid().optional().nullable(),
-  imageUrls: z.array(z.string().trim().url()).max(8).optional(),
+  // Faqat panel orqali yuklangan rasm (bizning Blob do'konimiz) — tashqi URL emas (audit O10).
+  imageUrls: z
+    .array(
+      z
+        .string()
+        .trim()
+        .url()
+        .refine(
+          isOwnPublicImageUrl,
+          "Rasmni «Rasm yuklash» tugmasi orqali qo'shing (tashqi havola qabul qilinmaydi)",
+        ),
+    )
+    .max(8)
+    .optional(),
   /**
    * DRAFT — qoralama, PENDING_REVIEW — boshqa admin tekshiradi, ACTIVE — darhol sotuvda.
    * Ilgari formadagi «Tekshiruvga yuborish» tovarni ACTIVE qilib yuborardi (audit Y14).

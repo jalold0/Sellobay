@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   adminFulfillmentTargets,
   canAdminCancel,
+  canResubmitReceipt,
   canAdminTransition,
   FULFILLMENT_FLOW,
   orderPaymentState,
@@ -146,5 +147,40 @@ describe('settlesCodPayment', () => {
     expect(settlesCodPayment('SHIPPED', 'COD_PENDING')).toBe(false);
     expect(settlesCodPayment('DELIVERED', 'PAID')).toBe(false);
     expect(settlesCodPayment('DELIVERED', 'AWAITING_PAYMENT')).toBe(false);
+  });
+});
+
+describe('canResubmitReceipt', () => {
+  const rejected = [{ provider: 'UZCARD', status: 'FAILED' }];
+  it('rad etilgan chek, to‘lanmagan buyurtma — mumkin', () => {
+    expect(canResubmitReceipt({ status: 'PENDING', paidAt: null, payments: rejected })).toBe(true);
+    expect(canResubmitReceipt({ status: 'CONFIRMED', paidAt: null, payments: rejected })).toBe(
+      true,
+    );
+  });
+  it('tekshiruvdagi chek bor, to‘langan yoki bekor qilingan — yo‘q', () => {
+    expect(
+      canResubmitReceipt({
+        status: 'PENDING',
+        paidAt: null,
+        payments: [{ provider: 'UZCARD', status: 'PENDING' }, ...rejected],
+      }),
+    ).toBe(false);
+    expect(canResubmitReceipt({ status: 'PENDING', paidAt: new Date(), payments: rejected })).toBe(
+      false,
+    );
+    expect(canResubmitReceipt({ status: 'CANCELLED', paidAt: null, payments: rejected })).toBe(
+      false,
+    );
+  });
+  it('boshqa provayder yoki to‘lov yozuvi yo‘q — yo‘q', () => {
+    expect(
+      canResubmitReceipt({
+        status: 'PENDING',
+        paidAt: null,
+        payments: [{ provider: 'PAYME', status: 'FAILED' }],
+      }),
+    ).toBe(false);
+    expect(canResubmitReceipt({ status: 'PENDING', paidAt: null, payments: [] })).toBe(false);
   });
 });

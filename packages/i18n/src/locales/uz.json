@@ -834,7 +834,17 @@
       "cancel": "Buyurtmani bekor qilish",
       "cancelConfirm": "Buyurtmani bekor qilishni tasdiqlaysizmi?",
       "cancelled": "Buyurtma bekor qilindi",
-      "notFound": "Buyurtma topilmadi"
+      "notFound": "Buyurtma topilmadi",
+      "receiptRejectedTitle": "To‘lov cheki rad etildi",
+      "receiptRejectedReason": "Sabab: {reason}",
+      "receiptRejectedDeadline": "{date} gacha yangi chek yuklang, aks holda buyurtma bekor qilinadi.",
+      "receiptRejectedHint": "Kartaga o‘tkazmani tekshiring va chekni aniq ko‘rinadigan qilib yuklang.",
+      "receiptPick": "Chek rasmini tanlang",
+      "receiptNote": "Izoh (ixtiyoriy)",
+      "receiptSubmit": "Yangi chekni yuborish",
+      "receiptSending": "Yuborilmoqda…",
+      "receiptSent": "Chek yuborildi — admin tekshiradi",
+      "receiptMissing": "Avval chek rasmini tanlang"
     },
     "premiumCard": {
       "label": "Sellobay Premium",
@@ -1344,5 +1354,9 @@
       "DELIVERED": "Yetkazdim",
       "FAILED": "Yetkazib bo'lmadi"
     }
+  },
+  "push": {
+    "paymentConfirmed": "Karta to‘lovingiz tasdiqlandi — buyurtma tayyorlanmoqda",
+    "paymentRejected": "Chek rad etildi. Buyurtmani ochib, yangi chek yuklang"
   }
 }

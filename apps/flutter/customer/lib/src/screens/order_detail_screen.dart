@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,6 +17,9 @@ class OrderDetailScreen extends StatefulWidget {
 
   final String orderId;
 
+  /// Rad etilgan chek o'rniga yangisini tanlash (testda almashtiriladi).
+  static ImagePicker picker = ImagePicker();
+
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
@@ -24,6 +28,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindi
   OrderDetail? _order;
   bool _loading = true;
   bool _busy = false;
+  bool _receiptBusy = false;
   Object? _error;
 
   /// To'lov sahifasi TASHQI brauzerda ochilganmi.
@@ -88,6 +93,36 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindi
   }
 
   OrdersRepository get _repo => SellobayRuntimeScope.of(context).orders;
+
+  /// Rad etilgan karta cheki o'rniga yangisini yuboradi (audit O4): rasm tanlanadi,
+  /// checkout'dagi kabi alohida yuklanadi, so'ng buyurtmaga biriktiriladi.
+  Future<void> _resubmitReceipt(OrderDetail order) async {
+    final picked = await OrderDetailScreen.picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 80,
+    );
+    if (picked == null || !mounted) return;
+    final runtime = SellobayRuntimeScope.of(context);
+    setState(() => _receiptBusy = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final path = await runtime.checkout.uploadReceipt(bytes: bytes, filename: picked.name);
+      await runtime.orders.resubmitReceipt(order.id, receiptPath: path);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('profile.orderDetail.receiptSent'))),
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.errorText(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _receiptBusy = false);
+    }
+  }
 
   Future<void> _load() async {
     setState(() {
@@ -223,6 +258,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindi
           const SizedBox(height: 10),
           _note(context.t('order.paymentReview'), SellobayColors.accent),
         ],
+        if (order.receiptResubmit != null) ...[
+          const SizedBox(height: 10),
+          _receiptRejected(context, order, order.receiptResubmit!),
+        ],
         const SizedBox(height: 20),
         _sectionTitle(context.t('tracking.items')),
         for (final line in order.items) _line(context, line, locale, baseUrl),
@@ -356,6 +395,59 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindi
           ),
         ),
       );
+
+  /// Chek rad etildi: sabab, muddat va yangi chek yuborish tugmasi.
+  Widget _receiptRejected(BuildContext context, OrderDetail order, ReceiptResubmit info) {
+    const color = SellobayColors.destructive;
+    final deadline = info.deadline;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.t('profile.orderDetail.receiptRejectedTitle'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: SellobayColors.ink),
+          ),
+          if (info.reason != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              context.t('profile.orderDetail.receiptRejectedReason', params: {'reason': info.reason!}),
+              style: const TextStyle(fontSize: 13, color: SellobayColors.ink),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            deadline != null
+                ? context.t(
+                    'profile.orderDetail.receiptRejectedDeadline',
+                    params: {'date': formatOrderDateTime(deadline)},
+                  )
+                : context.t('profile.orderDetail.receiptRejectedHint'),
+            style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _receiptBusy ? null : () => _resubmitReceipt(order),
+              icon: const Icon(Icons.upload_file_outlined, size: 18),
+              label: Text(
+                _receiptBusy
+                    ? context.t('profile.orderDetail.receiptSending')
+                    : context.t('profile.orderDetail.receiptSubmit'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _note(String text, Color color) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),

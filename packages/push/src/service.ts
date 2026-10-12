@@ -25,6 +25,11 @@ export interface PushService {
   sendToUser(userId: string, message: PushMessage, opts?: { appName?: string }): Promise<number>;
   /** Buyurtma holati o'zgargani haqida mijozga bildirishnoma. HECH QACHON xato tashlamaydi. */
   notifyOrderStatus(orderId: string, status: string): Promise<void>;
+  /**
+   * Karta cheki tekshiruvi natijasi (audit O5): mijoz shu xabarni kutib turadi — rad etilsa
+   * yangi chek yuklashi kerak (aks holda 24 soatdan keyin buyurtma bekor bo'ladi).
+   */
+  notifyPaymentReview(orderId: string, approved: boolean): Promise<void>;
 }
 
 /**
@@ -61,7 +66,30 @@ export function buildOrderStatusMessage(
   };
 }
 
+/** Karta cheki tekshiruvi natijasi — mijoz tilida. */
+export function buildPaymentReviewMessage(
+  order: { id: string; number: string },
+  approved: boolean,
+  locale: string | undefined,
+): PushMessage {
+  const l = asLocale(locale);
+  return {
+    title: t('profile.ordersPage.title', l) + ' · ' + order.number,
+    body: t(approved ? 'push.paymentConfirmed' : 'push.paymentRejected', l),
+    data: { type: 'order', orderId: order.id, status: approved ? 'PAID' : 'PAYMENT_REJECTED' },
+  };
+}
+
 export function createPushService(db: PushDb, client: FcmClient | null): PushService {
+  async function customerOf(orderId: string) {
+    const order = await db.order.findUnique({
+      where: { id: orderId },
+      select: { number: true, userId: true, user: { select: { locale: true } } },
+    });
+    // Mehmon buyurtmasida (`userId: null`) qurilma yo'q.
+    return order?.userId ? { ...order, userId: order.userId } : null;
+  }
+
   async function sendToUser(
     userId: string,
     message: PushMessage,
@@ -90,12 +118,8 @@ export function createPushService(db: PushDb, client: FcmClient | null): PushSer
     async notifyOrderStatus(orderId, status) {
       if (!client || !NOTIFIABLE_ORDER_STATUSES.has(status)) return;
       try {
-        const order = await db.order.findUnique({
-          where: { id: orderId },
-          select: { number: true, userId: true, user: { select: { locale: true } } },
-        });
-        // Mehmon buyurtmasida (`userId: null`) qurilma yo'q.
-        if (!order?.userId) return;
+        const order = await customerOf(orderId);
+        if (!order) return;
         await sendToUser(
           order.userId,
           buildOrderStatusMessage(
@@ -104,6 +128,24 @@ export function createPushService(db: PushDb, client: FcmClient | null): PushSer
             order.user?.locale,
           ),
           // Mijoz ilovasiga: kuryer o'z qurilmasida shu hisob bilan kirgan bo'lishi mumkin.
+          { appName: 'customer' },
+        );
+      } catch {
+        // Push buyurtma oqimini buzmasligi kerak.
+      }
+    },
+    async notifyPaymentReview(orderId, approved) {
+      if (!client) return;
+      try {
+        const order = await customerOf(orderId);
+        if (!order) return;
+        await sendToUser(
+          order.userId,
+          buildPaymentReviewMessage(
+            { id: orderId, number: order.number },
+            approved,
+            order.user?.locale,
+          ),
           { appName: 'customer' },
         );
       } catch {

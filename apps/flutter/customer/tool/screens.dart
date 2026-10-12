@@ -517,7 +517,7 @@ FakeBackend _addressesBackend() => FakeBackend((options, body) => apiOk({
       ],
     }));
 
-FakeBackend _ordersBackend() => FakeBackend((options, body) {
+FakeBackend _ordersBackend({Map<String, dynamic>? detail}) => FakeBackend((options, body) {
       if (options.path == '/api/orders') {
         return rawJson(json.encode({
           'success': true,
@@ -530,7 +530,7 @@ FakeBackend _ordersBackend() => FakeBackend((options, body) {
         }));
       }
       if (options.path == '/api/orders/$_orderId') {
-        return apiOk({'order': _orderDetail()});
+        return apiOk({'order': detail ?? _orderDetail()});
       }
       return apiErr(500, 'UNEXPECTED', options.path);
     });
@@ -732,6 +732,26 @@ void main() {
       '10-order-detail',
       const OrderDetailScreen(orderId: _orderId),
       backend: _ordersBackend(),
+    ),
+  );
+
+  testWidgets(
+    '16 buyurtma detali: chek rad etildi',
+    (t) => shoot(
+      t,
+      '16-order-receipt-rejected',
+      const OrderDetailScreen(orderId: _orderId),
+      backend: _ordersBackend(
+        detail: {
+          ..._orderDetail(),
+          'paymentProvider': 'UZCARD',
+          'paymentStatus': 'FAILED',
+          'receiptResubmit': {
+            'reason': 'Chekdagi summa buyurtma summasidan kam',
+            'deadline': '2026-10-13T10:00:00.000Z',
+          },
+        },
+      ),
     ),
   );
 }

@@ -13,6 +13,7 @@
 
 import { timingSafeEqual } from 'crypto';
 
+import { grantOrderEarnForOrder } from '@ecom/order-ops';
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
@@ -40,6 +41,9 @@ const REASON_TIMEOUT = 4;
 
 // Buyurtma to'lovga yaroqli holatlar (perform'gacha)
 const PAYABLE_STATUSES = ['PENDING', 'CONFIRMED'] as const;
+
+/** Perform paytida buyurtma to'lab bo'lmaydigan holatga o'tgan — tranzaksiya rollback qilinadi. */
+class PerformRaceError extends Error {}
 
 type PaymentRow = {
   id: string;
@@ -237,21 +241,52 @@ export async function POST(req: NextRequest) {
       }
 
       const paidAt = new Date();
-      await prisma.$transaction([
-        prisma.payment.update({
+      // ATOMIK: tekshiruv va yozuv orasida buyurtma bekor qilingan yoki tranzaksiya boshqa
+      // so'rovda yopilgan bo'lishi mumkin (audit P6). Ikkala yozuv ham shartli — biri o'tmasa
+      // hammasi qaytariladi va Payme'ga «bajarib bo'lmaydi» javobi ketadi.
+      const performed = await prisma
+        .$transaction(async (tx) => {
+          const p = await tx.payment.updateMany({
+            where: { id: payment.id, status: 'PENDING' },
+            data: { status: 'PAID', paidAt },
+          });
+          if (p.count === 0) return false;
+          const o = await tx.order.updateMany({
+            where: { id: payment.orderId, status: { in: [...PAYABLE_STATUSES] }, paidAt: null },
+            data: { status: 'PAID', paidAt, paidTotal: order.grandTotal },
+          });
+          if (o.count === 0) throw new PerformRaceError();
+          await tx.orderStatusHistory.create({
+            data: {
+              orderId: payment.orderId,
+              status: 'PAID',
+              comment: 'Payme to‘lovi tasdiqlandi',
+            },
+          });
+          // Pul tushdi — cashback endi (audit O1). Idempotent.
+          await grantOrderEarnForOrder(tx, payment.orderId);
+          return true;
+        })
+        .catch((e: unknown) => {
+          if (e instanceof PerformRaceError) return null;
+          throw e;
+        });
+      if (performed === null) return rpcError(id, E_CANNOT_PERFORM, 'Order is no longer payable');
+      if (!performed) {
+        // Parallel so'rov allaqachon bajargan — Payme protokoli bo'yicha o'sha natija qaytadi.
+        const done = await prisma.payment.findUnique({
           where: { id: payment.id },
-          data: { status: 'PAID', paidAt },
-        }),
-        prisma.order.update({
-          where: { id: payment.orderId },
-          data: {
-            status: 'PAID',
-            paidAt,
-            paidTotal: order.grandTotal,
-            statusHistory: { create: { status: 'PAID', comment: 'Payme to‘lovi tasdiqlandi' } },
-          },
-        }),
-      ]);
+          select: { status: true, paidAt: true },
+        });
+        if (done?.status === 'PAID') {
+          return rpc(id, {
+            transaction: payment.id,
+            perform_time: (done.paidAt ?? paidAt).getTime(),
+            state: 2,
+          });
+        }
+        return rpcError(id, E_CANNOT_PERFORM, 'Transaction cancelled');
+      }
       return rpc(id, { transaction: payment.id, perform_time: paidAt.getTime(), state: 2 });
     }
 

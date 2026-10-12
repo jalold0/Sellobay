@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sellobay_customer/src/screens/order_detail_screen.dart';
 import 'package:sellobay_customer/src/screens/orders_screen.dart';
 import 'package:sellobay_customer/src/screens/track_order_screen.dart';
@@ -105,6 +107,12 @@ FakeBackend _backend({
         return cancel?.call() ?? apiOk({'ok': true});
       }
       if (options.path.endsWith('/return')) return apiOk({'ok': true});
+      if (options.path == '/api/uploads/receipt') {
+        return apiOk({'pathname': 'receipts/2026-10/chek.jpg'});
+      }
+      if (options.path.endsWith('/receipt')) {
+        return apiOk({'orderId': _orderId, 'paymentReview': true});
+      }
       if (options.path.startsWith('/api/orders/')) {
         return rawJson(json.encode({
           'success': true,
@@ -387,6 +395,36 @@ void main() {
     expect(find.textContaining('14 kun ichida'), findsOneWidget);
   });
 
+  testWidgets('chek rad etilgan — sabab, muddat va yangi chek yuboriladi (O4)', (tester) async {
+    OrderDetailScreen.picker = _FakePicker();
+    addTearDown(() => OrderDetailScreen.picker = ImagePicker());
+    final backend = _backend(
+      detail: {
+        ..._detail(provider: 'UZCARD', paymentStatus: 'FAILED'),
+        'receiptResubmit': {'reason': 'Summa mos emas', 'deadline': '2026-10-13T10:00:00.000Z'},
+      },
+    );
+    await pump(tester, backend, const OrderDetailScreen(orderId: _orderId));
+
+    expect(find.text('To‘lov cheki rad etildi'), findsOneWidget);
+    expect(find.textContaining('Summa mos emas'), findsOneWidget);
+    expect(find.textContaining('gacha yangi chek yuklang'), findsOneWidget);
+
+    await tester.tap(find.text('Yangi chekni yuborish'));
+    await settle(tester);
+
+    expect(backend.calls.where((c) => c == '/api/uploads/receipt'), hasLength(1));
+    expect(
+      backend.calls.where((c) => c.startsWith('/api/orders/') && c.endsWith('/receipt')),
+      hasLength(1),
+    );
+  });
+
+  testWidgets('chek rad etilmagan — qayta yuborish bloki yo`q', (tester) async {
+    await pump(tester, _backend(), const OrderDetailScreen(orderId: _orderId));
+    expect(find.text('Yangi chekni yuborish'), findsNothing);
+  });
+
   testWidgets('bekor qilish tasdiq so`raydi va serverga boradi', (tester) async {
     final backend = _backend();
     await pump(tester, backend, const OrderDetailScreen(orderId: _orderId));
@@ -488,4 +526,17 @@ void main() {
       expect(find.text('CHARGEBACK'), findsOneWidget);
     });
   });
+}
+
+class _FakePicker extends ImagePicker {
+  @override
+  Future<XFile?> pickImage({
+    required ImageSource source,
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    CameraDevice preferredCameraDevice = CameraDevice.rear,
+    bool requestFullMetadata = true,
+  }) async =>
+      XFile.fromData(Uint8List.fromList(const [1, 2, 3]), name: 'chek.jpg');
 }

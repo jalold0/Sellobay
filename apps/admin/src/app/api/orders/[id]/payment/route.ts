@@ -7,6 +7,7 @@
 
 import { Prisma } from '@ecom/database';
 import { grantOrderEarn } from '@ecom/order-ops';
+import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -190,15 +191,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       throw e;
     }
+    // Mijoz shu xabarni kutib turadi (audit O5). COMMIT'DAN KEYIN; xato tashlamaydi.
+    await getPushService().notifyPaymentReview(order.id, true);
     return apiOk({ orderId: order.id, orderStatus: 'PAID', paymentStatus: 'PAID' });
   }
 
   // reject — to'lov rad etildi, buyurtma PENDING'da qoladi (mijoz qayta yuklashi mumkin)
   try {
     await prisma.$transaction(async (tx) => {
+      // Sabab to'lov yozuvida qoladi — mijoz buyurtmasida ko'radi va yangi chek yuklaydi (audit O4).
+      const rejectedPayload = {
+        ...(payment.rawPayload &&
+        typeof payment.rawPayload === 'object' &&
+        !Array.isArray(payment.rawPayload)
+          ? (payment.rawPayload as Prisma.JsonObject)
+          : {}),
+        rejection: { comment: comment ?? null, rejectedBy: user.id, rejectedAt: now.toISOString() },
+      } satisfies Prisma.InputJsonValue;
       const pMoved = await tx.payment.updateMany({
         where: { id: payment.id, status: 'PENDING' },
-        data: { status: 'FAILED', failedAt: now },
+        data: { status: 'FAILED', failedAt: now, rawPayload: rejectedPayload },
       });
       if (pMoved.count === 0) throw new PaymentStateChangedError();
 
@@ -231,5 +243,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     throw e;
   }
+  // Mijozga: chek rad etildi — yangi chek yuklang (24 soat ichida, aks holda bekor bo'ladi).
+  await getPushService().notifyPaymentReview(order.id, false);
   return apiOk({ orderId: order.id, orderStatus: order.status, paymentStatus: 'FAILED' });
 }
