@@ -14,8 +14,12 @@ yuboradigan so'rovlarni yuboradi va DB holat o'zgarishini tekshiradi.
 
    ```bash
    cd apps/web
-   CLICK_SECRET_KEY=test_click_secret PAYME_KEY=test_payme_key PORT=3100 pnpm dev
+   CLICK_SECRET_KEY=test_click_secret CLICK_SERVICE_ID=test_service CLICK_MERCHANT_ID=test_merchant \
+   PAYME_KEY=test_payme_key PAYME_MERCHANT_ID=test_payme_merchant PORT=3100 pnpm dev
    ```
+
+   `*_SERVICE_ID` / `*_MERCHANT_ID` ham kerak: server sozlanmagan provayder bilan buyurtmani
+   qabul qilmaydi (`PAYMENT_METHOD_UNAVAILABLE`).
 
 2. Boshqa terminalda skriptlarni **bir xil** secret va `BASE_URL` bilan ishlating:
 

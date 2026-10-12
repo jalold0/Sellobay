@@ -97,6 +97,14 @@ export async function restockOrder(
   });
   if (dispatched === 0) return { restocked: 0, skipped: [] };
 
+  // Idempotent: shu buyurtma bo'yicha zaxira allaqachon qaytarilgan bo'lsa — qayta qaytarmaymiz.
+  // Bekor qilish bir necha yo'ldan kelishi mumkin (mijoz, Payme, muddat o'tishi, admin) va
+  // ikkinchi chaqiruv omborni ikki barobar oshirib yubormasligi kerak.
+  const alreadyReturned = await tx.stockMovement.count({
+    where: { reference: orderNumber, type: 'RETURN' },
+  });
+  if (alreadyReturned > 0) return { restocked: 0, skipped: [] };
+
   const items = await tx.orderItem.findMany({
     where: { orderId },
     select: { productId: true, variantId: true, quantity: true },

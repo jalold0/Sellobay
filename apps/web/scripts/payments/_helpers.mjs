@@ -22,31 +22,40 @@ export function done() {
 
 /** Guest buyurtma yaratadi (loyalty'ga tegmaydi). {id, grandTotalSom, number} qaytaradi. */
 export async function createTestOrder(provider = 'CLICK') {
-  const pr = await fetch(`${BASE}/api/products?limit=1`);
+  const pr = await fetch(`${BASE}/api/products?limit=20`);
   const pj = await pr.json();
-  // Katalog route'lari yagona konvertga o'tgan: { success, data: { items } }
-  const product = (pj.data?.items ?? pj.items)?.[0];
-  if (!product) throw new Error('Mahsulot topilmadi — avval DB seed qiling');
+  // Katalog route'lari yagona konvertga o'tgan: { success, data: { items } }.
+  const products = (pj.data?.items ?? pj.items ?? []).filter((p) => p.inStock !== false);
+  if (products.length === 0) throw new Error('Mahsulot topilmadi — avval DB seed qiling');
 
-  const body = {
-    items: [{ productId: product.id, quantity: 1 }],
-    recipientName: 'Test Xaridor',
-    phone: '+998901234567',
-    region: 'Toshkent',
-    city: 'Toshkent',
-    street: 'Test ko‘chasi 1',
-    deliveryMethod: 'HOME_DELIVERY', // lat/lng bermaymiz → zona tekshiruvi o'tkazib yuboriladi
-    paymentProvider: provider,
-  };
-  const or = await fetch(`${BASE}/api/orders`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const oj = await or.json();
-  if (!oj.success) throw new Error('Order create yiqildi: ' + JSON.stringify(oj));
-  const order = oj.data.order;
-  return { id: order.id, grandTotalSom: Number(order.grandTotal), number: order.number };
+  // Variant tanlamay buyurtma standart variantga tushadi; uning zaxirasi tugagan bo'lishi
+  // mumkin (boshqa variantda bo'lsa ham mahsulot "inStock") — keyingi mahsulotni sinaymiz.
+  let last;
+  for (const product of products) {
+    const body = {
+      items: [{ productId: product.id, quantity: 1 }],
+      recipientName: 'Test Xaridor',
+      phone: '+998901234567',
+      region: 'Toshkent',
+      city: 'Toshkent',
+      street: 'Test ko‘chasi 1',
+      deliveryMethod: 'HOME_DELIVERY', // lat/lng bermaymiz → zona tekshiruvi o'tkazib yuboriladi
+      paymentProvider: provider,
+    };
+    const or = await fetch(`${BASE}/api/orders`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const oj = await or.json();
+    if (oj.success) {
+      const order = oj.data.order;
+      return { id: order.id, grandTotalSom: Number(order.grandTotal), number: order.number };
+    }
+    last = oj;
+    if (oj.error?.code !== 'STOCK_INSUFFICIENT') break;
+  }
+  throw new Error('Order create yiqildi: ' + JSON.stringify(last));
 }
 
 export function clickSign({

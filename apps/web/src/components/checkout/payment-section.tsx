@@ -24,6 +24,14 @@ const PAYMENT_TILES: {
 ];
 
 interface Props {
+  /** GLOBAL buyurtma — oldindan to'lov eslatmasi ko'rsatiladi (naqd `available` dan chiqarilgan). */
+  isGlobalOrder?: boolean;
+  /**
+   * Hozir ISHLAYDIGAN usullar (checkout-flow serverdan oladi: `/api/payment-cards`).
+   * Faqat shular ko'rsatiladi — kalitsiz Click/Payme yoki kartasiz UZCARD taklif qilinmaydi,
+   * global buyurtmada naqd yo'q. Server ham xuddi shu qoidani tekshiradi.
+   */
+  available: PaymentProvider[];
   payment: PaymentProvider;
   onSelectPayment: (p: PaymentProvider) => void;
   total: number;
@@ -38,6 +46,8 @@ interface Props {
 }
 
 export function PaymentSection({
+  isGlobalOrder = false,
+  available,
   payment,
   onSelectPayment,
   total,
@@ -52,17 +62,18 @@ export function PaymentSection({
 }: Props) {
   const t = useTranslations('checkout');
 
+  const tiles = PAYMENT_TILES.filter((tile) => available.includes(tile.id));
+
   return (
     <section className="border-border rounded-[18px] border bg-white p-6 md:p-7">
       <h2 className="text-brand-ink mb-[18px] text-xl font-bold">{t('payment.methodTitle')}</h2>
+      {isGlobalOrder && (
+        <p className="bg-paper text-brand-ink-soft mb-4 rounded-xl px-4 py-3 text-sm">
+          {t('payment.globalPrepaidNote')}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {/*
-          Karta o'tkazmasi FAQAT platforma kartasi sozlangan bo'lsa ko'rsatiladi.
-          MANUAL_PAYMENT_CARDS qo'yilmagan prod'da bu usul taklif qilinsa, mijoz
-          qayerga pul o'tkazishini bilmaydi (ilgari unga soxta TEST kartasi
-          ko'rsatilardi). Server ham shu holatni rad etadi.
-        */}
-        {PAYMENT_TILES.filter((tile) => tile.id !== 'UZCARD' || cards.length > 0).map((tile) => {
+        {tiles.map((tile) => {
           const active = payment === tile.id;
           return (
             <button

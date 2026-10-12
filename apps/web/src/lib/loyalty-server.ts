@@ -8,6 +8,14 @@ import type { Prisma } from '@ecom/database';
 
 export const CHECKIN_REWARD = 5;
 
+/** Yozish paytida coin balansi yetmay qoldi (parallel buyurtma ishlatib qo'ygan). Tx rollback. */
+export class InsufficientCoinsError extends Error {
+  constructor() {
+    super('INSUFFICIENT_COINS');
+    this.name = 'InsufficientCoinsError';
+  }
+}
+
 // Asia/Tashkent (UTC+5, DST yo'q) — joriy kun boshlanishi (UTC instant).
 function tashkentDayStart(): Date {
   const OFFSET_MS = 5 * 60 * 60 * 1000;
@@ -93,7 +101,16 @@ export async function settleOrderLoyalty(
   }
 
   const net = earned - redeemed;
-  if (net !== 0) {
+  if (redeemed > 0) {
+    // ATOMIK: balans yozish paytida ham yetarli bo'lishi shart. Chaqiruvchi balansni
+    // oldinroq o'qigan — ikki parallel buyurtma bir xil coinlarni ikki marta ishlata olardi
+    // (audit Y11). Yetmasa tranzaksiya to'liq bekor qilinadi.
+    const moved = await tx.user.updateMany({
+      where: { id: userId, loyaltyPoints: { gte: redeemed } },
+      data: { loyaltyPoints: { increment: net } },
+    });
+    if (moved.count === 0) throw new InsufficientCoinsError();
+  } else if (net !== 0) {
     await tx.user.update({
       where: { id: userId },
       data: { loyaltyPoints: { increment: net } },
@@ -113,6 +130,13 @@ export async function reverseOrderLoyalty(
   userId: string,
   orderNumber: string,
 ): Promise<{ refunded: number; revoked: number }> {
+  // Idempotent: bu buyurtma bo'yicha qaytarish allaqachon yozilgan bo'lsa — qayta qilmaymiz
+  // (aks holda coin ikki marta qaytarilardi/olinardi).
+  const alreadyReversed = await tx.loyaltyTransaction.count({
+    where: { userId, reference: `${orderNumber}:cancel`, reason: 'ADJUSTMENT' },
+  });
+  if (alreadyReversed > 0) return { refunded: 0, revoked: 0 };
+
   const txns = await tx.loyaltyTransaction.findMany({
     where: { userId, reference: orderNumber, reason: { in: ['ORDER_SPEND', 'ORDER_EARN'] } },
     select: { points: true, reason: true },

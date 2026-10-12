@@ -16,7 +16,7 @@ import { timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
-import { reverseOrderLoyalty } from '@/lib/loyalty-server';
+import { releaseCancelledOrder } from '@/lib/order-release-server';
 
 import type { Prisma } from '@ecom/database';
 import type { NextRequest } from 'next/server';
@@ -293,11 +293,21 @@ export async function POST(req: NextRequest) {
           ? (payment.rawPayload as Record<string, unknown>)
           : {};
 
-      // Order + user (perform qilingan to'lov bekor qilinsa loyalty qaytariladi)
       const order = await prisma.order.findUnique({
         where: { id: payment.orderId },
-        select: { id: true, number: true, userId: true, paidTotal: true },
+        select: {
+          id: true,
+          number: true,
+          userId: true,
+          promoCode: true,
+          status: true,
+          paidTotal: true,
+        },
       });
+      // Tovar hali omborda (jo'natilmagan) bo'lsa zaxira qaytariladi. Yo'lga chiqqan yoki
+      // yetkazilgan bo'lsa — tovar mijozda/kuryerda, uni qaytarish oqimi alohida.
+      const goodsStillInStock =
+        order != null && !['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status);
 
       await prisma.$transaction(async (tx) => {
         await tx.payment.update({
@@ -326,9 +336,14 @@ export async function POST(req: NextRequest) {
             },
           },
         });
-        // Perform qilingandan keyin bekor — Sello Coins qaytariladi
-        if (wasPerformed && order?.userId) {
-          await reverseOrderLoyalty(tx, order.userId, order.number);
+        // Zaxira, Sello Coins (perform'gacha bekor qilinsa ham — coin buyurtma yaratilganda
+        // berilgan), promokod, kuryer topshirig'i. Ilgari faqat perform'dan keyin coin
+        // qaytarilardi, zaxira va promo esa umuman qaytmasdi (audit Y7).
+        if (order) {
+          await releaseCancelledOrder(tx, order, {
+            restock: goodsStillInStock,
+            reason: wasPerformed ? 'PAYME_REFUND' : 'PAYME_CANCEL',
+          });
         }
       });
 

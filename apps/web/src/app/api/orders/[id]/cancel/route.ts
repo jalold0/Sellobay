@@ -1,13 +1,13 @@
 // POST /api/orders/[id]/cancel — PENDING buyurtmani bekor qilish.
-// Yon ta'sirlar atomik qaytariladi: Sello Coins (refund/revoke) + promokod (usedCount, UserCoupon).
+// Yon ta'sirlar atomik qaytariladi (`releaseCancelledOrder`): zaxira, Sello Coins, promokod,
+// hali yo'lga chiqmagan kuryer topshirig'i va kutilayotgan offline to'lov.
 
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
-import { restockOrder } from '@/lib/inventory-server';
-import { reverseOrderLoyalty } from '@/lib/loyalty-server';
+import { releaseCancelledOrder } from '@/lib/order-release-server';
 
 import type { NextRequest } from 'next/server';
 
@@ -72,31 +72,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         },
       });
 
-      // Ombor — zaxirani qaytarish (increment) + RETURN StockMovement
-      const stock = await restockOrder(tx, order.id, order.number, 'ORDER_CANCELLED');
-
-      // Sello Coins — refund/revoke
-      const loyalty = await reverseOrderLoyalty(tx, user.id, order.number);
-
-      // Promokod — usedCount kamaytirish + UserCoupon redeemed bekor
-      if (order.promoCode) {
-        const promo = await tx.promoCode.findUnique({
-          where: { code: order.promoCode },
-          select: { id: true, usedCount: true },
-        });
-        if (promo) {
-          await tx.promoCode.update({
-            where: { id: promo.id },
-            data: { usedCount: { decrement: promo.usedCount > 0 ? 1 : 0 } },
-          });
-          await tx.userCoupon.updateMany({
-            where: { userId: user.id, promoCodeId: promo.id },
-            data: { redeemedAt: null },
-          });
-        }
-      }
-
-      return { loyalty, stock };
+      // Zaxira, coin, promo, kuryer topshirig'i va kutilayotgan to'lov — bitta joyda
+      return releaseCancelledOrder(tx, order, {
+        restock: true,
+        reason: reason ?? 'Mijoz bekor qildi',
+      });
     });
   } catch (e) {
     if (e instanceof OrderStateChangedError) {

@@ -27,7 +27,7 @@ import {
   type StockLine,
 } from '@/lib/inventory-server';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
-import { settleOrderLoyalty } from '@/lib/loyalty-server';
+import { InsufficientCoinsError, settleOrderLoyalty } from '@/lib/loyalty-server';
 import {
   MANUAL_CARD_PROVIDER,
   ReceiptError,
@@ -35,7 +35,12 @@ import {
   parseReceipt,
   storeReceipt,
 } from '@/lib/manual-payment';
-import { isOnlineProvider, type PaymentProvider } from '@/lib/payments';
+import {
+  isOnlineProvider,
+  isPrepaidProvider,
+  isProviderConfigured,
+  type PaymentProvider,
+} from '@/lib/payments';
 import { evaluatePromo } from '@/lib/promo';
 
 /**
@@ -45,6 +50,14 @@ import { evaluatePromo } from '@/lib/promo';
  * blok unutilsa, tushunarli xato kutilmagan 500 ga aylanardi.
  */
 export class OrderError extends ApiDomainError {}
+
+/** Promokod limiti yozish paytida tugab qoldi (parallel buyurtma). Tranzaksiyani bekor qiladi. */
+class PromoExhaustedError extends Error {
+  constructor() {
+    super('PROMO_EXHAUSTED');
+    this.name = 'PromoExhaustedError';
+  }
+}
 
 const itemSchema = z.object({
   // Mock/demo mahsulotlar UUID emas (p1..p12) — bunday eski savat elementi
@@ -209,6 +222,19 @@ export async function createOrder(
     }
   }
 
+  // To'lov usuli HOZIR ishlaydiganlardan bo'lishi shart (audit O7). Ilgari sxema UZUM_BANK/HUMO
+  // (oqimi umuman yo'q) va kalitsiz Click/Payme'ni ham qabul qilardi: buyurtma yaratilardi,
+  // lekin uni to'lab bo'lmasdi va u zaxirani band qilib osilib qolardi. Karta (UZCARD) quyida
+  // alohida tekshiriladi.
+  const provider = input.paymentProvider as PaymentProvider;
+  if (provider !== MANUAL_CARD_PROVIDER && !isProviderConfigured(provider)) {
+    throw new OrderError(
+      400,
+      'PAYMENT_METHOD_UNAVAILABLE',
+      "Bu to'lov usuli hozir ishlamaydi. Boshqa usulni tanlang.",
+    );
+  }
+
   // Karta orqali qo'lda to'lov (UZCARD) — chek majburiy va to'g'ri formatda bo'lishi shart.
   // Chek TRANZAKSIYADAN OLDIN saqlanadi: fayl yuklash tarmoq amali, uni bazaga
   // yozish tranzaksiyasi ichida bajarish tranzaksiyani keraksiz uzoq ushlab turadi.
@@ -321,6 +347,9 @@ export async function createOrder(
     const memberships = await prisma.groupBuyMember.findMany({
       where: {
         userId: currentUser.id,
+        // Faqat hali buyurtmaga aylanmagan a'zolik — bitta guruh narxi bitta buyurtma uchun.
+        // Ilgari bu shart yo'q edi va narx cheksiz buyurtmada qayta ishlatilardi (audit O6).
+        orderId: null,
         groupBuy: { status: 'COMPLETED', productId: { in: productIds } },
       },
       select: { groupBuy: { select: { productId: true, groupPrice: true } } },
@@ -439,6 +468,19 @@ export async function createOrder(
   }
   const isGlobalOrder = globalTotal.gt(0);
 
+  // GLOBAL buyurtma FAQAT OLDINDAN TO'LANADI.
+  // Naqd (yetkazishda to'lash) mumkin emas: biz mijoz to'lagach Xitoydan sotib olamiz va
+  // tovar 15-17 kun yo'lda bo'ladi. Naqd bo'lsa mijoz eshik oldida rad etishi mumkin —
+  // pul allaqachon sarflangan, tovar esa qaytarib bo'lmaydigan joyda. Butun biznes
+  // modeli oldindan to'lovga qurilgan (qarang: docs/PR-global-sourcing.md).
+  if (isGlobalOrder && !isPrepaidProvider(input.paymentProvider as PaymentProvider)) {
+    throw new OrderError(
+      400,
+      'GLOBAL_PREPAID_ONLY',
+      "Global (Xitoydan) buyurtma faqat oldindan to'lov bilan rasmiylashtiriladi — naqd to'lov mumkin emas",
+    );
+  }
+
   // 3. Yetkazib berish narxi.
   //    GLOBAL buyurtmada lokal yetkazish yig'ilmaydi: kargo tovarni to'g'ridan-to'g'ri
   //    mijoz manziliga olib boradi va bu xarajat allaqachon tovar narxi ichida.
@@ -489,6 +531,13 @@ export async function createOrder(
         const code = input.promoCode.trim().toUpperCase();
         const promo = await tx.promoCode.findUnique({ where: { code } });
         if (promo) {
+          // Bir foydalanuvchining shu promokod bilan PARALLEL buyurtmalari navbatma-navbat
+          // o'tadi (tranzaksiya oxirigacha qulf): aks holda ikkalasi ham "hali ishlatilmagan"
+          // deb ko'rib, bir kishilik promoni ikki marta qo'llardi (audit Y11).
+          if (currentUser) {
+            const lockKey = `promo:${currentUser.id}:${promo.id}`;
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+          }
           const userUsedCount = currentUser
             ? await tx.order.count({ where: { userId: currentUser.id, promoCode: code } })
             : undefined;
@@ -624,10 +673,16 @@ export async function createOrder(
 
       // 5c. Promokod hisoblagichlari — usedCount va UserCoupon redeemedAt
       if (promoApplied && promoId) {
-        await tx.promoCode.update({
-          where: { id: promoId },
+        // ATOMIK: umumiy limit yozish paytida tekshiriladi (o'qishdagi tekshiruv parallel
+        // buyurtmalarda eskirib qolardi — limit oshib ketardi, audit Y11).
+        const counted = await tx.promoCode.updateMany({
+          where: {
+            id: promoId,
+            OR: [{ usageLimit: null }, { usedCount: { lt: prisma.promoCode.fields.usageLimit } }],
+          },
           data: { usedCount: { increment: 1 } },
         });
+        if (counted.count === 0) throw new PromoExhaustedError();
         if (currentUser) {
           await tx.userCoupon.upsert({
             where: { userId_promoCodeId: { userId: currentUser.id, promoCodeId: promoId } },
@@ -693,6 +748,9 @@ export async function createOrder(
       // Ombor yetmasa — buyurtma (va barcha yon ta'sirlar) rollback bo'ladi.
       // Sentinel qaytaramiz (409 uchun); boshqa xatolar odatdagidek yuqoriga.
       if (e instanceof InsufficientStockError) return { stockError: e } as const;
+      // Parallel buyurtma promo limitini yoki coin balansini band qilib ulgurgan.
+      if (e instanceof PromoExhaustedError) return { promoExhausted: true } as const;
+      if (e instanceof InsufficientCoinsError) return { coinsChanged: true } as const;
       // Ayni kalit bilan PARALLEL so'rov bizdan oldin ulgurgan (yuqoridagi
       // tekshiruv — read-then-write, oraliq bor). UNIQUE cheklov ikkinchisini
       // to'xtatadi; bu xato emas — birinchisining natijasini qaytaramiz.
@@ -717,6 +775,17 @@ export async function createOrder(
       409,
       'DUPLICATE_REQUEST',
       'Buyurtma allaqachon yuborilgan. Buyurtmalar bo`limini tekshiring.',
+    );
+  }
+
+  if ('promoExhausted' in txResult) {
+    throw new OrderError(409, 'PROMO_EXHAUSTED', 'Promokodni ishlatish limiti tugadi');
+  }
+  if ('coinsChanged' in txResult) {
+    throw new OrderError(
+      409,
+      'COINS_CHANGED',
+      'Sello Coins balansingiz o`zgardi. Sahifani yangilab, qayta urinib ko`ring.',
     );
   }
 
