@@ -37,3 +37,16 @@
 - Cron endpoint `GET /api/internal/orders/expire` — `CRON_SECRET` bo'lmasa o'chiq.
   Vercel Hobby'da kuniga bir marta (`apps/web/vercel.json`); tezroq kerak bo'lsa Pro yoki
   tashqi rejalashtiruvchi.
+
+## Yangilanish (2026-10-12): pulni qaytarish (K5)
+
+- Pul gateway'ga avtomatik qaytarilmaydi: admin Click/Payme kabinetida, kartaga yoki naqd
+  qaytaradi va `POST /api/orders/[id]/refund` bilan **qayd etadi** (summa, usul, tranzaksiya
+  raqami). Qoida `@ecom/core-domain` `refund` da (tiyin bilan, float'siz); yozuv
+  `apps/admin/src/lib/refund-server.ts` da, buyurtma bo'yicha advisory lock bilan.
+- Qisman qaytarish mumkin: `refundedTotal` oshadi, to'lov `PARTIALLY_REFUNDED`. To'liq qaytsa
+  buyurtma `REFUNDED`, to'lov `REFUNDED`, mijozga push.
+- Qaytarilgan (yetkazilgan) buyurtma pul oldin qaytarilib `REFUNDED` bo'lsa ham tovar qabul
+  qilish oqimida qoladi — zaxira tovar kelganda qaytadi.
+- Navbat: admin «Qaytarishlar» sahifasida «Pul qaytarilishi kerak».
+- Avtomatik gateway refund (Click/Payme Merchant API) — merchant kalitlari ulangach alohida ish.
