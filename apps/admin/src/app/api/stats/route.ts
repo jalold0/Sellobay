@@ -8,6 +8,8 @@
 // Bu yerdagi hamma son bazadan olinadi. Daromad faqat HAQIQATDA to'langan
 // buyurtmalardan sanaladi (bekor qilingan/qaytarilganlar kirmaydi).
 
+import { lastTashkentDays, NON_REVENUE_ORDER_STATUSES, tashkentDateKey } from '@ecom/core-domain';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
@@ -17,9 +19,6 @@ export const dynamic = 'force-dynamic';
 
 const WINDOW_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Daromadga kiradigan holatlar — pul olingan va qaytarilmagan buyurtmalar. */
-const REVENUE_STATUSES = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'] as const;
 
 async function assertAdmin() {
   const user = await getCurrentUser();
@@ -40,17 +39,19 @@ export async function GET() {
   // Oldingi davr — o'sishni HAQIQATAN solishtirish uchun.
   const prevStart = new Date(now.getTime() - 2 * WINDOW_DAYS * DAY_MS);
 
-  const revenueWhere = { status: { in: [...REVENUE_STATUSES] } };
+  // Daromad ta'rifi @ecom/core-domain `revenue` da — bosh sahifa va seller paneli bilan bir xil:
+  // pul tushgan (paidAt) va bekor/qaytarilmagan; sana — pul tushgan kun (audit O2).
+  const revenueWhere = { status: { notIn: [...NON_REVENUE_ORDER_STATUSES] } };
 
   const [current, previous, newCustomers, lowStockRows, recentOrders, topProducts] =
     await Promise.all([
       prisma.order.aggregate({
-        where: { ...revenueWhere, placedAt: { gte: windowStart } },
+        where: { ...revenueWhere, paidAt: { gte: windowStart } },
         _sum: { grandTotal: true },
         _count: true,
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, placedAt: { gte: prevStart, lt: windowStart } },
+        where: { ...revenueWhere, paidAt: { gte: prevStart, lt: windowStart } },
         _sum: { grandTotal: true },
         _count: true,
       }),
@@ -110,16 +111,17 @@ export async function GET() {
   // Kunlik daromad qatori (grafik uchun). Buyurtmalarni bir marta o'qib
   // kunlarga yig'amiz — 30 ta alohida so'rov qilmaymiz.
   const windowOrders = await prisma.order.findMany({
-    where: { ...revenueWhere, placedAt: { gte: windowStart } },
-    select: { placedAt: true, grandTotal: true },
+    where: { ...revenueWhere, paidAt: { gte: windowStart } },
+    select: { paidAt: true, grandTotal: true },
   });
   const byDay = new Map<string, { revenue: number; orders: number }>();
-  for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
-    const key = new Date(now.getTime() - i * DAY_MS).toISOString().slice(0, 10);
+  // Toshkent kuni bo'yicha (UTC'da kechki to'lovlar ertangi kunga tushardi — audit P4).
+  for (const key of lastTashkentDays(WINDOW_DAYS, now)) {
     byDay.set(key, { revenue: 0, orders: 0 });
   }
   for (const o of windowOrders) {
-    const key = o.placedAt.toISOString().slice(0, 10);
+    if (!o.paidAt) continue;
+    const key = tashkentDateKey(o.paidAt);
     const row = byDay.get(key);
     if (!row) continue; // oraliqdan tashqarida
     row.revenue += Number(o.grandTotal);

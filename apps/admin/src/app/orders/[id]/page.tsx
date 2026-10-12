@@ -98,7 +98,7 @@ export default function OrderDetailPage() {
 
   // Bekor qilish — zaxira, coin va promo qaytadi; to'langan bo'lsa pulni qaytarish alohida amal.
   const onCancel = async () => {
-    const reason = window.prompt('Buyurtmani bekor qilish sababi (mijozga ko`rinadi):');
+    const reason = window.prompt('Bekor qilish sababi (buyurtma tarixida saqlanadi):');
     if (reason === null) return;
     if (reason.trim().length < 3) {
       toast({ title: 'Sababni yozing', variant: 'destructive' });

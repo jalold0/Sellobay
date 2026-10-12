@@ -25,22 +25,27 @@ export function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-md p-1.5 hover:bg-accent">
+      <DropdownMenuTrigger className="hover:bg-accent flex items-center gap-2 rounded-md p-1.5">
         <Avatar className="h-8 w-8">
           <AvatarImage src={session?.avatarUrl ?? undefined} alt={name} />
           <AvatarFallback className="text-xs">{initials(name)}</AvatarFallback>
         </Avatar>
         <div className="hidden text-left leading-tight md:block">
           <div className="text-sm font-medium">{name}</div>
-          <div className="text-[10px] text-muted-foreground">
-            {session?.roles[0] ?? '—'}
+          <div className="text-muted-foreground text-[10px]">
+            {/* Eng yuqori rol: ilgari birinchisi ko'rsatilardi va admin «CUSTOMER» bo'lib turardi. */}
+            {session?.roles.includes('SUPER_ADMIN')
+              ? 'SUPER_ADMIN'
+              : session?.roles.includes('ADMIN')
+                ? 'ADMIN'
+                : (session?.roles[0] ?? '—')}
           </div>
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="text-sm font-medium">{name}</div>
-          <div className="text-xs font-normal text-muted-foreground">{session?.email}</div>
+          <div className="text-muted-foreground text-xs font-normal">{session?.email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

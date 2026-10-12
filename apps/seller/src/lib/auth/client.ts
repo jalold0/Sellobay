@@ -6,12 +6,22 @@ type ApiResult<T> =
 
 async function api<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
   try {
-    const res = await fetch(path, {
-      method: init?.method ?? 'GET',
-      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-      credentials: 'same-origin',
-      ...init,
-    });
+    const send = () =>
+      fetch(path, {
+        method: init?.method ?? 'GET',
+        headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+        credentials: 'same-origin',
+        ...init,
+      });
+    let res = await send();
+    // Access token tugagan (15 daqiqa) — sessiyani yangilab, so'rovni bir marta takrorlaymiz.
+    if (res.status === 401 && !path.startsWith('/api/auth/')) {
+      const refreshed = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (refreshed.ok) res = await send();
+    }
     const json = (await res.json()) as ApiResult<T>;
     return json;
   } catch {
@@ -43,8 +53,14 @@ export function logoutSeller() {
   return api<{ loggedOut: true }>('/api/auth/logout', { method: 'POST' });
 }
 
+export interface SellerShop {
+  status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BLOCKED';
+  brandName: string;
+  suspendReason: string | null;
+}
+
 export function meSeller() {
-  return api<{ user: SellerUser }>('/api/auth/me');
+  return api<{ user: SellerUser; seller: SellerShop | null }>('/api/auth/me');
 }
 
 /** Mahsulot nomi — DB'da Json, shakli { uz, ru?, en? }. */

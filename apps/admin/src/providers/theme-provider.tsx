@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 
-import { config } from '../lib/config';
+/** Tanlangan mavzu brauzerda shu kalit bilan saqlanadi. */
+const THEME_STORAGE_KEY = 'ecom_admin_theme';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -38,7 +39,7 @@ export function ThemeProvider({
   const [resolved, setResolved] = React.useState<'light' | 'dark'>('light');
 
   React.useEffect(() => {
-    const stored = window.localStorage.getItem(config.themeStorageKey) as Theme | null;
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
     const initial = stored ?? defaultTheme;
     setThemeState(initial);
     applyTheme(initial);
@@ -47,7 +48,7 @@ export function ThemeProvider({
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = () => {
       const current =
-        (window.localStorage.getItem(config.themeStorageKey) as Theme | null) ?? defaultTheme;
+        (window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null) ?? defaultTheme;
       if (current === 'system') {
         applyTheme('system');
         setResolved(getSystemTheme());
@@ -59,7 +60,7 @@ export function ThemeProvider({
 
   const setTheme = React.useCallback((t: Theme) => {
     setThemeState(t);
-    window.localStorage.setItem(config.themeStorageKey, t);
+    window.localStorage.setItem(THEME_STORAGE_KEY, t);
     applyTheme(t);
     setResolved(t === 'system' ? getSystemTheme() : t);
   }, []);

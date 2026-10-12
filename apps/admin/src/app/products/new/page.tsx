@@ -133,7 +133,7 @@ export default function NewProductPage() {
       weightGrams: form.weight ? Number(form.weight) : null,
       categoryId: form.categoryId,
       brandId: form.brandId || null,
-      status: form.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE',
+      status: form.status,
     });
     setSubmitting(false);
 

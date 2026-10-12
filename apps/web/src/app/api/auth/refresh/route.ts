@@ -1,9 +1,9 @@
+import { safeInternalPath } from '@ecom/utils';
 import { NextResponse } from 'next/server';
 
 import { COOKIE_REFRESH } from '@/lib/auth/constants';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { clearCookies, rotateRefresh, rotateRefreshTokens } from '@/lib/auth/session';
-import { safeInternalPath } from '@/lib/safe-redirect';
 
 import type { NextRequest } from 'next/server';
 

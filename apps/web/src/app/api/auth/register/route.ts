@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri kiritma");
   }
   const { email, phone, password, firstName, lastName, locale, role } = parsed.data;
+  const { shopName, legalName, tin, bankName, bankAccount } = parsed.data;
   const isSeller = role === 'seller';
 
   const normalizedPhone = phone ? normalizeUzPhone(phone) : null;
@@ -67,8 +68,11 @@ export async function POST(req: NextRequest) {
     await prisma.seller.create({
       data: {
         ownerUserId: user.id,
-        legalName: displayName,
-        brandName: displayName,
+        legalName: legalName ?? shopName ?? displayName,
+        brandName: shopName ?? displayName,
+        tin: tin ?? null,
+        bankName: bankName ?? null,
+        bankAccount: bankAccount ?? null,
         email: normalizedEmail,
         phone: normalizedPhone,
         status: 'PENDING',

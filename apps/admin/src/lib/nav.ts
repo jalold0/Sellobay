@@ -20,7 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 
-import type { UserRole } from './auth';
+import type { UserRole } from '@ecom/database';
 
 export interface NavItem {
   href: string;

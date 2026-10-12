@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
 
 import type { NextRequest } from 'next/server';
 
@@ -92,6 +93,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: { status: 'CANCELLED' },
       });
 
+      await writeAudit(
+        {
+          userId: user.id,
+          action: 'order.cancel',
+          resource: 'Order',
+          resourceId: order.id,
+          meta: { from: order.status, reason, refundRequired },
+        },
+        tx,
+      );
       return releaseCancelledOrder(tx, order, { restock: true, reason: `ADMIN_CANCEL: ${reason}` });
     });
   } catch (e) {

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { SELLER_IS_ACTIVE } from '@/lib/product-visibility';
 
 import type { NextRequest } from 'next/server';
 
@@ -81,7 +82,7 @@ export async function PUT(req: NextRequest) {
   const products =
     productIds.length > 0
       ? await prisma.product.findMany({
-          where: { id: { in: productIds }, status: 'ACTIVE' },
+          where: { id: { in: productIds }, status: 'ACTIVE', ...SELLER_IS_ACTIVE },
           select: { id: true, basePrice: true, variants: { select: { id: true, price: true } } },
         })
       : [];

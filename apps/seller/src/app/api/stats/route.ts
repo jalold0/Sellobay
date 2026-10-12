@@ -8,6 +8,8 @@
 // Bu yerdagi hamma son bazadan. Daromad sotuvchining O'Z mahsulotlari
 // bo'yicha (OrderItem.sellerId) hisoblanadi, butun buyurtma summasi emas.
 
+import { lastTashkentDays, NON_REVENUE_ORDER_STATUSES, tashkentDateKey } from '@ecom/core-domain';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
@@ -17,9 +19,6 @@ export const dynamic = 'force-dynamic';
 
 const WINDOW_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Daromadga kiradigan holatlar — pul olingan va qaytarilmagan buyurtmalar. */
-const REVENUE_STATUSES = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'] as const;
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -35,23 +34,26 @@ export async function GET() {
   const windowStart = new Date(now.getTime() - WINDOW_DAYS * DAY_MS);
   const prevStart = new Date(now.getTime() - 2 * WINDOW_DAYS * DAY_MS);
 
-  const orderFilter = { status: { in: [...REVENUE_STATUSES] } };
+  // Daromad ta'rifi @ecom/core-domain `revenue` da (admin bilan bir xil): pul tushgan va
+  // bekor/qaytarilmagan buyurtma, sana — pul tushgan kun (paidAt). Ilgari holatlar ro'yxati
+  // edi va CONFIRMED/PACKED/OUT_FOR_DELIVERY tushib qolardi (audit O2).
+  const orderFilter = { status: { notIn: [...NON_REVENUE_ORDER_STATUSES] } };
 
   // Sotuvchining satrlari — davr ichida va oldingi davrda.
   const [currentItems, prevItems, products, payouts] = await Promise.all([
     prisma.orderItem.findMany({
-      where: { sellerId: seller.id, order: { ...orderFilter, placedAt: { gte: windowStart } } },
+      where: { sellerId: seller.id, order: { ...orderFilter, paidAt: { gte: windowStart } } },
       select: {
         totalPrice: true,
         quantity: true,
         orderId: true,
-        order: { select: { placedAt: true } },
+        order: { select: { paidAt: true } },
       },
     }),
     prisma.orderItem.findMany({
       where: {
         sellerId: seller.id,
-        order: { ...orderFilter, placedAt: { gte: prevStart, lt: windowStart } },
+        order: { ...orderFilter, paidAt: { gte: prevStart, lt: windowStart } },
       },
       select: { totalPrice: true, orderId: true },
     }),
@@ -83,14 +85,15 @@ export async function GET() {
   const ordersCount = new Set(currentItems.map((i) => i.orderId)).size;
   const ordersPrev = new Set(prevItems.map((i) => i.orderId)).size;
 
-  // Kunlik qator (grafik uchun)
+  // Kunlik qator (grafik uchun) — Toshkent kuni bo'yicha (UTC'da kechki buyurtmalar
+  // ertangi kunga tushardi, audit P4).
   const byDay = new Map<string, { revenue: number; orders: Set<string> }>();
-  for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
-    const key = new Date(now.getTime() - i * DAY_MS).toISOString().slice(0, 10);
+  for (const key of lastTashkentDays(WINDOW_DAYS, now)) {
     byDay.set(key, { revenue: 0, orders: new Set() });
   }
   for (const item of currentItems) {
-    const key = item.order.placedAt.toISOString().slice(0, 10);
+    if (!item.order.paidAt) continue;
+    const key = tashkentDateKey(item.order.paidAt);
     const row = byDay.get(key);
     if (!row) continue;
     row.revenue += Number(item.totalPrice);

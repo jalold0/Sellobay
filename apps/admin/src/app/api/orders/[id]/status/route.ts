@@ -24,6 +24,7 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
 import { applyFulfillmentTransition, ConcurrentTransitionError } from '@/lib/fulfillment-server';
 
 import type { NextRequest } from 'next/server';
@@ -97,9 +98,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   let result;
   try {
-    result = await prisma.$transaction((tx) =>
-      applyFulfillmentTransition(tx, order, next, { changedBy: user.id, comment }),
-    );
+    result = await prisma.$transaction(async (tx) => {
+      const r = await applyFulfillmentTransition(tx, order, next, { changedBy: user.id, comment });
+      await writeAudit(
+        {
+          userId: user.id,
+          action: 'order.status',
+          resource: 'Order',
+          resourceId: order.id,
+          meta: { from: order.status, to: next, codSettled: r.codSettled },
+        },
+        tx,
+      );
+      return r;
+    });
   } catch (e) {
     if (e instanceof ConcurrentTransitionError) {
       return apiError(409, 'CONCURRENT_UPDATE', 'Buyurtma holati boshqa jarayonda o‘zgardi');

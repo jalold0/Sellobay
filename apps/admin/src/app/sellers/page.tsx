@@ -25,7 +25,13 @@ import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import { SellerStatusBadge } from '../../components/status/seller-status-badge';
-import { approveSeller, listSellers, rejectSeller, type AdminSeller } from '@/lib/auth/client';
+import {
+  approveSeller,
+  listSellers,
+  rejectSeller,
+  setSellerStatus,
+  type AdminSeller,
+} from '@/lib/auth/client';
 import { formatDate, formatMoney, formatNumber, initials } from '../../lib/format';
 
 export default function AdminSellersPage() {
@@ -59,9 +65,14 @@ export default function AdminSellersPage() {
   }, []);
 
   const onReject = React.useCallback(async (s: AdminSeller) => {
-    if (!confirm(`${s.brandName} arizasini rad etishni tasdiqlaysizmi?`)) return;
+    const reason = window.prompt(`${s.brandName} — rad etish sababi (sotuvchiga ko‘rsatiladi):`);
+    if (reason === null) return;
+    if (reason.trim().length < 3) {
+      toast({ title: 'Sababni yozing', variant: 'destructive' });
+      return;
+    }
     setBusyId(s.id);
-    const res = await rejectSeller(s.id);
+    const res = await rejectSeller(s.id, reason.trim());
     setBusyId(null);
     if (!res.success) {
       toast({ title: res.error.message, variant: 'destructive' });
@@ -69,6 +80,38 @@ export default function AdminSellersPage() {
     }
     toast({ title: `${s.brandName} rad etildi`, variant: 'destructive' });
     setSellers((prev) => prev.map((x) => (x.id === s.id ? { ...x, status: 'BLOCKED' } : x)));
+  }, []);
+
+  // To'xtatilgan sotuvchining tovarlari vitrinadan darhol yo'qoladi.
+  const onToggle = React.useCallback(async (s: AdminSeller) => {
+    const suspend = s.status === 'ACTIVE';
+    let reason: string | undefined;
+    if (suspend) {
+      const r = window.prompt(`${s.brandName} — to‘xtatish sababi:`);
+      if (r === null) return;
+      if (r.trim().length < 3) {
+        toast({ title: 'Sababni yozing', variant: 'destructive' });
+        return;
+      }
+      reason = r.trim();
+    } else if (!confirm(`${s.brandName} qayta faollashtirilsinmi?`)) {
+      return;
+    }
+    setBusyId(s.id);
+    const res = await setSellerStatus(s.id, suspend ? 'suspend' : 'reactivate', reason);
+    setBusyId(null);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: suspend ? `${s.brandName} to‘xtatildi` : `${s.brandName} faollashtirildi`,
+      description: suspend ? 'Tovarlari vitrinadan olindi' : 'Tovarlari yana sotuvda',
+      variant: suspend ? 'destructive' : 'success',
+    });
+    setSellers((prev) =>
+      prev.map((x) => (x.id === s.id ? { ...x, status: suspend ? 'SUSPENDED' : 'ACTIVE' } : x)),
+    );
   }, []);
 
   const columns = React.useMemo<ColumnDef<AdminSeller>[]>(
@@ -85,7 +128,7 @@ export default function AdminSellersPage() {
             </Avatar>
             <div className="min-w-0">
               <div className="truncate font-medium">{row.original.brandName}</div>
-              <div className="truncate text-xs text-muted-foreground">{row.original.legalName}</div>
+              <div className="text-muted-foreground truncate text-xs">{row.original.legalName}</div>
             </div>
           </div>
         ),
@@ -96,7 +139,7 @@ export default function AdminSellersPage() {
         cell: ({ row }) => (
           <div className="text-sm">
             <div>{row.original.ownerName}</div>
-            <div className="text-xs text-muted-foreground">{row.original.phone}</div>
+            <div className="text-muted-foreground text-xs">{row.original.phone}</div>
           </div>
         ),
       },
@@ -108,7 +151,9 @@ export default function AdminSellersPage() {
       {
         accessorKey: 'commissionRate',
         header: () => <div className="text-right">Komissiya</div>,
-        cell: ({ row }) => <div className="text-right">{row.original.commissionRate.toFixed(1)}%</div>,
+        cell: ({ row }) => (
+          <div className="text-right">{row.original.commissionRate.toFixed(1)}%</div>
+        ),
       },
       {
         accessorKey: 'productsCount',
@@ -128,7 +173,7 @@ export default function AdminSellersPage() {
         accessorKey: 'appliedAt',
         header: 'Murojaat',
         cell: ({ row }) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {formatDate(new Date(row.original.appliedAt))}
           </span>
         ),
@@ -163,12 +208,27 @@ export default function AdminSellersPage() {
               </div>
             );
           }
+          if (s.status === 'ACTIVE' || s.status === 'SUSPENDED') {
+            return (
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  className="h-8"
+                  onClick={() => void onToggle(s)}
+                >
+                  {s.status === 'ACTIVE' ? 'To‘xtatish' : 'Faollashtirish'}
+                </Button>
+              </div>
+            );
+          }
           return null;
         },
         enableSorting: false,
       },
     ],
-    [busyId, onApprove, onReject],
+    [busyId, onApprove, onReject, onToggle],
   );
 
   const filtered = React.useMemo(() => {

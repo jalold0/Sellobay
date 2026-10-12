@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(_req: Request, { params }: { params: { orderId: string } }) {
   const { err, userId } = await assertAdmin();
-  if (err || !userId) return err ?? apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
+  if (err) return err;
 
   try {
     const result = await receiveReturnInPerson(params.orderId, userId);

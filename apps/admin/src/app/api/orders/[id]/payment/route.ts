@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
 
 import type { NextRequest } from 'next/server';
 
@@ -168,6 +169,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (order.userId) {
           await grantOrderEarn(tx, order.userId, order.grandTotal.toNumber(), order.number);
         }
+        await writeAudit(
+          {
+            userId: user.id,
+            action: 'payment.verify',
+            resource: 'Payment',
+            resourceId: payment.id,
+            meta: {
+              orderId: order.id,
+              receivedAmount: received.toString(),
+              comment: comment ?? null,
+            },
+          },
+          tx,
+        );
       });
     } catch (e) {
       if (e instanceof PaymentStateChangedError) {
@@ -199,6 +214,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           },
         },
       });
+      await writeAudit(
+        {
+          userId: user.id,
+          action: 'payment.reject',
+          resource: 'Payment',
+          resourceId: payment.id,
+          meta: { orderId: order.id, comment: comment ?? null },
+        },
+        tx,
+      );
     });
   } catch (e) {
     if (e instanceof PaymentStateChangedError) {

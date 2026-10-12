@@ -1,6 +1,10 @@
 import { formatMoney as fmtMoney, type CurrencyCode } from '@ecom/utils';
 
-export function formatMoney(amount: number | string | null | undefined, currency: CurrencyCode = 'UZS', locale = 'uz-UZ'): string {
+export function formatMoney(
+  amount: number | string | null | undefined,
+  currency: CurrencyCode = 'UZS',
+  locale = 'uz-UZ',
+): string {
   if (amount === null || amount === undefined) return '—';
   const n = typeof amount === 'string' ? Number(amount) : amount;
   if (!Number.isFinite(n)) return '—';
@@ -16,7 +20,20 @@ export function formatNumber(value: number | string | null | undefined, _locale 
   return n < 0 ? `-${grouped}` : grouped;
 }
 
-const MONTHS_UZ_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'];
+const MONTHS_UZ_SHORT = [
+  'yan',
+  'fev',
+  'mar',
+  'apr',
+  'may',
+  'iyn',
+  'iyl',
+  'avg',
+  'sen',
+  'okt',
+  'noy',
+  'dek',
+];
 function pad2(n: number): string {
   return n.toString().padStart(2, '0');
 }
@@ -55,11 +72,8 @@ export function formatRelative(value: Date | string | null | undefined): string 
   return `${Math.round(mo / 12)} yil ${suffix}`;
 }
 
-export function pickLocalized(value: Partial<Record<'uz' | 'ru' | 'en', string>> | string | null | undefined, locale: 'uz' | 'ru' | 'en' = 'uz'): string {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  return value[locale] ?? value.uz ?? '';
-}
+// Mahalliy nusxa o'rniga umumiy funksiya (CLAUDE.md: har doim pickLocalized orqali, audit P2).
+export { pickLocalized } from '@ecom/i18n/pick';
 
 export function initials(name?: string | null): string {
   if (!name) return '?';

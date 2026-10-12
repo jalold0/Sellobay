@@ -5,17 +5,30 @@ import { prisma } from '@/lib/db';
 import { loginSchema } from '@/lib/auth/validators';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { issueSession, requestMeta } from '@/lib/auth/session';
+import { enforceRateLimit } from '@/lib/rate-limit';
+import { lastSellerDecisionReason } from '@/lib/seller-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Parol terib ko'rishdan himoya: IP bo'yicha daqiqasiga 10, bitta hisobga 15 daqiqada 10 urinish.
+  const limited = await enforceRateLimit(req, 'login', { limit: 10, windowSec: 60 });
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri kiritma");
   }
   const { identifier, password } = parsed.data;
+  const perAccount = await enforceRateLimit(
+    req,
+    'login-account',
+    { limit: 10, windowSec: 15 * 60 },
+    identifier.toLowerCase().trim(),
+  );
+  if (perAccount) return perAccount;
 
   const looksLikePhone = /^\+?\d+$/.test(identifier);
   const normalizedPhone = looksLikePhone ? normalizeUzPhone(identifier) : null;
@@ -59,8 +72,38 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Status PENDING bo'lsa, kirsishga ruxsat berib, dashboard'da approval kutilmoqda deb ko'rsatamiz
-  // (BLOCKED yuqorida tekshirilgan)
+  // Sotuvchi profilining holati (admin rollari tekshirilmaydi). Ilgari tasdiqlanmagan va rad
+  // etilgan sotuvchilar ham panelga kirardi (audit Y4). To'xtatilgan (SUSPENDED) kiradi, lekin
+  // faqat ko'radi — o'zgartiruvchi API'lar `requireSeller(…, 'write')` bilan yopiq.
+  const isAdmin = roleNames.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN');
+  if (!isAdmin) {
+    const seller = await prisma.seller.findUnique({
+      where: { ownerUserId: user.id },
+      select: { id: true, status: true },
+    });
+    if (!seller) {
+      return apiError(
+        403,
+        'NOT_A_SELLER',
+        'Sotuvchi profili topilmadi. /sell sahifasidan ariza qoldiring.',
+      );
+    }
+    if (seller.status === 'PENDING') {
+      return apiError(
+        403,
+        'SELLER_PENDING',
+        'Arizangiz ko‘rib chiqilmoqda. Admin tasdiqlagach, panelga kira olasiz.',
+      );
+    }
+    if (seller.status === 'BLOCKED') {
+      const reason = await lastSellerDecisionReason(seller.id, 'seller.reject');
+      return apiError(
+        403,
+        'SELLER_REJECTED',
+        reason ? `Arizangiz rad etildi: ${reason}` : 'Arizangiz rad etildi.',
+      );
+    }
+  }
 
   const res = apiOk({
     user: {

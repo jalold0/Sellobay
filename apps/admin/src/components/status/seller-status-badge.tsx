@@ -1,11 +1,11 @@
 import { SELLER_STATUS_TONE, StatusBadge } from '@ecom/ui';
 
-import type { SellerStatus } from '../../lib/mock/types';
+import type { SellerStatus } from '@ecom/database';
 
 const LABELS: Record<SellerStatus, string> = {
   PENDING: 'Tekshiruvda',
   ACTIVE: 'Faol',
-  SUSPENDED: "To`xtatilgan",
+  SUSPENDED: 'To`xtatilgan',
   BLOCKED: 'Bloklangan',
 };
 

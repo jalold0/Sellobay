@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { safeInternalPath } from './safe-redirect';
+import { safeInternalPath } from './safe-redirect.ts';
 
 describe('safeInternalPath — ichki yo‘llar o‘tadi', () => {
   it('oddiy yo‘l', () => {

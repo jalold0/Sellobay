@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { assertAdmin, slugify } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
 
 import type { NextRequest } from 'next/server';
 
@@ -42,8 +43,11 @@ const createSchema = z.object({
   categoryId: z.string().uuid('Kategoriya tanlanmagan'),
   brandId: z.string().uuid().optional().nullable(),
   imageUrls: z.array(z.string().trim().url()).max(8).optional(),
-  /** Admin yaratgan mahsulot moderatsiyani kutmaydi. */
-  status: z.enum(['DRAFT', 'ACTIVE']).default('ACTIVE'),
+  /**
+   * DRAFT — qoralama, PENDING_REVIEW — boshqa admin tekshiradi, ACTIVE — darhol sotuvda.
+   * Ilgari formadagi «Tekshiruvga yuborish» tovarni ACTIVE qilib yuborardi (audit Y14).
+   */
+  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'ACTIVE']).default('ACTIVE'),
 });
 
 export async function POST(req: NextRequest) {
@@ -117,6 +121,16 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true, slug: true, sku: true, status: true },
     });
+    await writeAudit(
+      {
+        userId,
+        action: 'product.create',
+        resource: 'Product',
+        resourceId: created.id,
+        meta: { status: created.status, sku: created.sku },
+      },
+      tx,
+    );
 
     const warehouse = await tx.warehouse.upsert({
       where: { code: MAIN_WAREHOUSE_CODE },

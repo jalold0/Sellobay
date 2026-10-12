@@ -6,12 +6,22 @@ type ApiResult<T> =
 
 async function api<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
   try {
-    const res = await fetch(path, {
-      method: init?.method ?? 'GET',
-      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-      credentials: 'same-origin',
-      ...init,
-    });
+    const send = () =>
+      fetch(path, {
+        method: init?.method ?? 'GET',
+        headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+        credentials: 'same-origin',
+        ...init,
+      });
+    let res = await send();
+    // Access token tugagan (15 daqiqa) — sessiyani yangilab, so'rovni bir marta takrorlaymiz.
+    if (res.status === 401 && !path.startsWith('/api/auth/')) {
+      const refreshed = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (refreshed.ok) res = await send();
+    }
     const json = (await res.json()) as ApiResult<T>;
     return json;
   } catch {
@@ -72,10 +82,30 @@ export function approveSeller(sellerId: string) {
   });
 }
 
-export function rejectSeller(sellerId: string, reason?: string) {
+/** O'z parolini almashtirish; boshqa qurilmalardagi sessiyalar yopiladi. */
+export function changeAdminPassword(currentPassword: string, newPassword: string) {
+  return api<{ changed: true; otherSessionsSignedOut: number }>('/api/auth/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export function rejectSeller(sellerId: string, reason: string) {
   return api<{ seller: { id: string; status: string } }>(`/api/sellers/${sellerId}/reject`, {
     method: 'POST',
-    body: JSON.stringify({ reason: reason ?? null }),
+    body: JSON.stringify({ reason }),
+  });
+}
+
+/** Faol sotuvchini to'xtatish yoki to'xtatilganini qayta yoqish (sabab jurnalga yoziladi). */
+export function setSellerStatus(
+  sellerId: string,
+  action: 'suspend' | 'reactivate',
+  reason?: string,
+) {
+  return api<{ seller: { id: string; status: string } }>(`/api/sellers/${sellerId}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ action, reason }),
   });
 }
 
@@ -106,10 +136,15 @@ export function listProducts() {
 }
 
 // Mahsulot moderatsiyasi: approve → ACTIVE, reject → DRAFT (faqat PENDING_REVIEW)
-export function moderateProduct(id: string, action: 'approve' | 'reject') {
+/** Moderatsiya: tasdiqlash, rad etish (sabab majburiy) yoki sotuvdan olish (sabab majburiy). */
+export function moderateProduct(
+  id: string,
+  action: 'approve' | 'reject' | 'takedown',
+  reason?: string,
+) {
   return api<{ product: { id: string; status: string } }>(`/api/products/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ action }),
+    body: JSON.stringify({ action, reason }),
   });
 }
 
@@ -503,6 +538,10 @@ export interface PendingSeller {
   phone: string | null;
   status: string;
   createdAt: string;
+  tin: string | null;
+  registrationNo: string | null;
+  bankName: string | null;
+  bankAccount: string | null;
   owner: {
     id: string;
     email: string | null;
@@ -567,7 +606,7 @@ export function createProduct(input: {
   weightGrams?: number | null;
   categoryId: string;
   brandId?: string | null;
-  status?: 'DRAFT' | 'ACTIVE';
+  status?: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE';
 }) {
   return api<{ product: { id: string; slug: string; sku: string; status: string } }>(
     '/api/products/create',

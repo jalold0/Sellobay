@@ -56,9 +56,14 @@ export default function PendingSellersPage() {
   };
 
   const onReject = async (s: PendingSeller) => {
-    if (!confirm(`${s.brandName} arizasini rad etishni tasdiqlaysizmi?`)) return;
+    const reason = window.prompt(`${s.brandName} — rad etish sababi (sotuvchiga ko‘rsatiladi):`);
+    if (reason === null) return;
+    if (reason.trim().length < 3) {
+      toast({ title: 'Sababni yozing', variant: 'destructive' });
+      return;
+    }
     setBusyId(s.id);
-    const res = await rejectSeller(s.id);
+    const res = await rejectSeller(s.id, reason.trim());
     setBusyId(null);
     if (!res.success) {
       toast({ title: res.error.message, variant: 'destructive' });
@@ -125,6 +130,19 @@ export default function PendingSellersPage() {
                       ) : null}
                       <span>Ariza: {formatDate(new Date(s.createdAt))}</span>
                     </div>
+                    {/* KYC — admin shu rekvizitlar bilan tasdiqlaydi (STIR'siz tasdiqlanmaydi) */}
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                      <span className={s.tin ? '' : 'font-medium text-red-600'}>
+                        STIR: {s.tin ?? 'kiritilmagan'}
+                      </span>
+                      {s.bankName ? <span>Bank: {s.bankName}</span> : null}
+                      {s.bankAccount ? <span>Hisob raqami: {s.bankAccount}</span> : null}
+                      {!s.bankName && !s.bankAccount ? (
+                        <span className="text-muted-foreground">
+                          Bank rekvizitlari yo‘q — to‘lov uchun keyin so‘raladi
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -136,7 +154,12 @@ export default function PendingSellersPage() {
                     >
                       <X size={14} className="mr-1" /> Rad etish
                     </Button>
-                    <Button size="sm" onClick={() => onApprove(s)} disabled={busy}>
+                    <Button
+                      size="sm"
+                      onClick={() => onApprove(s)}
+                      disabled={busy || !s.tin}
+                      title={s.tin ? undefined : 'STIR kiritilmagan — avval sotuvchidan so‘rang'}
+                    >
                       <Check size={14} className="mr-1" />
                       {busy ? 'Tasdiqlanmoqda...' : 'Tasdiqlash'}
                     </Button>
