@@ -171,6 +171,37 @@ enum SellerStatus {
   BLOCKED
 }
 
+/// Kim saqlaydi va qadoqlaydi (ADR 0015). Komissiya va xizmat haqi modelga qarab farq qiladi.
+enum FulfillmentModel {
+  /// Sotuvchi o'zi saqlaydi, buyurtmani tasdiqlab qadoqlaydi va omborga olib keladi.
+  FBS
+  /// Tovar bizning omborda — biz yig'amiz va qadoqlaymiz.
+  FBO
+}
+
+/// Buyurtmaning bitta sotuvchiga tegishli qismi (jo'natmasi) holati.
+enum SellerShipmentStatus {
+  /// Yangi — sotuvchi hali tasdiqlamagan (FBO: ombor yig'ishi kerak).
+  NEW
+  ACCEPTED
+  PACKED
+  /// Omborga topshirildi / ombor yig'ib bo'ldi — konsolidatsiyaga tayyor.
+  HANDED_OVER
+  CANCELLED
+}
+
+/// Sotuvchi hisob daftari yozuvi turi. Summa ishorali: + sotuvchiga, − sotuvchidan.
+enum LedgerEntryType {
+  SALE
+  COMMISSION
+  FULFILLMENT_FEE
+  RETURN_SALE
+  RETURN_COMMISSION
+  RETURN_FULFILLMENT_FEE
+  PAYOUT
+  ADJUSTMENT
+}
+
 enum ProductStatus {
   DRAFT
   PENDING_REVIEW
@@ -452,6 +483,8 @@ model Product {
   description      Json
   shortDescription Json?
   status           ProductStatus            @default(DRAFT)
+  /// FBS — sotuvchi qadoqlaydi; FBO — bizning omborda. Platformaning o'z tovari amalda FBO.
+  fulfillmentModel FulfillmentModel         @default(FBS)
   isFeatured       Boolean                  @default(false)
   basePrice        Decimal                  @db.Decimal(14, 2)
   compareAtPrice   Decimal?                 @db.Decimal(14, 2)
@@ -719,6 +752,8 @@ model Order {
   invoices          Invoice[]
   sourcingRequests  SourcingRequest[]
   globalFulfillment GlobalFulfillment?
+  sellerShipments   SellerShipment[]
+  ledgerEntries     SellerLedgerEntry[]
 
   @@index([userId])
   @@index([status])
@@ -726,23 +761,25 @@ model Order {
 }
 
 model OrderItem {
-  id            String          @id @default(uuid()) @db.Uuid
-  orderId       String          @db.Uuid
-  productId     String          @db.Uuid
-  variantId     String?         @db.Uuid
-  sellerId      String?         @db.Uuid
-  sku           String
-  nameSnapshot  Json
-  quantity      Int
-  unitPrice     Decimal         @db.Decimal(14, 2)
-  discount      Decimal         @default(0) @db.Decimal(14, 2)
-  taxRate       Decimal         @default(0) @db.Decimal(5, 2)
-  totalPrice    Decimal         @db.Decimal(14, 2)
-  order         Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product       Product         @relation(fields: [productId], references: [id])
-  variant       ProductVariant? @relation(fields: [variantId], references: [id])
-  seller        Seller?         @relation(fields: [sellerId], references: [id])
-  deliveryItems DeliveryItem[]
+  id               String          @id @default(uuid()) @db.Uuid
+  orderId          String          @db.Uuid
+  productId        String          @db.Uuid
+  variantId        String?         @db.Uuid
+  sellerId         String?         @db.Uuid
+  sellerShipmentId String?         @db.Uuid
+  sku              String
+  nameSnapshot     Json
+  quantity         Int
+  unitPrice        Decimal         @db.Decimal(14, 2)
+  discount         Decimal         @default(0) @db.Decimal(14, 2)
+  taxRate          Decimal         @default(0) @db.Decimal(5, 2)
+  totalPrice       Decimal         @db.Decimal(14, 2)
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product         @relation(fields: [productId], references: [id])
+  variant          ProductVariant? @relation(fields: [variantId], references: [id])
+  seller           Seller?         @relation(fields: [sellerId], references: [id])
+  deliveryItems    DeliveryItem[]
+  sellerShipment   SellerShipment? @relation(fields: [sellerShipmentId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
 }
@@ -807,48 +844,114 @@ model PaymentMethod {
 // ===================================================================
 
 model Seller {
-  id             String       @id @default(uuid()) @db.Uuid
-  ownerUserId    String       @unique @db.Uuid
-  legalName      String
-  brandName      String
-  tin            String? // STIR / INN
-  registrationNo String?
-  email          String?
-  phone          String?
-  description    Json?
-  logoUrl        String?
-  status         SellerStatus @default(PENDING)
-  commissionRate Decimal      @default(10) @db.Decimal(5, 2)
-  rating         Decimal      @default(0) @db.Decimal(3, 2)
-  bankAccount    String?
-  bankName       String?
-  approvedAt     DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                      String           @id @default(uuid()) @db.Uuid
+  ownerUserId             String           @unique @db.Uuid
+  legalName               String
+  brandName               String
+  tin                     String? // STIR / INN
+  registrationNo          String?
+  email                   String?
+  phone                   String?
+  description             Json?
+  logoUrl                 String?
+  status                  SellerStatus     @default(PENDING)
+  commissionRate          Decimal          @default(10) @db.Decimal(5, 2)
+  rating                  Decimal          @default(0) @db.Decimal(3, 2)
+  bankAccount             String?
+  bankName                String?
+  approvedAt              DateTime?
+  /// Yangi tovarlar uchun standart model; har tovarning o'z modeli bor (Product.fulfillmentModel).
+  defaultFulfillmentModel FulfillmentModel @default(FBS)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
-  owner      User           @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
-  products   Product[]
-  orderItems OrderItem[]
-  payouts    SellerPayout[]
-  warehouses Warehouse[]
+  owner         User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  products      Product[]
+  orderItems    OrderItem[]
+  payouts       SellerPayout[]
+  shipments     SellerShipment[]
+  ledgerEntries SellerLedgerEntry[]
+  warehouses    Warehouse[]
 
   @@index([status])
 }
 
 model SellerPayout {
-  id          String        @id @default(uuid()) @db.Uuid
-  sellerId    String        @db.Uuid
-  amount      Decimal       @db.Decimal(14, 2)
-  currency    String        @default("UZS")
+  id          String              @id @default(uuid()) @db.Uuid
+  sellerId    String              @db.Uuid
+  amount      Decimal             @db.Decimal(14, 2)
+  currency    String              @default("UZS")
   periodStart DateTime
   periodEnd   DateTime
-  status      PaymentStatus @default(PENDING)
+  status      PaymentStatus       @default(PENDING)
   paidAt      DateTime?
+  /// Bank o'tkazmasi raqami (admin kiritadi).
   reference   String?
-  createdAt   DateTime      @default(now())
-  seller      Seller        @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  /// To'lov paytidagi rekvizitlar nusxasi — keyin o'zgarsa ham qayerga o'tgani ko'rinadi.
+  bankAccount String?
+  bankName    String?
+  note        String?
+  paidById    String?             @db.Uuid
+  createdAt   DateTime            @default(now())
+  seller      Seller              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  entries     SellerLedgerEntry[]
 
   @@index([sellerId])
+  @@index([status, periodEnd])
+}
+
+/// Buyurtmaning bitta sotuvchiga (yoki platformaga) tegishli qismi. Hammasi omborga kelgach
+/// buyurtma bitta yetkazish bo'lib jo'naydi (ADR 0015).
+model SellerShipment {
+  id               String               @id @default(uuid()) @db.Uuid
+  orderId          String               @db.Uuid
+  /// null — platformaning o'z tovari (bizning ombor).
+  sellerId         String?              @db.Uuid
+  fulfillmentModel FulfillmentModel
+  status           SellerShipmentStatus @default(NEW)
+  /// FBS: sotuvchi omborga topshirishi kerak bo'lgan muddat; FBO: ombor yig'ish muddati.
+  deadlineAt       DateTime
+  acceptedAt       DateTime?
+  packedAt         DateTime?
+  handedOverAt     DateTime?
+  cancelledAt      DateTime?
+  /// Omborda qabul qilgan xodim.
+  receivedById     String?              @db.Uuid
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  order            Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seller           Seller?              @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  items            OrderItem[]
+
+  @@unique([orderId, sellerId, fulfillmentModel])
+  @@index([sellerId, status])
+  @@index([status, deadlineAt])
+}
+
+/// Sotuvchi hisob daftari — o'zgarmas yozuvlar; balans = yig'indi. `reference` idempotentlik kaliti
+/// (masalan `SALE:<orderItemId>`), shuning uchun bir hodisa ikki marta yozilmaydi.
+model SellerLedgerEntry {
+  id          String          @id @default(uuid()) @db.Uuid
+  sellerId    String          @db.Uuid
+  type        LedgerEntryType
+  /// + sotuvchiga, − sotuvchidan (so'm).
+  amount      Decimal         @db.Decimal(14, 2)
+  orderId     String?         @db.Uuid
+  orderItemId String?         @db.Uuid
+  payoutId    String?         @db.Uuid
+  /// Shu sanadan keyin «yechish mumkin» (yetkazilgan + qaytarish muddati).
+  availableAt DateTime
+  reference   String          @unique
+  note        String?
+  createdById String?         @db.Uuid
+  createdAt   DateTime        @default(now())
+  seller      Seller          @relation(fields: [sellerId], references: [id], onDelete: Restrict) // moliyaviy yozuv — sotuvchi bilan birga o'chmaydi
+  order       Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  payout      SellerPayout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  @@index([sellerId, availableAt])
+  @@index([payoutId])
+  @@index([orderId])
 }
 
 // ===================================================================
@@ -957,6 +1060,15 @@ model Delivery {
   /// Manzil matni `destinationAddress` da nusxalanadi: ombor keyin
   /// ko'chsa ham, kuryer o'sha paytdagi manzilni ko'rishi kerak.
   returnWarehouseId  String?         @db.Uuid
+  /// 3PL (ADR 0015): provayder kodi ('MANUAL', 'FARGO', ...), uning jo'natma id'si va trek raqami.
+  carrier            String?
+  externalId         String?
+  trackingNumber     String?
+  labelUrl           String?
+  /// Provayderning xom holati va oxirgi webhook — bizning holatga moslashtirishdan oldingi asl qiymat.
+  carrierStatus      String?
+  carrierPayload     Json?
+  carrierUpdatedAt   DateTime?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   order              Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -965,10 +1077,12 @@ model Delivery {
   events             DeliveryEvent[]
   items              DeliveryItem[]
 
+  @@unique([carrier, externalId])
   @@index([orderId])
   @@index([courierId])
   @@index([status])
   @@index([kind, status])
+  @@index([trackingNumber])
 }
 
 /// Qaytarish topshirig'idagi mahsulotlar.
@@ -1296,9 +1410,10 @@ model SourcingRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User   @relation("SourcingRequester", fields: [userId], references: [id], onDelete: Cascade)
-  quotedBy User?  @relation("SourcingQuotedBy", fields: [quotedById], references: [id], onDelete: SetNull)
-  order    Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user         User          @relation("SourcingRequester", fields: [userId], references: [id], onDelete: Cascade)
+  quotedBy     User?         @relation("SourcingQuotedBy", fields: [quotedById], references: [id], onDelete: SetNull)
+  order        Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  globalSource GlobalSource?
 
   @@index([userId, status])
   @@index([status, createdAt])
@@ -1362,11 +1477,14 @@ model GlobalSource {
   priceBreakdown     Json? // narx qaysi kurs/tarif/marja bilan chiqqani — audit
   pricedAt           DateTime?
 
-  isAvailable Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isAvailable       Boolean  @default(true)
+  /// Mijozning narx taklifidan yaratilgan shaxsiy tovar — katalogda ko'rinmaydi (ADR 0015).
+  sourcingRequestId String?  @unique @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product         Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sourcingRequest SourcingRequest? @relation(fields: [sourcingRequestId], references: [id], onDelete: SetNull)
 
   @@index([platform, externalItemId])
   @@index([isAvailable])
