@@ -2,16 +2,20 @@
 // Gibrid siyosat: DELIVERED holatda, yetkazilgandan 14 kun ichida (qonuniy asos).
 //   • Punktda tekshirib rad etish yoki uyga yetkazilganini muddat ichida qaytarish.
 //   • Sello Coins (cashback revoke + ishlatilgan coin refund) + promokod atomik qaytariladi.
+//   • ZAXIRA bu yerda QAYTMAYDI — tovar hali mijozda. U omborga yetib kelganda qaytadi:
+//     kuryer qaytarish topshirig'ini «yetkazildi» qilganda yoki admin «qabul qilindi» deganda
+//     (`@ecom/order-ops` restockReturnDelivery). Ilgari shu yerda qaytarilardi va mijoz
+//     qo'lidagi tovar boshqa xaridorga sotilishi mumkin edi (audit Y6).
 //   • PUL REFUNDI — ops/qo'lda ishlanadi: bu yerda gateway'ga AVTO-REFUND YO'Q.
 //     Status RETURNED operatorlarga "refund kutilmoqda" signalini beradi (→ REFUNDED).
 
 import { RETURN_WINDOW_DAYS } from '@ecom/core-domain';
+import { releaseOrderPromo } from '@ecom/order-ops';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
-import { restockOrder } from '@/lib/inventory-server';
 import { reverseOrderLoyalty } from '@/lib/loyalty-server';
 
 import type { NextRequest } from 'next/server';
@@ -77,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       const comment = reason?.trim() || 'Mijoz qaytardi (punktda tekshiruv)';
 
       // ATOMIK holat o'tishi — faqat hali DELIVERED bo'lsa. Parallel qaytarish so'rovlaridan
-      // ikkinchisi count===0 oladi → tx rollback (double restock/refund/soldCount oldini oladi).
+      // ikkinchisi count===0 oladi → tx rollback (double refund/soldCount oldini oladi).
       const moved = await tx.order.updateMany({
         where: { id: order.id, status: 'DELIVERED' },
         data: { status: 'RETURNED' },
@@ -88,9 +92,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         where: { id: order.id },
         data: { statusHistory: { create: { status: 'RETURNED', comment } } },
       });
-
-      // Ombor — qaytarilgan tovarlar zaxiraga qaytadi (increment) + RETURN StockMovement
-      const stock = await restockOrder(tx, order.id, order.number, 'ORDER_RETURNED');
 
       // soldCount — yetkazilganda oshirilgan edi; qaytarilganda kamaytiramiz (popularity aniqligi).
       // gte guard manfiyga tushib ketishdan saqlaydi (legacy/yetkazilgangacha bo'lgan buyurtmalar).
@@ -108,25 +109,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       // Sello Coins — cashback qaytarib olinadi, ishlatilgan coin qaytariladi (cancel'dagidek)
       const loyalty = await reverseOrderLoyalty(tx, user.id, order.number);
 
-      // Promokod — usedCount kamaytirish + UserCoupon redeemed bekor
-      if (order.promoCode) {
-        const promo = await tx.promoCode.findUnique({
-          where: { code: order.promoCode },
-          select: { id: true, usedCount: true },
-        });
-        if (promo) {
-          await tx.promoCode.update({
-            where: { id: promo.id },
-            data: { usedCount: { decrement: promo.usedCount > 0 ? 1 : 0 } },
-          });
-          await tx.userCoupon.updateMany({
-            where: { userId: user.id, promoCodeId: promo.id },
-            data: { redeemedAt: null },
-          });
-        }
-      }
+      // Promokod — usedCount kamaytirish + UserCoupon redeemed bekor (bekor qilishdagi bilan bir xil)
+      await releaseOrderPromo(tx, { userId: user.id, promoCode: order.promoCode });
 
-      return { loyalty, stock };
+      return { loyalty };
     });
   } catch (e) {
     if (e instanceof OrderStateChangedError) {
@@ -140,7 +126,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     status: 'RETURNED',
     coinsRefunded: result.loyalty.refunded,
     coinsRevoked: result.loyalty.revoked,
-    stockRestocked: result.stock.restocked,
+    // Zaxira tovar omborga qaytganda tiklanadi (kuryer topshirig'i / admin qabul qiladi)
+    restockOnReceipt: true,
     // Pul refundi ops/qo'lda ishlanadi (gateway avto-refund yo'q)
     refundPending: true,
   });

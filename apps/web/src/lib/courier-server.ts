@@ -9,6 +9,7 @@
 
 import { ApiDomainError } from '@ecom/api-contract';
 import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
+import { restockReturnDelivery, settleDeliveredOrder } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 
 import { prisma } from '@/lib/db';
@@ -473,6 +474,12 @@ export async function updateDeliveryStatus(
       },
     });
 
+    // Qaytarish topshirig'i omborga yetdi — zaxira FAQAT shu paytda qaytadi (tovar qo'lda).
+    // Ilgari mijoz «qaytaraman» deganda darhol qaytarilardi (audit Y6). Idempotent.
+    if (next === 'DELIVERED' && current.kind === 'RETURN') {
+      await restockReturnDelivery(tx, deliveryId, 'RETURN_RECEIVED: kuryer omborga topshirdi');
+    }
+
     // Buyurtma holati yetkazish holatiga ERGASHADI.
     const orderNext = ORDER_STATUS_FOR[next];
     if (orderNext != null) {
@@ -502,6 +509,12 @@ export async function updateDeliveryStatus(
             comment: ORDER_COMMENT[next] ?? null,
           },
         });
+        // Yetkazildi — naqd pul kuryerda olindi (COD PAID) va soldCount++. Ilgari bu faqat
+        // admin PATCH'ida edi: kuryer yetkazgan naqd buyurtma «to'lanmagan» qolardi (audit Y10).
+        // `changed.count > 0` — DELIVERED'ga o'tish faqat bir marta, demak bu ham bir marta.
+        if (orderNext === 'DELIVERED' && current.kind === 'OUTBOUND') {
+          await settleDeliveredOrder(tx, current.orderId, now);
+        }
       }
     }
   });

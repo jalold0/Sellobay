@@ -8,10 +8,11 @@ import { readFileSync } from 'node:fs';
 
 import { PrismaClient } from '@prisma/client';
 
-import {
-  applyFulfillmentTransition,
-  canTransition,
-} from '../apps/admin/src/lib/fulfillment-server';
+import { canAdminTransition } from '../packages/core-domain/src/order-fulfillment';
+import { applyFulfillmentTransition } from '../apps/admin/src/lib/fulfillment-server';
+
+// Naqd buyurtma — to'lov holati o'tishlarni cheklamaydi (faqat yo'nalish qoidasi tekshiriladi).
+const canTransition = (from: string, to: string) => canAdminTransition(from, to, 'COD_PENDING');
 
 function getDbUrl(): string {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
@@ -86,13 +87,7 @@ async function main() {
               ],
             },
           },
-          select: {
-            id: true,
-            grandTotal: true,
-            paidAt: true,
-            shippedAt: true,
-            items: { select: { productId: true, quantity: true } },
-          },
+          select: { id: true, status: true, shippedAt: true },
         });
 
         // PENDING → CONFIRMED: yon ta'sir yo'q (to'lov/soldCount o'zgarmaydi)
@@ -109,9 +104,14 @@ async function main() {
         check('CONFIRMED → hali to‘lanmagan', afterConfirm?.paidAt === null);
 
         // CONFIRMED → DELIVERED: COD settle + soldCount + timestamp
-        const res = await applyFulfillmentTransition(tx, created, 'DELIVERED', {
-          comment: 'yetkazildi',
-        });
+        const res = await applyFulfillmentTransition(
+          tx,
+          { ...created, status: 'CONFIRMED' },
+          'DELIVERED',
+          {
+            comment: 'yetkazildi',
+          },
+        );
         const delivered = await tx.order.findUnique({
           where: { id: created.id },
           select: { status: true, deliveredAt: true, paidAt: true, paidTotal: true },

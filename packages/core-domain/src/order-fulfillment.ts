@@ -75,6 +75,22 @@ export function canAdminTransition(
   return adminFulfillmentTargets(current, payment).includes(next as FulfillmentStatus);
 }
 
+/**
+ * Admin bekor qila oladigan holatlar — tovar hali omborda (jo'natilmagan). SHIPPED va undan
+ * keyin tovar kuryer/mijozda: u qaytarish oqimi orqali qaytadi, bekor qilish orqali emas.
+ */
+export const ADMIN_CANCELLABLE_STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'PAID',
+  'PROCESSING',
+  'PACKED',
+] as const;
+
+export function canAdminCancel(status: string): boolean {
+  return (ADMIN_CANCELLABLE_STATUSES as readonly string[]).includes(status);
+}
+
 /** Shu o'tishda naqd to'lov olindi deb yoziladimi (faqat COD va faqat DELIVERED'da). */
 export function settlesCodPayment(next: string, payment: OrderPaymentState): boolean {
   return next === 'DELIVERED' && payment === 'COD_PENDING';

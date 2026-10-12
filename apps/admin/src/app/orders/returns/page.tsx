@@ -10,13 +10,21 @@
 //
 // Topshiriq avtomatik ochilmaydi — asossiz so'rov ham kuryerni yo'lga
 // chiqarardi. Tasdiqlash aynan shu tugma.
+//
+// Mijoz tovarni o'zi olib kelsa — «Qabul qilindi». Zaxira ikkala yo'lda ham faqat
+// tovar qo'lga kelganda qaytadi (kuryer omborga topshirganda yoki shu tugmada).
 
 import { Button, Card, CardContent, EmptyState, PageHeader, Skeleton, toast } from '@ecom/ui';
-import { PackageCheck, Phone, Truck } from 'lucide-react';
+import { PackageCheck, PackageOpen, Phone, Truck } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { dispatchReturn, listPendingReturns, type PendingReturnItem } from '@/lib/auth/client';
+import {
+  dispatchReturn,
+  listPendingReturns,
+  receiveReturn,
+  type PendingReturnItem,
+} from '@/lib/auth/client';
 import { formatDateTime, formatMoney } from '../../../lib/format';
 
 function pickName(text: PendingReturnItem['items'][number]['nameSnapshot']): string {
@@ -57,6 +65,23 @@ export default function ReturnsPage() {
       variant: 'success',
     });
     // Serverdan qayta o'qiymiz: boshqa admin ulgurgan bo'lishi mumkin.
+    await load();
+  };
+
+  const receive = async (it: PendingReturnItem) => {
+    if (!window.confirm(`${it.number}: tovar qo‘lingizga keldimi? Zaxira qaytariladi.`)) return;
+    setBusyId(it.id);
+    const res = await receiveReturn(it.id);
+    setBusyId(null);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: `${it.number} — tovar qabul qilindi`,
+      description: `Zaxiraga qaytdi: ${res.data.stockRestocked} dona. Pulni qaytarishni unutmang.`,
+      variant: 'success',
+    });
     await load();
   };
 
@@ -118,14 +143,20 @@ export default function ReturnsPage() {
                   </ul>
                 </div>
 
-                <Button
-                  onClick={() => void dispatch(it)}
-                  disabled={busyId === it.id}
-                  className="shrink-0"
-                >
-                  <Truck size={15} className="mr-2" />
-                  Kuryerga topshiriq ochish
-                </Button>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => void receive(it)}
+                    disabled={busyId === it.id}
+                  >
+                    <PackageOpen size={15} className="mr-2" />
+                    Qabul qilindi
+                  </Button>
+                  <Button onClick={() => void dispatch(it)} disabled={busyId === it.id}>
+                    <Truck size={15} className="mr-2" />
+                    Kuryerga topshiriq ochish
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

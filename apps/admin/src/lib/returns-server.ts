@@ -14,8 +14,14 @@
 // shu yerdagi `createReturnDeliveries` bilan kuryerga topshiriq
 // ochiladi. Avtomatik ochmaymiz: asossiz so'rov ham kuryerni yo'lga
 // chiqarardi.
+//
+// Mijoz tovarni o'zi punkt/omborga olib kelsa (yoki punktda olingan buyurtma —
+// olib ketish manzili yo'q) — `receiveReturnInPerson`: admin «qabul qilindi» deydi.
+// Zaxira ikkala yo'lda ham FAQAT tovar qo'lga kelganda qaytadi (audit Y6).
 
 import { ApiDomainError } from '@ecom/api-contract';
+import { restockReturnDelivery } from '@ecom/order-ops';
+
 import { prisma } from '@/lib/db';
 
 import type { Prisma } from '@ecom/database';
@@ -180,7 +186,14 @@ export async function createReturnDeliveries(orderId: string) {
     else groups.set(target.id, { warehouse: target, items: [item] });
   }
 
+  const lockKey = `return:${order.id}`;
   const deliveryIds = await prisma.$transaction(async (tx) => {
+    // `receiveReturnInPerson` / ikkinchi bosish bilan poyga — o'sha qulf va qayta tekshiruv.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+    const existing = await tx.delivery.count({ where: { orderId: order.id, kind: 'RETURN' } });
+    if (existing > 0) {
+      throw new ReturnError(409, 'RETURN_IN_PROGRESS', 'Qaytarish allaqachon qayta ishlangan');
+    }
     const ids: string[] = [];
     for (const { warehouse, items } of groups.values()) {
       const delivery = await tx.delivery.create({
@@ -208,6 +221,81 @@ export async function createReturnDeliveries(orderId: string) {
   });
 
   return { created: deliveryIds.length, deliveryIds, alreadyExisted: false };
+}
+
+/**
+ * Mijoz tovarni o'zi olib keldi — admin qabul qiladi.
+ *
+ * Kuryer topshirig'i o'rniga darhol «yetkazilgan» RETURN topshirig'i yoziladi (kuryersiz):
+ * kuryer oqimi bilan BIR XIL iz qoladi, `listPendingReturns` dan chiqadi, ikkinchi marta
+ * (yoki keyin kuryerga) ochilmaydi va zaxira o'sha `restockReturnDelivery` bilan qaytadi.
+ */
+export async function receiveReturnInPerson(orderId: string, adminUserId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      status: true,
+      items: { select: { id: true, quantity: true } },
+      deliveries: { where: { kind: 'RETURN' }, select: { id: true } },
+    },
+  });
+  if (!order) throw new ReturnError(404, 'NOT_FOUND', 'Buyurtma topilmadi');
+  if (order.status !== 'RETURNED') {
+    throw new ReturnError(409, 'NOT_RETURNED', 'Faqat qaytarilgan buyurtma qabul qilinadi');
+  }
+  if (order.deliveries.length > 0) {
+    throw new ReturnError(
+      409,
+      'RETURN_IN_PROGRESS',
+      'Bu qaytarish uchun kuryer topshirig`i allaqachon ochilgan — zaxira kuryer topshirganda qaytadi',
+    );
+  }
+  if (order.items.length === 0) {
+    throw new ReturnError(409, 'NO_ITEMS', 'Buyurtmada mahsulot yo`q');
+  }
+
+  const lockKey = `return:${order.id}`;
+  const now = new Date();
+  return prisma.$transaction(async (tx) => {
+    // Ikki marta bosish / kuryerga ochish bilan poyga: buyurtma bo'yicha qulf + qayta tekshiruv.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+    const existing = await tx.delivery.count({ where: { orderId: order.id, kind: 'RETURN' } });
+    if (existing > 0) {
+      throw new ReturnError(409, 'RETURN_IN_PROGRESS', 'Qaytarish allaqachon qayta ishlangan');
+    }
+
+    const delivery = await tx.delivery.create({
+      data: {
+        orderId: order.id,
+        kind: 'RETURN',
+        status: 'DELIVERED',
+        method: 'PICKUP_POINT',
+        destinationAddress: 'Mijoz o`zi topshirdi (admin qabul qildi)',
+        deliveredAt: now,
+        items: {
+          create: order.items.map((i) => ({ orderItemId: i.id, quantity: i.quantity })),
+        },
+        events: { create: { status: 'DELIVERED', note: 'Admin qabul qildi (kuryersiz)' } },
+      },
+      select: { id: true },
+    });
+
+    const stock = await restockReturnDelivery(
+      tx,
+      delivery.id,
+      `RETURN_RECEIVED: admin ${adminUserId}`,
+    );
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId: order.id,
+        status: 'RETURNED',
+        changedBy: adminUserId,
+        comment: 'Qaytarilgan tovar omborga qabul qilindi',
+      },
+    });
+    return { deliveryId: delivery.id, stockRestocked: stock.restocked };
+  });
 }
 
 /** Topshirig'i hali ochilmagan, qaytarilgan buyurtmalar — admin ro'yxati. */

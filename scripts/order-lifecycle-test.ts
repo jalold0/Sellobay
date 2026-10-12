@@ -143,10 +143,7 @@ async function main() {
           {
             id: created.id,
             status: 'PENDING',
-            grandTotal: created.grandTotal,
-            paidAt: created.paidAt,
             shippedAt: created.shippedAt,
-            items: [{ productId: product.id, quantity: QTY }],
           },
           'DELIVERED',
           { comment: 'e2e smoke' },

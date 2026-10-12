@@ -6,6 +6,7 @@
 // Faqat ADMIN/SUPER_ADMIN. Faqat UZCARD + PENDING to'lovga ta'sir qiladi.
 
 import { Prisma } from '@ecom/database';
+import { grantOrderEarn } from '@ecom/order-ops';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -13,13 +14,6 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 
 import type { NextRequest } from 'next/server';
-
-// Sello Coins earn iqtisodi — manba: apps/web/src/lib/loyalty.ts (har 1000 so'mdan 1 coin).
-// Cross-app (admin↔web) chegarasi sabab shu yerda takrorlanadi; iqtisod o'zgarsa ikkalasi yangilanadi.
-const COIN_PER_SOM = 1 / 1000;
-function coinsForOrder(totalSom: number): number {
-  return Math.max(0, Math.floor(totalSom * COIN_PER_SOM));
-}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -169,28 +163,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         });
 
         // Sello Coins earn — yaratishda kechiktirilgan edi (UZCARD). To'lov tasdiqlanganda
-        // beriladi. Idempotent: ORDER_EARN allaqachon bo'lsa qayta bermaydi (re-verify/double-grant yo'q).
+        // beriladi. Idempotent (re-verify/double-grant yo'q). Formula @ecom/core-domain'dan —
+        // ilgari admin'da nusxasi turardi.
         if (order.userId) {
-          const already = await tx.loyaltyTransaction.count({
-            where: { userId: order.userId, reference: order.number, reason: 'ORDER_EARN' },
-          });
-          if (already === 0) {
-            const earned = coinsForOrder(order.grandTotal.toNumber());
-            if (earned > 0) {
-              await tx.loyaltyTransaction.create({
-                data: {
-                  userId: order.userId,
-                  points: earned,
-                  reason: 'ORDER_EARN',
-                  reference: order.number,
-                },
-              });
-              await tx.user.update({
-                where: { id: order.userId },
-                data: { loyaltyPoints: { increment: earned } },
-              });
-            }
-          }
+          await grantOrderEarn(tx, order.userId, order.grandTotal.toNumber(), order.number);
         }
       });
     } catch (e) {
