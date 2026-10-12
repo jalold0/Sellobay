@@ -431,11 +431,18 @@ export function getOrderDetail(id: string) {
   return api<AdminOrderDetail>(`/api/orders/${id}`);
 }
 
-/** Karta to'lovini tasdiqlash (verify → PAID) yoki rad etish (reject → FAILED). */
-export function reviewPayment(orderId: string, action: 'verify' | 'reject', comment?: string) {
+/**
+ * Karta to'lovini tasdiqlash (verify → PAID) yoki rad etish (reject → FAILED).
+ * `receivedAmount` — admin chekda ko'rgan summa (so'm, satr); verify'da MAJBURIY.
+ */
+export function reviewPayment(
+  orderId: string,
+  action: 'verify' | 'reject',
+  opts: { comment?: string; receivedAmount?: string } = {},
+) {
   return api<{ orderId: string; orderStatus: string; paymentStatus: string }>(
     `/api/orders/${orderId}/payment`,
-    { method: 'PATCH', body: JSON.stringify({ action, comment }) },
+    { method: 'PATCH', body: JSON.stringify({ action, ...opts }) },
   );
 }
 

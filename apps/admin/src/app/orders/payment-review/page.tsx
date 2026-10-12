@@ -1,11 +1,13 @@
 'use client';
 
 import { Button, Card, CardContent, EmptyState, PageHeader, Skeleton, toast } from '@ecom/ui';
-import { Check, MapPin, Phone, ReceiptText, X, ZoomIn } from 'lucide-react';
+import { MapPin, Phone, ReceiptText, ZoomIn } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { listPaymentReview, reviewPayment, type PaymentReviewItem } from '@/lib/auth/client';
+
+import { VerifyPaymentForm } from '../../../components/payments/verify-payment-form';
 import { formatDateTime, formatMoney } from '../../../lib/format';
 
 export default function PaymentReviewPage() {
@@ -26,7 +28,11 @@ export default function PaymentReviewPage() {
     void load();
   }, [load]);
 
-  const act = async (it: PaymentReviewItem, action: 'verify' | 'reject') => {
+  const act = async (
+    it: PaymentReviewItem,
+    action: 'verify' | 'reject',
+    receivedAmount?: string,
+  ) => {
     let comment: string | undefined;
     if (action === 'reject') {
       const reason = window.prompt(`«${it.orderNumber}» to'lovini rad etish sababi (ixtiyoriy):`);
@@ -34,7 +40,7 @@ export default function PaymentReviewPage() {
       comment = reason.trim() || undefined;
     }
     setBusyId(it.paymentId);
-    const res = await reviewPayment(it.orderId, action, comment);
+    const res = await reviewPayment(it.orderId, action, { comment, receivedAmount });
     setBusyId(null);
     if (!res.success) {
       toast({ title: res.error.message, variant: 'destructive' });
@@ -137,26 +143,15 @@ export default function PaymentReviewPage() {
                     ) : null}
                   </div>
 
-                  {/* Amallar */}
-                  <div className="flex gap-2 sm:flex-col sm:justify-center">
-                    <Button
-                      size="sm"
-                      onClick={() => void act(it, 'verify')}
-                      disabled={busy}
-                      className="bg-emerald-600 hover:bg-emerald-700"
-                    >
-                      <Check size={14} className="mr-1" />
-                      {busy ? '...' : 'Tasdiqlash'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => void act(it, 'reject')}
-                      disabled={busy}
-                      className="text-red-600 hover:bg-red-50"
-                    >
-                      <X size={14} className="mr-1" /> Rad etish
-                    </Button>
+                  {/* Amallar — admin chekdagi summani o'zi kiritadi */}
+                  <div className="sm:flex sm:items-center">
+                    <VerifyPaymentForm
+                      inputId={`received-${it.paymentId}`}
+                      expected={it.grandTotal}
+                      busy={busy}
+                      onVerify={(amount) => void act(it, 'verify', amount)}
+                      onReject={() => void act(it, 'reject')}
+                    />
                   </div>
                 </CardContent>
               </Card>
