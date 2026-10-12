@@ -4,7 +4,7 @@
 import { jwtVerify } from 'jose';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { COOKIE_ACCESS, accessSecretOrNull } from '@/lib/auth/constants';
+import { COOKIE_ACCESS, COOKIE_REFRESH, accessSecretOrNull } from '@/lib/auth/constants';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_PREFIXES = ['/api/auth/', '/_next/', '/favicon', '/icon', '/apple-icon', '/manifest'];
@@ -60,6 +60,18 @@ export async function middleware(req: NextRequest) {
   const validAccess = token ? await isValidAccess(token) : false;
 
   if (!validAccess) {
+    // Access 15 daqiqada tugaydi, refresh cookie 30 kun yashaydi: avval sessiyani yangilaymiz.
+    // Rotatsiya Prisma talab qiladi (middleware Edge'da) — ish /api/auth/refresh ga beriladi.
+    // Sahifa va GET so'rov — 302 (fetch redirect'ni o'zi kuzatadi); boshqa metodlar 401 oladi
+    // va client `api()` POST /api/auth/refresh qilib bir marta takrorlaydi. Cheksiz aylanish
+    // yo'q: yangilash muvaffaqiyatsiz bo'lsa route cookie'larni tozalaydi.
+    const hasRefresh = Boolean(req.cookies.get(COOKIE_REFRESH)?.value);
+    if (hasRefresh && (!pathname.startsWith('/api/') || req.method === 'GET')) {
+      const refreshUrl = req.nextUrl.clone();
+      refreshUrl.pathname = '/api/auth/refresh';
+      refreshUrl.search = `?next=${encodeURIComponent(pathname + req.nextUrl.search)}`;
+      return NextResponse.redirect(refreshUrl);
+    }
     // API yo'llar: 401 JSON qaytarish (redirect emas, fetch'lar sahifani parse qila olmaydi)
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 import { PRODUCT_STATUS_TONE, StatusBadge } from '@ecom/ui';
 
-import type { ProductStatus } from '../../lib/mock/types';
+import type { ProductStatus } from '@ecom/database';
 
 const LABELS: Record<ProductStatus, string> = {
   DRAFT: 'Qoralama',

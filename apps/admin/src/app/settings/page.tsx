@@ -17,7 +17,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Separator,
   StatusBadge,
   Switch,
   Tabs,
@@ -26,11 +25,12 @@ import {
   TabsTrigger,
   toast,
 } from '@ecom/ui';
-import { Key, Lock, Plus, ShieldCheck, User2, Webhook } from 'lucide-react';
+import { Lock, ShieldCheck, User2, Webhook } from 'lucide-react';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
 import {
+  changeAdminPassword,
   listAdminUsers,
   meAdmin,
   updateAdminProfile,
@@ -113,6 +113,33 @@ export default function AdminSettingsPage() {
     } else {
       toast({ title: res.error.message, variant: 'destructive' });
     }
+  };
+
+  // Parol almashtirish — ilgari forma hech qayerga ulanmagan edi (audit O8).
+  const [pw, setPw] = React.useState({ current: '', next: '', repeat: '' });
+  const [savingPw, setSavingPw] = React.useState(false);
+  const onChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pw.next !== pw.repeat) {
+      toast({ title: 'Yangi parollar mos emas', variant: 'destructive' });
+      return;
+    }
+    setSavingPw(true);
+    const res = await changeAdminPassword(pw.current, pw.next);
+    setSavingPw(false);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    setPw({ current: '', next: '', repeat: '' });
+    toast({
+      title: 'Parol yangilandi',
+      description:
+        res.data.otherSessionsSignedOut > 0
+          ? `Boshqa qurilmalardagi ${res.data.otherSessionsSignedOut} ta sessiya yopildi`
+          : undefined,
+      variant: 'success',
+    });
   };
 
   return (
@@ -211,9 +238,7 @@ export default function AdminSettingsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle>Admin foydalanuvchilar</CardTitle>
-              <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" /> Yangi
-              </Button>
+              {/* «Yangi» tugmasi olib tashlandi — xodim qo'shish API'si hali yo'q (onClick'siz edi). */}
             </CardHeader>
             <CardContent className="p-0">
               {loadingStaff ? (
@@ -268,8 +293,8 @@ export default function AdminSettingsPage() {
             <CardHeader>
               <CardTitle>Rol va huquqlar (RBAC)</CardTitle>
               <p className="text-muted-foreground text-xs">
-                Har bir rolga tegishli huquqlarni boshqaring. O`zgarishlar real-time
-                foydalanuvchilarga tatbiq qilinadi.
+                Hozircha admin panelga faqat ADMIN va SUPER_ADMIN kiradi va ularning huquqi bir xil.
+                Qolgan rollar sxemada bor, lekin alohida huquqlar keyingi bosqichda ulanadi.
               </p>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -282,9 +307,12 @@ export default function AdminSettingsPage() {
                     <div className="font-medium">{r.label}</div>
                     <div className="text-muted-foreground text-xs">{r.desc}</div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Huquqlar
-                  </Button>
+                  <StatusBadge
+                    tone={r.key === 'ADMIN' || r.key === 'SUPER_ADMIN' ? 'success' : 'muted'}
+                    dot={false}
+                  >
+                    {r.key === 'ADMIN' || r.key === 'SUPER_ADMIN' ? 'Faol' : 'Rejada'}
+                  </StatusBadge>
                 </div>
               ))}
             </CardContent>
@@ -298,53 +326,70 @@ export default function AdminSettingsPage() {
               <CardHeader>
                 <CardTitle>Parol almashtirish</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <Label>Joriy parol</Label>
-                  <Input type="password" />
-                </div>
-                <div>
-                  <Label>Yangi parol</Label>
-                  <Input type="password" />
-                </div>
-                <div>
-                  <Label>Yangi parolni takrorlang</Label>
-                  <Input type="password" />
-                </div>
-                <Button>Yangilash</Button>
+              <CardContent>
+                <form onSubmit={onChangePassword} className="space-y-3">
+                  <div>
+                    <Label htmlFor="pw-current">Joriy parol</Label>
+                    <Input
+                      id="pw-current"
+                      type="password"
+                      autoComplete="current-password"
+                      value={pw.current}
+                      onChange={(e) => setPw({ ...pw, current: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="pw-next">Yangi parol</Label>
+                    <Input
+                      id="pw-next"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      value={pw.next}
+                      onChange={(e) => setPw({ ...pw, next: e.target.value })}
+                      required
+                    />
+                    <p className="text-muted-foreground mt-1 text-[11px]">
+                      Kamida 8 ta belgi, harf va raqam aralash
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="pw-repeat">Yangi parolni takrorlang</Label>
+                    <Input
+                      id="pw-repeat"
+                      type="password"
+                      autoComplete="new-password"
+                      value={pw.repeat}
+                      onChange={(e) => setPw({ ...pw, repeat: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={savingPw}>
+                    {savingPw ? 'Yangilanmoqda…' : 'Parolni yangilash'}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>2FA</CardTitle>
+                <CardTitle>Ikki bosqichli himoya (2FA)</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <div className="font-medium">SMS-OTP</div>
-                    <div className="text-muted-foreground text-xs">+998 90 *** ** 00</div>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <div className="font-medium">TOTP (Authenticator)</div>
-                    <div className="text-muted-foreground text-xs">
-                      Google/Microsoft authenticator
-                    </div>
-                  </div>
-                  <Switch />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium">Aktiv sessiyalar</div>
-                    <div className="text-muted-foreground text-xs">3 ta qurilma</div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Key className="mr-2 h-4 w-4" /> Boshqarish
-                  </Button>
-                </div>
+              <CardContent className="space-y-3 text-sm">
+                {/*
+                  Ilgari bu yerda ishlamaydigan SMS/TOTP tugmalari va «3 ta qurilma» degan
+                  to'qima son turardi (audit O8). Haqiqatda bor himoya — quyida.
+                */}
+                <p className="text-muted-foreground">
+                  2FA hali ulanmagan. Hozir ishlayotgan himoya:
+                </p>
+                <ul className="text-muted-foreground list-disc space-y-1 pl-5">
+                  <li>
+                    login urinishlari cheklangan (daqiqasiga 10, bitta hisobga 15 daqiqada 10);
+                  </li>
+                  <li>parol almashganda boshqa qurilmalardagi sessiyalar yopiladi;</li>
+                  <li>moderatsiya, to‘lov va buyurtma amallari audit jurnaliga yoziladi.</li>
+                </ul>
               </CardContent>
             </Card>
           </div>

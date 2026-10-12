@@ -29,6 +29,8 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { meSeller, type SellerShop } from '@/lib/auth/client';
+
 import { RevenueChart } from '../components/charts/revenue-chart';
 import { SellerOrderStatusBadge } from '../components/order-status-badge';
 import { formatDate, formatMoney, formatNumber, initials, pickLocalized } from '../lib/format';
@@ -64,6 +66,21 @@ interface ProductRow {
   imageUrl: string;
 }
 
+interface StatsResponse {
+  kpi: { revenue: number; ordersCount: number; rating: number | null };
+  revenueSeries: Array<{ date: string; revenue: number }>;
+}
+
+const SHOP_STATUS: Record<
+  SellerShop['status'],
+  { label: string; tone: 'success' | 'warning' | 'danger' }
+> = {
+  ACTIVE: { label: 'Faol', tone: 'success' },
+  PENDING: { label: 'Tasdiq kutilmoqda', tone: 'warning' },
+  SUSPENDED: { label: 'To‘xtatilgan', tone: 'danger' },
+  BLOCKED: { label: 'Bloklangan', tone: 'danger' },
+};
+
 interface ApiResult<T> {
   success: boolean;
   data?: T;
@@ -73,21 +90,32 @@ interface ApiResult<T> {
 export default function SellerDashboard() {
   const [orders, setOrders] = React.useState<OrderRow[]>([]);
   const [products, setProducts] = React.useState<ProductRow[]>([]);
+  const [stats, setStats] = React.useState<StatsResponse | null>(null);
+  const [shop, setShop] = React.useState<SellerShop | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     void (async () => {
       try {
-        const [oRes, pRes] = await Promise.all([
+        // Daromad raqamlari /api/stats dan — analitika sahifasi bilan BIR XIL ta'rif
+        // (ilgari bu yerda buyurtmalardan qayta hisoblanardi: bekor qilingan va
+        // qaytarilganlar ham qo'shilardi, kunlar UTC bo'yicha edi — audit O2, P4).
+        const [oRes, pRes, sRes, meRes] = await Promise.all([
           fetch('/api/orders', { credentials: 'same-origin' }).then(
             (r) => r.json() as Promise<ApiResult<{ items: OrderRow[] }>>,
           ),
           fetch('/api/products', { credentials: 'same-origin' }).then(
             (r) => r.json() as Promise<ApiResult<{ items: ProductRow[] }>>,
           ),
+          fetch('/api/stats', { credentials: 'same-origin' }).then(
+            (r) => r.json() as Promise<ApiResult<StatsResponse>>,
+          ),
+          meSeller(),
         ]);
         if (oRes.success && oRes.data) setOrders(oRes.data.items);
         if (pRes.success && pRes.data) setProducts(pRes.data.items);
+        if (sRes.success && sRes.data) setStats(sRes.data);
+        if (meRes.success) setShop(meRes.data.seller);
       } catch {
         toast({ title: 'Tarmoq xatosi', variant: 'destructive' });
       }
@@ -95,36 +123,17 @@ export default function SellerDashboard() {
     })();
   }, []);
 
-  const revenue30 = orders.reduce((s, o) => s + Number(o.sellerSubtotal), 0);
-  const orders30 = orders.length;
+  const revenue30 = stats?.kpi.revenue ?? 0;
+  const orders30 = stats?.kpi.ordersCount ?? 0;
   const pendingOrders = orders.filter((o) =>
     ['PENDING', 'CONFIRMED', 'PAID'].includes(o.status),
   ).length;
   const activeProducts = products.filter((p) => p.status === 'ACTIVE').length;
   const lowStock = products.filter((p) => p.stock <= 10 && p.status === 'ACTIVE').length;
-  const avgRating =
-    products.length > 0
-      ? (
-          products.reduce((s, p) => s + ((p as { rating?: number }).rating ?? 0), 0) /
-          products.length
-        ).toFixed(1)
-      : '—';
-
-  // Daromad dinamikasi — oxirgi 30 kun, kunlik (real buyurtmalardan)
-  const revenueSeries = React.useMemo(() => {
-    const days: Array<{ date: string; revenue: number }> = [];
-    const byDay = new Map<string, number>();
-    for (const o of orders) {
-      const d = o.placedAt.slice(0, 10);
-      byDay.set(d, (byDay.get(d) ?? 0) + Number(o.sellerSubtotal));
-    }
-    const today = new Date(orders[0]?.placedAt ?? '2026-06-28');
-    for (let i = 29; i >= 0; i--) {
-      const dt = new Date(today.getTime() - i * 86_400_000).toISOString().slice(0, 10);
-      days.push({ date: dt, revenue: byDay.get(dt) ?? 0 });
-    }
-    return days;
-  }, [orders]);
+  // Sharhlar soni bo'yicha vaznli o'rtacha (server hisoblaydi); sharh yo'q bo'lsa «—».
+  const avgRating = stats?.kpi.rating != null ? stats.kpi.rating.toFixed(1) : '—';
+  const revenueSeries = stats?.revenueSeries ?? [];
+  const shopStatus = shop ? SHOP_STATUS[shop.status] : null;
 
   const recentOrders = orders.slice(0, 6);
   const topProducts = [...products].sort((a, b) => b.soldCount - a.soldCount).slice(0, 5);
@@ -149,6 +158,17 @@ export default function SellerDashboard() {
         title="Mening do`konim"
         description="Sotuvlaringizning umumiy holati va shoshilinch ishlar"
       />
+
+      {shop?.status === 'SUSPENDED' ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Do‘koningiz vaqtincha to‘xtatilgan</AlertTitle>
+          <AlertDescription>
+            Tovarlaringiz vitrinada ko‘rinmaydi va o‘zgartirish mumkin emas.
+            {shop.suspendReason ? ` Sabab: ${shop.suspendReason}.` : ''} Admin bilan bog‘laning.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {lowStock > 0 ? (
         <Alert variant="warning">
@@ -186,7 +206,7 @@ export default function SellerDashboard() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Daromad dinamikasi</CardTitle>
-            <p className="text-xs text-muted-foreground">Oxirgi 30 kun</p>
+            <p className="text-muted-foreground text-xs">Oxirgi 30 kun</p>
           </CardHeader>
           <CardContent>
             <RevenueChart data={revenueSeries} />
@@ -200,7 +220,11 @@ export default function SellerDashboard() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Status</span>
-              <StatusBadge tone="success">Faol</StatusBadge>
+              {shopStatus ? (
+                <StatusBadge tone={shopStatus.tone}>{shopStatus.label}</StatusBadge>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Jo`natishni kutmoqda</span>
@@ -222,7 +246,9 @@ export default function SellerDashboard() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle>Yangi buyurtmalar</CardTitle>
-              <p className="text-xs text-muted-foreground">{pendingOrders} ta jo`natishni kutmoqda</p>
+              <p className="text-muted-foreground text-xs">
+                {pendingOrders} ta jo`natishni kutmoqda
+              </p>
             </div>
             <Button asChild variant="ghost" size="sm" className="h-8">
               <Link href="/orders">
@@ -232,7 +258,7 @@ export default function SellerDashboard() {
           </CardHeader>
           <CardContent className="p-0">
             {recentOrders.length === 0 ? (
-              <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground px-6 py-8 text-center text-sm">
                 <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-emerald-500" />
                 Hozircha yangi buyurtma yo`q
               </div>
@@ -241,7 +267,7 @@ export default function SellerDashboard() {
                 {recentOrders.map((o) => (
                   <li
                     key={o.id}
-                    className="flex items-center gap-3 px-6 py-3 text-sm hover:bg-muted/40"
+                    className="hover:bg-muted/40 flex items-center gap-3 px-6 py-3 text-sm"
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-[10px]">
@@ -253,13 +279,13 @@ export default function SellerDashboard() {
                         <span className="truncate font-mono font-medium">{o.number}</span>
                         <SellerOrderStatusBadge status={o.status} />
                       </div>
-                      <div className="truncate text-xs text-muted-foreground">
+                      <div className="text-muted-foreground truncate text-xs">
                         {o.customer.name} · {o.address ?? '—'} · {o.itemCount} mahsulot
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold">{formatMoney(Number(o.sellerSubtotal))}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-muted-foreground text-xs">
                         {formatDate(new Date(o.placedAt))}
                       </div>
                     </div>
@@ -276,14 +302,14 @@ export default function SellerDashboard() {
           </CardHeader>
           <CardContent className="p-0">
             {topProducts.length === 0 ? (
-              <div className="px-6 py-8 text-center text-sm text-muted-foreground">
+              <div className="text-muted-foreground px-6 py-8 text-center text-sm">
                 Mahsulot yo`q
               </div>
             ) : (
               <ul className="divide-y">
                 {topProducts.map((p, i) => (
                   <li key={p.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold">
+                    <span className="bg-muted grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold">
                       {i + 1}
                     </span>
                     <div className="h-9 w-9 shrink-0 overflow-hidden rounded">
@@ -292,7 +318,7 @@ export default function SellerDashboard() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{pickLocalized(p.name)}</div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-muted-foreground text-xs">
                         {formatNumber(p.soldCount)} sotilgan
                       </div>
                     </div>

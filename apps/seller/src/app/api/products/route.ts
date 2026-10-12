@@ -3,79 +3,62 @@
 // POST: yangi mahsulot yaratish (status default — PENDING_REVIEW, admin tasdiqlashi shart).
 //       Testda darhol ACTIVE bo'lib chiqishi mumkin (Seller.status==ACTIVE va statusOverride=true).
 
+import { isValidCompareAtPrice } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
+import { slugify } from '@ecom/utils';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { moneySchema, optionalMoneySchema } from '@/lib/product-input';
+import { lastProductModerationNotes } from '@/lib/product-moderation';
+import { requireSeller } from '@/lib/seller-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const createSchema = z.object({
-  nameUz: z.string().trim().min(2).max(200),
-  nameRu: z.string().trim().min(2).max(200).optional(),
-  nameEn: z.string().trim().min(2).max(200).optional(),
-  descriptionUz: z.string().trim().max(5000).optional(),
-  sku: z.string().trim().min(3).max(50),
-  barcode: z.string().trim().max(50).optional(),
-  basePrice: z.union([z.string(), z.number()]).transform((v) => Number(v)),
-  compareAtPrice: z
-    .union([z.string(), z.number()])
-    .transform((v) => Number(v))
-    .optional()
-    .nullable(),
-  stock: z.union([z.string(), z.number()]).transform((v) => Number(v)),
-  weightGrams: z
-    .union([z.string(), z.number()])
-    .transform((v) => Number(v))
-    .optional()
-    .nullable(),
-  categorySlug: z.string().trim().min(1),
-  brandSlug: z.string().trim().min(1).optional().nullable(),
-  // Eski 1 ta rasm uchun yoki yangi ko'p rasm uchun:
-  imageUrl: z.string().trim().url().optional().nullable(),
-  imageUrls: z.array(z.string().trim().url()).max(8).optional(),
-  // Variantlar (ixtiyoriy): har biri rang+o'lcham yoki bittasi
-  variants: z
-    .array(
-      z.object({
-        color: z.string().trim().max(40).optional().nullable(),
-        size: z.string().trim().max(20).optional().nullable(),
-        priceOverride: z
-          .union([z.string(), z.number()])
-          .transform((v) => Number(v))
-          .optional()
-          .nullable(),
-        // Har bir variant o'z zaxirasiga ega — inventar variant bo'yicha kalitlanadi.
-        stock: z
-          .union([z.string(), z.number()])
-          .transform((v) => Number(v))
-          .optional()
-          .nullable(),
-        skuSuffix: z.string().trim().max(20).optional().nullable(),
-      }),
-    )
-    .max(50)
-    .optional(),
-});
+const createSchema = z
+  .object({
+    nameUz: z.string().trim().min(2).max(200),
+    nameRu: z.string().trim().min(2).max(200).optional(),
+    nameEn: z.string().trim().min(2).max(200).optional(),
+    descriptionUz: z.string().trim().max(5000).optional(),
+    sku: z.string().trim().min(3).max(50),
+    barcode: z.string().trim().max(50).optional(),
+    // Pul — o'nlik SATR (Decimal ustuniga to'g'ridan-to'g'ri), NaN/Infinity/manfiy o'tmaydi (audit Y15).
+    basePrice: moneySchema,
+    compareAtPrice: optionalMoneySchema,
+    stock: z.coerce.number().int('Zaxira butun son bo‘lishi kerak').min(0).max(1_000_000),
+    weightGrams: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+    categorySlug: z.string().trim().min(1),
+    brandSlug: z.string().trim().min(1).optional().nullable(),
+    // Eski 1 ta rasm uchun yoki yangi ko'p rasm uchun:
+    imageUrl: z.string().trim().url().optional().nullable(),
+    imageUrls: z.array(z.string().trim().url()).max(8).optional(),
+    // Variantlar (ixtiyoriy): har biri rang+o'lcham yoki bittasi
+    variants: z
+      .array(
+        z.object({
+          color: z.string().trim().max(40).optional().nullable(),
+          size: z.string().trim().max(20).optional().nullable(),
+          priceOverride: optionalMoneySchema,
+          // Har bir variant o'z zaxirasiga ega — inventar variant bo'yicha kalitlanadi.
+          stock: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+          skuSuffix: z.string().trim().max(20).optional().nullable(),
+        }),
+      )
+      .max(50)
+      .optional(),
+  })
+  .refine((v) => isValidCompareAtPrice(v.basePrice, v.compareAtPrice), {
+    message: 'Eski narx yangi narxdan katta bo‘lishi kerak',
+    path: ['compareAtPrice'],
+  });
 
 // MVP: bitta umumiy ombor (seed va inventory-server bilan bir xil).
 const MAIN_WAREHOUSE_CODE = 'WH-TASHKENT-MAIN';
-
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80);
-}
 
 async function ensureUniqueSlug(base: string): Promise<string> {
   const root = base || `product-${Date.now()}`;
@@ -95,24 +78,9 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
 
-  // Joriy user'ning Seller entity'si bormi va ACTIVE mi?
-  const seller = await prisma.seller.findUnique({
-    where: { ownerUserId: user.id },
-  });
-  if (!seller) {
-    return apiError(
-      403,
-      'NO_SELLER_PROFILE',
-      "Sotuvchi profilingiz yo'q. Iltimos, /sell sahifasidan ariza qoldiring.",
-    );
-  }
-  if (seller.status !== 'ACTIVE') {
-    return apiError(
-      403,
-      'SELLER_NOT_ACTIVE',
-      "Sotuvchi hisobingiz hali tasdiqlanmagan. Admin tasdiqlagandan keyin mahsulot qo'sha olasiz.",
-    );
-  }
+  // Faqat FAOL sotuvchi (kutilayotgan/to'xtatilgan — yo'q).
+  const { seller, err } = await requireSeller(user.id, 'write');
+  if (err) return err;
 
   const body = await req.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
@@ -121,16 +89,12 @@ export async function POST(req: NextRequest) {
   }
   const input = parsed.data;
 
-  if (input.basePrice <= 0) return apiError(400, 'VALIDATION', "Narx 0 dan katta bo'lishi kerak");
-  // Stok hozircha MVP'da inventar bo'limida emas — ProductVariant + Warehouse strukturasi keyingi bosqichda
-  if (input.stock < 0) return apiError(400, 'VALIDATION', "Stok manfiy bo'la olmaydi");
-
   // SKU band emasligini tekshirish
   const existsSku = await prisma.product.findUnique({ where: { sku: input.sku } });
   if (existsSku) return apiError(409, 'SKU_TAKEN', 'Bu SKU allaqachon mavjud');
 
   // Slug uz nomidan
-  const slug = await ensureUniqueSlug(slugify(input.nameUz));
+  const slug = await ensureUniqueSlug(slugify(input.nameUz).slice(0, 80));
 
   // Kategoriya
   const category = await prisma.category.findUnique({ where: { slug: input.categorySlug } });
@@ -299,7 +263,7 @@ export async function POST(req: NextRequest) {
             data: {
               productId: created.id,
               sku: variantSku,
-              price: v.priceOverride && v.priceOverride > 0 ? v.priceOverride : null,
+              price: v.priceOverride ?? null,
               position: i,
               isActive: true,
               attributes: {
@@ -315,7 +279,7 @@ export async function POST(req: NextRequest) {
             },
             select: { id: true },
           });
-          await stockVariant(variant.id, Math.max(0, Math.trunc(v.stock ?? 0)));
+          await stockVariant(variant.id, v.stock ?? 0);
         }
       } else {
         // Varyant berilmagan — mahsulot uchun bitta "default" varyant + zaxira.
@@ -323,7 +287,7 @@ export async function POST(req: NextRequest) {
           data: { productId: created.id, sku: input.sku, position: 0, isActive: true },
           select: { id: true },
         });
-        await stockVariant(variant.id, Math.max(0, Math.trunc(input.stock)));
+        await stockVariant(variant.id, input.stock);
       }
 
       return { product: created, variantsCreated: variantInputs.length };
@@ -351,6 +315,7 @@ export async function GET() {
 
   const seller = await prisma.seller.findUnique({
     where: { ownerUserId: user.id },
+    select: { id: true },
   });
   if (!seller) return apiOk({ items: [] });
 
@@ -365,6 +330,8 @@ export async function GET() {
       name: true,
       status: true,
       basePrice: true,
+      compareAtPrice: true,
+      description: true,
       rating: true,
       reviewCount: true,
       soldCount: true,
@@ -378,14 +345,22 @@ export async function GET() {
     },
   });
 
+  // Rad etilgan / sotuvdan olingan tovar yonida admin sababi ko'rinadi (audit Y1, Y13).
+  const notes = await lastProductModerationNotes(
+    items.filter((p) => p.status === 'DRAFT' || p.status === 'ARCHIVED').map((p) => p.id),
+  );
+
   return apiOk({
     items: items.map((p) => ({
       id: p.id,
       slug: p.slug,
       sku: p.sku,
       name: p.name,
+      description: p.description,
       status: p.status,
       basePrice: Number(p.basePrice),
+      compareAtPrice: p.compareAtPrice !== null ? Number(p.compareAtPrice) : null,
+      moderationNote: notes.get(p.id) ?? null,
       rating: Number(p.rating),
       reviewCount: p.reviewCount,
       soldCount: p.soldCount,

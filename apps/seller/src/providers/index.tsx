@@ -4,7 +4,8 @@ import { Toaster, TooltipProvider } from '@ecom/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as React from 'react';
 
-import { config } from '../lib/config';
+/** Tanlangan mavzu brauzerda shu kalit bilan saqlanadi. */
+const THEME_STORAGE_KEY = 'ecom_seller_theme';
 
 function makeQueryClient() {
   return new QueryClient({
@@ -46,7 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolved, setResolved] = React.useState<'light' | 'dark'>('light');
 
   React.useEffect(() => {
-    const stored = window.localStorage.getItem(config.themeStorageKey) as Theme | null;
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
     const initial = stored ?? 'system';
     setThemeState(initial);
     applyTheme(initial);
@@ -61,7 +62,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = React.useCallback((t: Theme) => {
     setThemeState(t);
-    window.localStorage.setItem(config.themeStorageKey, t);
+    window.localStorage.setItem(THEME_STORAGE_KEY, t);
     applyTheme(t);
     setResolved(
       t === 'system'

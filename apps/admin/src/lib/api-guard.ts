@@ -11,12 +11,8 @@ import { getCurrentUser } from '@/lib/auth/session';
 /** Admin API'lariga kirish huquqi bor rollar. */
 export const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'] as const;
 
-export interface AdminGuardResult {
-  /** Ruxsat bo'lmasa — tayyor javob; bo'lsa `null`. */
-  err: Response | null;
-  /** Ruxsat berilgan foydalanuvchi (err === null bo'lganda). */
-  userId: string | null;
-}
+/** Ruxsat bo'lmasa — tayyor javob (`err`); bo'lsa — foydalanuvchi id'si (`userId`). */
+export type AdminGuardResult = { err: Response; userId: null } | { err: null; userId: string };
 
 export async function assertAdmin(): Promise<AdminGuardResult> {
   const user = await getCurrentUser();

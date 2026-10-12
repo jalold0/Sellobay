@@ -61,6 +61,11 @@ export function registerWithEmail(input: {
   lastName?: string;
   locale?: 'uz' | 'ru' | 'en';
   role?: 'customer' | 'seller';
+  shopName?: string;
+  legalName?: string;
+  tin?: string;
+  bankName?: string;
+  bankAccount?: string;
 }) {
   return api<{ user: AuthUser; pendingApproval?: boolean }>('/api/auth/register', {
     method: 'POST',

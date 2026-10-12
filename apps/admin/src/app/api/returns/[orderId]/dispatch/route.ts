@@ -7,6 +7,7 @@
 // kelmay qolishi mumkin edi.
 
 import { assertAdmin } from '@/lib/api-guard';
+import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { createReturnDeliveries, ReturnError } from '@/lib/returns-server';
 
@@ -14,11 +15,20 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(_req: Request, { params }: { params: { orderId: string } }) {
-  const { err } = await assertAdmin();
+  const { err, userId } = await assertAdmin();
   if (err) return err;
 
   try {
     const result = await createReturnDeliveries(params.orderId);
+    if (result.created > 0) {
+      await writeAudit({
+        userId,
+        action: 'return.dispatch',
+        resource: 'Order',
+        resourceId: params.orderId,
+        meta: { deliveryIds: result.deliveryIds },
+      });
+    }
     return apiOk(result);
   } catch (e) {
     if (e instanceof ReturnError) return apiError(e.status, e.code, e.message);

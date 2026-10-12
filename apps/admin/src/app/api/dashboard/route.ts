@@ -5,11 +5,14 @@
 // (`revenuePrev = revenue30 * 0.88`), ya'ni har doim bir xil chiqardi. Endi
 // barcha raqam bazadan keladi.
 //
-// DAROMAD TA'RIFI: `paidAt` to'ldirilgan buyurtmaning `grandTotal` summasi,
+// DAROMAD TA'RIFI (@ecom/core-domain `revenue`, analitika va seller bilan bir xil):
+// `paidAt` to'ldirilgan va bekor/qaytarilmagan buyurtmaning `grandTotal` summasi,
 // qaytarilgan summa ayirilgan holda. `paidAt` ni to'lovning barcha yo'llari
 // to'ldiradi (Click, Payme, admin tasdig'i, yetkazishda naqd, global).
 // `paidTotal` maydoni esa hamma yo'lda to'ldirilmaydi, shuning uchun
 // ishlatilmaydi. Qisman to'lov hozircha modellashtirilmagan.
+
+import { lastTashkentDays, NON_REVENUE_ORDER_STATUSES, tashkentDateKey } from '@ecom/core-domain';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -21,6 +24,8 @@ export const dynamic = 'force-dynamic';
 
 const WINDOW_DAYS = 30;
 const DAY_MS = 86_400_000;
+/** Bekor qilingan/qaytarilgan buyurtma daromad emas (pul qaytariladi). */
+const REVENUE_STATUS = { status: { notIn: [...NON_REVENUE_ORDER_STATUSES] } };
 /** Shundan kam qolgan variant "kam qoldi" deb belgilanadi. */
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -68,15 +73,15 @@ export async function GET() {
     deliveryRows,
   ] = await Promise.all([
     prisma.order.findMany({
-      where: { paidAt: { gte: windowStart } },
+      where: { paidAt: { gte: windowStart }, ...REVENUE_STATUS },
       select: { paidAt: true, grandTotal: true, refundedTotal: true },
     }),
     prisma.order.findMany({
-      where: { paidAt: { gte: previousStart, lt: windowStart } },
+      where: { paidAt: { gte: previousStart, lt: windowStart }, ...REVENUE_STATUS },
       select: { paidAt: true, grandTotal: true, refundedTotal: true },
     }),
     prisma.order.aggregate({
-      where: { paidAt: { not: null } },
+      where: { paidAt: { not: null }, ...REVENUE_STATUS },
       _sum: { grandTotal: true, refundedTotal: true },
       _count: true,
     }),
@@ -111,7 +116,7 @@ export async function GET() {
     // maydonga tayanish bosh sahifada soxta raqam ko'rsatardi.
     prisma.orderItem.groupBy({
       by: ['productId'],
-      where: { order: { paidAt: { not: null } } },
+      where: { order: { paidAt: { not: null }, ...REVENUE_STATUS } },
       _sum: { quantity: true },
       orderBy: { _sum: { quantity: 'desc' } },
       take: 5,
@@ -148,12 +153,13 @@ export async function GET() {
   // Kunlik qator — buyurtmalar JS'da guruhlanadi. Hozirgi hajmda (yuzlab yozuv)
   // bu arzon; o'n minglab buyurtma bo'lganda SQL'dagi date_trunc'ga ko'chiriladi.
   const byDay = new Map<string, { revenue: number; orders: number }>();
-  for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
-    byDay.set(new Date(now - i * DAY_MS).toISOString().slice(0, 10), { revenue: 0, orders: 0 });
+  // Toshkent kuni bo'yicha (audit P4).
+  for (const key of lastTashkentDays(WINDOW_DAYS, new Date(now))) {
+    byDay.set(key, { revenue: 0, orders: 0 });
   }
   for (const order of paidInWindow) {
     if (!order.paidAt) continue;
-    const bucket = byDay.get(order.paidAt.toISOString().slice(0, 10));
+    const bucket = byDay.get(tashkentDateKey(order.paidAt));
     if (!bucket) continue;
     bucket.revenue += netRevenue(order);
     bucket.orders += 1;

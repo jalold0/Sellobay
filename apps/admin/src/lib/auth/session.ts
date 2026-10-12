@@ -134,6 +134,19 @@ export async function rotateRefresh(
   return res;
 }
 
+/** Parol almashganda — joriy qurilmadan tashqari hamma refresh token'lar bekor qilinadi. */
+export async function revokeOtherRefreshTokens(
+  userId: string,
+  currentRefreshRaw: string | undefined,
+): Promise<number> {
+  const keep = currentRefreshRaw ? hashToken(currentRefreshRaw) : null;
+  const res = await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null, ...(keep ? { tokenHash: { not: keep } } : {}) },
+    data: { revokedAt: new Date() },
+  });
+  return res.count;
+}
+
 export async function revokeRefresh(refreshRaw: string): Promise<void> {
   const refreshHash = hashToken(refreshRaw);
   await prisma.refreshToken.updateMany({

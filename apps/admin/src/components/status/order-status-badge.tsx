@@ -1,13 +1,13 @@
 import { ORDER_STATUS_TONE, StatusBadge } from '@ecom/ui';
 
-import type { OrderStatus } from '../../lib/mock/types';
+import type { OrderStatus } from '@ecom/database';
 
 const LABELS: Record<OrderStatus, string> = {
   PENDING: 'Kutilmoqda',
   CONFIRMED: 'Tasdiqlandi',
-  PAID: "To`landi",
+  PAID: 'To`landi',
   PROCESSING: 'Tayyorlanmoqda',
-  PACKED: "O`ralgan",
+  PACKED: 'O`ralgan',
   SHIPPED: 'Jo`natildi',
   OUT_FOR_DELIVERY: 'Yetkazib berishda',
   DELIVERED: 'Yetkazildi',

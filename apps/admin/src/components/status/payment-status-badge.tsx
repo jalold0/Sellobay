@@ -1,11 +1,11 @@
 import { PAYMENT_STATUS_TONE, StatusBadge } from '@ecom/ui';
 
-import type { PaymentStatus } from '../../lib/mock/types';
+import type { PaymentStatus } from '@ecom/database';
 
 const LABELS: Record<PaymentStatus, string> = {
   PENDING: 'Kutilmoqda',
   AUTHORIZED: 'Avtorizatsiya',
-  PAID: "To`langan",
+  PAID: 'To`langan',
   PARTIALLY_REFUNDED: 'Qisman qaytarilgan',
   REFUNDED: 'Qaytarilgan',
   FAILED: 'Muvaffaqiyatsiz',

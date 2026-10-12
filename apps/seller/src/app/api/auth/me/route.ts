@@ -4,6 +4,7 @@ import { normalizeUzPhone } from '@ecom/utils';
 import { prisma } from '@/lib/db';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
+import { lastSellerDecisionReason } from '@/lib/seller-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,22 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  return apiOk({ user });
+  // Do'kon holati — dashboard «Faol» deb qattiq yozmasin (audit Y4); to'xtatilgan bo'lsa sabab.
+  const profile = await prisma.seller.findUnique({
+    where: { ownerUserId: user.id },
+    select: { id: true, status: true, brandName: true },
+  });
+  const seller = profile
+    ? {
+        status: profile.status,
+        brandName: profile.brandName,
+        suspendReason:
+          profile.status === 'SUSPENDED'
+            ? await lastSellerDecisionReason(profile.id, 'seller.suspend')
+            : null,
+      }
+    : null;
+  return apiOk({ user, seller });
 }
 
 const updateSchema = z.object({

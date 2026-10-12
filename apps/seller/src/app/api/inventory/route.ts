@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
+import { requireSeller } from '@/lib/seller-access';
 
 import type { NextRequest } from 'next/server';
 
@@ -99,8 +100,9 @@ export async function PATCH(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
 
-  const seller = await currentSeller(user.id);
-  if (!seller) return apiError(403, 'NOT_A_SELLER', "Sotuvchi profili topilmadi");
+  // Zaxirani faqat FAOL sotuvchi o'zgartiradi (ilgari holat tekshirilmasdi — audit Y4).
+  const { seller, err } = await requireSeller(user.id, 'write');
+  if (err) return err;
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
@@ -128,7 +130,7 @@ export async function PATCH(req: NextRequest) {
 
   const foreign = [...seen].filter((id) => !byId.has(id));
   if (foreign.length > 0) {
-    return apiError(403, 'FORBIDDEN', "Ro`yxatda sizga tegishli bo`lmagan mahsulot bor");
+    return apiError(403, 'FORBIDDEN', 'Ro`yxatda sizga tegishli bo`lmagan mahsulot bor');
   }
 
   const warehouse = await prisma.warehouse.findUnique({
@@ -136,7 +138,11 @@ export async function PATCH(req: NextRequest) {
     select: { id: true },
   });
   if (!warehouse) {
-    return apiError(503, 'WAREHOUSE_MISSING', 'Ombor sozlanmagan — administratorga murojaat qiling');
+    return apiError(
+      503,
+      'WAREHOUSE_MISSING',
+      'Ombor sozlanmagan — administratorga murojaat qiling',
+    );
   }
 
   const skipped: string[] = [];

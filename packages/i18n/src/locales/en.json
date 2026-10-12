@@ -639,7 +639,15 @@
     "offerLink": "Offer",
     "termsJoin": "and",
     "termsAgreeSuffix": "",
-    "identifier": "Phone or email"
+    "identifier": "Phone or email",
+    "shopName": "Shop name",
+    "legalNameLabel": "Legal name (sole trader/LLC)",
+    "tin": "Tax ID (INN)",
+    "tinHint": "9-digit TIN or 14-digit PINFL",
+    "bankName": "Bank name",
+    "bankAccount": "Bank account (20 digits)",
+    "sellerKycTitle": "Shop and bank details",
+    "sellerKycHint": "Shop name and tax ID are required; bank details can be added later. An admin reviews them before approving, and payouts go to the account you enter."
   },
   "profile": {
     "groupAccount": "Account",

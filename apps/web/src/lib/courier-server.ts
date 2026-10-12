@@ -8,6 +8,7 @@
 // ko'rsatadigan ma'lumot umuman yo'q edi.
 
 import { ApiDomainError } from '@ecom/api-contract';
+import { tashkentDayStart } from '@ecom/core-domain';
 import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
 import { restockReturnDelivery, settleDeliveredOrder } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
@@ -530,28 +531,8 @@ export async function updateDeliveryStatus(
   return serializeDelivery(row);
 }
 
-/**
- * Toshkent kunining boshlanishi, UTC `Date` sifatida.
- *
- * `new Date().setHours(0,0,0,0)` SERVER zonasini oladi — Vercel'da u
- * UTC. Natijada ertalab soat 03:00 da (Toshkent) hali «kechagi» kun
- * davom etardi va kuryer bajargan ishini statistikada ko'rmasdi.
- *
- * O'zbekiston — UTC+5, yozgi vaqtga o'tish 2005 yildan beri yo'q,
- * shuning uchun qat'iy siljish to'g'ri (Intl bilan zona hisoblash bu
- * yerda ortiqcha murakkablik bo'lardi).
- */
-const UZ_OFFSET_MS = 5 * 60 * 60 * 1000;
-
-export function tashkentDayStart(now: Date = new Date()): Date {
-  const shifted = new Date(now.getTime() + UZ_OFFSET_MS);
-  const midnightUtc = Date.UTC(
-    shifted.getUTCFullYear(),
-    shifted.getUTCMonth(),
-    shifted.getUTCDate(),
-  );
-  return new Date(midnightUtc - UZ_OFFSET_MS);
-}
+// Toshkent kuni — @ecom/core-domain (testlar shu yerdan import qiladi).
+export { tashkentDayStart };
 
 /**
  * Kuryerning statistikasi.

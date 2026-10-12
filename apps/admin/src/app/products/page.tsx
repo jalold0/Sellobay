@@ -52,15 +52,36 @@ export default function AdminProductsPage() {
   }, [load]);
 
   const moderate = React.useCallback(
-    async (id: string, action: 'approve' | 'reject') => {
-      const res = await moderateProduct(id, action);
+    async (id: string, action: 'approve' | 'reject' | 'takedown') => {
+      let reason: string | undefined;
+      if (action !== 'approve') {
+        const r = window.prompt(
+          action === 'reject'
+            ? 'Rad etish sababi (sotuvchiga ko‘rsatiladi):'
+            : 'Sotuvdan olish sababi (sotuvchiga ko‘rsatiladi):',
+        );
+        if (r === null) return;
+        if (r.trim().length < 3) {
+          toast({ title: 'Sababni yozing', variant: 'destructive' });
+          return;
+        }
+        reason = r.trim();
+      }
+      const res = await moderateProduct(id, action, reason);
       if (res.success) {
         toast({
-          title: action === 'approve' ? 'Mahsulot tasdiqlandi' : 'Mahsulot rad etildi',
+          title:
+            action === 'approve'
+              ? 'Mahsulot tasdiqlandi'
+              : action === 'reject'
+                ? 'Mahsulot rad etildi'
+                : 'Mahsulot sotuvdan olindi',
           description:
             action === 'approve'
               ? 'Endi web va mobil ilovada ko`rinadi'
-              : 'Qoralamaga qaytarildi — sotuvchi tahrirlashi mumkin',
+              : action === 'reject'
+                ? 'Qoralamaga qaytarildi — sotuvchi tuzatib qayta yuboradi'
+                : 'Vitrinada ko‘rinmaydi, sotuvchi sababni ko‘radi',
           variant: 'success',
         });
         await load();
@@ -223,6 +244,17 @@ export default function AdminProductsPage() {
                       onClick={() => void moderate(row.original.id, 'reject')}
                     >
                       <XCircle className="mr-2 h-4 w-4" /> Rad etish
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                ) : null}
+                {row.original.status === 'ACTIVE' || row.original.status === 'OUT_OF_STOCK' ? (
+                  <>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => void moderate(row.original.id, 'takedown')}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" /> Sotuvdan olish
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>

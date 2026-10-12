@@ -29,10 +29,33 @@ export function formatPercent(value: number, fractionDigits = 1): string {
 }
 
 // O'zbek tilida oy nomlari — qisqa va to'liq
-const MONTHS_UZ_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek'];
+const MONTHS_UZ_SHORT = [
+  'yan',
+  'fev',
+  'mar',
+  'apr',
+  'may',
+  'iyn',
+  'iyl',
+  'avg',
+  'sen',
+  'okt',
+  'noy',
+  'dek',
+];
 const MONTHS_UZ_FULL = [
-  'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-  'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr',
+  'yanvar',
+  'fevral',
+  'mart',
+  'aprel',
+  'may',
+  'iyun',
+  'iyul',
+  'avgust',
+  'sentabr',
+  'oktabr',
+  'noyabr',
+  'dekabr',
 ];
 
 function pad2(n: number): string {
@@ -88,11 +111,5 @@ export function initials(name?: string | null): string {
   return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
 }
 
-export function pickLocalized(
-  value: Partial<Record<'uz' | 'ru' | 'en', string>> | string | null | undefined,
-  locale: 'uz' | 'ru' | 'en' = 'uz',
-): string {
-  if (!value) return '';
-  if (typeof value === 'string') return value;
-  return value[locale] ?? value.uz ?? value.ru ?? value.en ?? '';
-}
+// Mahalliy nusxa o'rniga umumiy funksiya (CLAUDE.md: har doim pickLocalized orqali, audit P2).
+export { pickLocalized } from '@ecom/i18n/pick';

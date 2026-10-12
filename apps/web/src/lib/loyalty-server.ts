@@ -2,6 +2,7 @@
 // Pure iqtisod helperlar `loyalty.ts` da (client+server). Buyurtmaga bog'liq tranzaksion
 // yozuvlar (settle/reverse/grant) `@ecom/order-ops` da — admin va NestJS ham shundan oladi.
 
+import { tashkentDayStart } from '@ecom/core-domain';
 import { prisma } from './db';
 
 export {
@@ -13,14 +14,6 @@ export {
 } from '@ecom/order-ops';
 
 export const CHECKIN_REWARD = 5;
-
-// Asia/Tashkent (UTC+5, DST yo'q) — joriy kun boshlanishi (UTC instant).
-function tashkentDayStart(): Date {
-  const OFFSET_MS = 5 * 60 * 60 * 1000;
-  const shifted = new Date(Date.now() + OFFSET_MS);
-  shifted.setUTCHours(0, 0, 0, 0);
-  return new Date(shifted.getTime() - OFFSET_MS);
-}
 
 /** Bugun (Tashkent kuni) check-in qilinganmi? */
 export async function hasCheckedInToday(userId: string): Promise<boolean> {

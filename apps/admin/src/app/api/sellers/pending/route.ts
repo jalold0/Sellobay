@@ -33,6 +33,9 @@ export async function GET() {
       status: true,
       createdAt: true,
       tin: true,
+      registrationNo: true,
+      bankName: true,
+      bankAccount: true,
       owner: {
         select: {
           id: true,
@@ -56,6 +59,9 @@ export async function GET() {
       status: s.status,
       createdAt: s.createdAt.toISOString(),
       tin: s.tin,
+      registrationNo: s.registrationNo,
+      bankName: s.bankName,
+      bankAccount: s.bankAccount,
       owner: s.owner,
     })),
   });

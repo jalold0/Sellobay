@@ -25,8 +25,26 @@ export const registerSchema = z
     locale: z.enum(['uz', 'ru', 'en']).default('uz'),
     // Foydalanuvchi turi: customer (default) yoki seller (sotuvchi sifatida ariza)
     role: z.enum(['customer', 'seller']).default('customer'),
+    // Sotuvchi arizasi (KYC) — admin shu ma'lumot bilan tasdiqlaydi (audit Y3).
+    shopName: z.string().trim().min(2).max(80).optional(),
+    legalName: z.string().trim().min(2).max(120).optional(),
+    // STIR (yuridik shaxs, 9 xona) yoki JShShIR (YaTT, 14 xona)
+    tin: z
+      .string()
+      .trim()
+      .regex(/^(\d{9}|\d{14})$/, 'STIR 9 yoki JShShIR 14 raqamdan iborat bo‘lishi kerak')
+      .optional(),
+    bankName: z.string().trim().min(2).max(80).optional(),
+    bankAccount: z
+      .string()
+      .trim()
+      .regex(/^\d{20}$/, 'Hisob raqami 20 raqamdan iborat bo‘lishi kerak')
+      .optional(),
   })
-  .refine((v) => v.email || v.phone, { message: 'Email yoki telefon kerak' });
+  .refine((v) => v.email || v.phone, { message: 'Email yoki telefon kerak' })
+  .refine((v) => v.role !== 'seller' || (v.shopName && v.tin), {
+    message: 'Sotuvchi uchun do‘kon nomi va STIR majburiy',
+  });
 
 export const loginSchema = z.object({
   identifier: z.string().min(3, 'Email yoki telefon kerak'),

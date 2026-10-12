@@ -41,6 +41,7 @@ import {
   isProviderConfigured,
   type PaymentProvider,
 } from '@/lib/payments';
+import { SELLER_IS_ACTIVE } from '@/lib/product-visibility';
 import { evaluatePromo } from '@/lib/promo';
 
 /**
@@ -305,7 +306,7 @@ export async function createOrder(
   // 1. Mahsulotlarni DB'dan olamiz (snapshot uchun) va mavjudligini tekshiramiz
   const productIds = input.items.map((i) => i.productId);
   const products = await prisma.product.findMany({
-    where: { id: { in: productIds }, status: 'ACTIVE', deletedAt: null },
+    where: { id: { in: productIds }, status: 'ACTIVE', deletedAt: null, ...SELLER_IS_ACTIVE },
     select: {
       id: true,
       slug: true,

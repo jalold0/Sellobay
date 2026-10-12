@@ -32,10 +32,5 @@ export function t(key: string, locale: Locale = defaultLocale): string {
   return typeof cur === 'string' ? cur : key;
 }
 
-export function pickLocalized<T extends Partial<Record<Locale, string>>>(
-  value: T | null | undefined,
-  locale: Locale = defaultLocale,
-): string {
-  if (!value) return '';
-  return value[locale] ?? value[defaultLocale] ?? Object.values(value)[0] ?? '';
-}
+// Yagona amalga oshirish — `./pick` (panellar JSON'siz import qiladi).
+export { pickLocalized } from './pick';

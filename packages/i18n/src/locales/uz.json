@@ -646,7 +646,15 @@
     "offerLink": "Oferta",
     "termsJoin": "va",
     "termsAgreeSuffix": "ga rozilik bildirasiz",
-    "identifier": "Telefon yoki email"
+    "identifier": "Telefon yoki email",
+    "shopName": "Do'kon nomi",
+    "legalNameLabel": "Yuridik nomi (YaTT/MChJ)",
+    "tin": "STIR (INN)",
+    "tinHint": "9 xonali STIR yoki 14 xonali JShShIR",
+    "bankName": "Bank nomi",
+    "bankAccount": "Hisob raqami (20 xona)",
+    "sellerKycTitle": "Do'kon va rekvizitlar",
+    "sellerKycHint": "Do'kon nomi va STIR majburiy, bank rekvizitlarini keyin ham qo'shsa bo'ladi. Admin ma'lumotlarni tekshirib arizani tasdiqlaydi, to'lovlar ko'rsatilgan hisobga o'tkaziladi."
   },
   "profile": {
     "groupAccount": "Hisob",

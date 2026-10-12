@@ -23,6 +23,7 @@ import { ApiDomainError } from '@ecom/api-contract';
 import { restockReturnDelivery } from '@ecom/order-ops';
 
 import { prisma } from '@/lib/db';
+import { writeAudit } from '@/lib/audit';
 
 import type { Prisma } from '@ecom/database';
 
@@ -294,6 +295,16 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
         comment: 'Qaytarilgan tovar omborga qabul qilindi',
       },
     });
+    await writeAudit(
+      {
+        userId: adminUserId,
+        action: 'return.receive',
+        resource: 'Order',
+        resourceId: order.id,
+        meta: { deliveryId: delivery.id, stockRestocked: stock.restocked },
+      },
+      tx,
+    );
     return { deliveryId: delivery.id, stockRestocked: stock.restocked };
   });
 }
