@@ -36,6 +36,16 @@ import type { Prisma } from '@ecom/database';
 export class ReturnError extends ApiDomainError {}
 
 /**
+ * Mijoz qaytargan buyurtma: RETURNED, yoki pul tovar kelishidan OLDIN qaytarilgan bo'lsa
+ * REFUNDED. Ikkinchisini bekor qilingan-va-pul-qaytarilgan buyurtmadan `deliveredAt` ajratadi
+ * (bekor qilish faqat jo'natilmagan buyurtmada bo'ladi). Ilgari faqat RETURNED qabul qilinardi:
+ * pul oldin qaytarilsa tovar qabul qilinmay, zaxira hech qachon qaytmasdi.
+ */
+function isCustomerReturn(order: { status: string; deliveredAt: Date | null }): boolean {
+  return order.status === 'RETURNED' || (order.status === 'REFUNDED' && order.deliveredAt !== null);
+}
+
+/**
  * Mijozning manzilini bitta satrga yig'adi — kuryer shu yerdan oladi.
  *
  * `Delivery.pickupAddress` matn sifatida SAQLANADI: manzil keyin
@@ -95,6 +105,7 @@ export async function createReturnDeliveries(orderId: string) {
       id: true,
       number: true,
       status: true,
+      deliveredAt: true,
       shippingAddress: {
         select: {
           region: true,
@@ -120,7 +131,7 @@ export async function createReturnDeliveries(orderId: string) {
   // Faqat qaytarilgan buyurtma. Holatni bu yerda tekshiramiz, chunki
   // topshiriq ochish qaytarishning DAVOMI: qaytarilmagan buyurtmaga
   // kuryer yuborish mijozdan mahsulotni sababsiz olib qo'yish bo'lardi.
-  if (order.status !== 'RETURNED') {
+  if (!isCustomerReturn(order)) {
     throw new ReturnError(
       409,
       'NOT_RETURNED',
@@ -237,12 +248,13 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
     select: {
       id: true,
       status: true,
+      deliveredAt: true,
       items: { select: { id: true, quantity: true } },
       deliveries: { where: { kind: 'RETURN' }, select: { id: true } },
     },
   });
   if (!order) throw new ReturnError(404, 'NOT_FOUND', 'Buyurtma topilmadi');
-  if (order.status !== 'RETURNED') {
+  if (!isCustomerReturn(order)) {
     throw new ReturnError(409, 'NOT_RETURNED', 'Faqat qaytarilgan buyurtma qabul qilinadi');
   }
   if (order.deliveries.length > 0) {
@@ -290,7 +302,7 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
     await tx.orderStatusHistory.create({
       data: {
         orderId: order.id,
-        status: 'RETURNED',
+        status: order.status,
         changedBy: adminUserId,
         comment: 'Qaytarilgan tovar omborga qabul qilindi',
       },
@@ -312,7 +324,10 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
 /** Topshirig'i hali ochilmagan, qaytarilgan buyurtmalar — admin ro'yxati. */
 export async function listPendingReturns(limit = 50) {
   const rows = await prisma.order.findMany({
-    where: { status: 'RETURNED', deliveries: { none: { kind: 'RETURN' } } },
+    where: {
+      OR: [{ status: 'RETURNED' }, { status: 'REFUNDED', deliveredAt: { not: null } }],
+      deliveries: { none: { kind: 'RETURN' } },
+    },
     orderBy: { updatedAt: 'desc' },
     take: Math.min(Math.max(limit, 1), 100),
     select: {

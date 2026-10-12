@@ -24,6 +24,7 @@ export type AuditAction =
   | 'payment.reject'
   | 'order.status'
   | 'order.cancel'
+  | 'order.refund'
   | 'return.receive'
   | 'return.dispatch'
   | 'auth.password_change';

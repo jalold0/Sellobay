@@ -39,6 +39,7 @@ import { useParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
+import { RefundPanel } from '../../../components/payments/refund-panel';
 import { VerifyPaymentForm } from '../../../components/payments/verify-payment-form';
 import {
   ORDER_STATUS_LABELS,
@@ -274,6 +275,18 @@ export default function OrderDetailPage() {
           <AlertTitle>Tasdiqlash kutilmoqda</AlertTitle>
           <AlertDescription>Mijoz to`lovni amalga oshirmagan yoki tasdiqlanmagan.</AlertDescription>
         </Alert>
+      ) : null}
+
+      {/* Bekor qilingan/qaytarilgan to'langan buyurtma — pul qaytarilishi kerak (K5) */}
+      {order.refund.remaining !== '0.00' ? (
+        <RefundPanel
+          key={order.refund.refundedTotal}
+          orderId={order.id}
+          remaining={order.refund.remaining}
+          refundedTotal={order.refund.refundedTotal}
+          provider={order.paymentProvider}
+          onDone={() => void load()}
+        />
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">

@@ -8,6 +8,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { adminProductImage } from '@/lib/product-image';
 import { manualCardPayload, receiptSrc } from '@/lib/receipt';
+import { remainingFor } from '@/lib/refund-server';
 
 import type { NextRequest } from 'next/server';
 
@@ -31,6 +32,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       shippingTotal: true,
       discountTotal: true,
       grandTotal: true,
+      paidTotal: true,
+      refundedTotal: true,
       placedAt: true,
       paidAt: true,
       deliveryMethod: true,
@@ -99,6 +102,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     allowedNextStatuses: adminFulfillmentTargets(o.status, orderPaymentState(o)),
     // Bekor qilish tugmasi — server POST /cancel da xuddi shu qoidani tekshiradi.
     canCancel: canAdminCancel(o.status),
+    // Pul qaytarish: qaytarilgani va hali qaytarilishi kerak bo'lgani (o'nlik satr).
+    refund: {
+      refundedTotal: o.refundedTotal.toFixed(2),
+      remaining: remainingFor(o),
+    },
     subtotal: Number(o.subtotal),
     shippingTotal: Number(o.shippingTotal),
     discountTotal: Number(o.discountTotal),

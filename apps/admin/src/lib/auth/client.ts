@@ -395,6 +395,35 @@ export function updateOrderStatus(id: string, status: AdminOrderStatus, comment?
   });
 }
 
+export type RefundMethod = 'GATEWAY' | 'CARD_TRANSFER' | 'CASH';
+
+/** Mijozga qaytarilgan pulni qayd etish (pulning o'zi qo'lda qaytariladi). */
+export function recordRefund(
+  id: string,
+  input: { amount: string; method: RefundMethod; reference?: string; note?: string },
+) {
+  return api<{ id: string; refundedTotal: string; fullyRefunded: boolean; status: string }>(
+    `/api/orders/${id}/refund`,
+    { method: 'POST', body: JSON.stringify(input) },
+  );
+}
+
+export interface PendingRefundItem {
+  id: string;
+  number: string;
+  status: 'CANCELLED' | 'RETURNED';
+  remaining: string;
+  refundedTotal: string;
+  provider: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  updatedAt: string;
+}
+
+export function listPendingRefunds() {
+  return api<{ items: PendingRefundItem[] }>('/api/refunds');
+}
+
 /** Buyurtmani bekor qilish (tovar hali omborda). To'langan bo'lsa `refundRequired: true`. */
 export function cancelOrder(id: string, reason: string) {
   return api<{ id: string; number: string; status: 'CANCELLED'; refundRequired: boolean }>(
@@ -443,6 +472,8 @@ export interface AdminOrderDetail {
   allowedNextStatuses: AdminOrderStatus[];
   /** Tovar hali omborda — admin bekor qila oladi. */
   canCancel: boolean;
+  /** Pul qaytarish holati (o'nlik satrlar). `remaining` "0.00" bo'lsa qaytariladigan pul yo'q. */
+  refund: { refundedTotal: string; remaining: string };
   subtotal: number;
   shippingTotal: number;
   discountTotal: number;

@@ -25,6 +25,7 @@ import {
   receiveReturn,
   type PendingReturnItem,
 } from '@/lib/auth/client';
+import { PendingRefunds } from '../../../components/payments/pending-refunds';
 import { formatDateTime, formatMoney } from '../../../lib/format';
 
 function pickName(text: PendingReturnItem['items'][number]['nameSnapshot']): string {
@@ -91,6 +92,8 @@ export default function ReturnsPage() {
         title="Qaytarishlar"
         description="Mijoz qaytarishni so`radi — mahsulotni olib kelish uchun kuryerga topshiriq oching"
       />
+
+      <PendingRefunds />
 
       {loading ? (
         <div className="space-y-3">
