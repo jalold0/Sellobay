@@ -988,7 +988,8 @@
     "title": "Thank you! Your order has been received",
     "subtitle": "An operator will contact you shortly to confirm your order.",
     "orderNumber": "Order number",
-    "goToOrders": "Go to my orders"
+    "goToOrders": "Go to my orders",
+    "openInApp": "Open in the app"
   },
   "wallet": {
     "title": "Wallet"

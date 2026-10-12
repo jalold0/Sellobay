@@ -1,16 +1,33 @@
 'use client';
 
 import { Button, Card } from '@ecom/ui';
-import { CheckCircle2, FileText, Package } from 'lucide-react';
+import { CheckCircle2, FileText, Package, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function OrderSuccessPage() {
   const t = useTranslations('orderSuccess');
   const tc = useTranslations('common');
   const params = useSearchParams();
-  const number = params.get('number') ?? 'ORD-2026-00000000';
+  // Raqam berilmagan bo'lsa ko'rsatilmaydi: ilgari bu yerda to'qima
+  // `ORD-2026-00000000` turardi va u haqiqiy buyurtmaga o'xshab ko'rinardi.
+  const number = params.get('number');
+
+  // To'lov provayderidan qaytganda (`return_url` da `order` bor) mobil
+  // ilovani ochamiz. Faqat UUID qabul qilinadi: parametr tashqaridan
+  // keladi va havolaga o'zboshimcha matn qo'yilmasligi kerak.
+  const orderParam = params.get('order');
+  const appLink = orderParam && UUID.test(orderParam) ? `sellobay://orders/${orderParam}` : null;
+
+  useEffect(() => {
+    // Faqat Android: ilova o'rnatilmagan bo'lsa jim qoladi, sahifa ishlayveradi.
+    // Kompyuterda `sellobay://` brauzerda xato oynasi chiqarardi — tegmaymiz.
+    if (appLink && /android/i.test(navigator.userAgent)) window.location.href = appLink;
+  }, [appLink]);
 
   return (
     <div className="mx-auto max-w-lg py-10 text-center">
@@ -20,15 +37,24 @@ export default function OrderSuccessPage() {
       <h1 className="mt-6 text-3xl font-bold tracking-tight">{t('title')}</h1>
       <p className="text-muted-foreground mt-3 text-sm">{t('subtitle')}</p>
 
-      <Card className="mt-6 p-5">
-        <div className="text-muted-foreground text-xs uppercase tracking-wide">
-          {t('orderNumber')}
-        </div>
-        <div className="mt-1 font-mono text-2xl font-bold">{number}</div>
-      </Card>
+      {number ? (
+        <Card className="mt-6 p-5">
+          <div className="text-muted-foreground text-xs uppercase tracking-wide">
+            {t('orderNumber')}
+          </div>
+          <div className="mt-1 font-mono text-2xl font-bold">{number}</div>
+        </Card>
+      ) : null}
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-        <Button asChild>
+        {appLink ? (
+          <Button asChild>
+            <a href={appLink}>
+              <Smartphone className="mr-2 h-4 w-4" /> {t('openInApp')}
+            </a>
+          </Button>
+        ) : null}
+        <Button asChild variant={appLink ? 'outline' : 'default'}>
           <Link href="/profile/orders">
             <Package className="mr-2 h-4 w-4" /> {t('goToOrders')}
           </Link>

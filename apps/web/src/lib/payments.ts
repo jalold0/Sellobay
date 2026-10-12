@@ -39,6 +39,17 @@ function appUrl(): string {
 }
 
 /**
+ * To'lovdan qaytish manzili.
+ *
+ * `order` — buyurtma identifikatori: muvaffaqiyat sahifasi shu bilan mobil
+ * ilovani ochadi (`sellobay://orders/<id>`). Veb mijoz uchun sahifa avvalgidek
+ * ishlaydi, qo'shimcha parametr unga zarar qilmaydi.
+ */
+export function orderReturnUrl(orderId: string): string {
+  return `${appUrl()}/orders/success?order=${encodeURIComponent(orderId)}`;
+}
+
+/**
  * Click Checkout redirect URL.
  * Hujjat: https://docs.click.uz/click-api-request/
  * amount — so'mda. transaction_param — bizning order id (webhook'da qaytadi).
@@ -46,7 +57,7 @@ function appUrl(): string {
 export function buildClickUrl(params: { orderId: string; amountSom: number }): string {
   const serviceId = process.env.CLICK_SERVICE_ID ?? '';
   const merchantId = process.env.CLICK_MERCHANT_ID ?? '';
-  const returnUrl = `${appUrl()}/orders/success`;
+  const returnUrl = orderReturnUrl(params.orderId);
   const qs = new URLSearchParams({
     service_id: serviceId,
     merchant_id: merchantId,
@@ -66,7 +77,7 @@ export function buildPaymeUrl(params: { orderId: string; amountSom: number }): s
   const merchantId = process.env.PAYME_MERCHANT_ID ?? '';
   const endpoint = (process.env.PAYME_ENDPOINT || 'https://checkout.paycom.uz').replace(/\/$/, '');
   const amountTiyin = Math.round(params.amountSom * 100);
-  const returnUrl = `${appUrl()}/orders/success`;
+  const returnUrl = orderReturnUrl(params.orderId);
   const raw = `m=${merchantId};ac.order_id=${params.orderId};a=${amountTiyin};c=${returnUrl}`;
   const encoded = Buffer.from(raw, 'utf8').toString('base64');
   return `${endpoint}/${encoded}`;

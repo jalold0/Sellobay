@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import 'deep_links.dart';
 import 'home_tabs.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
 class SellobayCustomerApp extends StatefulWidget {
-  const SellobayCustomerApp({super.key, required this.runtime});
+  const SellobayCustomerApp({super.key, required this.runtime, this.linkSources = const []});
 
   final SellobayRuntime runtime;
+
+  /// Buyurtmani ochishni so'raydigan manbalar (havola, push bosilishi).
+  /// Testlarda bo'sh.
+  final List<OrderLinkSource> linkSources;
 
   @override
   State<SellobayCustomerApp> createState() => _SellobayCustomerAppState();
@@ -17,9 +22,23 @@ class SellobayCustomerApp extends StatefulWidget {
 
 class _SellobayCustomerAppState extends State<SellobayCustomerApp> {
   final _tabs = HomeTabsController();
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  late final DeepLinkRouter _links = DeepLinkRouter(
+    navigatorKey: _navigatorKey,
+    auth: widget.runtime.auth,
+    tabs: _tabs,
+    sources: widget.linkSources,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _links.start();
+  }
 
   @override
   void dispose() {
+    _links.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -37,6 +56,7 @@ class _SellobayCustomerAppState extends State<SellobayCustomerApp> {
       child: HomeTabsScope(
         controller: _tabs,
         child: MaterialApp(
+          navigatorKey: _navigatorKey,
           onGenerateTitle: (context) => context.t('common.appName'),
           debugShowCheckedModeBanner: false,
           theme: buildSellobayTheme(),
