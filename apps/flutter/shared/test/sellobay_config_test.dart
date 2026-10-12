@@ -19,7 +19,7 @@ const _realResponse = '''
       { "key": "platinum", "min": 20000000, "cashbackPct": 5, "icon": "\u{1F48E}" }
     ]
   },
-  "returns": { "windowDays": 14 },
+  "returns": { "windowDays": 10 },
   "geo": { "tashkentCityBbox": { "latMin": 41.15, "latMax": 41.4, "lngMin": 69.1, "lngMax": 69.45 } },
   "locales": ["uz", "ru", "en"]
 }
@@ -38,7 +38,7 @@ void main() {
       expect(config.shipping.freeThreshold, 500000);
       expect(config.loyalty.coinValueSom, 10);
       expect(config.loyalty.tiers, hasLength(4));
-      expect(config.returnWindowDays, 14);
+      expect(config.returnWindowDays, 10);
       expect(config.locales, ['uz', 'ru', 'en']);
     });
 

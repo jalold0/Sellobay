@@ -73,7 +73,9 @@ Yetkazib berish muddatlari taxminiy bo'lib, logistika va bojxona jarayonlariga b
           title: 'Qaytarish va almashtirish',
           body: `Qabul qilishda tekshirish (asosiy tartib). Xaridor mahsulotni yetkazib berilayotganda (kuryer oldida) yoki topshirish punktida ochib ko'rish va tekshirish huquqiga ega. Mahsulot maqul kelmasa yoki nuqson aniqlansa — o'sha joyning o'zida qaytarishi mumkin, pul qaytariladi.
 
-Yetkazib berilgandan keyin qaytarish. Mahsulotni olib ketgan bo'lsa ham, Xaridor sifatli mahsulotni qabul qilingandan keyin 14 kun ichida qaytarish huquqiga ega (mahsulot ishlatilmagan, tovar ko'rinishi va yorliqlari saqlangan bo'lsa). 14 kunlik muddat — Platformaning mijoz foydasiga belgilangan ichki qoidasi bo'lib, qonunchilikdagi minimal muddatdan kam emas.
+Yetkazib berilgandan keyin qaytarish. Mahsulotni olib ketgan bo'lsa ham, Xaridor sifatli nooziq-ovqat mahsulotini qabul qilingandan keyin 10 kun ichida qaytarish yoki almashtirish huquqiga ega (mahsulot ishlatilmagan, tovar ko'rinishi, qadog'i va yorliqlari saqlangan bo'lsa) — «Iste'molchilarning huquqlarini himoya qilish to'g'risida»gi qonunning 18-moddasi.
+
+Nuqsonli mahsulot. Nuqson kafolat muddati ichida (kafolat belgilanmagan bo'lsa — 6 oy ichida) aniqlansa, Xaridor almashtirish, ta'mirlash yoki pulni qaytarishni talab qilishi mumkin (qonunning 13-moddasi).
 
 Ayrim toifadagi mahsulotlar qaytarilmaydi (ochilgan kosmetika/atir, ichki kiyim, oziq-ovqat, sovg'a sertifikatlari va qonunchilikda belgilangan boshqa tovarlar).
 

@@ -110,9 +110,9 @@ export default function SellerReturnsPage() {
         <Info className="h-4 w-4" />
         <AlertTitle>Qaytarish qanday ishlaydi</AlertTitle>
         <AlertDescription>
-          Mijoz yetkazilgandan keyin 14 kun ichida buyurtmani o`zi qaytaradi — tasdiq talab
-          qilinmaydi. Tovar shu zahoti omboringizga qaytariladi. Pulni operator qaytaradi, shundan
-          keyin status «Pul qaytarilgan» bo`ladi.
+          Mijoz tovarni topshirish paytida joyida yoki yetkazilgandan keyin 10 kun ichida qaytaradi
+          (ishlatilmagan, qadog‘i butun). Zaxirangizga tovar omborga qaytib kelganda qo‘shiladi.
+          Pulni operator qaytaradi, shundan keyin status «Pul qaytarilgan» bo`ladi.
         </AlertDescription>
       </Alert>
 
