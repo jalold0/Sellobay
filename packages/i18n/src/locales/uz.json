@@ -648,6 +648,9 @@
     "identifier": "Telefon yoki email"
   },
   "profile": {
+    "groupAccount": "Hisob",
+    "groupActivity": "Faoliyatim",
+    "groupMore": "Yana",
     "title": "Shaxsiy ma'lumotlar",
     "subtitle": "Ma'lumotlaringizni yangilang va xavfsizlikni ta'minlang",
     "infoTitle": "Profil ma'lumotlari",
@@ -984,6 +987,9 @@
     "subtitle": "Buyurtmangizni tasdiqlash uchun operator siz bilan tez orada bog'lanadi.",
     "orderNumber": "Buyurtma raqami",
     "goToOrders": "Buyurtmalarimga o'tish"
+  },
+  "wallet": {
+    "title": "Hamyon"
   },
   "wishlist": {
     "title": "Sevimlilar",

@@ -114,11 +114,28 @@ liniya; ESM'ga o'tish keyinroq, alohida qaror.
 
 ## Foydalanuvchidan kerak bo'ladigan ma'lumotlar
 
-| Nima                                                                      | Qachon kerak           |
-| ------------------------------------------------------------------------- | ---------------------- |
-| Docker Desktop o'rnatilgan kompyuter (hozir yo'q; WSL2 ham yo'q)          | 1-bosqich tekshiruvi   |
-| Eskiz.uz (yoki PlayMobile) login/parol — OTP SMS                          | auth-service           |
-| Click `SERVICE_ID/MERCHANT_ID/SECRET`, Payme merchant kaliti              | orders/payments        |
-| Firebase service account JSON (maxfiy — faqat `.env`ga)                   | notification-service   |
-| Production serveri (VPS/bulut) va domen (`sellobay.uz` hozir ulanmagan)   | productionga chiqarish |
-| JWT maxfiy kalitlari (mavjud Vercel'dagilar bilan bir xil bo'lishi kerak) | auth-service           |
+| Nima                                                                             | Qachon kerak           |
+| -------------------------------------------------------------------------------- | ---------------------- |
+| Docker Desktop o'rnatilgan kompyuter — ✅ bor (2026-10-12: Docker 29.8, WSL2)    | 1-bosqich tekshiruvi   |
+| Eskiz.uz (yoki PlayMobile) login/parol — OTP SMS                                 | auth-service           |
+| Click `SERVICE_ID/MERCHANT_ID/SECRET`, Payme merchant kaliti                     | orders/payments        |
+| Firebase service account JSON (maxfiy — faqat `.env`ga)                          | notification-service   |
+| Production serveri (VPS/bulut) — domen `sellobay.uz` Vercel'ga ulangan (SSL bor) | productionga chiqarish |
+| JWT maxfiy kalitlari (mavjud Vercel'dagilar bilan bir xil bo'lishi kerak)        | auth-service           |
+
+## Yangilanish (2026-10-12)
+
+Ikkinchi kompyuterda parallel yozilgan qisqa ADR shu hujjatga birlashtirildi. Undan qo'shilganlar:
+
+- **Birinchi servislar — hozir umuman yo'q imkoniyatlar.** 2-bosqichda `notification-service` bilan
+  birga fon ishlari: muddati o'tgan to'lanmagan buyurtmani bekor qilib, zaxira, coin va promoni
+  qaytarish (audit K4). Serverless'da uzoq yashaydigan jarayon yo'qligi sababli bu hozir hech
+  qayerda bajarilmaydi.
+- **Ikki compose fayli, ikki rol.** `infrastructure/docker/docker-compose.yml` (`pnpm docker:up`) —
+  web'ni lokal ishlab chiqish infratuzilmasi: postgres + redis + rabbitmq (NestJS'ni Docker'siz
+  `dev:*` bilan ishga tushirish uchun ham). Elasticsearch, MinIO, Mailhog kodda ishlatilmaydi va
+  `extras` profilida. `docker-compose.backend.yml` — to'liq NestJS staging stack'i. Ikkalasi
+  5432 portni band qiladi — bir vaqtda ko'tarilmaydi.
+- **Paritet testlari mavjud.** Audit tuzatishlari (K1–K7) uchun yozilgan amaliy testlar va
+  `apps/web/scripts/payments/simulate-*.mjs` ko'chirilgan servislarga qarshi ham ishga tushiriladi
+  (§4.3).

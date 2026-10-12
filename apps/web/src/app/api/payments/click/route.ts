@@ -25,6 +25,7 @@ const ERR_INCORRECT_AMOUNT = -2;
 const ERR_ACTION_NOT_FOUND = -3;
 const ERR_ALREADY_PAID = -4;
 const ERR_ORDER_NOT_FOUND = -5;
+const ERR_REQUEST = -8;
 const ERR_TRANS_CANCELLED = -9;
 
 // so'mdagi kichik farqlarni (yaxlitlash) e'tiborsiz qoldirish uchun tolerans
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
   const action = get('action');
   const signTime = get('sign_time');
   const signString = get('sign_string');
+  // To'lov natijasi (0 = muvaffaqiyatli, manfiy = yiqilgan). Imzo uni QAMRAMAYDI.
+  const clickError = get('error');
 
   // Butun payload (audit/debug uchun rawPayload'ga saqlanadi)
   const rawPayload = Object.fromEntries(
@@ -84,6 +87,28 @@ export async function POST(req: NextRequest) {
   // 2) Amaliyot turini oldindan tekshiramiz (0=Prepare, 1=Complete)
   if (action !== '0' && action !== '1') {
     return reply({ error: ERR_ACTION_NOT_FOUND, error_note: 'Action not found' });
+  }
+
+  // 2a) Complete'da Click to'lov natijasini `error` maydonida yuboradi: 0 —
+  //     muvaffaqiyatli, manfiy — to'lov yiqilgan yoki bekor qilingan (masalan
+  //     -5017: mablag' yetarli emas). Imzo `error`ni qamramagani uchun uni
+  //     alohida tekshirmasak, yiqilgan to'lov ham PAID bo'lib qoladi.
+  //     Click bu maydonni har doim yuboradi: yo'q yoki butun son bo'lmasa —
+  //     so'rov noto'g'ri. Yiqilgan to'lovda buyurtma PENDING qoladi, mijoz
+  //     boshqa karta bilan qayta to'lay oladi.
+  if (action === '1') {
+    const code = Number(clickError);
+    if (clickError === '' || !Number.isInteger(code)) {
+      return reply({ error: ERR_REQUEST, error_note: 'Error in request from click' });
+    }
+    if (code < 0) {
+      return reply({
+        click_trans_id: clickTransId,
+        merchant_trans_id: merchantTransId,
+        error: ERR_TRANS_CANCELLED,
+        error_note: 'Transaction cancelled',
+      });
+    }
   }
 
   // 3) Buyurtmani topish

@@ -82,6 +82,47 @@ const ORDER_COMMENT: Partial<Record<DeliveryStatus, string>> = {
 /** Yopilgan buyurtma QAYTA OCHILMAYDI. */
 const CLOSED_ORDER_STATUSES: OrderStatus[] = ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELIVERED'];
 
+/** Bekor qilingan yoki qaytarilgan buyurtma mijozga olib borilmaydi. */
+const NOT_SHIPPABLE_ORDER_STATUSES: OrderStatus[] = ['CANCELLED', 'RETURNED', 'REFUNDED'];
+
+/**
+ * Pul masalasi hal bo'lgan buyurtma: to'langan YOKI naqd (pul yetkazilganda
+ * olinadi). `@ecom/core-domain` dagi to'lov holati PAID / COD_PENDING bilan
+ * bir xil ma'no; bu yerda Prisma sharti, chunki tekshiruv atomik bo'lishi kerak.
+ *
+ * NEGA: ilgari kuryer ro'yxati faqat `courierId: null` ga qarardi — onlayn
+ * to'lanmagan (Click/Payme webhook kelmagan, UZCARD cheki tasdiqlanmagan) va
+ * bekor qilingan buyurtmalar ham olib ketilardi (audit K3).
+ */
+const PAYMENT_SETTLED_OR_COD: Prisma.OrderWhereInput = {
+  OR: [
+    { paidAt: { not: null } },
+    { payments: { some: { status: 'PAID' } } },
+    { payments: { some: { provider: 'CASH_ON_DELIVERY', status: 'PENDING' } } },
+  ],
+};
+
+/** Mijozga olib borishni boshlash mumkin bo'lgan buyurtma. */
+const SHIPPABLE_ORDER: Prisma.OrderWhereInput = {
+  status: { notIn: NOT_SHIPPABLE_ORDER_STATUSES },
+  ...PAYMENT_SETTLED_OR_COD,
+};
+
+/**
+ * Istalgan kuryer o'ziga ola biladigan yetkazish.
+ *
+ * `RETURN` (mijozdan omborga) ataylab shartsiz: uni admin qaytarilgan
+ * buyurtma uchun o'zi ochadi, buyurtma esa allaqachon RETURNED.
+ */
+const AVAILABLE_DELIVERY: Prisma.DeliveryWhereInput = {
+  courierId: null,
+  status: 'ASSIGNED',
+  OR: [
+    { kind: 'RETURN' },
+    { kind: 'OUTBOUND', order: { ...SHIPPABLE_ORDER, status: { notIn: CLOSED_ORDER_STATUSES } } },
+  ],
+};
+
 /** Shu holatdan keyin mumkin bo'lgan holatlar. */
 export function nextDeliveryStatuses(current: DeliveryStatus): DeliveryStatus[] {
   return TRANSITIONS[current] ?? [];
@@ -263,7 +304,7 @@ export async function listCourierDeliveries(userId: string) {
         })
       : Promise.resolve([]),
     prisma.delivery.findMany({
-      where: { courierId: null, status: 'ASSIGNED' },
+      where: AVAILABLE_DELIVERY,
       orderBy: { createdAt: 'asc' },
       take: 50,
       select: deliverySelect,
@@ -283,16 +324,25 @@ export async function listCourierDeliveries(userId: string) {
 export async function claimDelivery(userId: string, deliveryId: string) {
   const courierId = await ensureCourierProfile(userId);
 
+  // Ro'yxatdagi shartning o'zi — UPDATE ichida, shuning uchun to'lov/bekor
+  // holati tekshiruv bilan yozuv orasida o'zgarib qolmaydi.
   const result = await prisma.delivery.updateMany({
-    where: { id: deliveryId, courierId: null, status: 'ASSIGNED' },
+    where: { id: deliveryId, ...AVAILABLE_DELIVERY },
     data: { courierId, assignedAt: new Date() },
   });
   if (result.count === 0) {
     const exists = await prisma.delivery.findUnique({
       where: { id: deliveryId },
-      select: { id: true },
+      select: { id: true, courierId: true, status: true },
     });
     if (!exists) throw new CourierError(404, 'NOT_FOUND', 'Yetkazish topilmadi');
+    if (exists.courierId === null && exists.status === 'ASSIGNED') {
+      throw new CourierError(
+        409,
+        'ORDER_NOT_READY',
+        "Buyurtma hali yetkazishga tayyor emas: to'lanmagan yoki bekor qilingan",
+      );
+    }
     throw new CourierError(409, 'ALREADY_CLAIMED', 'Bu yetkazishni boshqa kuryer olgan');
   }
 
@@ -333,7 +383,7 @@ export async function updateDeliveryStatus(
 
   const current = await prisma.delivery.findUnique({
     where: { id: deliveryId },
-    select: { id: true, status: true, courierId: true, orderId: true },
+    select: { id: true, kind: true, status: true, courierId: true, orderId: true },
   });
   if (!current) throw new CourierError(404, 'NOT_FOUND', 'Yetkazish topilmadi');
   if (current.courierId !== courier.id) {
@@ -348,6 +398,24 @@ export async function updateDeliveryStatus(
   }
   if (next === 'FAILED' && !extra.note?.trim()) {
     throw new CourierError(400, 'REASON_REQUIRED', 'Sababni yozing');
+  }
+
+  // Kuryer olganidan keyin buyurtma bekor qilingan bo'lishi (yoki tuzatishdan
+  // oldin to'lanmagan holda olingan bo'lishi) mumkin — mijozga olib borishni
+  // davom ettirib bo'lmaydi. «Bajarilmadi» (FAILED) esa doim ruxsat: kuryer
+  // topshiriqni yopa olsin.
+  const guardOrder = current.kind === 'OUTBOUND' && next !== 'FAILED';
+  if (guardOrder) {
+    const shippable = await prisma.order.count({
+      where: { id: current.orderId, ...SHIPPABLE_ORDER },
+    });
+    if (shippable === 0) {
+      throw new CourierError(
+        409,
+        'ORDER_NOT_READY',
+        "Buyurtma bekor qilingan yoki to'lanmagan — «Bajarilmadi» deb belgilang",
+      );
+    }
   }
 
   // Surat FAQAT yakuniy holatlarga biriktiriladi.
@@ -376,7 +444,13 @@ export async function updateDeliveryStatus(
     // Shart bilan yangilash: parallel so'rov holatni allaqachon
     // o'zgartirgan bo'lsa, 0 qator tegadi va biz to'xtaymiz.
     const updated = await tx.delivery.updateMany({
-      where: { id: deliveryId, status: current.status, courierId: courier.id },
+      where: {
+        id: deliveryId,
+        status: current.status,
+        courierId: courier.id,
+        // Yuqoridagi tekshiruv bilan shu yozuv orasida bekor qilinsa ham o'tmaydi.
+        ...(guardOrder ? { order: SHIPPABLE_ORDER } : {}),
+      },
       data: {
         status: next,
         ...(next === 'PICKED_UP' ? { pickedUpAt: now } : {}),

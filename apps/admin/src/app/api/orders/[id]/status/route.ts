@@ -1,26 +1,29 @@
 // PATCH /api/orders/[id]/status — buyurtma statusini OLDINGA suradi (admin fulfillment).
-// Faqat ADMIN/SUPER_ADMIN. Forward-only holat mashinasi (orqaga qaytish yo'q).
+// Faqat ADMIN/SUPER_ADMIN. Qoidalar — @ecom/core-domain `order-fulfillment`:
+//   • faqat oldinga, orqaga qaytish yo'q;
+//   • PAID qo'lda qo'yilmaydi — uni to'lov oqimlari qo'yadi (Click/Payme webhook,
+//     UZCARD chek tasdig'i: PATCH /api/orders/[id]/payment, naqd — yetkazilganda);
+//   • oldindan to'lanadigan buyurtma pul tushmaguncha CONFIRMED'dan nariga o'tmaydi.
 //
 // Yon ta'sirlar (atomik $transaction) — fulfillment-server.applyFulfillmentTransition:
 //   • SHIPPED / OUT_FOR_DELIVERY → shippedAt
-//   • DELIVERED → deliveredAt + soldCount++ va COD bo'lsa Payment PAID + order.paidAt/paidTotal.
+//   • DELIVERED → deliveredAt + soldCount++ va naqd buyurtmada COD Payment PAID + paidAt/paidTotal.
 // CANCELLED / RETURNED / REFUNDED bu yerda EMAS — mijoz cancel/return route'lari (apps/web)
 // zaxirani qaytaradi; refund alohida oqim.
 
+import {
+  canAdminTransition,
+  FULFILLMENT_FLOW,
+  orderPaymentState,
+  type FulfillmentStatus,
+} from '@ecom/core-domain';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
-import {
-  applyFulfillmentTransition,
-  canTransition,
-  ConcurrentTransitionError,
-  FULFILLMENT_FLOW,
-  FULFILLMENT_TARGETS,
-  type FulfillmentStatus,
-} from '@/lib/fulfillment-server';
+import { applyFulfillmentTransition, ConcurrentTransitionError } from '@/lib/fulfillment-server';
 
 import type { NextRequest } from 'next/server';
 
@@ -28,7 +31,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
-  status: z.enum(FULFILLMENT_TARGETS as [FulfillmentStatus, ...FulfillmentStatus[]]),
+  status: z.enum(FULFILLMENT_FLOW as unknown as [FulfillmentStatus, ...FulfillmentStatus[]]),
   comment: z.string().trim().max(300).optional(),
 });
 
@@ -46,6 +49,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   const { status: next, comment } = parsed.data;
 
+  if (next === 'PAID') {
+    return apiError(
+      409,
+      'PAID_NOT_MANUAL',
+      "PAID qo'lda qo'yilmaydi: uni to'lov tasdig'i qo'yadi (UZCARD cheki — «To'lovni tekshirish», Click/Payme — avtomatik)",
+    );
+  }
+
   const order = await prisma.order.findUnique({
     where: { id: params.id },
     select: {
@@ -56,6 +67,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       paidAt: true,
       shippedAt: true,
       items: { select: { productId: true, quantity: true } },
+      payments: { select: { provider: true, status: true } },
     },
   });
   if (!order) return apiError(404, 'NOT_FOUND', 'Buyurtma topilmadi');
@@ -67,7 +79,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       `«${order.status}» holatidagi buyurtmani fulfillment orqali o'zgartirib bo'lmaydi`,
     );
   }
-  if (!canTransition(order.status, next)) {
+
+  const payment = orderPaymentState(order);
+  if (!canAdminTransition(order.status, next, payment)) {
+    if (payment === 'AWAITING_PAYMENT' && next !== 'CONFIRMED') {
+      return apiError(
+        409,
+        'PAYMENT_REQUIRED',
+        "To'lov hali tushmagan: oldindan to'lanadigan buyurtma to'lov tasdiqlanmaguncha CONFIRMED'dan nariga o'tmaydi",
+      );
+    }
     return apiError(
       409,
       'INVALID_TRANSITION',
@@ -78,7 +99,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   let result;
   try {
     result = await prisma.$transaction((tx) =>
-      applyFulfillmentTransition(tx, order, next, { changedBy: user.id, comment }),
+      applyFulfillmentTransition(tx, order, next, payment, { changedBy: user.id, comment }),
     );
   } catch (e) {
     if (e instanceof ConcurrentTransitionError) {

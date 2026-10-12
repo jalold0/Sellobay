@@ -11,13 +11,17 @@ Bu loyiha **monorepo** (Turborepo + pnpm workspaces). Quyidagi qoidalarga rioya 
   qarang `graveyard/README.md`.)
 - **NestJS mikroservislar (`apps/backend`, ADR 0012, YANGI — bosqichma-bosqich):** gateway + auth +
   catalog + orders, RabbitMQ, Redis, TypeORM, Docker. Hozir gateway eski Next.js API'ga proksi qiladi;
-  route ko'chirilgach eski Next.js route **o'chiriladi** (bitta route — bitta egasi, aks holda
-  «split-brain» — `graveyard/README.md` ogohlantirishi). Qarang `apps/backend/README.md`.
+  domen yangi servisga ko'chirilmaguncha uning yagona egasi `apps/web`. Route ko'chirilgach eski
+  Next.js route **o'chiriladi** (bitta route — bitta egasi, aks holda «split-brain» —
+  `graveyard/README.md` ogohlantirishi). Qarang `apps/backend/README.md`.
 - **Frontend (web):** Next.js 14 App Router + Tailwind + shadcn/ui (`@ecom/ui`)
 - **Mobile:** Expo (React Native, Expo Router)
 - **DB:** PostgreSQL (Neon) — sxema va migratsiya faqat Prisma (`packages/database`); `apps/backend`
   (NestJS) TypeORM'ni faqat MAVJUD sxema ustidan o'qish/yozish uchun ishlatadi, `synchronize` HECH QACHON
-- **Cache/Queue:** Redis + BullMQ (rejalashtirilgan — hozircha `unstable_cache`)
+- **Cache/Queue:** Redis + RabbitMQ (ADR 0012) — NestJS stack'ida ishlatiladi; `apps/web` hali
+  `unstable_cache` bilan. Docker: `pnpm docker:up` — web'ni lokal ishlab chiqish infratuzilmasi,
+  `infrastructure/docker/docker-compose.backend.yml` — to'liq NestJS staging (ikkalasi 5432 ni
+  band qiladi, bir vaqtda ko'tarilmaydi)
 - **Search:** Elasticsearch (rejalashtirilgan — hozircha DB query)
 - **i18n:** `@ecom/i18n` — har doim `pickLocalized()` orqali, hardcode YO'Q
 - **Auth:** `@ecom/auth` — argon2 (parol), jose (JWT)

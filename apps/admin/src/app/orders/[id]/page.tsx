@@ -39,13 +39,13 @@ import { useParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
+import { VerifyPaymentForm } from '../../../components/payments/verify-payment-form';
 import {
   ORDER_STATUS_LABELS,
   OrderStatusBadge,
 } from '../../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../../components/status/payment-status-badge';
 import {
-  forwardStatuses,
   getOrderDetail,
   reviewPayment,
   updateOrderStatus,
@@ -95,7 +95,7 @@ export default function OrderDetailPage() {
     void load();
   };
 
-  const onPayment = async (action: 'verify' | 'reject') => {
+  const onPayment = async (action: 'verify' | 'reject', receivedAmount?: string) => {
     let comment: string | undefined;
     if (action === 'reject') {
       const reason = window.prompt("To'lovni rad etish sababi (ixtiyoriy):");
@@ -103,7 +103,7 @@ export default function OrderDetailPage() {
       comment = reason.trim() || undefined;
     }
     setBusy(true);
-    const res = await reviewPayment(id, action, comment);
+    const res = await reviewPayment(id, action, { comment, receivedAmount });
     setBusy(false);
     if (!res.success) {
       toast({ title: res.error.message, variant: 'destructive' });
@@ -144,7 +144,8 @@ export default function OrderDetailPage() {
     );
   }
 
-  const nextStatuses = forwardStatuses(order.status);
+  // Server to'lov holatini hisobga olib beradi — PATCH ham aynan shu qoidani tekshiradi.
+  const nextStatuses = order.allowedNextStatuses;
   const showManualCard = order.manualCard?.pending;
 
   return (
@@ -218,24 +219,14 @@ export default function OrderDetailPage() {
                     {order.manualCard!.note}
                   </p>
                 ) : null}
-                <div className="mt-2 flex gap-2">
-                  <Button
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => void onPayment('verify')}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    <Check size={14} className="mr-1" /> Tasdiqlash
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busy}
-                    onClick={() => void onPayment('reject')}
-                    className="text-red-600 hover:bg-red-50"
-                  >
-                    <X size={14} className="mr-1" /> Rad etish
-                  </Button>
+                <div className="mt-2">
+                  <VerifyPaymentForm
+                    inputId={`received-${order.id}`}
+                    expected={order.grandTotal}
+                    busy={busy}
+                    onVerify={(amount) => void onPayment('verify', amount)}
+                    onReject={() => void onPayment('reject')}
+                  />
                 </div>
               </div>
             </div>
