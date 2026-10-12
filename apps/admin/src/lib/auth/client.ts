@@ -360,6 +360,14 @@ export function updateOrderStatus(id: string, status: AdminOrderStatus, comment?
   });
 }
 
+/** Buyurtmani bekor qilish (tovar hali omborda). To'langan bo'lsa `refundRequired: true`. */
+export function cancelOrder(id: string, reason: string) {
+  return api<{ id: string; number: string; status: 'CANCELLED'; refundRequired: boolean }>(
+    `/api/orders/${id}/cancel`,
+    { method: 'POST', body: JSON.stringify({ reason }) },
+  );
+}
+
 // Karta orqali qo'lda to'lov — tasdiqlashni kutayotgan buyurtmalar
 export interface PaymentReviewItem {
   paymentId: string;
@@ -398,6 +406,8 @@ export interface AdminOrderDetail {
   paymentProvider: string;
   /** Server hisoblagan keyingi statuslar (to'lov holatini hisobga olib). Bo'sh — o'zgartirib bo'lmaydi. */
   allowedNextStatuses: AdminOrderStatus[];
+  /** Tovar hali omborda — admin bekor qila oladi. */
+  canCancel: boolean;
   subtotal: number;
   shippingTotal: number;
   discountTotal: number;
@@ -658,4 +668,11 @@ export function dispatchReturn(orderId: string) {
     `/api/returns/${orderId}/dispatch`,
     { method: 'POST' },
   );
+}
+
+/** Mijoz tovarni o'zi olib keldi — admin qabul qiladi, zaxira shu paytda qaytadi. */
+export function receiveReturn(orderId: string) {
+  return api<{ deliveryId: string; stockRestocked: number }>(`/api/returns/${orderId}/receive`, {
+    method: 'POST',
+  });
 }

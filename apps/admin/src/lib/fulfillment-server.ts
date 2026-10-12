@@ -3,24 +3,18 @@
 // funksiyalar `tx: Prisma.TransactionClient` qabul qiladi — chaqiruvchi $transaction'ni ochadi.
 
 // O'tish qonuniyligi (qaysi statusga, qaysi to'lov holatida) — @ecom/core-domain
-// `order-fulfillment` da; bu fayl faqat DB yon ta'sirlarini qo'llaydi.
+// `order-fulfillment` da; DELIVERED yon ta'sirlari (COD + soldCount) — @ecom/order-ops
+// (kuryer ilovasi ham aynan shu funksiyani chaqiradi). Bu fayl faqat statusni yozadi.
 
-import {
-  COD_PROVIDER,
-  settlesCodPayment,
-  type FulfillmentStatus,
-  type OrderPaymentState,
-} from '@ecom/core-domain';
+import { type FulfillmentStatus } from '@ecom/core-domain';
+import { settleDeliveredOrder } from '@ecom/order-ops';
 
 import type { Prisma } from '@ecom/database';
 
 export interface FulfillmentOrder {
   id: string;
   status: string; // joriy holat — atomik o'tish sharti uchun
-  grandTotal: Prisma.Decimal;
-  paidAt: Date | null;
   shippedAt: Date | null;
-  items: { productId: string; quantity: number }[];
 }
 
 export interface FulfillmentResult {
@@ -40,35 +34,24 @@ export class ConcurrentTransitionError extends Error {
  * Status o'tishining DB yon ta'sirlarini bitta $transaction ichida qo'llaydi:
  *   • status + OrderStatusHistory
  *   • SHIPPED/OUT_FOR_DELIVERY → shippedAt (agar hali bo'lmasa)
- *   • DELIVERED → deliveredAt + soldCount++ (yetkazilgan = sotilgan) va naqd (COD) buyurtmada
- *     COD to'lovi PAID + order.paidAt/paidTotal.
+ *   • DELIVERED → deliveredAt + `settleDeliveredOrder` (soldCount++, naqd buyurtmada
+ *     COD to'lovi PAID + order.paidAt/paidTotal).
  * Transition qonuniyligi (canAdminTransition) chaqiruvchida tekshirilishi shart.
  */
 export async function applyFulfillmentTransition(
   tx: Prisma.TransactionClient,
   order: FulfillmentOrder,
   next: FulfillmentStatus,
-  payment: OrderPaymentState,
   opts: { changedBy?: string | null; comment?: string } = {},
 ): Promise<FulfillmentResult> {
   const now = new Date();
-  // Faqat naqd buyurtma yetkazilganda "pul olindi" deb yoziladi. Ilgari `!order.paidAt`
-  // edi — to'lanmagan Click/Payme/UZCARD buyurtmasi ham DELIVERED'da PAID bo'lib qolardi.
-  const codSettled = settlesCodPayment(next, payment);
 
   // Skalyar maydonlar — ATOMIK shartli UPDATE bilan yoziladi (nested yozuvsiz).
   const scalar: Record<string, unknown> = { status: next };
   if ((next === 'SHIPPED' || next === 'OUT_FOR_DELIVERY') && !order.shippedAt) {
     scalar.shippedAt = now;
   }
-  if (next === 'DELIVERED') {
-    scalar.deliveredAt = now;
-    // COD — yetkazilganda naqd olindi.
-    if (codSettled) {
-      scalar.paidAt = now;
-      scalar.paidTotal = order.grandTotal;
-    }
-  }
+  if (next === 'DELIVERED') scalar.deliveredAt = now;
 
   // ATOMIK holat o'tishi — faqat joriy (kutilgan) statusdan. Parallel/duplikat PATCH count===0
   // oladi → ConcurrentTransitionError → tx rollback (double soldCount / COD settle oldini oladi).
@@ -78,37 +61,15 @@ export async function applyFulfillmentTransition(
   });
   if (moved.count === 0) throw new ConcurrentTransitionError();
 
-  await tx.order.update({
-    where: { id: order.id },
+  await tx.orderStatusHistory.create({
     data: {
-      statusHistory: {
-        create: {
-          status: next,
-          comment: opts.comment ?? `Holat: ${next}`,
-          changedBy: opts.changedBy ?? null,
-        },
-      },
+      orderId: order.id,
+      status: next,
+      comment: opts.comment ?? `Holat: ${next}`,
+      changedBy: opts.changedBy ?? null,
     },
   });
 
-  if (codSettled) {
-    // Faqat naqd to'lov yozuvi — boshqa provayderlarning PENDING yozuvlariga tegilmaydi.
-    await tx.payment.updateMany({
-      where: { orderId: order.id, provider: COD_PROVIDER, status: 'PENDING' },
-      data: { status: 'PAID', paidAt: now },
-    });
-  }
-
-  // soldCount — haqiqatan yetkazilgan tovarlar bo'yicha. Atomik status guard tufayli
-  // DELIVERED o'tishi faqat bir marta amalga oshadi → ikki marta oshmaydi.
-  if (next === 'DELIVERED') {
-    for (const it of order.items) {
-      await tx.product.update({
-        where: { id: it.productId },
-        data: { soldCount: { increment: it.quantity } },
-      });
-    }
-  }
-
-  return { codSettled, soldCountItems: next === 'DELIVERED' ? order.items.length : 0 };
+  if (next !== 'DELIVERED') return { codSettled: false, soldCountItems: 0 };
+  return settleDeliveredOrder(tx, order.id, now);
 }

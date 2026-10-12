@@ -46,6 +46,7 @@ import {
 } from '../../../components/status/order-status-badge';
 import { PaymentStatusBadge } from '../../../components/status/payment-status-badge';
 import {
+  cancelOrder,
   getOrderDetail,
   reviewPayment,
   updateOrderStatus,
@@ -91,6 +92,31 @@ export default function OrderDetailPage() {
       title: 'Status yangilandi',
       description: `Buyurtma → ${ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS] ?? status}`,
       variant: 'success',
+    });
+    void load();
+  };
+
+  // Bekor qilish — zaxira, coin va promo qaytadi; to'langan bo'lsa pulni qaytarish alohida amal.
+  const onCancel = async () => {
+    const reason = window.prompt('Buyurtmani bekor qilish sababi (mijozga ko`rinadi):');
+    if (reason === null) return;
+    if (reason.trim().length < 3) {
+      toast({ title: 'Sababni yozing', variant: 'destructive' });
+      return;
+    }
+    setBusy(true);
+    const res = await cancelOrder(id, reason.trim());
+    setBusy(false);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: 'Buyurtma bekor qilindi',
+      description: res.data.refundRequired
+        ? 'Zaxira qaytdi. Buyurtma to‘langan — pulni mijozga qaytarishni unutmang.'
+        : 'Zaxira, coin va promokod qaytarildi.',
+      variant: res.data.refundRequired ? 'destructive' : 'success',
     });
     void load();
   };
@@ -178,6 +204,16 @@ export default function OrderDetailPage() {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : null}
+            {order.canCancel ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={busy}
+                onClick={() => void onCancel()}
+              >
+                Bekor qilish
+              </Button>
             ) : null}
           </>
         }

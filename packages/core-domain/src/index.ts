@@ -10,3 +10,4 @@ export * from './loyalty.ts';
 export * from './zone.ts';
 export * from './group-buy.ts';
 export * from './order-fulfillment.ts';
+export * from './order-expiry.ts';

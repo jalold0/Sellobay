@@ -1,7 +1,7 @@
 // GET /api/orders/[id] — buyurtma to'liq tafsiloti (admin). Faqat ADMIN/SUPER_ADMIN.
 // Detal sahifasi shu endpoint'dan real ma'lumot oladi (mock EMAS).
 
-import { adminFulfillmentTargets, orderPaymentState } from '@ecom/core-domain';
+import { adminFulfillmentTargets, canAdminCancel, orderPaymentState } from '@ecom/core-domain';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -97,6 +97,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     paymentProvider: payment?.provider ?? '—',
     // Status menyusi shu ro'yxatdan quriladi — server PATCH'da aynan shu qoidani tekshiradi.
     allowedNextStatuses: adminFulfillmentTargets(o.status, orderPaymentState(o)),
+    // Bekor qilish tugmasi — server POST /cancel da xuddi shu qoidani tekshiradi.
+    canCancel: canAdminCancel(o.status),
     subtotal: Number(o.subtotal),
     shippingTotal: Number(o.shippingTotal),
     discountTotal: Number(o.discountTotal),

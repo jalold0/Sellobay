@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   adminFulfillmentTargets,
+  canAdminCancel,
   canAdminTransition,
   FULFILLMENT_FLOW,
   orderPaymentState,
@@ -116,6 +117,26 @@ describe('canAdminTransition', () => {
 
   it('naqd buyurtmani yetkazish mumkin', () => {
     expect(canAdminTransition('PENDING', 'DELIVERED', 'COD_PENDING')).toBe(true);
+  });
+});
+
+describe('canAdminCancel', () => {
+  it('tovar omborda — bekor qilsa bo‘ladi', () => {
+    for (const s of ['PENDING', 'CONFIRMED', 'PAID', 'PROCESSING', 'PACKED']) {
+      expect(canAdminCancel(s)).toBe(true);
+    }
+  });
+  it('yo‘lga chiqqan yoki yopilgan — yo‘q (qaytarish oqimi)', () => {
+    for (const s of [
+      'SHIPPED',
+      'OUT_FOR_DELIVERY',
+      'DELIVERED',
+      'CANCELLED',
+      'RETURNED',
+      'REFUNDED',
+    ]) {
+      expect(canAdminCancel(s)).toBe(false);
+    }
   });
 });
 

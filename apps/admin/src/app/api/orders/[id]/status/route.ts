@@ -5,7 +5,8 @@
 //     UZCARD chek tasdig'i: PATCH /api/orders/[id]/payment, naqd — yetkazilganda);
 //   • oldindan to'lanadigan buyurtma pul tushmaguncha CONFIRMED'dan nariga o'tmaydi.
 //
-// Yon ta'sirlar (atomik $transaction) — fulfillment-server.applyFulfillmentTransition:
+// Yon ta'sirlar (atomik $transaction) — fulfillment-server.applyFulfillmentTransition
+// (DELIVERED qismi @ecom/order-ops settleDeliveredOrder — kuryer ilovasi bilan umumiy):
 //   • SHIPPED / OUT_FOR_DELIVERY → shippedAt
 //   • DELIVERED → deliveredAt + soldCount++ va naqd buyurtmada COD Payment PAID + paidAt/paidTotal.
 // CANCELLED / RETURNED / REFUNDED bu yerda EMAS — mijoz cancel/return route'lari (apps/web)
@@ -63,10 +64,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       id: true,
       number: true,
       status: true,
-      grandTotal: true,
       paidAt: true,
       shippedAt: true,
-      items: { select: { productId: true, quantity: true } },
       payments: { select: { provider: true, status: true } },
     },
   });
@@ -99,7 +98,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   let result;
   try {
     result = await prisma.$transaction((tx) =>
-      applyFulfillmentTransition(tx, order, next, payment, { changedBy: user.id, comment }),
+      applyFulfillmentTransition(tx, order, next, { changedBy: user.id, comment }),
     );
   } catch (e) {
     if (e instanceof ConcurrentTransitionError) {
