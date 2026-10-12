@@ -33,7 +33,14 @@ Qoidalar (ESLint bilan majburlanadi):
 
 ## Lokal ishga tushirish (Docker)
 
-Docker Desktop kerak (hozirgi kompyuterda o'rnatilmagan).
+Docker Desktop kerak. Real Docker'da tekshirilgan (2026-10-12, Docker 29.8 / WSL2): to'rtta rasm
+qurildi (har biri ~412 MB), 7 konteynerning hammasi `healthy`, butun stack bo'sh holatda ~355 MB RAM.
+Birinchi build sekin (bog'liqliklar konteyner ichida noldan yuklanadi — bu kompyuterda ~78 daqiqa),
+keyingilari kesh bilan tez.
+
+> **Port to'qnashuvi:** `pnpm docker:up` (web'ni lokal ishlab chiqish infratuzilmasi, `ecom-*`) ham
+> 5432 ni band qiladi. Bu stack'ni ko'tarishdan oldin uni to'xtating:
+> `docker compose -f infrastructure/docker/docker-compose.yml stop` (ma'lumotlar volume'da qoladi).
 
 ```bash
 cp infrastructure/docker/backend.env.example infrastructure/docker/.env.backend   # sirlarni to'ldiring
@@ -72,4 +79,6 @@ JWT_SECRET=<32+ belgi> REDIS_URL=redis://127.0.0.1:6379 pnpm --filter @ecom/back
 - Servislardagi haqiqiy route'lar va TypeORM entity'lari (hozir `databaseModule([])`).
 - `notification-service` (push/SMS/email): hodisa shartnomasi `src/common/events.ts` da tayyor.
 - Buyurtma uchun «transactional outbox» (baza yozuvi va hodisa bitta tranzaksiyada emas).
-- Docker image'lar real Docker'da hali qurilmagan (Dockerfile mantiqi `pnpm deploy` + `node dist/...` bilan lokal tekshirilgan).
+- `INTERNAL_API_KEY` tekshiruvini real stack'da sinash: servislarda hali biznes route yo'q, Nest guard'i esa
+  faqat mos route'da ishlaydi (kalitsiz so'rov hozir 404). Unit testlarda qoplangan; birinchi route
+  ko'chganda staging'da tekshiriladi.
