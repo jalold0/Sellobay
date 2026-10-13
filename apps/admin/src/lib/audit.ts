@@ -31,6 +31,7 @@ export type AuditAction =
   | 'shipment.receive'
   | 'marketplace.settings.update'
   | 'seller.fulfillment_model'
+  | 'seller.bank'
   | 'payout.create'
   | 'payout.paid'
   | 'payout.cancel'
