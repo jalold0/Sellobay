@@ -92,7 +92,25 @@ const orderSelect = Prisma.validator<Prisma.OrderSelect>()({
   },
   // Global (Xitoy) buyurtma bosqichi — mijozga ko'rsatiladigan qism
   globalFulfillment: { select: globalFulfillmentSelect },
+  // 3PL (ADR 0015) — kompaniya va trek raqami mijozga ko'rinadi.
+  deliveries: {
+    where: { kind: 'OUTBOUND', carrier: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: { trackingNumber: true, carrierPayload: true },
+  },
 });
+
+/** 3PL: qaysi kompaniya olib bormoqda va trek raqami (bo'lmasa — null). */
+function trackingView(o: OrderRow) {
+  const d = o.deliveries[0];
+  if (!d?.trackingNumber) return null;
+  const payload = d.carrierPayload as { companyName?: unknown } | null;
+  return {
+    company: typeof payload?.companyName === 'string' ? payload.companyName : null,
+    trackingNumber: d.trackingNumber,
+  };
+}
 
 type OrderRow = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
 
@@ -149,6 +167,7 @@ function serialize(o: OrderRow, tariffs?: Parameters<typeof toCustomerGlobalView
     placedAt: o.placedAt.toISOString(),
     paidAt: o.paidAt?.toISOString() ?? null,
     shippedAt: o.shippedAt?.toISOString() ?? null,
+    tracking: trackingView(o),
     deliveredAt: o.deliveredAt?.toISOString() ?? null,
     cancelledAt: o.cancelledAt?.toISOString() ?? null,
     editable: o.status === 'PENDING',

@@ -25,6 +25,7 @@ export type AuditAction =
   | 'order.status'
   | 'order.cancel'
   | 'order.refund'
+  | 'order.carrier'
   | 'return.receive'
   | 'return.dispatch'
   | 'shipment.receive'

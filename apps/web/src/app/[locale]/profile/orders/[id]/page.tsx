@@ -45,6 +45,8 @@ interface OrderDetail {
   notes: string | null;
   deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS';
   placedAt: string;
+  /** 3PL (ADR 0015): kim olib bormoqda va trek raqami. */
+  tracking: { company: string | null; trackingNumber: string } | null;
   editable: boolean;
   shippingAddress: {
     recipientName: string;
@@ -285,6 +287,28 @@ export default function OrderDetailPage() {
           </div>
         ) : null}
       </div>
+
+      {/* 3PL — kim olib bormoqda va trek raqami (kompaniya saytida kuzatish uchun) */}
+      {order.tracking ? (
+        <div className="border-border flex flex-wrap items-center justify-between gap-3 rounded-[18px] border bg-white px-6 py-4">
+          <div>
+            <div className="text-muted-foreground text-[12px] font-semibold">
+              {t('trackingTitle')}
+            </div>
+            <div className="text-brand-ink text-sm font-bold">
+              {order.tracking.company ?? t('trackingCompanyFallback')}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-muted-foreground text-[12px] font-semibold">
+              {t('trackingNumber')}
+            </div>
+            <div className="text-brand-ink select-all font-mono text-sm font-bold">
+              {order.tracking.trackingNumber}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Mahsulotlar + summalar */}
       <div className="border-border rounded-[18px] border bg-white p-6 md:p-7">

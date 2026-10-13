@@ -223,6 +223,7 @@ class OrderDetail {
     required this.payment,
     required this.paymentReview,
     this.receiptResubmit,
+    this.tracking,
     required this.placedAt,
     required this.deliveredAt,
     required this.editable,
@@ -255,6 +256,9 @@ class OrderDetail {
       receiptResubmit: order['receiptResubmit'] == null
           ? null
           : ReceiptResubmit.fromJson(order['receiptResubmit'] as Map<String, dynamic>),
+      tracking: order['tracking'] == null
+          ? null
+          : OrderTracking.fromJson(order['tracking'] as Map<String, dynamic>),
       placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
       deliveredAt: DateTime.tryParse(order['deliveredAt'] as String? ?? ''),
       editable: order['editable'] as bool? ?? false,
@@ -296,6 +300,9 @@ class OrderDetail {
 
   /// Karta cheki rad etilgan — yangisini yuborish mumkin. `null` — kerak emas.
   final ReceiptResubmit? receiptResubmit;
+
+  /// 3PL (ADR 0015): kim olib bormoqda va trek raqami. `null` — hali topshirilmagan.
+  final OrderTracking? tracking;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
   final bool editable;
@@ -321,6 +328,20 @@ class ReceiptResubmit {
 
   final String? reason;
   final DateTime? deadline;
+}
+
+/// Logistika kompaniyasi va trek raqami — mijoz kompaniya saytida kuzatishi uchun.
+class OrderTracking {
+  const OrderTracking({required this.company, required this.trackingNumber});
+
+  factory OrderTracking.fromJson(Map<String, dynamic> json) => OrderTracking(
+        company: json['company'] as String?,
+        trackingNumber: json['trackingNumber'] as String? ?? '',
+      );
+
+  /// Kompaniya nomi; noma'lum bo'lsa `null`.
+  final String? company;
+  final String trackingNumber;
 }
 
 /// Raqam + telefon bo'yicha kuzatilgan buyurtma (`POST /api/orders/track`).

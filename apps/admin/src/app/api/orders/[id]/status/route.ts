@@ -18,6 +18,11 @@ import {
   orderPaymentState,
   type FulfillmentStatus,
 } from '@ecom/core-domain';
+import {
+  applyFulfillmentTransition,
+  ConcurrentTransitionError,
+  OpenShipmentsError,
+} from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
@@ -25,11 +30,6 @@ import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { writeAudit } from '@/lib/audit';
-import {
-  applyFulfillmentTransition,
-  ConcurrentTransitionError,
-  OpenShipmentsError,
-} from '@/lib/fulfillment-server';
 
 import type { NextRequest } from 'next/server';
 

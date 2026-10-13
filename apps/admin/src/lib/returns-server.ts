@@ -36,13 +36,21 @@ import type { Prisma } from '@ecom/database';
 export class ReturnError extends ApiDomainError {}
 
 /**
- * Mijoz qaytargan buyurtma: RETURNED, yoki pul tovar kelishidan OLDIN qaytarilgan bo'lsa
- * REFUNDED. Ikkinchisini bekor qilingan-va-pul-qaytarilgan buyurtmadan `deliveredAt` ajratadi
- * (bekor qilish faqat jo'natilmagan buyurtmada bo'ladi). Ilgari faqat RETURNED qabul qilinardi:
- * pul oldin qaytarilsa tovar qabul qilinmay, zaxira hech qachon qaytmasdi.
+ * Mijoz qaytargan (yoki topshirishda rad etgan — ADR 0015) buyurtma: RETURNED, yoki pul tovar
+ * kelishidan OLDIN qaytarilgan bo'lsa REFUNDED. Ikkinchisini bekor qilingan-va-pul-qaytarilgan
+ * buyurtmadan tovar ombordan chiqqani (`shippedAt`/`deliveredAt`) ajratadi — bekor qilish
+ * faqat jo'natilmagan buyurtmada bo'ladi. Ilgari faqat RETURNED qabul qilinardi: pul oldin
+ * qaytarilsa tovar qabul qilinmay, zaxira hech qachon qaytmasdi.
  */
-function isCustomerReturn(order: { status: string; deliveredAt: Date | null }): boolean {
-  return order.status === 'RETURNED' || (order.status === 'REFUNDED' && order.deliveredAt !== null);
+function isCustomerReturn(order: {
+  status: string;
+  deliveredAt: Date | null;
+  shippedAt: Date | null;
+}): boolean {
+  return (
+    order.status === 'RETURNED' ||
+    (order.status === 'REFUNDED' && (order.deliveredAt !== null || order.shippedAt !== null))
+  );
 }
 
 /**
@@ -106,6 +114,7 @@ export async function createReturnDeliveries(orderId: string) {
       number: true,
       status: true,
       deliveredAt: true,
+      shippedAt: true,
       shippingAddress: {
         select: {
           region: true,
@@ -249,6 +258,7 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
       id: true,
       status: true,
       deliveredAt: true,
+      shippedAt: true,
       items: { select: { id: true, quantity: true } },
       deliveries: { where: { kind: 'RETURN' }, select: { id: true } },
     },
@@ -284,7 +294,7 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
         kind: 'RETURN',
         status: 'DELIVERED',
         method: 'PICKUP_POINT',
-        destinationAddress: 'Mijoz o`zi topshirdi (admin qabul qildi)',
+        destinationAddress: 'Omborga qaytdi (admin qabul qildi)',
         deliveredAt: now,
         items: {
           create: order.items.map((i) => ({ orderItemId: i.id, quantity: i.quantity })),
@@ -325,7 +335,11 @@ export async function receiveReturnInPerson(orderId: string, adminUserId: string
 export async function listPendingReturns(limit = 50) {
   const rows = await prisma.order.findMany({
     where: {
-      OR: [{ status: 'RETURNED' }, { status: 'REFUNDED', deliveredAt: { not: null } }],
+      OR: [
+        { status: 'RETURNED' },
+        { status: 'REFUNDED', deliveredAt: { not: null } },
+        { status: 'REFUNDED', shippedAt: { not: null } },
+      ],
       deliveries: { none: { kind: 'RETURN' } },
     },
     orderBy: { updatedAt: 'desc' },

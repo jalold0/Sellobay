@@ -122,6 +122,8 @@ const SHIPPABLE_ORDER: Prisma.OrderWhereInput = {
  */
 const AVAILABLE_DELIVERY: Prisma.DeliveryWhereInput = {
   courierId: null,
+  // 3PL'ga topshirilgan yetkazish — o'z kuryerlarimizniki emas (bitta yetkazish — bitta egasi).
+  carrier: null,
   status: 'ASSIGNED',
   OR: [
     { kind: 'RETURN' },

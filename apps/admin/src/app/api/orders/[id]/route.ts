@@ -1,7 +1,12 @@
 // GET /api/orders/[id] — buyurtma to'liq tafsiloti (admin). Faqat ADMIN/SUPER_ADMIN.
 // Detal sahifasi shu endpoint'dan real ma'lumot oladi (mock EMAS).
 
-import { adminFulfillmentTargets, canAdminCancel, orderPaymentState } from '@ecom/core-domain';
+import {
+  adminFulfillmentTargets,
+  canAdminCancel,
+  carrierEventsFor,
+  orderPaymentState,
+} from '@ecom/core-domain';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
@@ -10,7 +15,32 @@ import { adminProductImage } from '@/lib/product-image';
 import { manualCardPayload, receiptSrc } from '@/lib/receipt';
 import { remainingFor } from '@/lib/refund-server';
 
+import type { Prisma } from '@ecom/database';
 import type { NextRequest } from 'next/server';
+
+function carrierView(
+  d:
+    | {
+        carrier: string | null;
+        trackingNumber: string | null;
+        carrierPayload: Prisma.JsonValue;
+        carrierStatus: string | null;
+        carrierUpdatedAt: Date | null;
+        failureReason: string | null;
+      }
+    | undefined,
+) {
+  if (!d?.carrier) return null;
+  const payload = d.carrierPayload as { companyName?: unknown } | null;
+  return {
+    provider: d.carrier,
+    company: typeof payload?.companyName === 'string' ? payload.companyName : d.carrier,
+    trackingNumber: d.trackingNumber,
+    status: d.carrierStatus,
+    updatedAt: d.carrierUpdatedAt?.toISOString() ?? null,
+    failureReason: d.failureReason,
+  };
+}
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -73,6 +103,22 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         select: { status: true, comment: true, changedAt: true },
       },
       // Sotuvchi jo'natmalari (ADR 0015) — «Qadoqlandi»dan keyin faqat hammasi omborda bo'lsa.
+      // Oxirgi masofa (ADR 0015): 3PL yoki o'z kuryerimiz.
+      deliveries: {
+        where: { kind: 'OUTBOUND' },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: {
+          status: true,
+          courierId: true,
+          carrier: true,
+          trackingNumber: true,
+          carrierPayload: true,
+          carrierStatus: true,
+          carrierUpdatedAt: true,
+          failureReason: true,
+        },
+      },
       sellerShipments: {
         orderBy: { createdAt: 'asc' },
         select: {
@@ -157,6 +203,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       changedAt: h.changedAt.toISOString(),
       comment: h.comment ?? undefined,
     })),
+    carrier: carrierView(o.deliveries[0]),
+    // 3PL tugmalari — o'z kuryerimiz olgan yetkazishga emas.
+    carrierEvents: o.deliveries[0]?.courierId
+      ? []
+      : carrierEventsFor(o.status, Boolean(o.deliveries[0]?.carrier)),
     shipments: o.sellerShipments.map((s) => ({
       id: s.id,
       model: s.fulfillmentModel,
