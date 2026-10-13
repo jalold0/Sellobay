@@ -5,6 +5,10 @@
 // Oqim: mijoz havola yuboradi (NEW) → operator tekshiradi (IN_REVIEW) →
 //       narx taklif qiladi (QUOTED) → mijoz qabul/rad etadi (ACCEPTED/REJECTED) →
 //       to'lovdan keyin Order'ga aylanadi (ORDERED).
+//
+// Qabul qilinganda (ADR 0015) taklif narxida SHAXSIY global tovar yaratiladi
+// (`GlobalSource.sourcingRequestId`) — katalogda ko'rinmaydi, faqat shu mijoz, shu sonda va
+// taklif muddati ichida buyurtma qila oladi. Mijoz darhol to'lov sahifasiga o'tadi.
 
 import { randomInt } from 'crypto';
 
@@ -18,6 +22,7 @@ import {
   type SourcingPlatform,
 } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
+import { locales, t as translate } from '@ecom/i18n';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
@@ -181,6 +186,106 @@ function toOperator(r: NonNullable<SourcingRow>) {
 
 export type PublicSourcingRequest = ReturnType<typeof toPublic>;
 
+/** To'lov sahifasiga o'tish uchun — savatga qo'shiladigan shaxsiy tovar. */
+export interface SourcingCheckout {
+  productId: string;
+  slug: string;
+  name: Record<string, string>;
+  unitPrice: number;
+  quantity: number;
+}
+
+/** Qabul qilingan, hali buyurtma qilinmagan va taklif muddati tugamagan. */
+export function canCheckoutQuote(
+  r: { status: string; orderId: string | null; quoteExpiresAt: Date | null },
+  now: Date,
+): boolean {
+  return (
+    r.status === 'ACCEPTED' &&
+    r.orderId === null &&
+    r.quoteExpiresAt !== null &&
+    r.quoteExpiresAt > now
+  );
+}
+
+/** So'rovlar bo'yicha to'lovga tayyor shaxsiy tovarlar (bitta so'rov bilan). */
+async function checkoutsFor(
+  rows: Array<NonNullable<SourcingRow>>,
+): Promise<Map<string, SourcingCheckout>> {
+  const now = new Date();
+  const ready = rows.filter((r) => canCheckoutQuote(r, now));
+  if (ready.length === 0) return new Map();
+  const sources = await prisma.globalSource.findMany({
+    where: { sourcingRequestId: { in: ready.map((r) => r.id) } },
+    select: {
+      sourcingRequestId: true,
+      product: { select: { id: true, slug: true, name: true, basePrice: true } },
+    },
+  });
+  const qtyById = new Map(ready.map((r) => [r.id, r.qty]));
+  return new Map(
+    sources.map((g) => [
+      g.sourcingRequestId!,
+      {
+        productId: g.product.id,
+        slug: g.product.slug,
+        name: g.product.name as Record<string, string>,
+        unitPrice: Number(g.product.basePrice),
+        quantity: qtyById.get(g.sourcingRequestId!) ?? 1,
+      },
+    ]),
+  );
+}
+
+/**
+ * Taklif narxidagi shaxsiy global tovar. Idempotent: allaqachon yaratilgan bo'lsa — o'sha.
+ * Nomi `@ecom/i18n` dan (global.quoteProduct.name) — har uch tilda.
+ */
+async function ensureQuoteProduct(
+  tx: Prisma.TransactionClient,
+  r: NonNullable<SourcingRow>,
+): Promise<void> {
+  const existing = await tx.globalSource.findUnique({
+    where: { sourcingRequestId: r.id },
+    select: { id: true },
+  });
+  if (existing) return;
+  if (r.quotedUnit === null || r.quotedPriceCny === null) {
+    throw new SourcingError(409, 'NOT_QUOTED', 'Taklifda narx yo‘q');
+  }
+  const name = Object.fromEntries(
+    locales.map((l) => [l, translate('global.quoteProduct.name', l).replace('{number}', r.number)]),
+  );
+  const note = r.variantNote ?? '';
+  await tx.product.create({
+    data: {
+      slug: r.number.toLowerCase(),
+      sku: r.number,
+      name,
+      description: Object.fromEntries(locales.map((l) => [l, note])),
+      status: 'ACTIVE',
+      basePrice: r.quotedUnit,
+      publishedAt: new Date(),
+      // Platformaning o'z tovari (sotuvchisiz); global — jo'natma emas, kargo orqali keladi.
+      fulfillmentModel: 'FBO',
+      globalSource: {
+        create: {
+          platform: r.platform,
+          sourceUrl: r.sourceUrl,
+          normalizedUrl: r.normalizedUrl,
+          externalItemId: r.externalItemId,
+          priceCny: r.quotedPriceCny,
+          estimatedWeightKg: r.quotedWeightKg ?? new Prisma.Decimal(0),
+          defaultFreightMode: r.freightMode,
+          priceBreakdown: r.quotedBreakdown ?? Prisma.JsonNull,
+          pricedAt: r.quotedAt,
+          sourcingRequestId: r.id,
+        },
+      },
+    },
+  });
+}
+
 /** Taklif muddati o'tganmi (DB'da EXPIRED bo'lmasa ham). */
 function isQuoteExpired(r: { status: string; quoteExpiresAt: Date | null }, now: Date): boolean {
   return r.status === 'QUOTED' && r.quoteExpiresAt !== null && r.quoteExpiresAt < now;
@@ -225,7 +330,7 @@ export async function createSourcingRequest(
       status: { in: [...OPEN_STATUSES] },
     },
   });
-  if (duplicate) return { request: toPublic(duplicate), duplicate: true };
+  if (duplicate) return { request: { ...toPublic(duplicate), checkout: null }, duplicate: true };
 
   const created = await prisma.sourcingRequest.create({
     data: {
@@ -243,7 +348,7 @@ export async function createSourcingRequest(
     },
   });
 
-  return { request: toPublic(created), duplicate: false };
+  return { request: { ...toPublic(created), checkout: null }, duplicate: false };
 }
 
 export async function listUserSourcingRequests(userId: string) {
@@ -253,11 +358,14 @@ export async function listUserSourcingRequests(userId: string) {
     take: 100,
   });
   const now = new Date();
+  const checkouts = await checkoutsFor(rows);
   return {
     items: rows.map((r) => {
       const pub = toPublic(r);
       // Muddati o'tgan taklif mijozga EXPIRED bo'lib ko'rinadi (DB'ni yozmasdan).
-      return isQuoteExpired(r, now) ? { ...pub, status: 'EXPIRED' as const } : pub;
+      return isQuoteExpired(r, now)
+        ? { ...pub, status: 'EXPIRED' as const, checkout: null }
+        : { ...pub, checkout: checkouts.get(r.id) ?? null };
     }),
   };
 }
@@ -266,7 +374,10 @@ export async function getUserSourcingRequest(id: string, userId: string) {
   const row = await prisma.sourcingRequest.findFirst({ where: { id, userId } });
   if (!row) throw new SourcingError(404, 'NOT_FOUND', 'So‘rov topilmadi');
   const pub = toPublic(row);
-  return isQuoteExpired(row, new Date()) ? { ...pub, status: 'EXPIRED' as const } : pub;
+  const checkout = (await checkoutsFor([row])).get(row.id) ?? null;
+  return isQuoteExpired(row, new Date())
+    ? { ...pub, status: 'EXPIRED' as const, checkout: null }
+    : { ...pub, checkout };
 }
 
 /** Mijoz taklifni qabul qiladi yoki rad etadi. */
@@ -287,15 +398,24 @@ export async function respondToQuote(
     throw new SourcingError(409, 'QUOTE_EXPIRED', 'Taklif muddati tugagan — yangi hisob so‘rang');
   }
 
-  const updated = await prisma.sourcingRequest.update({
-    where: { id },
-    data: {
-      status: input.action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED',
-      respondedAt: new Date(),
-      ...(input.action === 'REJECT' && input.reason ? { customerNote: input.reason } : {}),
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    // ATOMIK: parallel ikki «qabul» bitta tovar yaratadi, ikkinchisi 409.
+    const moved = await tx.sourcingRequest.updateMany({
+      where: { id, status: 'QUOTED' },
+      data: {
+        status: input.action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED',
+        respondedAt: new Date(),
+        ...(input.action === 'REJECT' && input.reason ? { customerNote: input.reason } : {}),
+      },
+    });
+    if (moved.count === 0) {
+      throw new SourcingError(409, 'NOT_QUOTED', 'Bu so‘rovda javob kutilayotgan taklif yo‘q');
+    }
+    if (input.action === 'ACCEPT') await ensureQuoteProduct(tx, row);
+    return tx.sourcingRequest.findUniqueOrThrow({ where: { id } });
   });
-  return toPublic(updated);
+  const checkout = (await checkoutsFor([updated])).get(updated.id) ?? null;
+  return { ...toPublic(updated), checkout };
 }
 
 /** Mijoz o'z so'rovini bekor qiladi (hali ORDERED bo'lmagan bo'lsa). */
@@ -309,7 +429,7 @@ export async function cancelSourcingRequest(id: string, userId: string) {
     where: { id },
     data: { status: 'CANCELLED' },
   });
-  return toPublic(updated);
+  return { ...toPublic(updated), checkout: null };
 }
 
 // ===================================================================

@@ -90,5 +90,10 @@ export async function applyFulfillmentTransition(
   });
 
   if (next !== 'DELIVERED') return { codSettled: false, soldCountItems: 0 };
+  // Global buyurtma — operator zayavkasi ham «mijoz oldi» (bitta haqiqat, ADR 0015).
+  await tx.globalFulfillment.updateMany({
+    where: { orderId: order.id, status: { notIn: ['DELIVERED', 'CANCELLED', 'REFUNDED'] } },
+    data: { status: 'DELIVERED', deliveredAt: now },
+  });
   return settleDeliveredOrder(tx, order.id, now);
 }

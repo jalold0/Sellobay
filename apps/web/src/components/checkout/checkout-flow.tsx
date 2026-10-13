@@ -56,11 +56,14 @@ export function CheckoutFlow() {
   // (turli muddat va yetkazish). Savat sahifasi qaysi guruh checkout qilinayotganini
   // `?scope=` bilan aytadi; berilmasa hammasi olinadi (aralash bo'lmagan holat).
   const scope = (searchParams.get('scope') ?? '').toUpperCase();
+  // Narx taklifi qabul qilinganda — faqat o'sha tovar (u alohida buyurtma qilinadi, ADR 0015).
+  const only = searchParams.get('only');
   const items = React.useMemo(() => {
+    if (only) return allItems.filter((i) => i.productId === only);
     if (scope === 'GLOBAL') return allItems.filter((i) => i.isGlobal);
     if (scope === 'LOCAL') return allItems.filter((i) => !i.isGlobal);
     return allItems;
-  }, [allItems, scope]);
+  }, [allItems, scope, only]);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
 
@@ -410,7 +413,7 @@ export function CheckoutFlow() {
     const orderNumber = result.data.order.number;
     const orderId = result.data.order.id;
     // Faqat shu guruh buyurtma qilindi — boshqa guruh savatda qolishi kerak
-    if (scope === 'GLOBAL' || scope === 'LOCAL') {
+    if (only || scope === 'GLOBAL' || scope === 'LOCAL') {
       items.forEach((it) => removeItem(it.id));
     } else {
       clear();

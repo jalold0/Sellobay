@@ -92,6 +92,17 @@ export async function releaseCancelledOrder(
   // Sotuvchi qadoqlab yurmasin — ochiq jo'natmalar yopiladi (ADR 0015).
   await cancelSellerShipments(tx, order.id, now);
 
+  // Narx taklifi: to'lanmagan buyurtma bekor bo'lsa — taklif muddati ichida qayta to'lash
+  // mumkin; to'langani bekor bo'lsa — so'rov ham bekor.
+  await tx.sourcingRequest.updateMany({
+    where: { orderId: order.id, status: 'ACCEPTED' },
+    data: { orderId: null },
+  });
+  await tx.sourcingRequest.updateMany({
+    where: { orderId: order.id, status: 'ORDERED' },
+    data: { status: 'CANCELLED' },
+  });
+
   return {
     stock,
     loyalty,

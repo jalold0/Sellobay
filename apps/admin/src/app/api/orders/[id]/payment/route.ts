@@ -6,7 +6,7 @@
 // Faqat ADMIN/SUPER_ADMIN. Faqat UZCARD + PENDING to'lovga ta'sir qiladi.
 
 import { Prisma } from '@ecom/database';
-import { grantOrderEarn, openSellerShipments } from '@ecom/order-ops';
+import { onOrderPaid } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
@@ -164,14 +164,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           },
         });
 
-        // Sello Coins earn — yaratishda kechiktirilgan edi (UZCARD). To'lov tasdiqlanganda
-        // beriladi. Idempotent (re-verify/double-grant yo'q). Formula @ecom/core-domain'dan —
-        // ilgari admin'da nusxasi turardi.
-        if (order.userId) {
-          await grantOrderEarn(tx, order.userId, order.grandTotal.toNumber(), order.number);
-        }
-        // Pul tushdi — sotuvchilarga jo'natmalar ochiladi (ADR 0015). Idempotent.
-        await openSellerShipments(tx, order.id, now);
+        // Pul tushdi — Click/Payme bilan bir xil qadamlar: cashback, sotuvchilarga jo'natmalar,
+        // narx taklifi «Buyurtma berildi» (ADR 0015). Idempotent.
+        await onOrderPaid(tx, order.id, now);
         await writeAudit(
           {
             userId: user.id,

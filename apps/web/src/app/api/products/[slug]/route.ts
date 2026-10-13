@@ -4,7 +4,7 @@
 import { ApiDomainError } from '@ecom/api-contract';
 
 import { withApi } from '@/lib/api-handler';
-import { SELLER_IS_ACTIVE } from '@/lib/product-visibility';
+import { PUBLIC_CATALOG } from '@/lib/product-visibility';
 
 import { prisma } from '../../../../lib/db';
 
@@ -21,7 +21,7 @@ export const GET = withApi<{ slug: string }>(async (_req, { params }) => {
       slug: params.slug,
       status: 'ACTIVE',
       deletedAt: null,
-      ...SELLER_IS_ACTIVE,
+      ...PUBLIC_CATALOG,
     },
     include: {
       brand: { select: { id: true, slug: true, name: true, logoUrl: true } },

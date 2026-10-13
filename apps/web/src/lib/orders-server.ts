@@ -30,6 +30,7 @@ import {
 } from '@/lib/inventory-server';
 import { COIN_VALUE_SOM } from '@/lib/loyalty';
 import { InsufficientCoinsError, settleOrderLoyalty } from '@/lib/loyalty-server';
+import { canCheckoutQuote } from '@/lib/sourcing-server';
 import {
   MANUAL_CARD_PROVIDER,
   ReceiptError,
@@ -318,7 +319,7 @@ export async function createOrder(
       taxRate: true,
       sellerId: true,
       // Global (Xitoy) tovarmi? Bo'lsa — zaxira talab qilinmaydi, buyurtma asosida olinadi.
-      globalSource: { select: { id: true, defaultFreightMode: true } },
+      globalSource: { select: { id: true, defaultFreightMode: true, sourcingRequestId: true } },
       // Ombor — varyant + inventar (MVP: bitta ombor, bitta inventar qatori/varyant)
       variants: {
         orderBy: { position: 'asc' },
@@ -336,6 +337,48 @@ export async function createOrder(
     throw new OrderError(400, 'PRODUCT_NOT_FOUND', "Ba'zi mahsulotlar topilmadi yoki faol emas");
   }
   const productById = new Map(products.map((p) => [p.id, p]));
+
+  // 1b. Narx taklifidan yaratilgan SHAXSIY global tovar (ADR 0015) — faqat egasi, taklifdagi
+  //     sonda, taklif muddati ichida va alohida buyurtma bo'lib. Begona odam uchun bunday tovar
+  //     «yo'q» (katalogda ham ko'rinmaydi).
+  let sourcingRequestId: string | null = null;
+  const quoteProduct = products.find((p) => p.globalSource?.sourcingRequestId);
+  if (quoteProduct) {
+    const req = await prisma.sourcingRequest.findUnique({
+      where: { id: quoteProduct.globalSource!.sourcingRequestId! },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        qty: true,
+        orderId: true,
+        quoteExpiresAt: true,
+      },
+    });
+    if (!req || !currentUser || req.userId !== currentUser.id) {
+      throw new OrderError(400, 'PRODUCT_NOT_FOUND', "Ba'zi mahsulotlar topilmadi yoki faol emas");
+    }
+    if (input.items.length > 1) {
+      throw new OrderError(
+        409,
+        'QUOTE_ORDER_ALONE',
+        'Narx taklifi bo‘yicha tovar alohida buyurtma qilinadi — savatdagi boshqa tovarlarni keyin rasmiylashtiring',
+      );
+    }
+    if (!canCheckoutQuote(req, new Date())) {
+      throw new OrderError(
+        409,
+        'QUOTE_NOT_PAYABLE',
+        req.orderId
+          ? 'Bu taklif bo‘yicha buyurtma allaqachon berilgan'
+          : 'Taklif muddati tugagan — yangi hisob so‘rang',
+      );
+    }
+    if (input.items[0]!.quantity !== req.qty) {
+      throw new OrderError(409, 'QUOTE_QTY_MISMATCH', `Taklif ${req.qty} dona uchun berilgan`);
+    }
+    sourcingRequestId = req.id;
+  }
   const productName = (name: unknown): string => (name as { uz?: string })?.uz ?? 'Mahsulot';
 
   // GURUH XARIDI NARXI. Mijoz to'lgan (COMPLETED) guruhning a'zosi bo'lsa, o'sha
@@ -734,6 +777,21 @@ export async function createOrder(
             ...(rawPayload ? { rawPayload } : {}),
           },
         });
+      }
+
+      // 5e. Narx taklifi shu buyurtmaga bog'lanadi (atomik — ikki parallel checkout'dan biri).
+      if (sourcingRequestId) {
+        const linked = await tx.sourcingRequest.updateMany({
+          where: { id: sourcingRequestId, status: 'ACCEPTED', orderId: null },
+          data: { orderId: created.id },
+        });
+        if (linked.count === 0) {
+          throw new OrderError(
+            409,
+            'QUOTE_NOT_PAYABLE',
+            'Bu taklif bo‘yicha buyurtma allaqachon berilgan',
+          );
+        }
       }
 
       // 5f. Naqd buyurtma darhol bajarishga tushadi — sotuvchilarga jo'natmalar shu yerda.

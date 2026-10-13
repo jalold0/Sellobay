@@ -21,7 +21,7 @@ import { isRealProductImageUrl } from '@ecom/utils';
 import * as Sentry from '@sentry/nextjs';
 
 import { prisma } from '@/lib/db';
-import { SELLER_IS_ACTIVE } from '@/lib/product-visibility';
+import { PUBLIC_CATALOG } from '@/lib/product-visibility';
 
 import type { LocalizedText } from './mock-data';
 import type { Prisma } from '@ecom/database';
@@ -124,7 +124,7 @@ export async function listActiveDeals(userId: string | null): Promise<GroupDealV
           { status: 'OPEN', expiresAt: { gt: now } },
           { status: 'COMPLETED', completedAt: { gte: completedSince } },
         ],
-        product: { status: 'ACTIVE', deletedAt: null, ...SELLER_IS_ACTIVE },
+        product: { status: 'ACTIVE', deletedAt: null, ...PUBLIC_CATALOG },
       },
       // Tugashiga eng kam vaqt qolgani birinchi — mijoz uchun eng dolzarbi.
       orderBy: [{ status: 'asc' }, { expiresAt: 'asc' }],

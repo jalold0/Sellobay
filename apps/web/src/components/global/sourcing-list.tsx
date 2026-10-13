@@ -4,13 +4,18 @@
 'use client';
 
 import { Button, Card, EmptyState } from '@ecom/ui';
+import { pickLocales, pickLocalized } from '@ecom/i18n/pick';
 import { Clock, ExternalLink, Loader2, PackageSearch, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import { useCart } from '../../store/cart';
+
 import { formatLeadTime, formatUzs, hoursLeft, SourcingStatusChip } from './sourcing-ui';
 
-import type { ApiEnvelope, SourcingRequestView } from './sourcing-types';
+import type { ApiEnvelope, SourcingCheckout, SourcingRequestView } from './sourcing-types';
 
 interface Props {
   items: SourcingRequestView[];
@@ -53,6 +58,30 @@ function SourcingRow({
   const tc = useTranslations('common');
   const [busy, setBusy] = React.useState<null | 'ACCEPT' | 'REJECT' | 'CANCEL'>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const addItem = useCart((s) => s.addItem);
+
+  // Taklif narxidagi shaxsiy tovar savatga tushadi va to'lov sahifasi faqat u bilan ochiladi.
+  function goToCheckout(c: SourcingCheckout) {
+    addItem({
+      productId: c.productId,
+      name: pickLocalized(
+        c.name,
+        pickLocales.find((l) => l === params?.locale),
+      ),
+      brand: '',
+      slug: c.slug,
+      imageSeed: c.slug,
+      unitPrice: c.unitPrice,
+      currency: 'UZS',
+      quantity: c.quantity,
+      // Son taklifda belgilangan — savatda oshirib bo'lmaydi.
+      maxQuantity: c.quantity,
+      isGlobal: true,
+    });
+    router.push(`/checkout?only=${c.productId}`);
+  }
 
   async function respond(action: 'ACCEPT' | 'REJECT') {
     setBusy(action);
@@ -69,6 +98,7 @@ function SourcingRow({
         return;
       }
       onChanged(body.data);
+      if (action === 'ACCEPT' && body.data.checkout) goToCheckout(body.data.checkout);
     } catch {
       setError(t('error'));
     } finally {
@@ -167,9 +197,27 @@ function SourcingRow({
         </div>
       )}
 
-      {item.status === 'ACCEPTED' && (
-        <p className="bg-success-chip mt-3 rounded-lg px-3 py-2 text-sm text-emerald-800">
-          {t('acceptedNotice')}
+      {item.status === 'ACCEPTED' && item.checkout && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="bg-success-chip rounded-lg px-3 py-2 text-sm text-emerald-800">
+            {t('acceptedNotice')}
+          </p>
+          <Button onClick={() => goToCheckout(item.checkout!)}>{t('pay')}</Button>
+        </div>
+      )}
+
+      {item.status === 'ACCEPTED' && !item.checkout && !item.orderId && (
+        <p className="text-muted-foreground mt-3 text-sm">{t('acceptedExpired')}</p>
+      )}
+
+      {(item.status === 'ORDERED' || (item.status === 'ACCEPTED' && item.orderId)) && (
+        <p className="mt-3 text-sm">
+          <Link
+            href={`/profile/orders/${item.orderId}`}
+            className="text-brand-crimson hover:underline"
+          >
+            {t('orderedNotice')}
+          </Link>
         </p>
       )}
 

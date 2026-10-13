@@ -118,3 +118,17 @@ qiymat bilan) — eski kod bilan mos. Prod Neon'ga merge'dan OLDIN qo'llanadi:
   «Pul qaytarish» navbatiga tushadi. Ombordan chiqqan (`shippedAt`) buyurtma pul oldin
   qaytarilsa ham qabul ro'yxatida qoladi.
 - Mijozga (web va ilova) kompaniya nomi va trek raqami ko'rsatiladi.
+
+## Amalga oshirishdagi aniqliklar (F5 — narx taklifi → to'lov sahifasi)
+
+- Mijoz taklifni qabul qilganda taklif narxida **shaxsiy global tovar** yaratiladi (nomi
+  `@ecom/i18n` `global.quoteProduct.name`, `GlobalSource.sourcingRequestId`). U ommaviy
+  katalogda (ro'yxat, qidiruv, tovar sahifasi, sevimlilar, guruh xaridi) ko'rinmaydi —
+  `PUBLIC_CATALOG`.
+- Mijoz shu zahoti to'lov sahifasiga o'tadi — faqat shu tovar bilan (`/checkout?only=`).
+  Buyurtma qoidalari: faqat so'rov egasi, taklifdagi son, taklif muddati (48 soat) ichida,
+  alohida buyurtma, faqat oldindan to'lov. Buyurtma so'rovga atomik bog'lanadi — ikkinchi
+  buyurtma bo'lmaydi.
+- To'langanda so'rov `ORDERED` (Click, Payme, karta cheki — hammasi `onOrderPaid` orqali).
+  To'lanmagan buyurtma bekor bo'lsa — so'rov yana to'lovni kutadi (muddat ichida); to'langani
+  bekor bo'lsa — so'rov ham `CANCELLED`.

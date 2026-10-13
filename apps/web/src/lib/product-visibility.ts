@@ -8,6 +8,19 @@
 
 import type { Prisma } from '@ecom/database';
 
+/** Sotuvchisi faol (yoki sotuvchisiz) — savat va checkout shu bilan tekshiradi. */
 export const SELLER_IS_ACTIVE = {
   NOT: { seller: { status: { not: 'ACTIVE' } } },
+} as const satisfies Prisma.ProductWhereInput;
+
+/**
+ * Ommaviy katalog (ro'yxat, qidiruv, tovar sahifasi, sevimlilar, guruh xaridi): yuqoridagi
+ * shart + mijozning narx taklifidan yaratilgan SHAXSIY global tovar ko'rinmaydi (ADR 0015).
+ * Uni faqat egasi to'lov sahifasida sotib oladi — buni `orders-server` tekshiradi.
+ */
+export const PUBLIC_CATALOG = {
+  NOT: [
+    { seller: { status: { not: 'ACTIVE' } } },
+    { globalSource: { is: { sourcingRequestId: { not: null } } } },
+  ],
 } as const satisfies Prisma.ProductWhereInput;

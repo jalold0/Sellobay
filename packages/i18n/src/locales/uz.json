@@ -1162,6 +1162,9 @@
         "network": "Aloqa uzildi. Internetni tekshirib, qayta urinib ko‘ring."
       }
     },
+    "quoteProduct": {
+      "name": "Xitoydan buyurtma {number}"
+    },
     "list": {
       "title": "Mening so‘rovlarim",
       "loading": "Yuklanmoqda...",
@@ -1173,7 +1176,10 @@
       "accept": "Qabul qilaman",
       "reject": "Rad etaman",
       "expiresIn": "Taklif {hours} soatda tugaydi",
-      "acceptedNotice": "Taklif qabul qilindi — to‘lov uchun tez orada bog‘lanamiz.",
+      "acceptedNotice": "Taklif qabul qilindi — to‘lovni amalga oshiring. To‘langach buyurtma Xitoyga beriladi.",
+      "pay": "To‘lovga o‘tish",
+      "orderedNotice": "Buyurtma berildi — holatini «Buyurtmalarim»da kuzating.",
+      "acceptedExpired": "Taklif muddati tugadi — yangi hisob so‘rang.",
       "error": "Amalni bajarib bo‘lmadi. Qayta urinib ko‘ring.",
       "loginRequired": "So‘rovlaringizni ko‘rish uchun tizimga kiring."
     },

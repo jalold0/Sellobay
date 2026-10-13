@@ -2,7 +2,7 @@
 // GET /api/products[?category=...&brand=...&featured=true&ids=uuid1,uuid2&limit=20&page=1]
 
 import { withApi } from '@/lib/api-handler';
-import { SELLER_IS_ACTIVE } from '@/lib/product-visibility';
+import { PUBLIC_CATALOG } from '@/lib/product-visibility';
 
 import { scopeWhere, type CatalogScope } from '../../../lib/catalog';
 import { prisma } from '../../../lib/db';
@@ -54,7 +54,7 @@ export const GET = withApi(async (req: NextRequest) => {
   const where: any = {
     status: 'ACTIVE',
     deletedAt: null,
-    ...SELLER_IS_ACTIVE,
+    ...PUBLIC_CATALOG,
     ...(applyScope ? scopeWhere(scope) : {}),
   };
   if (byIds) where.id = { in: ids };
