@@ -7,17 +7,36 @@ import * as React from 'react';
 // Bu — o'rnatilgan PWA app'lar yangilanmasligi muammosini hal qiladi.
 export function ServiceWorkerRegister() {
   const [needsReload, setNeedsReload] = React.useState(false);
+  const regRef = React.useRef<ServiceWorkerRegistration | null>(null);
+  // Sahifa faqat foydalanuvchi «Yangilash»ni bosganda qayta yuklanadi.
+  const userAskedRef = React.useRef(false);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('serviceWorker' in navigator)) return;
     if (process.env.NODE_ENV !== 'production') return;
 
-    const onLoad = () => {
+    // Birinchi tashrifda SW sahifani nazoratga olganda ham `controllerchange` keladi.
+    // Ilgari shunda sahifa so'zsiz qayta yuklanardi: har yangi mijoz ochilgandan 1–3 s
+    // keyin sahifa sakrab, scroll boshiga qaytardi.
+    const onControllerChange = () => {
+      if (!userAskedRef.current) return;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'SW_UPDATED') setNeedsReload(true);
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+
+    const register = () => {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((reg) => {
-          // Bevosita yangilanishni majburlash — sahifa ochilganda har safar tekshiriladi
+          regRef.current = reg;
+          // Eski tabda kutib turgan yangi versiya bo'lsa — darhol taklif qilamiz
+          if (reg.waiting && navigator.serviceWorker.controller) setNeedsReload(true);
           reg.update().catch(() => null);
 
           reg.addEventListener('updatefound', () => {
@@ -25,7 +44,7 @@ export function ServiceWorkerRegister() {
             if (!installing) return;
             installing.addEventListener('statechange', () => {
               if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                // Yangi SW tayyor — foydalanuvchiga bildiramiz
+                // Yangi SW tayyor va kutyapti — foydalanuvchiga bildiramiz
                 setNeedsReload(true);
               }
             });
@@ -34,33 +53,28 @@ export function ServiceWorkerRegister() {
         .catch((err) => {
           console.warn('[SW] registration failed:', err);
         });
-
-      // SW activate bo'lganda postMessage'ni eshitamiz
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data?.type === 'SW_UPDATED') {
-          // Yangi SW yangi versiya bilan kelishini darhol ko'rsatamiz
-          setNeedsReload(true);
-        }
-      });
-
-      // SW controller o'zgarsa (yangi SW kuchga kirgan) — sahifani yangilash
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-      });
     };
 
-    window.addEventListener('load', onLoad);
-    return () => window.removeEventListener('load', onLoad);
+    // `load` gidratsiyadan oldin o'tib ketgan bo'lsa, tinglovchi hech qachon ishlamasdi.
+    if (document.readyState === 'complete') register();
+    else window.addEventListener('load', register, { once: true });
+
+    return () => {
+      window.removeEventListener('load', register);
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      navigator.serviceWorker.removeEventListener('message', onMessage);
+    };
   }, []);
 
   const reload = React.useCallback(() => {
-    // Skip waiting → controller change → reload
-    navigator.serviceWorker.controller?.postMessage({ type: 'SKIP_WAITING' });
-    // Fallback agar controllerchange ishlamasa
-    setTimeout(() => window.location.reload(), 600);
+    userAskedRef.current = true;
+    const waiting = regRef.current?.waiting;
+    if (waiting) {
+      // Kutib turgan YANGI SW'ga — u kuchga kiradi → controllerchange → reload
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
   }, []);
 
   if (!needsReload) return null;

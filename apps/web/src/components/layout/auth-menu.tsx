@@ -13,43 +13,28 @@ import {
   toast,
 } from '@ecom/ui';
 import { LogOut, Package, User as UserIcon, Heart, Settings } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import * as React from 'react';
 
-import { logout, me, type AuthUser } from '@/lib/auth/client';
+import { Link, useRouter } from '@/i18n/navigation';
+import { logout, type AuthUser } from '@/lib/auth/client';
+import { useForgetMe, useMe } from '@/lib/auth/use-me';
 
 export function AuthMenu() {
   const router = useRouter();
   const nav = useTranslations('nav');
-  const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    let mounted = true;
-    me().then((res) => {
-      if (!mounted) return;
-      if (res.success) setUser(res.data.user);
-      setLoading(false);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const { data: user } = useMe();
+  const forgetMe = useForgetMe();
 
   const handleSignOut = async () => {
     await logout();
-    setUser(null);
+    forgetMe();
     toast({ title: nav('signedOut'), variant: 'success' });
     router.push('/');
     router.refresh();
   };
 
-  if (loading) {
-    return <div className="hidden h-10 w-24 md:block" aria-hidden />;
-  }
-
+  // Javob kelguncha ham «Kirish» ko'rinadi: ilgari o'rnida 96px bo'sh joy turardi va javob
+  // kelgach u torayib, yonidagi sevimlilar/savat ikonkalari o'ngga sakrardi.
   if (!user) {
     return (
       <Link href="/login" className="hidden flex-col items-center gap-[3px] md:flex">
@@ -71,13 +56,17 @@ export function AuthMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="hover:bg-muted hidden h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium md:flex"
+          className="hidden flex-col items-center gap-[3px] md:flex"
+          aria-label={displayName}
         >
-          <Avatar className="h-7 w-7">
+          {/* Sevimlilar va savat bilan bir xil shakl: 22px belgi + kichik yorliq */}
+          <Avatar className="h-[22px] w-[22px]">
             <AvatarImage src={user.avatarUrl ?? ''} alt="" />
-            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+            <AvatarFallback className="text-[9px]">{initials}</AvatarFallback>
           </Avatar>
-          <span className="max-w-[120px] truncate">{displayName}</span>
+          <span className="max-w-[72px] truncate text-[10.5px] font-semibold text-[#55555c]">
+            {user.firstName || nav('profile')}
+          </span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
