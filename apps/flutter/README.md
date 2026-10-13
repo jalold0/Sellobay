@@ -163,8 +163,10 @@ flutter build apk --release        # -> build/app/outputs/flutter-apk/
 flutter install --release
 ```
 
-Reliz build standart holda `https://sellobay.uz` ga ulanadi
-(`AppConfig.fromEnvironment`), bayroq kerak emas.
+Reliz build standart holda `https://www.sellobay.uz` ga ulanadi
+(`AppConfig.fromEnvironment`), bayroq kerak emas. Aynan `www.` bilan:
+yalang'och domen `308` redirect beradi, Dart klienti esa POST'da
+redirect'ga ergashmaydi.
 
 APK ~53 MB, chunki u universal (barcha ABI). Kichikroq kerak bo'lsa:
 `flutter build apk --split-per-abi` (~18 MB), lekin unda telefon
