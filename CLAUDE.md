@@ -78,6 +78,19 @@ Flutter'da: ranglar/shriftlar faqat `buildSellobayTheme()` orqali, matn faqat
 `flutter test tool/screens.dart --update-goldens` bilan suratga olib, ko'zdan
 kechiring.
 
+## Ish holati (kompyuterlar o'rtasida)
+
+Joriy holat — merge kutayotgan MR'lar, ochiq vazifalar, har kompyuterdagi push qilinmagan ish
+va ish jurnali — git'ga bog'liq emas, claude.ai'dagi «Sellobay holati» sahifasida turadi:
+https://claude.ai/artifact/Jdv3TkWAb1nVWG6orpLo5g
+
+- Sessiya boshida o'qing: `Artifact read` (sahifa) va `ArtifactData list` — `holat`,
+  `vazifalar`, `mashinalar`, `jurnal` kolleksiyalari.
+- Ish bo'lagi tugaganda yangilang: `holat/joriy`, `mashinalar/<hostname>` (branch, push
+  qilinmagan commitlar, commit qilinmagan fayllar, stash), `jurnal`ga yozuv, vazifalar holati.
+- Kun oxirida har branch push qilinadi (chala bo'lsa ham) — kod boshqa kompyuterga faqat push
+  orqali o'tadi; sahifa uni faqat ro'yxat qilib ko'rsatadi.
+
 ## Lokal ishga tushirish tartibi
 
 ```bash
