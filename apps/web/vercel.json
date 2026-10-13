@@ -1,7 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["fra1"],
   "crons": [
-    { "path": "/api/internal/orders/expire", "schedule": "0 1 * * *" },
-    { "path": "/api/internal/payouts/run", "schedule": "0 2 * * *" }
+    {
+      "path": "/api/internal/orders/expire",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/internal/payouts/run",
+      "schedule": "0 2 * * *"
+    }
   ]
 }
