@@ -1,5 +1,5 @@
-// GET /api/stats — sotuvchi paneli uchun HAQIQIY ko'rsatkichlar
-// (analitika + moliya).
+// GET /api/stats — sotuvchi paneli uchun HAQIQIY ko'rsatkichlar (analitika). Moliya —
+// hisob daftari asosida, alohida: /api/finance (ADR 0015).
 //
 // Ilgari ikkala sahifa ham mock ustida edi: "Daromad +9.4%", "Konversiya
 // 3.8%", "Reyting 4.8" va "Karta ko'rishlari" (Web 12 450, Mobil 8 430,
@@ -26,7 +26,7 @@ export async function GET() {
 
   const seller = await prisma.seller.findUnique({
     where: { ownerUserId: user.id },
-    select: { id: true, commissionRate: true },
+    select: { id: true },
   });
   if (!seller) return apiError(403, 'NOT_A_SELLER', 'Sotuvchi profili topilmadi');
 
@@ -40,7 +40,7 @@ export async function GET() {
   const orderFilter = { status: { notIn: [...NON_REVENUE_ORDER_STATUSES] } };
 
   // Sotuvchining satrlari — davr ichida va oldingi davrda.
-  const [currentItems, prevItems, products, payouts] = await Promise.all([
+  const [currentItems, prevItems, products] = await Promise.all([
     prisma.orderItem.findMany({
       where: { sellerId: seller.id, order: { ...orderFilter, paidAt: { gte: windowStart } } },
       select: {
@@ -71,11 +71,6 @@ export async function GET() {
         reviewCount: true,
         images: { select: { url: true }, take: 1, orderBy: { position: 'asc' } },
       },
-    }),
-    prisma.sellerPayout.findMany({
-      where: { sellerId: seller.id },
-      orderBy: { periodEnd: 'desc' },
-      take: 24,
     }),
   ]);
 
@@ -114,9 +109,6 @@ export async function GET() {
         ) / 10
       : null;
 
-  const commissionRate = Number(seller.commissionRate);
-  const commission = Math.round((revenue * commissionRate) / 100);
-
   return apiOk({
     kpi: {
       revenue,
@@ -144,22 +136,5 @@ export async function GET() {
       reviewCount: p.reviewCount,
       imageUrl: p.images[0]?.url ?? '',
     })),
-    finance: {
-      commissionRate,
-      /** Davr daromadi va undan platforma komissiyasi. */
-      periodGross: revenue,
-      periodCommission: commission,
-      periodNet: revenue - commission,
-      payouts: payouts.map((p) => ({
-        id: p.id,
-        amount: Number(p.amount),
-        currency: p.currency,
-        periodStart: p.periodStart.toISOString(),
-        periodEnd: p.periodEnd.toISOString(),
-        status: p.status,
-        paidAt: p.paidAt?.toISOString() ?? null,
-        reference: p.reference,
-      })),
-    },
   });
 }

@@ -2,6 +2,7 @@
 // — sidebar, breadcrumb, command palette avtomatik yangilanadi.
 
 import {
+  Banknote,
   BarChart3,
   Boxes,
   Clock,
@@ -58,6 +59,7 @@ export const adminNav: NavItem[] = [
     icon: Undo2,
     group: 'Savdo',
   },
+  { href: '/payouts', label: 'Sotuvchilarga to‘lovlar', icon: Banknote, group: 'Savdo' },
   { href: '/orders/global', label: 'Global zayavkalar', icon: Globe, group: 'Savdo' },
   { href: '/settings/global', label: 'Global sozlamalar', icon: Globe, group: 'Tizim' },
   { href: '/products', label: 'Mahsulotlar', icon: Package, group: 'Katalog' },

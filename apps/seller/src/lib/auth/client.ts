@@ -126,26 +126,57 @@ export interface SellerStats {
     reviewCount: number;
     imageUrl: string;
   }>;
-  finance: {
-    commissionRate: number;
-    periodGross: number;
-    periodCommission: number;
-    periodNet: number;
-    payouts: Array<{
-      id: string;
-      amount: number;
-      currency: string;
-      periodStart: string;
-      periodEnd: string;
-      status: string;
-      paidAt: string | null;
-      reference: string | null;
-    }>;
-  };
 }
 
 export function getSellerStats() {
   return api<SellerStats>('/api/stats');
+}
+
+// ── Moliya — hisob daftari (ADR 0015) ─────────────────────────────
+export type LedgerEntryType =
+  | 'SALE'
+  | 'COMMISSION'
+  | 'FULFILLMENT_FEE'
+  | 'RETURN_SALE'
+  | 'RETURN_COMMISSION'
+  | 'RETURN_FULFILLMENT_FEE'
+  | 'PAYOUT'
+  | 'ADJUSTMENT';
+
+export interface SellerFinance {
+  balance: {
+    pending: string;
+    available: string;
+    inPayout: string;
+    paid: string;
+    nextPayoutAt: string;
+    nextPayoutAmount: string;
+  };
+  tariff: { model: 'FBS' | 'FBO'; commissionPct: number; feePerUnit: string; payoutDays: number[] };
+  bank: { name: string | null; accountTail: string | null };
+  entries: Array<{
+    id: string;
+    type: LedgerEntryType;
+    amount: string;
+    availableAt: string;
+    createdAt: string;
+    note: string | null;
+    inPayout: boolean;
+    orderNumber: string | null;
+  }>;
+  payouts: Array<{
+    id: string;
+    amount: string;
+    status: string;
+    periodStart: string;
+    periodEnd: string;
+    paidAt: string | null;
+    reference: string | null;
+  }>;
+}
+
+export function getSellerFinance() {
+  return api<SellerFinance>('/api/finance');
 }
 
 // ── Qaytarishlar (faqat o'qish — qarang docs/adr/0008) ────────────

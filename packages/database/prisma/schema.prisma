@@ -855,6 +855,7 @@ model Seller {
   description             Json?
   logoUrl                 String?
   status                  SellerStatus     @default(PENDING)
+  /// Eskirgan (ADR 0015): komissiya «Marketplace tariflari»dan. Keyingi migratsiyada olinadi.
   commissionRate          Decimal          @default(10) @db.Decimal(5, 2)
   rating                  Decimal          @default(0) @db.Decimal(3, 2)
   bankAccount             String?

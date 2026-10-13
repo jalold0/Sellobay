@@ -6,6 +6,7 @@
 
 import { COD_PROVIDER, orderPaymentState } from '@ecom/core-domain';
 
+import { recordSaleLedger } from './ledger';
 import { grantOrderEarnForOrder } from './loyalty';
 
 import type { Prisma } from '@ecom/database';
@@ -20,7 +21,8 @@ export interface DeliveredResult {
 /**
  * Buyurtma DELIVERED'ga o'tgan $transaction ichida chaqiriladi:
  *   • naqd buyurtma — COD Payment PAID + order.paidAt/paidTotal (pul kuryerda olindi) va cashback;
- *   • soldCount++ (yetkazilgan = sotilgan; qaytarilsa return route kamaytiradi).
+ *   • soldCount++ (yetkazilgan = sotilgan; qaytarilsa return route kamaytiradi);
+ *   • sotuvchi hisob daftari — sotuv, komissiya, xizmat haqi (ADR 0015; idempotent).
  *
  * Bir marta chaqirilishi CHAQIRUVCHINING atomik status o'tishi bilan kafolatlanadi
  * (`updateMany where status = <oldingi>` count===1). COD qismi qo'shimcha ravishda
@@ -65,6 +67,8 @@ export async function settleDeliveredOrder(
       data: { soldCount: { increment: it.quantity } },
     });
   }
+
+  await recordSaleLedger(tx, orderId, now);
 
   return { codSettled, soldCountItems: order.items.length };
 }
