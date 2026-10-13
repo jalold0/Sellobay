@@ -5,7 +5,7 @@ import { Toaster, TooltipProvider } from '@ecom/ui';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 
 import { CookieBanner } from '../../components/layout/cookie-banner';
 import { Footer } from '../../components/layout/footer';
@@ -17,6 +17,7 @@ import { IosInstallSheet } from '../../components/pwa/ios-install-sheet';
 import { ServiceWorkerRegister } from '../../components/pwa/service-worker-register';
 import { StickyInstallBar } from '../../components/pwa/sticky-install-bar';
 import { OrganizationJsonLd } from '../../components/seo/structured-data';
+import { routing } from '../../i18n/routing';
 import { fetchStorefrontCategories } from '../../lib/catalog';
 import { siteUrl } from '../../lib/site-url';
 import { QueryProvider } from '../../providers/query-provider';
@@ -97,6 +98,16 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+// Statik sahifalar ham (about, terms...) header'dagi kategoriyalarni bazadan oladi —
+// 5 daqiqada yangilanadi. Sahifa o'zi kichikroq qiymat bersa (bosh sahifa 120), o'shasi.
+export const revalidate = 300;
+
+// Har til uchun sahifalar build paytida (va ISR bilan) tayyorlanadi. Usiz next-intl tilni
+// so'rov sarlavhasidan o'qirdi va BUTUN sayt har ochilishda serverda qayta yig'ilardi.
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
 export default async function LocaleLayout({
   children,
   params: { locale },
@@ -107,6 +118,7 @@ export default async function LocaleLayout({
   // /favicon.ico kabi statik so'rovlar [locale] segmentiga tushmasin —
   // noto'g'ri locale NextIntlClientProvider'ga o'tsa Intl RangeError beradi
   if (!(locales as readonly string[]).includes(locale)) notFound();
+  setRequestLocale(locale);
 
   // Navigatsiya kategoriyalari BAZADAN. Ilgari Header va MobileNav o'zlarida
   // 6 ta slug'ni qotib saqlardi: admin yangi kategoriya qo'shsa menyuda

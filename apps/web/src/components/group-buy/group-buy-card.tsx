@@ -3,9 +3,10 @@
 import { Button, Card, toast } from '@ecom/ui';
 import { Check, Clock, Share2, Users } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { useRouter } from '@/i18n/navigation';
 
 import { formatMoney } from '../../lib/format';
 import { pickLocale, type Locale } from '../../lib/mock-data';
@@ -55,7 +56,7 @@ export function GroupBuyCard({ deal, isLoggedIn }: { deal: GroupDealView; isLogg
     if (joined || complete || pending || expired) return;
     if (!isLoggedIn) {
       // Login talab qiladi — mijozni kirish sahifasiga qaytib kelish bilan yuboramiz.
-      router.push(`/${locale}/login?next=/${locale}/group-buy`);
+      router.push(`/login?next=/${locale}/group-buy`);
       return;
     }
     setPending(true);

@@ -1,7 +1,8 @@
 import { EmptyState } from '@ecom/ui';
 import { Filter } from 'lucide-react';
-import Link from 'next/link';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+
+import { Link } from '@/i18n/navigation';
 
 import { FilterBar } from '../../../components/catalog/filter-bar';
 import { ProductCardClient } from '../../../components/product/product-card-client';
@@ -9,6 +10,7 @@ import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../../../
 import { findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
 
 interface CatalogPageProps {
+  params: { locale: Locale };
   searchParams: { category?: string; brand?: string; sort?: string; q?: string };
 }
 
@@ -23,8 +25,9 @@ const SORT_VALUES: Record<(typeof SORT_KEYS)[number], string> = {
   rating: 'rating',
 };
 
-export default async function CatalogPage({ searchParams }: CatalogPageProps) {
-  const locale = (await getLocale()) as Locale;
+export default async function CatalogPage({ params, searchParams }: CatalogPageProps) {
+  setRequestLocale(params.locale);
+  const locale = params.locale;
   const t = await getTranslations('catalog');
   const product = await getTranslations('product');
   const common = await getTranslations('common');

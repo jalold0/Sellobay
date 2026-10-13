@@ -1,5 +1,6 @@
 import { Card } from '@ecom/ui';
 import { DollarSign } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { PageHero } from '../../../components/static/page-hero';
 
@@ -14,7 +15,8 @@ const COMMISSIONS = [
   { category: 'Aksessuarlar', rate: '11%' },
 ];
 
-export default function CommissionsPage() {
+export default function CommissionsPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <div className="space-y-8">
       <PageHero
@@ -46,9 +48,15 @@ export default function CommissionsPage() {
       <Card className="p-5">
         <h2 className="mb-3 text-lg font-bold">Qo`shimcha to`lovlar</h2>
         <ul className="space-y-2 text-sm">
-          <li>• Express yetkazib berish: <strong>50 000 so`m</strong> (sotuvchidan)</li>
-          <li>• Saqlash xizmati: <strong>Hozircha bepul</strong></li>
-          <li>• Promo-kampaniya: <strong>Sotuvchi tanloviga ko`ra</strong></li>
+          <li>
+            • Express yetkazib berish: <strong>50 000 so`m</strong> (sotuvchidan)
+          </li>
+          <li>
+            • Saqlash xizmati: <strong>Hozircha bepul</strong>
+          </li>
+          <li>
+            • Promo-kampaniya: <strong>Sotuvchi tanloviga ko`ra</strong>
+          </li>
         </ul>
       </Card>
     </div>

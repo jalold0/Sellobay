@@ -13,9 +13,10 @@ import {
   Truck,
 } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import { formatMoney } from '../../lib/format';
 import { productImage } from '../../lib/mock-data';

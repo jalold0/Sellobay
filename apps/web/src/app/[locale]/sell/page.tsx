@@ -1,6 +1,8 @@
 import { Button, Card } from '@ecom/ui';
 import { BadgeCheck, Clock, DollarSign, Store, Truck, TrendingUp, Users } from 'lucide-react';
-import Link from 'next/link';
+import { setRequestLocale } from 'next-intl/server';
+
+import { Link } from '@/i18n/navigation';
 
 import { PageHero } from '../../../components/static/page-hero';
 
@@ -20,7 +22,8 @@ const STEPS = [
   { title: 'Sotishni boshlang', desc: 'Birinchi buyurtma — birinchi haftada' },
 ];
 
-export default function SellPage() {
+export default function SellPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <div className="space-y-10">
       <PageHero

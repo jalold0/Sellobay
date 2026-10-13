@@ -1,18 +1,23 @@
 import { RETURN_WINDOW_DAYS } from '@ecom/core-domain';
 import { Card } from '@ecom/ui';
 import { CalendarClock, Check, CircleDot, MessageCircle, Package, Undo2, X } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { PageHero } from '../../../components/static/page-hero';
 
 import type { Metadata } from 'next';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('returnsPage');
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'returnsPage' });
   return { title: t('metaTitle') };
 }
 
-export default async function ReturnsPage() {
+export default async function ReturnsPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   const t = await getTranslations('returnsPage');
 
   const steps = [
