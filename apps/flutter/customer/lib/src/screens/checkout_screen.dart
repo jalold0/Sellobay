@@ -6,6 +6,7 @@ import 'pickup_points_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../auth_flow.dart';
 import '../widgets/checkout/checkout_address_section.dart';
 import '../widgets/checkout/checkout_coins_row.dart';
 import '../widgets/checkout/checkout_delivery_section.dart';
@@ -152,6 +153,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         // Manzillar yordamchi qulaylik — yuklanmasa forma qo'lda to'ldiriladi.
       }
     }
+  }
+
+  /// Mehmon onlayn to'lov uchun kiradi va checkout'ga qaytadi.
+  Future<void> _signInForOnlinePayment() async {
+    if (!await requireSignIn(context) || !mounted) return;
+    await _load();
   }
 
   void _applyAddress(SavedAddress address) {
@@ -495,12 +502,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (!_signedIn && (_options?.providers.any((p) => p.isOnline) ?? false))
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              // Mehmonda `/api/payments/create` 401 beradi. Matn
-              // AYNAN shu haqda: buyurtmaning o'zini mehmon ham
-              // bera oladi (qo'lda karta yoki naqd bilan).
-              context.t('auth.loginForOnlinePayment'),
-              style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    // Mehmonda `/api/payments/create` 401 beradi. Matn
+                    // AYNAN shu haqda: buyurtmaning o'zini mehmon ham
+                    // bera oladi (qo'lda karta yoki naqd bilan).
+                    context.t('auth.loginForOnlinePayment'),
+                    style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+                  ),
+                ),
+                // Kirgach checkout'ning o'zida qolamiz va to'lov usullari
+                // qayta so'raladi — yozilgan manzil yo'qolmaydi.
+                TextButton(
+                  onPressed: _submitting ? null : _signInForOnlinePayment,
+                  child: Text(context.t('auth.loginSubmit')),
+                ),
+              ],
             ),
           ),
       ],

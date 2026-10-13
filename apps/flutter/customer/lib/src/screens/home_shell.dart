@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
 import '../home_tabs.dart';
 import 'cart_screen.dart';
 import 'catalog_screen.dart';
 import 'home_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
+import 'track_order_screen.dart';
 
 /// Ilovaning ildiz qobig'i — pastki navigatsiya.
 ///
@@ -25,6 +27,9 @@ class HomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final cartCount = CartScope.of(context).unitCount;
     final tabs = HomeTabsScope.maybeOf(context)!;
+    // Mehmon: buyurtmalar va profil hisobga bog'liq — ular o'rnida
+    // kirish taklifi turadi. Katalog va savat hisobsiz ishlaydi.
+    final guest = isGuest(AuthScope.of(context));
 
     return Scaffold(
       // `IndexedStack` — bo'lim almashganda katalog qayta yuklanmasin
@@ -37,8 +42,18 @@ class HomeShell extends StatelessWidget {
           _page(tabs, HomeTab.cart, () => const CartScreen()),
           // Kalit har safar o'zgaradi: buyurtma bergandan keyin eski
           // ro'yxat turib qolmasligi uchun ekran qaytadan quriladi.
-          _page(tabs, HomeTab.orders, () => OrdersScreen(key: ValueKey(tabs.ordersEpoch))),
-          _page(tabs, HomeTab.profile, () => const ProfileScreen()),
+          _page(
+            tabs,
+            HomeTab.orders,
+            () => guest
+                ? const _GuestTab(tab: HomeTab.orders)
+                : OrdersScreen(key: ValueKey(tabs.ordersEpoch)),
+          ),
+          _page(
+            tabs,
+            HomeTab.profile,
+            () => guest ? const _GuestTab(tab: HomeTab.profile) : const ProfileScreen(),
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -81,6 +96,39 @@ class HomeShell extends StatelessWidget {
             label: context.t('nav.profile'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Hisob talab qiladigan bo'limning mehmon ko'rinishi.
+///
+/// Sarlavha bo'lim nomi bilan qoladi — pastki paneldagi tanlov va
+/// ekran bir-biriga mos kelsin.
+class _GuestTab extends StatelessWidget {
+  const _GuestTab({required this.tab});
+
+  final HomeTab tab;
+
+  @override
+  Widget build(BuildContext context) {
+    final orders = tab == HomeTab.orders;
+    return Scaffold(
+      appBar: AppBar(title: Text(context.t(orders ? 'nav.orders' : 'nav.profile'))),
+      body: GuestPrompt(
+        icon: orders ? Icons.receipt_long_outlined : Icons.person_outline,
+        title: context.t(orders ? 'auth.guest.ordersTitle' : 'auth.guest.profileTitle'),
+        message: context.t(orders ? 'auth.guest.ordersHint' : 'auth.guest.profileHint'),
+        // Mehmon buyurtmasini raqam va telefon bilan kuzatsa bo'ladi —
+        // hisobsiz checkout qilgan odam uchun yagona yo'l.
+        secondary: orders
+            ? TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const TrackOrderScreen()),
+                ),
+                child: Text(context.t('nav.trackOrder')),
+              )
+            : null,
       ),
     );
   }

@@ -92,7 +92,7 @@ void main() {
     tester,
   ) async {
     final h = await _pump(tester);
-    // Sessiyasiz: ilova kirish ekranida.
+    // Sessiyasiz: ilova mehmon rejimida.
     unawaited(h.runtime.auth.restore());
     await settle(tester);
     expect(h.runtime.auth.status, AuthStatus.signedOut);

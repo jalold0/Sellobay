@@ -654,7 +654,15 @@
     "bankName": "Bank nomi",
     "bankAccount": "Hisob raqami (20 xona)",
     "sellerKycTitle": "Do'kon va rekvizitlar",
-    "sellerKycHint": "Do'kon nomi va STIR majburiy, bank rekvizitlarini keyin ham qo'shsa bo'ladi. Admin ma'lumotlarni tekshirib arizani tasdiqlaydi, to'lovlar ko'rsatilgan hisobga o'tkaziladi."
+    "sellerKycHint": "Do'kon nomi va STIR majburiy, bank rekvizitlarini keyin ham qo'shsa bo'ladi. Admin ma'lumotlarni tekshirib arizani tasdiqlaydi, to'lovlar ko'rsatilgan hisobga o'tkaziladi.",
+    "guest": {
+      "ordersTitle": "Buyurtmalaringiz shu yerda bo'ladi",
+      "ordersHint": "Buyurtmalarni ko'rish va kuzatish uchun hisobingizga kiring. Hisobsiz bergan buyurtmangizni raqami va telefon orqali kuzatishingiz mumkin.",
+      "profileTitle": "Hisobingizga kiring",
+      "profileHint": "Manzillar, sevimlilar va Sello Coins hisobingizda saqlanadi.",
+      "wishlistTitle": "Sevimlilarni saqlash uchun kiring",
+      "wishlistHint": "Yoqqan mahsulotlar hisobingizda saqlanadi va istalgan qurilmada ko'rinadi."
+    }
   },
   "profile": {
     "groupAccount": "Hisob",

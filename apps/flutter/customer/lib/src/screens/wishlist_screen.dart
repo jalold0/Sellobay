@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton.dart';
 import 'product_screen.dart';
@@ -26,7 +27,26 @@ class _WishlistScreenState extends State<WishlistScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
+  /// Oxirgi ko'rilgan auth holati — mehmon kirgach ro'yxat yuklanadi.
+  AuthStatus? _status;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final status = AuthScope.of(context).status;
+    final signedInNow = _status == AuthStatus.signedOut && status == AuthStatus.signedIn;
+    _status = status;
+    if (signedInNow) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _load();
+      });
+    }
+  }
+
   Future<void> _load() async {
+    // Mehmonda server 401 beradi — so'ramaymiz, ekran kirish taklifini
+    // ko'rsatadi.
+    if (isGuest(AuthScope.read(context))) return;
     setState(() => _error = null);
     final wishlist = WishlistScope.read(context);
     final catalog = SellobayRuntimeScope.of(context).catalog;
@@ -50,10 +70,19 @@ class _WishlistScreenState extends State<WishlistScreen> {
   @override
   Widget build(BuildContext context) {
     final wishlist = WishlistScope.of(context);
+    final guest = isGuest(AuthScope.of(context));
 
     return Scaffold(
       appBar: AppBar(title: Text(context.t('wishlist.title'))),
-      body: RefreshIndicator(onRefresh: _load, child: _body(context, wishlist)),
+      // Sevimlilar serverda — mehmonga ro'yxat emas, kirish taklifi.
+      // Kirgach ro'yxat o'zi yuklanadi (`didChangeDependencies`).
+      body: guest
+          ? GuestPrompt(
+              icon: Icons.favorite_border,
+              title: context.t('auth.guest.wishlistTitle'),
+              message: context.t('auth.guest.wishlistHint'),
+            )
+          : RefreshIndicator(onRefresh: _load, child: _body(context, wishlist)),
     );
   }
 

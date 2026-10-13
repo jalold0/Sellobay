@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
 import 'otp_screen.dart';
 import 'register_screen.dart';
 
@@ -102,15 +103,19 @@ class _LoginScreenState extends State<LoginScreen> {
         identifier: _email.text,
         password: _password.text,
       );
+      // Mijoz kirish ekraniga qayerdan kelgan bo'lsa, o'sha yerga qaytadi.
+      if (mounted) finishSignIn(context);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Ekran mehmon amali ustiga suriladi — ortga qaytish yo'li bo'lsin.
+      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -219,8 +224,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 20),
         _submitButton(context, label: context.t('auth.loginSubmit'), onPressed: _signIn),
         const SizedBox(height: 18),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Wrap: katta tizim shriftida ikkinchi qatorga o'tadi, toshmaydi.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               context.t('auth.noAccount'),

@@ -4,7 +4,6 @@ import 'package:sellobay_shared/sellobay_shared.dart';
 import 'deep_links.dart';
 import 'home_tabs.dart';
 import 'screens/home_shell.dart';
-import 'screens/login_screen.dart';
 import 'screens/splash_screen.dart';
 
 class SellobayCustomerApp extends StatefulWidget {
@@ -68,18 +67,23 @@ class _SellobayCustomerAppState extends State<SellobayCustomerApp> {
 }
 
 /// Auth holatiga qarab ildiz ekranni tanlaydi.
+///
+/// Mehmon ham qobiqqa KIRADI: katalog, savat va mehmon checkout'i
+/// hisobsiz ishlaydi. Ilgari kirmagan odamni darhol login ekraniga
+/// qamab qo'yardik — do'konni ko'rmasdan turib hisob ochishni talab
+/// qilish xaridorning yarmini eshikdayoq qaytarardi. Hisob kerak
+/// bo'lgan joylar (buyurtmalar, profil, sevimlilar) o'zi kirishni
+/// so'raydi — qarang `auth_flow.dart`.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
   @override
   Widget build(BuildContext context) {
     return switch (AuthScope.of(context).status) {
-      // Sessiya hali o'qilmagan. Bu holat `signedOut` dan ajratilgan:
-      // aks holda ilova har ochilganda bir lahzaga login ekranini
-      // ko'rsatib yuborardi.
+      // Sessiya hali o'qilmagan. Qobiqni darhol ko'rsatsak, kirgan
+      // foydalanuvchi bir lahzaga «kiring» taklifini ko'rib qolardi.
       AuthStatus.unknown => const SplashScreen(),
-      AuthStatus.signedOut => const LoginScreen(),
-      AuthStatus.signedIn => const HomeShell(),
+      AuthStatus.signedOut || AuthStatus.signedIn => const HomeShell(),
     };
   }
 }

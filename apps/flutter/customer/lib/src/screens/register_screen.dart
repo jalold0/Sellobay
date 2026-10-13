@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
+
 /// Email + parol bilan ro'yxatdan o'tish.
 ///
 /// Telefon bu yerda SO'RALMAYDI: telefon bilan hisob OTP oqimida
@@ -76,7 +78,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
         return;
       }
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Oqim yopiladi — mijoz kirishni boshlagan ekranga qaytadi.
+      finishSignIn(context);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -182,8 +185,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : Text(context.t('auth.registerSubmit')),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Wrap: katta tizim shriftida ikkinchi qatorga o'tadi, toshmaydi.
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       context.t('auth.haveAccount'),
