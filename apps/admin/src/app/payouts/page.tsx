@@ -118,6 +118,35 @@ export default function PayoutsPage() {
     }
   }
 
+  // Rekvizit — shartnoma/bank ma'lumotnomasi bo'yicha (hisob raqami 20 raqam). Hali
+  // o'tkazilmagan to'lovlar ham yangisini oladi; har o'zgarish jurnalda.
+  async function editBank(seller: { id: string; brandName: string }) {
+    const bankName = window.prompt(`${seller.brandName} — bank nomi:`);
+    if (bankName === null) return;
+    const bankAccount = window.prompt(`${seller.brandName} — hisob raqami (20 raqam):`);
+    if (bankAccount === null) return;
+    setBusy(`bank:${seller.id}`);
+    try {
+      const res = await fetch(`/api/sellers/${seller.id}/bank`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bankName: bankName.trim(),
+          bankAccount: bankAccount.replace(/\s/g, ''),
+        }),
+      });
+      const body = (await res.json()) as ApiEnvelope<unknown>;
+      if (!body.success) {
+        toast({ title: body.error?.message ?? 'Saqlanmadi', variant: 'destructive' });
+        return;
+      }
+      toast({ title: `${seller.brandName} — rekvizit saqlandi`, variant: 'success' });
+      await load();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function cancel(p: Payout) {
     const reason = window.prompt(
       `${p.seller.brandName} — to‘lovni bekor qilish sababi (savdolar keyingi hisoblashga qaytadi):`,
@@ -203,9 +232,13 @@ export default function PayoutsPage() {
                             ) : null}
                           </div>
                         ) : (
-                          <div className="text-destructive text-sm">
-                            Bank rekvizitlari yo‘q — sotuvchidan so‘rang yoki to‘lovni bekor qiling
-                          </div>
+                          <button
+                            type="button"
+                            className="text-destructive text-left text-sm underline-offset-2 hover:underline"
+                            onClick={() => void editBank(p.seller)}
+                          >
+                            Bank rekvizitlari yo‘q — shartnomadagi hisob raqamini kiriting
+                          </button>
                         )}
                         <div className="text-muted-foreground text-xs">
                           {formatDate(p.periodStart)} — {formatDate(p.periodEnd)}, {p.entries} ta
@@ -267,11 +300,17 @@ export default function PayoutsPage() {
                           {money(b.available)}
                         </td>
                         <td className="p-3 text-xs">
-                          {b.hasBankAccount ? (
-                            <span className="text-muted-foreground">bor</span>
-                          ) : (
-                            <span className="text-destructive">yo‘q</span>
-                          )}
+                          <button
+                            type="button"
+                            className={
+                              b.hasBankAccount
+                                ? 'text-muted-foreground hover:text-foreground underline-offset-2 hover:underline'
+                                : 'text-destructive underline-offset-2 hover:underline'
+                            }
+                            onClick={() => void editBank(b.seller)}
+                          >
+                            {b.hasBankAccount ? 'bor — o‘zgartirish' : 'yo‘q — kiritish'}
+                          </button>
                         </td>
                       </tr>
                     ))}
