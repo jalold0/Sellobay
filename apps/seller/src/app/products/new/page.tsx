@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { ProductImageUploader } from '@/components/products/image-uploader';
+import { meSeller } from '@/lib/auth/client';
 
 interface CategoryItem {
   id: string;
@@ -51,6 +52,14 @@ export default function SellerNewProductPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [categories, setCategories] = React.useState<CategoryItem[]>([]);
   const [brands, setBrands] = React.useState<BrandItem[]>([]);
+  // FBO sotuvchi tovarini omborimizga topshiradi — zaxira keyin ombor tomonidan yuritiladi.
+  const [model, setModel] = React.useState<'FBS' | 'FBO' | null>(null);
+
+  React.useEffect(() => {
+    void meSeller().then((res) => {
+      if (res.success && res.data.seller) setModel(res.data.seller.fulfillmentModel);
+    });
+  }, []);
 
   const [form, setForm] = React.useState({
     nameUz: '',
@@ -330,6 +339,12 @@ export default function SellerNewProductPage() {
                 <p className="text-muted-foreground mt-1 text-[10px]">
                   Variant qo&apos;shsangiz — har variantga alohida kiritiladi
                 </p>
+                {model === 'FBO' ? (
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    Siz FBO modelidasiz: shu miqdorni omborimizga olib kelasiz. Ombor qabul qilgach
+                    tovar sotuvga chiqadi, keyin zaxirani ombor yuritadi.
+                  </p>
+                ) : null}
               </div>
               <div>
                 <Label>Vazn (g)</Label>

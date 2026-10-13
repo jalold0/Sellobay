@@ -47,6 +47,8 @@ interface ProductRow {
   compareAtPrice: number | null;
   /** Admin rad etgan yoki sotuvdan olgan bo'lsa — sababi. */
   moderationNote: { action: 'reject' | 'takedown'; reason: string } | null;
+  /** FBS — o'zingiz qadoqlab olib kelasiz; FBO — tovar omborimizda (ADR 0015). */
+  fulfillmentModel: 'FBS' | 'FBO';
   rating: number;
   reviewCount: number;
   soldCount: number;
@@ -92,6 +94,22 @@ function buildColumns(onAction: (p: ProductRow, a: RowAction) => void): ColumnDe
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => <SellerProductStatusBadge status={row.original.status} />,
+    },
+    {
+      accessorKey: 'fulfillmentModel',
+      header: 'Model',
+      cell: ({ row }) => (
+        <span
+          className="text-muted-foreground text-xs"
+          title={
+            row.original.fulfillmentModel === 'FBO'
+              ? 'Tovar omborimizda — biz yig‘amiz va qadoqlaymiz'
+              : 'Buyurtmani o‘zingiz qadoqlab omborga olib kelasiz'
+          }
+        >
+          {row.original.fulfillmentModel}
+        </span>
+      ),
     },
     {
       accessorKey: 'basePrice',

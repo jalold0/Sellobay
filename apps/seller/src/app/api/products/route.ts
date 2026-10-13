@@ -112,6 +112,11 @@ export async function POST(req: NextRequest) {
   }
   const input = parsed.data;
 
+  const { defaultFulfillmentModel: sellerModel } = await prisma.seller.findUniqueOrThrow({
+    where: { id: seller.id },
+    select: { defaultFulfillmentModel: true },
+  });
+
   // SKU band emasligini tekshirish
   const existsSku = await prisma.product.findUnique({ where: { sku: input.sku } });
   if (existsSku) return apiError(409, 'SKU_TAKEN', 'Bu SKU allaqachon mavjud');
@@ -189,6 +194,8 @@ export async function POST(req: NextRequest) {
       const created = await tx.product.create({
         data: {
           sellerId: seller.id,
+          // Model sotuvchiniki (admin belgilaydi) — FBO bo'lsa tovar omborimizga topshiriladi.
+          fulfillmentModel: sellerModel,
           brandId: brand?.id,
           slug,
           sku: input.sku,
@@ -372,6 +379,7 @@ export async function GET() {
       basePrice: true,
       compareAtPrice: true,
       description: true,
+      fulfillmentModel: true,
       rating: true,
       reviewCount: true,
       soldCount: true,
@@ -403,6 +411,7 @@ export async function GET() {
       basePrice: Number(p.basePrice),
       compareAtPrice: p.compareAtPrice !== null ? Number(p.compareAtPrice) : null,
       moderationNote: notes.get(p.id) ?? null,
+      fulfillmentModel: p.fulfillmentModel,
       rating: Number(p.rating),
       reviewCount: p.reviewCount,
       soldCount: p.soldCount,

@@ -25,7 +25,11 @@ import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { writeAudit } from '@/lib/audit';
-import { applyFulfillmentTransition, ConcurrentTransitionError } from '@/lib/fulfillment-server';
+import {
+  applyFulfillmentTransition,
+  ConcurrentTransitionError,
+  OpenShipmentsError,
+} from '@/lib/fulfillment-server';
 
 import type { NextRequest } from 'next/server';
 
@@ -113,6 +117,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return r;
     });
   } catch (e) {
+    if (e instanceof OpenShipmentsError) {
+      return apiError(
+        409,
+        'SELLER_SHIPMENTS_OPEN',
+        `Sotuvchi tovari hali omborga kelmagan (${e.count} ta jo‘natma) — «Ombor qabuli» bo‘limida qabul qiling`,
+      );
+    }
     if (e instanceof ConcurrentTransitionError) {
       return apiError(409, 'CONCURRENT_UPDATE', 'Buyurtma holati boshqa jarayonda o‘zgardi');
     }

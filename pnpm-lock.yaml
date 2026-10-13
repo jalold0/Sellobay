@@ -469,6 +469,9 @@ importers:
       '@ecom/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@ecom/order-ops':
+        specifier: workspace:*
+        version: link:../../packages/order-ops
       '@ecom/storage':
         specifier: workspace:*
         version: link:../../packages/storage

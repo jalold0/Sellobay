@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
       phone: true,
       status: true,
       commissionRate: true,
+      defaultFulfillmentModel: true,
       createdAt: true,
       owner: { select: { firstName: true, lastName: true, email: true, phone: true } },
       _count: { select: { products: true } },
@@ -55,6 +56,20 @@ export async function GET(req: NextRequest) {
     _sum: { totalPrice: true },
   });
   const revenueMap = new Map(revenueRows.map((r) => [r.sellerId, Number(r._sum.totalPrice ?? 0)]));
+
+  // Tovarlar modellar bo'yicha (FBS/FBO, ADR 0015) — bitta groupBy.
+  const modelRows = await prisma.product.groupBy({
+    by: ['sellerId', 'fulfillmentModel'],
+    where: { sellerId: { in: sellers.map((s) => s.id) }, deletedAt: null },
+    _count: { _all: true },
+  });
+  const byModel = new Map<string, { FBS: number; FBO: number }>();
+  for (const r of modelRows) {
+    if (!r.sellerId) continue;
+    const m = byModel.get(r.sellerId) ?? { FBS: 0, FBO: 0 };
+    m[r.fulfillmentModel] = r._count._all;
+    byModel.set(r.sellerId, m);
+  }
 
   const items = sellers.map((s) => {
     const ownerName =
@@ -73,6 +88,8 @@ export async function GET(req: NextRequest) {
       productsCount: s._count.products,
       totalRevenue: revenueMap.get(s.id) ?? 0,
       appliedAt: s.createdAt.toISOString(),
+      fulfillmentModel: s.defaultFulfillmentModel,
+      productsByModel: byModel.get(s.id) ?? { FBS: 0, FBO: 0 },
     };
   });
 

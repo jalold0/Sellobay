@@ -109,6 +109,18 @@ export function setSellerStatus(
   });
 }
 
+/** Sotuvchining ishlash modeli (FBS/FBO, ADR 0015); `applyToProducts` — mavjud tovarlari ham. */
+export function setSellerFulfillment(
+  sellerId: string,
+  model: 'FBS' | 'FBO',
+  applyToProducts: boolean,
+) {
+  return api<{ seller: { id: string; fulfillmentModel: 'FBS' | 'FBO' }; productsMoved: number }>(
+    `/api/sellers/${sellerId}/fulfillment`,
+    { method: 'POST', body: JSON.stringify({ model, applyToProducts }) },
+  );
+}
+
 // Barcha sotuvchilar ro'yxati (status filtri bilan)
 export function listSellers(status?: 'all' | 'pending' | 'active' | 'inactive') {
   const qs = status && status !== 'all' ? `?status=${status}` : '';
@@ -128,6 +140,10 @@ export interface AdminSeller {
   productsCount: number;
   totalRevenue: number;
   appliedAt: string;
+  /** Yangi tovarlar shu model bilan yaratiladi (ADR 0015). */
+  fulfillmentModel: 'FBS' | 'FBO';
+  /** Mavjud tovarlar modellar bo'yicha. */
+  productsByModel: { FBS: number; FBO: number };
 }
 
 // Mahsulotlar ro'yxati (admin)
@@ -500,6 +516,15 @@ export interface AdminOrderDetail {
     totalPrice: number;
   }>;
   statusHistory: Array<{ status: AdminOrderStatus; changedAt: string; comment?: string }>;
+  /** Sotuvchi jo'natmalari (ADR 0015). */
+  shipments: Array<{
+    id: string;
+    model: 'FBS' | 'FBO';
+    status: 'NEW' | 'ACCEPTED' | 'PACKED' | 'HANDED_OVER' | 'CANCELLED';
+    deadlineAt: string;
+    sellerName: string | null;
+    itemCount: number;
+  }>;
   manualCard: { pending: boolean; receipt: string; note: string | null } | null;
 }
 

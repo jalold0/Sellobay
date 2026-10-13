@@ -57,6 +57,8 @@ export interface SellerShop {
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BLOCKED';
   brandName: string;
   suspendReason: string | null;
+  /** Yangi tovarlar shu model bilan yaratiladi; modelni admin belgilaydi (ADR 0015). */
+  fulfillmentModel: 'FBS' | 'FBO';
 }
 
 export function meSeller() {
@@ -79,6 +81,8 @@ export interface InventoryRow {
   reserved: number;
   /** Shundan kam qolsa «kam qoldi» deb belgilanadi. */
   reorderPoint: number;
+  /** FBO — zaxirani ombor yuritadi, sotuvchi o'zgartirmaydi (ADR 0015). */
+  fulfillmentModel: 'FBS' | 'FBO';
 }
 
 export function listInventory() {

@@ -56,6 +56,15 @@ import {
 } from '@/lib/auth/client';
 import { formatDateTime, formatMoney, formatRelative, pickLocalized } from '../../../lib/format';
 
+/** Sotuvchi jo'natmasi holati (ADR 0015). */
+const SHIPMENT_STATUS_LABEL: Record<AdminOrderDetail['shipments'][number]['status'], string> = {
+  NEW: 'Sotuvchida',
+  ACCEPTED: 'Sotuvchi qadoqlamoqda',
+  PACKED: 'Omborga kelmoqda',
+  HANDED_OVER: 'Omborda',
+  CANCELLED: 'Bekor',
+};
+
 export default function OrderDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
@@ -416,6 +425,40 @@ export default function OrderDetailPage() {
                     Mo`ljal: {order.shippingAddress.landmark}
                   </div>
                 ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {order.shipments.length > 0 ? (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+                <CardTitle className="text-sm">Omborga yig‘ish</CardTitle>
+                <Link href="/inbound" className="text-muted-foreground text-xs hover:underline">
+                  Ombor qabuli
+                </Link>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {order.shipments.map((s) => (
+                  <div key={s.id} className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate">{s.sellerName ?? 'Sellobay ombori'}</div>
+                      <div className="text-muted-foreground text-xs">
+                        {s.model}, {s.itemCount} ta tovar
+                      </div>
+                    </div>
+                    <span
+                      className={
+                        s.status === 'HANDED_OVER'
+                          ? 'shrink-0 text-xs text-emerald-700'
+                          : s.status === 'CANCELLED'
+                            ? 'text-muted-foreground shrink-0 text-xs'
+                            : 'shrink-0 text-xs text-amber-700'
+                      }
+                    >
+                      {SHIPMENT_STATUS_LABEL[s.status]}
+                    </span>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           ) : null}

@@ -15,12 +15,13 @@ export async function GET() {
   // Do'kon holati — dashboard «Faol» deb qattiq yozmasin (audit Y4); to'xtatilgan bo'lsa sabab.
   const profile = await prisma.seller.findUnique({
     where: { ownerUserId: user.id },
-    select: { id: true, status: true, brandName: true },
+    select: { id: true, status: true, brandName: true, defaultFulfillmentModel: true },
   });
   const seller = profile
     ? {
         status: profile.status,
         brandName: profile.brandName,
+        fulfillmentModel: profile.defaultFulfillmentModel,
         suspendReason:
           profile.status === 'SUSPENDED'
             ? await lastSellerDecisionReason(profile.id, 'seller.suspend')

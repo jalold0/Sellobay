@@ -15,3 +15,4 @@ export * from './money-input.ts';
 export * from './tashkent-time.ts';
 export * from './revenue.ts';
 export * from './refund.ts';
+export * from './marketplace-settings.ts';
