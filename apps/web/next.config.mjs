@@ -22,7 +22,16 @@ const nextConfig = {
   poweredByHeader: false,
   // Docker uchun — minimal runtime image
   output: 'standalone',
-  transpilePackages: ['@ecom/core-domain', '@ecom/order-ops', '@ecom/ui', '@ecom/i18n', '@ecom/utils', '@ecom/types', '@ecom/storage', '@ecom/push'],
+  transpilePackages: [
+    '@ecom/core-domain',
+    '@ecom/order-ops',
+    '@ecom/ui',
+    '@ecom/i18n',
+    '@ecom/utils',
+    '@ecom/types',
+    '@ecom/storage',
+    '@ecom/push',
+  ],
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
   },
@@ -33,12 +42,20 @@ const nextConfig = {
     // Next 14 da instrumentation.ts SHU FLAGSIZ umuman yuklanmaydi (Next 15 da stabil).
     // Usiz server va edge tomonidagi xato kuzatuvi jim turadi.
     instrumentationHook: true,
+    // @ecom/ui — barrel (index.ts hamma komponentni qayta eksport qiladi, jumladan
+    // react-table va barcha Radix). Shu bilan sahifaga faqat ishlatilgani tushadi.
+    optimizePackageImports: ['@ecom/ui'],
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       // pnpm monorepo'da Prisma engine'ni (.so.node) function bundle'iga ko'chiradi
       // https://pris.ly/d/engine-not-found-nextjs
       config.plugins = [...config.plugins, new PrismaPlugin()];
+    } else {
+      // Brauzerda Sentry faqat xatolarni ushlaydi. Tracing kodi (fetch/XHR o'ramlari,
+      // web-vitals, long-task kuzatuvi) telefonda yuklanishda soniyalab CPU yerdi
+      // (Lighthouse: Sentry chunk'ida 3.5 s skript). Server tomonda tracing qoladi.
+      config.plugins = [...config.plugins, new webpack.DefinePlugin({ __SENTRY_TRACING__: false })];
     }
     return config;
   },
@@ -92,6 +109,13 @@ const config = withNextIntl(nextConfig);
 // jim o'tkazib yuboradi va build muvaffaqiyatli tugaydi.
 export default withSentryConfig(config, {
   silent: true,
+  // Session Replay ishlatilmaydi — uning kodini brauzer bundle'idan olib tashlaymiz.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+    excludeReplayWorker: true,
+  },
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
