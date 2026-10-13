@@ -194,13 +194,6 @@ export default function AdminSellersPage() {
         cell: ({ row }) => <SellerStatusBadge status={row.original.status} />,
       },
       {
-        accessorKey: 'commissionRate',
-        header: () => <div className="text-right">Komissiya</div>,
-        cell: ({ row }) => (
-          <div className="text-right">{row.original.commissionRate.toFixed(1)}%</div>
-        ),
-      },
-      {
         accessorKey: 'fulfillmentModel',
         header: 'Model',
         cell: ({ row }) => {

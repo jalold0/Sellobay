@@ -83,3 +83,21 @@ qiymat bilan) — eski kod bilan mos. Prod Neon'ga merge'dan OLDIN qo'llanadi:
 - **Komissiya manbai** — tariflar (`GlobalSetting` `marketplace`, modelga qarab). Eski
   `Seller.commissionRate` hisob daftari (F3b) ishga tushgach ishlatilmaydi va keyingi
   migratsiyada olib tashlanadi.
+
+## Amalga oshirishdagi aniqliklar (F3b — hisob daftari va to'lovlar)
+
+- **Yetkazilganda** har satr bo'yicha: sotuv (+), komissiya (−), xizmat haqi (−). Model —
+  jo'natma ochilgandagisi. «Yechish mumkin» sanasi — yetkazilgan + 10 kun. Promokod chegirmasi
+  platforma hisobidan: sotuvchiga tovarning to'liq narxi yoziladi.
+- **Qaytarilganda** teskari yozuvlar; hali to'lanmagan sotuv bilan bir sanada yechiladi (bir-
+  birini yopadi). To'langandan keyin qaytsa — qoldiq manfiy bo'ladi va keyingi savdolardan
+  ushlanadi; manfiy qoldiqqa to'lov yaratilmaydi.
+- **To'lov hisoblash** — Vercel Cron har kuni 02:00 UTC, lekin ish faqat to'lov kunlarida
+  (Toshkent sanasi bo'yicha). Admin «Hozir hisoblash» bilan istalgan kun hisoblay oladi.
+  Sotuvchi bo'yicha advisory lock — ikki marta yig'ilmaydi.
+- **To'lov holati:** PENDING (bank o'tkazmasi kutilmoqda) → PAID (admin topshiriqnoma raqamini
+  kiritadi, daftarga to'lov (−) yoziladi) yoki CANCELLED (masalan rekvizit noto'g'ri — savdolar
+  keyingi hisoblashga qaytadi). To'lov paytidagi rekvizitlar nusxalanadi.
+- Sotuvchi panelida hisob raqamining faqat oxirgi 4 raqami ko'rinadi.
+- `Seller.commissionRate` endi hech qayerda ishlatilmaydi (eskirgan); keyingi sxema
+  migratsiyasida olib tashlanadi.

@@ -30,6 +30,9 @@ export type AuditAction =
   | 'shipment.receive'
   | 'marketplace.settings.update'
   | 'seller.fulfillment_model'
+  | 'payout.create'
+  | 'payout.paid'
+  | 'payout.cancel'
   | 'auth.password_change';
 
 export interface AuditEntry {
@@ -42,6 +45,7 @@ export interface AuditEntry {
     | 'Order'
     | 'User'
     | 'SellerShipment'
+    | 'SellerPayout'
     | 'GlobalSetting';
   resourceId: string;
   meta?: Prisma.InputJsonValue;

@@ -136,7 +136,6 @@ export interface AdminSeller {
   ownerName: string;
   phone: string;
   status: SellerStatus;
-  commissionRate: number;
   productsCount: number;
   totalRevenue: number;
   appliedAt: string;

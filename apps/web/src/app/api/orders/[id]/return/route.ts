@@ -3,6 +3,7 @@
 // holatda, yetkazilgandan RETURN_WINDOW_DAYS (10) kun ichida — qonun, 18-modda.
 //   • Punktda tekshirib rad etish yoki uyga yetkazilganini muddat ichida qaytarish.
 //   • Sello Coins (cashback revoke + ishlatilgan coin refund) + promokod atomik qaytariladi.
+//   • Sotuvchi hisob daftariga teskari yozuvlar tushadi (to'lovdan ushlanadi).
 //   • ZAXIRA bu yerda QAYTMAYDI — tovar hali mijozda. U omborga yetib kelganda qaytadi:
 //     kuryer qaytarish topshirig'ini «yetkazildi» qilganda yoki admin «qabul qilindi» deganda
 //     (`@ecom/order-ops` restockReturnDelivery). Ilgari shu yerda qaytarilardi va mijoz
@@ -11,7 +12,7 @@
 //     Status RETURNED operatorlarga "refund kutilmoqda" signalini beradi (→ REFUNDED).
 
 import { RETURN_WINDOW_DAYS } from '@ecom/core-domain';
-import { releaseOrderPromo } from '@ecom/order-ops';
+import { releaseOrderPromo, reverseSaleLedger } from '@ecom/order-ops';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -112,6 +113,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       // Promokod — usedCount kamaytirish + UserCoupon redeemed bekor (bekor qilishdagi bilan bir xil)
       await releaseOrderPromo(tx, { userId: user.id, promoCode: order.promoCode });
+
+      // Sotuvchi hisobi — sotuv, komissiya va xizmat haqi teskari yoziladi (ADR 0015).
+      await reverseSaleLedger(tx, order.id);
 
       return { loyalty };
     });
