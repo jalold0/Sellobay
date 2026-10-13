@@ -515,6 +515,17 @@ export interface AdminOrderDetail {
     totalPrice: number;
   }>;
   statusHistory: Array<{ status: AdminOrderStatus; changedAt: string; comment?: string }>;
+  /** 3PL (ADR 0015): kompaniya, trek raqami, oxirgi hodisa. */
+  carrier: {
+    provider: string;
+    company: string;
+    trackingNumber: string | null;
+    status: string | null;
+    updatedAt: string | null;
+    failureReason: string | null;
+  } | null;
+  /** Hozir mumkin bo'lgan 3PL hodisalari. */
+  carrierEvents: Array<'HANDED_OVER' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'REFUSED'>;
   /** Sotuvchi jo'natmalari (ADR 0015). */
   shipments: Array<{
     id: string;

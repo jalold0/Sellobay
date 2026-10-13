@@ -1,17 +1,15 @@
-// Sellobay — Buyurtma fulfillment (status o'tishi) server logikasi.
-// Faqat admin API route'idan chaqiriladi. inventory-server / loyalty-server pattern'i:
-// funksiyalar `tx: Prisma.TransactionClient` qabul qiladi — chaqiruvchi $transaction'ni ochadi.
+// Buyurtma fulfillment (status o'tishi). Admin holat menyusi ham, 3PL holatlari ham (ADR 0015)
+// shu yerdan o'tadi. Funksiyalar `tx: Prisma.TransactionClient` oladi — chaqiruvchi
+// $transaction'ni ochadi.
 
 // O'tish qonuniyligi (qaysi statusga, qaysi to'lov holatida) — @ecom/core-domain
-// `order-fulfillment` da; DELIVERED yon ta'sirlari (COD + soldCount) — @ecom/order-ops
-// (kuryer ilovasi ham aynan shu funksiyani chaqiradi). Bu fayl faqat statusni yozadi.
+// `order-fulfillment` da; DELIVERED yon ta'sirlari (COD, soldCount, sotuvchi daftari) —
+// `settleDeliveredOrder` (kuryer ilovasi ham aynan shu funksiyani chaqiradi).
 
 import { FULFILLMENT_FLOW, type FulfillmentStatus } from '@ecom/core-domain';
-import {
-  completeWarehouseShipments,
-  openSellerShipmentCount,
-  settleDeliveredOrder,
-} from '@ecom/order-ops';
+
+import { settleDeliveredOrder } from './delivered';
+import { completeWarehouseShipments, openSellerShipmentCount } from './seller-shipments';
 
 import type { Prisma } from '@ecom/database';
 

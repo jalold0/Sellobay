@@ -39,6 +39,7 @@ import { useParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
+import { CarrierCard } from '../../../components/orders/carrier-card';
 import { RefundPanel } from '../../../components/payments/refund-panel';
 import { VerifyPaymentForm } from '../../../components/payments/verify-payment-form';
 import {
@@ -428,6 +429,13 @@ export default function OrderDetailPage() {
               </CardContent>
             </Card>
           ) : null}
+
+          <CarrierCard
+            orderId={order.id}
+            carrier={order.carrier}
+            events={order.carrierEvents}
+            onChanged={() => void load()}
+          />
 
           {order.shipments.length > 0 ? (
             <Card>

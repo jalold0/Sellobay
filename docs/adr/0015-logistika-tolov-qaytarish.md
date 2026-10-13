@@ -101,3 +101,20 @@ qiymat bilan) — eski kod bilan mos. Prod Neon'ga merge'dan OLDIN qo'llanadi:
 - Sotuvchi panelida hisob raqamining faqat oxirgi 4 raqami ko'rinadi.
 - `Seller.commissionRate` endi hech qayerda ishlatilmaydi (eskirgan); keyingi sxema
   migratsiyasida olib tashlanadi.
+
+## Amalga oshirishdagi aniqliklar (F4 — 3PL, «qo'lda» provayder)
+
+- `ShippingProvider` (`@ecom/order-ops` `carrier.ts`) — jo'natmani provayderda ro'yxatdan
+  o'tkazish; hozir yagona provayder `MANUAL`: admin kompaniya nomi va trek raqamini kiritadi.
+  Hodisalar qoidasi bitta jadvalda (`@ecom/core-domain` `CARRIER_EVENT_RULES`): admin tugmalari
+  ham, provayder API'si ulangach webhook ham shu orqali o'tadi. Webhook endpoint provayder
+  hujjati kelganda qo'shiladi (hozir yozilmadi — ishlatilmaydigan kod qoldirmaslik uchun).
+- 3PL'ga faqat hamma tovar omborda yig'ilgan (`PACKED`) buyurtma topshiriladi → `SHIPPED`.
+  O'z kuryerimiz olgan yetkazishni 3PL'ga berib bo'lmaydi va aksincha: 3PL'ga berilgan
+  yetkazish kuryerlar ro'yxatiga chiqmaydi.
+- **Joyida rad etish:** buyurtma `RETURNED`, yetkazish `FAILED` (sabab bilan), naqd to'lov
+  yopiladi, coin va promokod qaytariladi, sotuvchiga sotuv yozilmaydi. Tovar omborga qaytgach
+  admin «Qaytarishlar»da qabul qiladi — zaxira shunda tiklanadi. Oldindan to'langan bo'lsa
+  «Pul qaytarish» navbatiga tushadi. Ombordan chiqqan (`shippedAt`) buyurtma pul oldin
+  qaytarilsa ham qabul ro'yxatida qoladi.
+- Mijozga (web va ilova) kompaniya nomi va trek raqami ko'rsatiladi.

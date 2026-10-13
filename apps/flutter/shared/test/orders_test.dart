@@ -266,6 +266,35 @@ void main() {
     });
   });
 
+  group('OrderTracking (3PL, ADR 0015)', () {
+    Map<String, dynamic> order(Object? tracking) => {
+          'order': {
+            'id': 'o1',
+            'number': 'ORD-1',
+            'status': 'SHIPPED',
+            'subtotal': '100000.00',
+            'shippingTotal': '0.00',
+            'discountTotal': '0.00',
+            'grandTotal': '100000.00',
+            'items': const <Object>[],
+            'tracking': tracking,
+          },
+        };
+
+    test('kompaniya va trek raqami o`qiladi', () {
+      final o = OrderDetail.fromJson(order({'company': 'Fargo', 'trackingNumber': 'FRG-1234'}));
+      expect(o.tracking?.company, 'Fargo');
+      expect(o.tracking?.trackingNumber, 'FRG-1234');
+    });
+
+    test('hali topshirilmagan yoki kompaniya noma`lum', () {
+      expect(OrderDetail.fromJson(order(null)).tracking, isNull);
+      final o = OrderDetail.fromJson(order({'company': null, 'trackingNumber': 'X-77'}));
+      expect(o.tracking?.company, isNull);
+      expect(o.tracking?.trackingNumber, 'X-77');
+    });
+  });
+
   group('formatOrderDate', () {
     test('web`dagi `formatDate` bilan bir xil shakl', () {
       // TS: `${pad2(day)} ${MONTHS_UZ_SHORT[month]}, ${year}`

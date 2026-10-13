@@ -262,6 +262,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindi
           const SizedBox(height: 10),
           _receiptRejected(context, order, order.receiptResubmit!),
         ],
+        if (order.tracking != null) ...[
+          const SizedBox(height: 20),
+          _sectionTitle(context.t('profile.orderDetail.trackingTitle')),
+          Text(
+            order.tracking!.company ?? context.t('profile.orderDetail.trackingCompanyFallback'),
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: SellobayColors.ink,
+            ),
+          ),
+          _row(
+            context.t('profile.orderDetail.trackingNumber'),
+            order.tracking!.trackingNumber,
+            bold: true,
+          ),
+        ],
         const SizedBox(height: 20),
         _sectionTitle(context.t('tracking.items')),
         for (final line in order.items) _line(context, line, locale, baseUrl),
