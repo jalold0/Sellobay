@@ -116,11 +116,11 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               Text(
                 context.t('auth.welcomeTitle'),
-                style: const TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
+                // Web'dagi kirish sarlavhasi bilan bir xil: serif, 600.
+                style: SellobayType.heading(
+                  SellobayType.hero,
+                  weight: FontWeight.w600,
                   color: SellobayColors.ink,
-                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),

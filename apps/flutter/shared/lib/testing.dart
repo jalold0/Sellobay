@@ -10,6 +10,7 @@
 library;
 
 export 'src/testing/fake_backend.dart';
+export 'src/testing/fonts.dart';
 
 /// Soxta javob turi — `FakeBackend` ishlovchisi shuni qaytaradi.
 /// Testlar `dio` ni alohida import qilmasin.

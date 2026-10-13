@@ -13,17 +13,19 @@ import 'package:flutter/material.dart';
 abstract final class SellobayType {
   /// Interfeys shrifti — web'dagi `--font-sans` bilan bir xil.
   ///
-  /// Ro'yxatdan o'tmagan bo'lsa Flutter platforma standartiga tushadi
-  /// (Android'da Roboto). Shrift fayllari `assets/fonts/` ga qo'yilib
-  /// `pubspec.yaml` da e'lon qilinadi — qarang `docs/adr/0011-tipografiya.md`.
-  static const sans = 'Inter';
+  /// Fayl shu paketda (`assets/fonts/`, `pubspec.yaml` dagi `fonts:`).
+  /// Paketdagi shrift ilovaga `packages/<paket>/<oila>` nomi bilan
+  /// chiqadi — oddiy `'Inter'` deb yozilsa topilmaydi va matn jimgina
+  /// platforma standartiga (Android'da Roboto) tushib qoladi. Aynan shu
+  /// bo'lgan edi: oila nomi bor edi, fayl esa yo'q.
+  static const sans = 'packages/sellobay_shared/Inter';
 
   /// Sarlavha shrifti — web'dagi `--font-serif`.
   ///
   /// FAQAT logotip va katta sarlavhalar uchun (>= 22). Playfair yuqori
   /// kontrastli didone: 14-16 punktda ingichka shtrixlari telefon
   /// ekranida yo'qoladi va matn kuchsiz ko'rinadi.
-  static const serif = 'Playfair Display';
+  static const serif = 'packages/sellobay_shared/Playfair Display';
 
   // ---- Shkala ----------------------------------------------------------
   // Qiymatlar butun son. Yarim punkt ko'zga ko'rinmaydi, lekin kodda
