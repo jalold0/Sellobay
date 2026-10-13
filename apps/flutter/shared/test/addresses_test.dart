@@ -80,6 +80,20 @@ void main() {
     test('tur satr sifatida yuboriladi', () {
       expect(_input().toJson()['type'], 'WORK');
     });
+
+    test('bo`sh viloyat yuborilmaydi — server standartini qo`llaydi', () {
+      const input = AddressInput(
+        type: AddressType.home,
+        recipientName: 'Dilnoza',
+        phone: '+998901234567',
+        region: ' ',
+        city: 'Yunusobod',
+        street: 'Amir Temur 1',
+      );
+
+      expect(input.toJson().containsKey('region'), isFalse);
+      expect(_input().toJson()['region'], 'Toshkent');
+    });
   });
 
   group('AddressRepository', () {

@@ -14,6 +14,7 @@ class CheckoutPromoRow extends StatelessWidget {
     required this.onApply,
     required this.checking,
     this.result,
+    this.error,
   });
 
   final TextEditingController controller;
@@ -25,6 +26,11 @@ class CheckoutPromoRow extends StatelessWidget {
   /// Serverning javobi. `null` — hali tekshirilmagan.
   final PromoPreview? result;
 
+  /// Tekshiruv so'rovi yiqildi (tarmoq, server) — maydon ostida
+  /// ko'rsatiladi, sahifa tepasidagi chiziqda emas: mijoz promokod
+  /// qatorida turibdi va xatoni aynan shu yerda kutadi.
+  final String? error;
+
   @override
   Widget build(BuildContext context) {
     final promo = result;
@@ -33,12 +39,23 @@ class CheckoutPromoRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: TextField(
                 controller: controller,
                 textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(hintText: context.t('cart.promoPlaceholder')),
+                // Klaviaturadagi «Tayyor» kodni tekshiradi — tugmaga
+                // qo'l cho'zish shart emas.
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) {
+                  if (!checking) onApply();
+                },
+                decoration: InputDecoration(
+                  hintText: context.t('cart.promoPlaceholder'),
+                  errorText: error,
+                  errorMaxLines: 2,
+                ),
               ),
             ),
             const SizedBox(width: 10),

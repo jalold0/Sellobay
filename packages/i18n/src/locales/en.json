@@ -49,7 +49,8 @@
     "all": "All",
     "unexpectedResponse": "The server returned an unexpected response ({status}). Please try again later.",
     "networkError": "No internet connection. Check your network.",
-    "notConnectedYet": "This section is not connected yet"
+    "notConnectedYet": "This section is not connected yet",
+    "fieldRequired": "Fill in this field"
   },
   "nav": {
     "home": "Home",

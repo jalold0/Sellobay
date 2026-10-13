@@ -12,6 +12,7 @@ class CheckoutDeliverySection extends StatelessWidget {
     required this.onMethodChanged,
     required this.pickupPoint,
     required this.onChoosePickup,
+    this.pickupError,
   });
 
   final DeliveryMethod method;
@@ -21,6 +22,9 @@ class CheckoutDeliverySection extends StatelessWidget {
   final PickupPoint? pickupPoint;
 
   final VoidCallback onChoosePickup;
+
+  /// Punkt tanlanmagan holda yuborildi — tanlash tugmasi ostida.
+  final String? pickupError;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -114,6 +118,17 @@ class CheckoutDeliverySection extends StatelessWidget {
               ),
             ),
           ),
+          if (pickupError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 4),
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  pickupError!,
+                  style: const TextStyle(fontSize: 12.5, color: SellobayColors.destructive),
+                ),
+              ),
+            ),
         ],
       ),
     );

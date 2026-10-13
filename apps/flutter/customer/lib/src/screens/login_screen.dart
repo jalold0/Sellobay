@@ -163,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.done,
           autofillHints: const [AutofillHints.telephoneNumber],
           enabled: !_busy,
           decoration: InputDecoration(
@@ -197,6 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.username],
                 enabled: !_busy,
                 decoration: InputDecoration(
@@ -208,6 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _password,
                 obscureText: true,
+                textInputAction: TextInputAction.done,
                 autofillHints: const [AutofillHints.password],
                 enabled: !_busy,
                 decoration: InputDecoration(

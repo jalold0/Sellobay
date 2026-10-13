@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'dart:typed_data';
@@ -175,14 +176,17 @@ Future<SellobayRuntime> pumpCheckout(
   return runtime;
 }
 
-/// Ro'yxatni pastga suradi.
-///
-/// `ListView` faqat EKRANDAGI bolalarini quradi — pastdagi bo'limlar
-/// (to'lov, promokod, xulosa) suraklanmaguncha daraxtda umuman
-/// bo'lmaydi va `find` ularni topmaydi.
+/// Sahifani pastga suradi — pastdagi bo'limlar bosilishi uchun.
 Future<void> scrollDown(WidgetTester tester, [double dy = -320]) async {
-  await tester.drag(find.byType(ListView), Offset(0, dy));
+  await tester.drag(find.byType(Scrollable).first, Offset(0, dy));
   await settle(tester);
+}
+
+/// Element ekranning ko'rinadigan qismidami (AppBar va pastki panel orasida).
+bool isOnScreen(WidgetTester tester, Finder finder) {
+  final rect = tester.getRect(finder);
+  final viewport = tester.getRect(find.byType(Scrollable).first);
+  return rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1;
 }
 
 /// Majburiy maydonlarni to'ldiradi.
@@ -232,14 +236,134 @@ void main() {
     expect(find.text('Payme'), findsNothing);
   });
 
-  testWidgets('bo`sh forma yuborilmaydi', (tester) async {
+  testWidgets('bo`sh forma yuborilmaydi — xato MAYDONLARDA, fokus birinchisida', (tester) async {
+    // Ilgari xato sahifa tepasidagi chiziqqa yozilardi, mijoz esa
+    // pastdagi tugmani bosib turardi — u xatoni ko'rmasdi.
     final backend = _backend();
-    await pumpCheckout(tester, backend, signedIn: true);
+    await pumpCheckout(tester, backend);
+    // Mijoz pastda — tugma yonida.
+    await scrollDown(tester, -2000);
 
     await submit(tester);
 
-    expect(find.text("Majburiy maydonlarni to'ldiring"), findsOneWidget);
     expect(backend.calls.where((c) => c == '/api/orders'), isEmpty);
+    // Ism, telefon, shahar, ko'cha — har biri o'z xatosi bilan.
+    expect(find.text("Bu maydonni to'ldiring"), findsNWidgets(4));
+    // Birinchi noto'g'ri maydon fokusda va ko'rinadigan joyda.
+    final name = find.widgetWithText(TextField, 'Ism*');
+    expect(tester.widget<TextField>(name).focusNode!.hasFocus, isTrue);
+    expect(isOnScreen(tester, name), isTrue);
+    // Tepadagi umumiy chiziq ishlatilmaydi.
+    expect(find.text("Majburiy maydonlarni to'ldiring"), findsNothing);
+
+    // Maydon tuzatilsa uning xatosi o'chadi, boshqalariniki qoladi.
+    await tester.enterText(name, 'Dilnoza');
+    await settle(tester);
+    expect(find.text("Bu maydonni to'ldiring"), findsNWidgets(3));
+  });
+
+  testWidgets('viloyat OLDINDAN to`ldirilmaydi', (tester) async {
+    await pumpCheckout(tester, _backend(), signedIn: true);
+
+    final region = tester.widget<TextField>(find.widgetWithText(TextField, 'Viloyat'));
+    expect(region.controller!.text, isEmpty);
+    // Maslahat sifatida ko'rinadi, qiymat sifatida emas.
+    expect(region.decoration!.hintText, 'Toshkent');
+  });
+
+  testWidgets('server xatosida tepadagi chiziq KO`RINADIGAN joyga suriladi', (tester) async {
+    final backend = _backend(order: (_) => apiErr(500, 'SERVER', 'Ichki xato'));
+    await pumpCheckout(tester, backend, signedIn: true);
+    await fillAddress(tester);
+    await scrollDown(tester, -2000);
+
+    await submit(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Ichki xato'), findsOneWidget);
+    expect(isOnScreen(tester, find.text('Ichki xato')), isTrue);
+  });
+
+  testWidgets('promokod xatosi promokod qatorida', (tester) async {
+    final backend = FakeBackend((options, body) {
+      if (options.path == '/api/promo/validate') return offline(options);
+      return _backend().handler(options, body);
+    });
+    await pumpCheckout(tester, backend, signedIn: true);
+    await scrollTo(tester, find.text("Qo'llash"));
+
+    await tester.enterText(find.byType(TextField).last, 'SALE10');
+    await tester.tap(find.text("Qo'llash"));
+    await settle(tester);
+
+    final promoField = tester.widget<TextField>(find.byType(TextField).last);
+    expect(promoField.decoration!.errorText, isNotNull);
+    // Tepadagi chiziqqa yozilmaydi.
+    expect(tester.widget<FormErrorBanner>(find.byType(FormErrorBanner)).message, isNull);
+  });
+
+  group('yuklash tartibi', () {
+    Map<String, dynamic> savedAddress() => {
+          'id': 'addr-1',
+          'label': 'Uy',
+          'type': 'HOME',
+          'recipientName': 'Dilnoza Karimova',
+          'phone': '+998901112233',
+          'region': 'Samarqand',
+          'city': 'Samarqand',
+          'street': 'Registon 5',
+          'apartment': null,
+          'latitude': null,
+          'longitude': null,
+          'isDefault': true,
+          'createdAt': '2026-10-01T00:00:00.000Z',
+        };
+
+    testWidgets('so`rovlar PARALLEL, forma hammasi kelgach ochiladi', (tester) async {
+      final options = Completer<ResponseBody>();
+      final addresses = Completer<ResponseBody>();
+      final base = _backend();
+      final backend = FakeBackend((o, body) {
+        if (o.path == '/api/payment-cards') return options.future;
+        if (o.path == '/api/addresses') return addresses.future;
+        return base.handler(o, body);
+      });
+      await pumpCheckout(tester, backend, signedIn: true);
+
+      // Ikkalasi bir vaqtda so'ralgan — ketma-ket bo'lsa manzillar
+      // to'lov usullari kelguncha so'ralmasdi.
+      expect(backend.calls, containsAll(['/api/payment-cards', '/api/addresses']));
+      // Forma hali yo'q — mijoz yozib ulgurgan matn ustidan yozilmasin.
+      expect(find.byType(TextField), findsNothing);
+
+      options.complete(apiOk({'cards': <Map<String, dynamic>>[], 'providers': ['CASH_ON_DELIVERY']}));
+      await settle(tester);
+      expect(find.byType(TextField), findsNothing);
+
+      addresses.complete(apiOk({'items': [savedAddress()]}));
+      await settle(tester);
+
+      // Asosiy manzil oldindan to'ldirildi (profil ismi emas — manzil aniqroq).
+      expect(find.widgetWithText(TextField, 'Dilnoza Karimova'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Registon 5'), findsOneWidget);
+    });
+
+    testWidgets('saqlangan manzil chipi formani to`liq almashtiradi', (tester) async {
+      final base = _backend();
+      final backend = FakeBackend((o, body) {
+        if (o.path == '/api/addresses') return apiOk({'items': [savedAddress()]});
+        return base.handler(o, body);
+      });
+      await pumpCheckout(tester, backend, signedIn: true);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Registon 5'), 'Boshqa ko`cha 1');
+      await settle(tester);
+      // Mijoz chipni O'ZI bosdi — bu aniq buyruq, ustidan yoziladi.
+      await tester.tap(find.widgetWithText(ActionChip, 'Uy'));
+      await settle(tester);
+
+      expect(find.widgetWithText(TextField, 'Registon 5'), findsOneWidget);
+    });
   });
 
   testWidgets('yaroqsiz telefon — so`rov ketmaydi', (tester) async {

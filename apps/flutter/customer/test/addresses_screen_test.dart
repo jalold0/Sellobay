@@ -180,8 +180,29 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Saqlash'));
       await settle(tester);
 
-      expect(find.text("Asosiy maydonlarni to'ldiring"), findsOneWidget);
+      // Xato har bir maydonning O'ZIDA; fokus birinchi noto'g'risida.
+      expect(find.text("Bu maydonni to'ldiring"), findsNWidgets(4));
+      final recipient = find.widgetWithText(TextField, 'Qabul qiluvchi*');
+      expect(tester.widget<TextField>(recipient).focusNode!.hasFocus, isTrue);
       expect(backend.calls.where((c) => c == '/api/addresses'), hasLength(1)); // faqat GET
+    });
+
+    testWidgets('viloyat oldindan yozilmaydi — bo`sh bo`lsa yuborilmaydi', (tester) async {
+      final backend = await openForm(tester);
+
+      final region = tester.widget<TextField>(find.widgetWithText(TextField, 'Viloyat'));
+      expect(region.controller!.text, isEmpty);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Qabul qiluvchi*'), 'Dilnoza');
+      await tester.enterText(find.widgetWithText(TextField, 'Telefon*'), '901234567');
+      await tester.enterText(find.widgetWithText(TextField, 'Shahar*'), 'Yunusobod');
+      await tester.enterText(find.widgetWithText(TextField, "Ko'cha, uy*"), 'Amir Temur 1');
+      await tester.tap(find.widgetWithText(FilledButton, 'Saqlash'));
+      await settleRoute(tester);
+
+      final sent = backend.bodies.firstWhere((b) => b != null && b.containsKey('city'))!;
+      // Server o'z standartini qo'llaydi — klient «Toshkent» deb o'ylab topmaydi.
+      expect(sent.containsKey('region'), isFalse);
     });
 
     testWidgets('yaroqsiz telefon — so`rov KETMAYDI', (tester) async {

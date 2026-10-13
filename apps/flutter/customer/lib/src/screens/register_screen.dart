@@ -122,6 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: _firstName,
                         enabled: !_busy,
                         textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.next,
                         autofillHints: const [AutofillHints.givenName],
                         decoration: InputDecoration(labelText: context.t('auth.firstName')),
                       ),
@@ -132,6 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         controller: _lastName,
                         enabled: !_busy,
                         textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.next,
                         autofillHints: const [AutofillHints.familyName],
                         decoration: InputDecoration(labelText: context.t('auth.lastName')),
                       ),
@@ -143,6 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _email,
                   enabled: !_busy,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.newUsername],
                   decoration: InputDecoration(
                     labelText: context.t('auth.email'),
@@ -154,6 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _password,
                   enabled: !_busy,
                   obscureText: true,
+                  textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.newPassword],
                   decoration: InputDecoration(
                     labelText: context.t('auth.password'),

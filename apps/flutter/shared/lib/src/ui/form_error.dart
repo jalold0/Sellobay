@@ -16,6 +16,16 @@ class FormErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = message;
     if (text == null || text.isEmpty) return const SizedBox.shrink();
+    // Jonli hudud: xato paydo bo'lganda ekran o'quvchi uni o'zi o'qiydi —
+    // aks holda ko'zi ojiz foydalanuvchi tugma «ishlamadi» deb o'ylardi.
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: _box(text),
+    );
+  }
+
+  Widget _box(String text) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
