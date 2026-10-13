@@ -61,3 +61,25 @@
 Hamma sxema o'zgarishi **bitta qo'shimcha migratsiyada** (faqat yangi jadval/ustun, standart
 qiymat bilan) — eski kod bilan mos. Prod Neon'ga merge'dan OLDIN qo'llanadi:
 `pnpm db:migrate:deploy` (prod `DATABASE_URL` bilan). Vercel build migratsiya qilmaydi.
+
+## Amalga oshirishdagi aniqliklar (F3a — sotuvchi jo'natmalari)
+
+- **Jo'natma qachon ochiladi:** pul tushganda (Click, Payme, karta cheki tasdig'i); naqd
+  buyurtmada — buyurtma berilganda. To'lanmagan buyurtmani sotuvchi qadoqlamaydi. Bekor
+  qilinganda ochiq jo'natmalar yopiladi. Global (Xitoy) buyurtmalarda jo'natma ochilmaydi.
+- **Modelni admin belgilaydi** (sotuvchi uchun standart + mavjud tovarlariga qo'llash). FBO —
+  tovar avval omborga topshiriladi, faqat bayroq bilan bo'lmaydi. FBO tovar zaxirasini ombor
+  yuritadi — sotuvchi panelda o'zgartira olmaydi. Platformaning o'z tovari — doim FBO.
+- **Ombor qabuli** (admin `/inbound`): sotuvchi panelda «qadoqladim» demagan bo'lsa ham, tovar
+  qo'lda kelgan bo'lsa qabul qilinadi — jismoniy qabul hal qiluvchi (aks holda buyurtma tugma
+  bosilmagani uchun qotadi). Hamma jo'natma kelgach buyurtma avtomatik `PACKED`.
+- **Kuryer/3PL** buyurtmani faqat hamma jo'natma omborda bo'lganda oladi. Admin ham FBS tovari
+  kelmaguncha buyurtmani `PACKED` va undan keyinga o'tkaza olmaydi (409); FBO qismlari shu
+  o'tishda «yig'ildi» deb belgilanadi.
+- **Muddat:** FBS 48 soat, FBO 24 soat (tariflarda). Kechikkani qizil ko'rsatiladi; avtomatik
+  bekor qilish yo'q — operator sotuvchiga qo'ng'iroq qiladi yoki buyurtmani bekor qiladi.
+- **Shaxsiy ma'lumot:** sotuvchiga mijozning telefoni va manzili ko'rsatilmaydi — yetkazishni
+  biz qilamiz.
+- **Komissiya manbai** — tariflar (`GlobalSetting` `marketplace`, modelga qarab). Eski
+  `Seller.commissionRate` hisob daftari (F3b) ishga tushgach ishlatilmaydi va keyingi
+  migratsiyada olib tashlanadi.

@@ -108,20 +108,25 @@ export default function SellerInventoryPage() {
     {
       id: 'set',
       header: () => <div className="text-right">Yangi miqdor</div>,
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            aria-label={`${pickLocalized(row.original.name)} ${row.original.variantLabel ?? ''} yangi miqdor`}
-            placeholder={String(row.original.stock)}
-            value={drafts[row.original.variantId] ?? ''}
-            onChange={(e) => setDrafts((s) => ({ ...s, [row.original.variantId]: e.target.value }))}
-            className="h-8 w-24 text-right"
-          />
-        </div>
-      ),
+      cell: ({ row }) =>
+        row.original.fulfillmentModel === 'FBO' ? (
+          <div className="text-muted-foreground text-right text-xs">Ombor yuritadi (FBO)</div>
+        ) : (
+          <div className="flex justify-end">
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              aria-label={`${pickLocalized(row.original.name)} ${row.original.variantLabel ?? ''} yangi miqdor`}
+              placeholder={String(row.original.stock)}
+              value={drafts[row.original.variantId] ?? ''}
+              onChange={(e) =>
+                setDrafts((s) => ({ ...s, [row.original.variantId]: e.target.value }))
+              }
+              className="h-8 w-24 text-right"
+            />
+          </div>
+        ),
     },
     {
       accessorKey: 'price',

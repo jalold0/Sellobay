@@ -108,6 +108,10 @@ const PAYMENT_SETTLED_OR_COD: Prisma.OrderWhereInput = {
 const SHIPPABLE_ORDER: Prisma.OrderWhereInput = {
   status: { notIn: NOT_SHIPPABLE_ORDER_STATUSES },
   ...PAYMENT_SETTLED_OR_COD,
+  // Bir nechta sotuvchining tovari omborda yig'ilib, bitta bo'lib jo'naydi (ADR 0015): hali
+  // kelmagan jo'natma bo'lsa buyurtma olib ketishga tayyor emas. Jo'natmasi yo'q (eski)
+  // buyurtmalarga ta'sir qilmaydi.
+  sellerShipments: { none: { status: { in: ['NEW', 'ACCEPTED', 'PACKED'] } } },
 };
 
 /**

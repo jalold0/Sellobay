@@ -6,8 +6,12 @@
 // `order-fulfillment` da; DELIVERED yon ta'sirlari (COD + soldCount) — @ecom/order-ops
 // (kuryer ilovasi ham aynan shu funksiyani chaqiradi). Bu fayl faqat statusni yozadi.
 
-import { type FulfillmentStatus } from '@ecom/core-domain';
-import { settleDeliveredOrder } from '@ecom/order-ops';
+import { FULFILLMENT_FLOW, type FulfillmentStatus } from '@ecom/core-domain';
+import {
+  completeWarehouseShipments,
+  openSellerShipmentCount,
+  settleDeliveredOrder,
+} from '@ecom/order-ops';
 
 import type { Prisma } from '@ecom/database';
 
@@ -20,6 +24,14 @@ export interface FulfillmentOrder {
 export interface FulfillmentResult {
   codSettled: boolean; // COD to'lovi shu o'tishda PAID qilindimi
   soldCountItems: number; // soldCount oshirilgan satrlar soni
+}
+
+/** Sotuvchining (FBS) tovari hali omborga kelmagan — buyurtmani jo'natib bo'lmaydi. */
+export class OpenShipmentsError extends Error {
+  constructor(readonly count: number) {
+    super('OPEN_SELLER_SHIPMENTS');
+    this.name = 'OpenShipmentsError';
+  }
 }
 
 /** Parallel PATCH holatni allaqachon o'zgartirgan bo'lsa tashlanadi — tx rollback qilinadi. */
@@ -45,6 +57,15 @@ export async function applyFulfillmentTransition(
   opts: { changedBy?: string | null; comment?: string } = {},
 ): Promise<FulfillmentResult> {
   const now = new Date();
+
+  // PACKED va undan keyin — hamma tovar omborda bo'lishi shart (ADR 0015). Omborning o'z (FBO)
+  // jo'natmalari shu o'tishda «yig'ildi» deb belgilanadi; sotuvchining FBS tovari esa sotuvchi
+  // qadoqlab olib kelgach «Ombor qabuli»da qabul qilinadi.
+  if (FULFILLMENT_FLOW.indexOf(next) >= FULFILLMENT_FLOW.indexOf('PACKED')) {
+    await completeWarehouseShipments(tx, order.id, opts.changedBy ?? null, now);
+    const open = await openSellerShipmentCount(tx, order.id);
+    if (open > 0) throw new OpenShipmentsError(open);
+  }
 
   // Skalyar maydonlar — ATOMIK shartli UPDATE bilan yoziladi (nested yozuvsiz).
   const scalar: Record<string, unknown> = { status: next };

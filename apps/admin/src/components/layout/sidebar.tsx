@@ -22,6 +22,12 @@ export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
 
   const visible = adminNav.filter((item) => !item.roles || has(...item.roles));
   const groups = groupNav(visible);
+  // Faqat ENG ANIQ mos bo'lim faol: /orders/payment-review da «Buyurtmalar» ham yonib turmasin.
+  const activeHref = visible
+    .filter((i) => pathname === i.href || (i.href !== '/' && pathname.startsWith(`${i.href}/`)))
+    .reduce<
+      string | null
+    >((best, i) => (!best || i.href.length > best.length ? i.href : best), null);
 
   return (
     <aside
@@ -63,8 +69,7 @@ export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
               ) : null}
               {g.items.map((item) => {
                 const Icon = item.icon;
-                const active =
-                  pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                const active = item.href === activeHref;
                 return (
                   <Link
                     key={item.href}

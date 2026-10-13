@@ -11,6 +11,9 @@
 //     qiymat lock'siz yozilardi — shu orada tushgan buyurtma kamaytirgan zaxira jimgina qayta
 //     «tiklanib», oversell bo'lardi;
 //   • «kam qoldi» chegarasi — variantning `reorderPoint` qiymati (ilgari qattiq 10).
+//
+// FBO tovar bizning omborda turadi — uning zaxirasini ombor (admin inventar) yuritadi, sotuvchi
+// faqat ko'radi (ADR 0015).
 
 import { z } from 'zod';
 
@@ -65,6 +68,7 @@ export async function GET() {
       sku: true,
       name: true,
       basePrice: true,
+      fulfillmentModel: true,
       images: { select: { url: true }, take: 1, orderBy: { position: 'asc' } },
       variants: {
         orderBy: { position: 'asc' },
@@ -102,6 +106,7 @@ export async function GET() {
           stock: inv?.quantityOnHand ?? 0,
           reserved: inv?.quantityReserved ?? 0,
           reorderPoint: inv?.reorderPoint || DEFAULT_REORDER_POINT,
+          fulfillmentModel: p.fulfillmentModel,
         };
       }),
     ),
@@ -130,10 +135,18 @@ export async function PATCH(req: NextRequest) {
   // MUHIM: faqat SHU sotuvchining variantlari (IDOR).
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: [...ids] }, product: { sellerId: seller.id, deletedAt: null } },
-    select: { id: true, sku: true },
+    select: { id: true, sku: true, product: { select: { fulfillmentModel: true } } },
   });
   if (variants.length !== ids.size) {
     return apiError(403, 'FORBIDDEN', 'Ro`yxatda sizga tegishli bo`lmagan tovar bor');
+  }
+  const fbo = variants.filter((v) => v.product.fulfillmentModel === 'FBO').map((v) => v.sku);
+  if (fbo.length > 0) {
+    return apiError(
+      409,
+      'FBO_STOCK_MANAGED_BY_WAREHOUSE',
+      `FBO tovar zaxirasini ombor yuritadi: ${fbo.join(', ')}. Tovar olib kelsangiz, ombor qabul qilgach zaxira yangilanadi.`,
+    );
   }
   const skuById = new Map(variants.map((v) => [v.id, v.sku]));
 

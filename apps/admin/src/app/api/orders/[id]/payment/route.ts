@@ -6,7 +6,7 @@
 // Faqat ADMIN/SUPER_ADMIN. Faqat UZCARD + PENDING to'lovga ta'sir qiladi.
 
 import { Prisma } from '@ecom/database';
-import { grantOrderEarn } from '@ecom/order-ops';
+import { grantOrderEarn, openSellerShipments } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
@@ -170,6 +170,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (order.userId) {
           await grantOrderEarn(tx, order.userId, order.grandTotal.toNumber(), order.number);
         }
+        // Pul tushdi — sotuvchilarga jo'natmalar ochiladi (ADR 0015). Idempotent.
+        await openSellerShipments(tx, order.id, now);
         await writeAudit(
           {
             userId: user.id,

@@ -8,4 +8,6 @@ export * from './delivered';
 export * from './expire';
 export * from './inventory';
 export * from './loyalty';
+export * from './paid';
 export * from './release';
+export * from './seller-shipments';

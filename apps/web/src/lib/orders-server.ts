@@ -14,6 +14,7 @@ import {
   looksLikeTashkentCityText,
 } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
+import { openSellerShipments } from '@ecom/order-ops';
 import { StorageNotConfiguredError } from '@ecom/storage';
 import { normalizeUzPhone } from '@ecom/utils';
 import { z } from 'zod';
@@ -733,6 +734,13 @@ export async function createOrder(
             ...(rawPayload ? { rawPayload } : {}),
           },
         });
+      }
+
+      // 5f. Naqd buyurtma darhol bajarishga tushadi — sotuvchilarga jo'natmalar shu yerda.
+      //     Oldindan to'lanadiganlarda esa pul tushganda (onOrderPaid) — to'lanmagan buyurtmani
+      //     sotuvchi qadoqlab yurmasin (ADR 0015).
+      if (input.paymentProvider === 'CASH_ON_DELIVERY') {
+        await openSellerShipments(tx, created.id);
       }
       return {
         order: created,

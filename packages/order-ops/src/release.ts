@@ -10,6 +10,7 @@
 
 import { restockOrder } from './inventory';
 import { reverseOrderLoyalty } from './loyalty';
+import { cancelSellerShipments } from './seller-shipments';
 
 import type { Prisma } from '@ecom/database';
 
@@ -87,6 +88,9 @@ export async function releaseCancelledOrder(
     where: { orderId: order.id, status: 'PENDING' },
     data: { status: 'CANCELLED', failedAt: now },
   });
+
+  // Sotuvchi qadoqlab yurmasin — ochiq jo'natmalar yopiladi (ADR 0015).
+  await cancelSellerShipments(tx, order.id, now);
 
   return {
     stock,

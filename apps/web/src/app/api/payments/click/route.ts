@@ -11,7 +11,7 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 
 import { Prisma } from '@ecom/database';
-import { grantOrderEarnForOrder } from '@ecom/order-ops';
+import { onOrderPaid } from '@ecom/order-ops';
 
 import { prisma } from '@/lib/db';
 
@@ -192,8 +192,8 @@ export async function POST(req: NextRequest) {
       await tx.orderStatusHistory.create({
         data: { orderId: order.id, status: 'PAID', comment: 'Click to‘lovi tasdiqlandi' },
       });
-      // Pul tushdi — cashback endi (audit O1). Idempotent.
-      await grantOrderEarnForOrder(tx, order.id);
+      // Pul tushdi — cashback (audit O1) va sotuvchilarga jo'natmalar (ADR 0015). Idempotent.
+      await onOrderPaid(tx, order.id, paidAt);
       return true;
     });
   } catch (e) {

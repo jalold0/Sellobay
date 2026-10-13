@@ -72,6 +72,18 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         orderBy: { changedAt: 'asc' },
         select: { status: true, comment: true, changedAt: true },
       },
+      // Sotuvchi jo'natmalari (ADR 0015) — «Qadoqlandi»dan keyin faqat hammasi omborda bo'lsa.
+      sellerShipments: {
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          fulfillmentModel: true,
+          status: true,
+          deadlineAt: true,
+          seller: { select: { brandName: true } },
+          _count: { select: { items: true } },
+        },
+      },
       // Hammasi (oxirgisi ko'rsatish uchun, barchasi — to'lov holatini aniqlash uchun)
       payments: {
         orderBy: { createdAt: 'desc' },
@@ -144,6 +156,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       status: h.status,
       changedAt: h.changedAt.toISOString(),
       comment: h.comment ?? undefined,
+    })),
+    shipments: o.sellerShipments.map((s) => ({
+      id: s.id,
+      model: s.fulfillmentModel,
+      status: s.status,
+      deadlineAt: s.deadlineAt.toISOString(),
+      sellerName: s.seller?.brandName ?? null,
+      itemCount: s._count.items,
     })),
     // Karta orqali qo'lda to'lov — chek + izoh (verify/reject uchun)
     manualCard: isManualCard

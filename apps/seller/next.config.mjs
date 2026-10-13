@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  transpilePackages: ['@ecom/core-domain', '@ecom/i18n', '@ecom/ui', '@ecom/utils', '@ecom/types', '@ecom/storage'],
+  transpilePackages: ['@ecom/core-domain', '@ecom/i18n', '@ecom/order-ops', '@ecom/ui', '@ecom/utils', '@ecom/types', '@ecom/storage'],
   experimental: {
     serverComponentsExternalPackages: ['@node-rs/argon2', '@prisma/client', 'prisma'],
   },

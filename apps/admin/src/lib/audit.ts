@@ -27,12 +27,22 @@ export type AuditAction =
   | 'order.refund'
   | 'return.receive'
   | 'return.dispatch'
+  | 'shipment.receive'
+  | 'marketplace.settings.update'
+  | 'seller.fulfillment_model'
   | 'auth.password_change';
 
 export interface AuditEntry {
   userId: string;
   action: AuditAction;
-  resource: 'Seller' | 'Product' | 'Payment' | 'Order' | 'User';
+  resource:
+    | 'Seller'
+    | 'Product'
+    | 'Payment'
+    | 'Order'
+    | 'User'
+    | 'SellerShipment'
+    | 'GlobalSetting';
   resourceId: string;
   meta?: Prisma.InputJsonValue;
 }

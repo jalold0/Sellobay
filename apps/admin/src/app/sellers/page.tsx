@@ -29,6 +29,7 @@ import {
   approveSeller,
   listSellers,
   rejectSeller,
+  setSellerFulfillment,
   setSellerStatus,
   type AdminSeller,
 } from '@/lib/auth/client';
@@ -114,6 +115,50 @@ export default function AdminSellersPage() {
     );
   }, []);
 
+  // FBS ↔ FBO. FBO — tovar omborimizda: avval tovar topshiriladi, keyin shu yerda o'tkaziladi.
+  const onModel = React.useCallback(async (s: AdminSeller) => {
+    const next = s.fulfillmentModel === 'FBS' ? 'FBO' : 'FBS';
+    const explain =
+      next === 'FBO'
+        ? 'Tovarlarini bizning ombor yig‘adi va qadoqlaydi, zaxirasini ombor yuritadi.'
+        : 'Har buyurtmani sotuvchi o‘zi qadoqlab, muddatigacha omborga olib keladi.';
+    if (!confirm(`${s.brandName} — ${next} modeliga o‘tkazilsinmi?\n\n${explain}`)) return;
+    const others = s.productsByModel[s.fulfillmentModel === 'FBS' ? 'FBS' : 'FBO'];
+    const applyToProducts =
+      others > 0 &&
+      confirm(
+        `Mavjud ${others} ta tovari ham ${next} bo‘lsinmi?\n\n«Bekor qilish» — faqat yangi tovarlar ${next} bo‘ladi.`,
+      );
+    setBusyId(s.id);
+    const res = await setSellerFulfillment(s.id, next, applyToProducts);
+    setBusyId(null);
+    if (!res.success) {
+      toast({ title: res.error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: `${s.brandName} — ${next}`,
+      description:
+        res.data.productsMoved > 0
+          ? `${res.data.productsMoved} ta tovar ${next} ga o‘tkazildi`
+          : 'Yangi tovarlar shu model bilan yaratiladi',
+      variant: 'success',
+    });
+    setSellers((prev) =>
+      prev.map((x) =>
+        x.id === s.id
+          ? {
+              ...x,
+              fulfillmentModel: next,
+              productsByModel: applyToProducts
+                ? { FBS: 0, FBO: 0, [next]: x.productsByModel.FBS + x.productsByModel.FBO }
+                : x.productsByModel,
+            }
+          : x,
+      ),
+    );
+  }, []);
+
   const columns = React.useMemo<ColumnDef<AdminSeller>[]>(
     () => [
       {
@@ -154,6 +199,33 @@ export default function AdminSellersPage() {
         cell: ({ row }) => (
           <div className="text-right">{row.original.commissionRate.toFixed(1)}%</div>
         ),
+      },
+      {
+        accessorKey: 'fulfillmentModel',
+        header: 'Model',
+        cell: ({ row }) => {
+          const s = row.original;
+          const mixed = s.productsByModel.FBS > 0 && s.productsByModel.FBO > 0;
+          return (
+            <div className="space-y-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 font-semibold"
+                disabled={busyId === s.id}
+                title="FBS ↔ FBO o‘tkazish"
+                onClick={() => void onModel(s)}
+              >
+                {s.fulfillmentModel}
+              </Button>
+              {mixed ? (
+                <div className="text-muted-foreground text-[11px]">
+                  {s.productsByModel.FBS} FBS, {s.productsByModel.FBO} FBO
+                </div>
+              ) : null}
+            </div>
+          );
+        },
       },
       {
         accessorKey: 'productsCount',
@@ -228,7 +300,7 @@ export default function AdminSellersPage() {
         enableSorting: false,
       },
     ],
-    [busyId, onApprove, onReject, onToggle],
+    [busyId, onApprove, onReject, onToggle, onModel],
   );
 
   const filtered = React.useMemo(() => {
