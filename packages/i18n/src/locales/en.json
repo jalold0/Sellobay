@@ -1162,6 +1162,9 @@
         "network": "Connection lost. Check your internet and try again."
       }
     },
+    "quoteProduct": {
+      "name": "Order from China {number}"
+    },
     "list": {
       "title": "My requests",
       "loading": "Loading...",
@@ -1173,7 +1176,10 @@
       "accept": "Accept",
       "reject": "Reject",
       "expiresIn": "Quote expires in {hours} h",
-      "acceptedNotice": "Quote accepted — we will contact you for payment shortly.",
+      "acceptedNotice": "Quote accepted — complete the payment. Once paid, the order is placed in China.",
+      "pay": "Go to payment",
+      "orderedNotice": "Order placed — track it in “My orders”.",
+      "acceptedExpired": "The quote has expired — request a new estimate.",
       "error": "Could not complete the action. Please try again.",
       "loginRequired": "Sign in to see your requests."
     },

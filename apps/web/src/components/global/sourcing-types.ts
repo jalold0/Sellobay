@@ -36,6 +36,16 @@ export interface SourcingRequestView {
   operatorNote: string | null;
   orderId: string | null;
   createdAt: string;
+  /** Qabul qilingan taklif — to'lov sahifasiga o'tish uchun shaxsiy tovar (ADR 0015). */
+  checkout: SourcingCheckout | null;
+}
+
+export interface SourcingCheckout {
+  productId: string;
+  slug: string;
+  name: Record<string, string>;
+  unitPrice: number;
+  quantity: number;
 }
 
 export interface ApiEnvelope<T> {

@@ -15,7 +15,7 @@ import { unstable_cache } from 'next/cache';
 
 import { prisma } from './db';
 import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
-import { SELLER_IS_ACTIVE } from './product-visibility';
+import { PUBLIC_CATALOG } from './product-visibility';
 
 export const CATALOG_CACHE_TAG = 'products';
 export const CATEGORIES_CACHE_TAG = 'categories';
@@ -152,7 +152,7 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
     const where: Record<string, unknown> = {
       status: 'ACTIVE',
       deletedAt: null,
-      ...SELLER_IS_ACTIVE,
+      ...PUBLIC_CATALOG,
       ...scopeWhere(scope),
     };
     if (brand) where.brand = { slug: brand };
@@ -238,7 +238,7 @@ export async function fetchProducts(query: CatalogQuery = {}): Promise<{
 export async function fetchProductBySlug(slug: string): Promise<MockProduct | null> {
   try {
     const row = await prisma.product.findFirst({
-      where: { slug, status: 'ACTIVE', deletedAt: null, ...SELLER_IS_ACTIVE },
+      where: { slug, status: 'ACTIVE', deletedAt: null, ...PUBLIC_CATALOG },
       select: PRODUCT_SELECT,
     });
     return row ? toMockProduct(row) : null;
@@ -312,7 +312,7 @@ function reviewAuthorName(user: { firstName: string | null; lastName: string | n
 export async function fetchProductDetailExtras(slug: string): Promise<ProductDetailExtras | null> {
   try {
     const row = await prisma.product.findFirst({
-      where: { slug, status: 'ACTIVE', deletedAt: null, ...SELLER_IS_ACTIVE },
+      where: { slug, status: 'ACTIVE', deletedAt: null, ...PUBLIC_CATALOG },
       select: {
         sku: true,
         weightGrams: true,

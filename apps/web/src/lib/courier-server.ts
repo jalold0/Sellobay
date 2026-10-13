@@ -112,6 +112,12 @@ const SHIPPABLE_ORDER: Prisma.OrderWhereInput = {
   // kelmagan jo'natma bo'lsa buyurtma olib ketishga tayyor emas. Jo'natmasi yo'q (eski)
   // buyurtmalarga ta'sir qilmaydi.
   sellerShipments: { none: { status: { in: ['NEW', 'ACCEPTED', 'PACKED'] } } },
+  // Global (Xitoy) buyurtma — tovar kargo bilan omborimizga kelib, admin «Qadoqlandi» qilgandan
+  // keyingina (ADR 0015). Ilgari to'lov bilanoq ro'yxatga chiqardi — tovar hali Xitoyda edi.
+  NOT: {
+    globalFulfillment: { isNot: null },
+    status: { notIn: ['PACKED', 'SHIPPED', 'OUT_FOR_DELIVERY'] },
+  },
 };
 
 /**

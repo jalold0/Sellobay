@@ -3,7 +3,7 @@
 
 import { withApi } from '@/lib/api-handler';
 import { prisma } from '@/lib/db';
-import { SELLER_IS_ACTIVE } from '@/lib/product-visibility';
+import { PUBLIC_CATALOG } from '@/lib/product-visibility';
 
 import type { NextRequest } from 'next/server';
 
@@ -25,7 +25,7 @@ export const GET = withApi(async (req: NextRequest) => {
       where: {
         status: 'ACTIVE',
         deletedAt: null,
-        ...SELLER_IS_ACTIVE,
+        ...PUBLIC_CATALOG,
         OR: [
           { name: { path: ['uz'], string_contains: q } },
           { name: { path: ['ru'], string_contains: q } },

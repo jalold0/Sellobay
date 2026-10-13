@@ -8,8 +8,9 @@
 //   → operator platformadan sotib oladi (PURCHASED) → trek raqam kargo saytiga (IN_CARGO)
 //   → mijoz oldi (DELIVERED).
 
-import { evaluateVariance } from '@ecom/core-domain';
+import { evaluateVariance, FULFILLMENT_FLOW } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
+import { applyFulfillmentTransition, ConcurrentTransitionError } from '@ecom/order-ops';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
@@ -423,15 +424,39 @@ export async function setFulfillmentStatus(
     );
   }
 
-  const updated = await prisma.globalFulfillment.update({
-    where: { id },
-    data: {
-      status: input.status,
-      operatorId: user.id,
-      ...(input.status === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
-      ...(input.note ? { operatorNote: input.note } : {}),
-    },
-    select: { order: { select: { userId: true, number: true } } },
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.globalFulfillment.update({
+      where: { id },
+      data: {
+        status: input.status,
+        operatorId: user.id,
+        ...(input.status === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
+        ...(input.note ? { operatorNote: input.note } : {}),
+      },
+      select: {
+        order: { select: { id: true, userId: true, number: true, status: true, shippedAt: true } },
+      },
+    });
+    // «Mijoz oldi» — buyurtma ham «Yetkazildi» (ADR 0015): ilgari zayavka yopilardi-yu, buyurtma
+    // to'langan holatda qolib ketardi (audit O9).
+    if (
+      input.status === 'DELIVERED' &&
+      (FULFILLMENT_FLOW as readonly string[]).includes(u.order.status) &&
+      u.order.status !== 'DELIVERED'
+    ) {
+      try {
+        await applyFulfillmentTransition(tx, u.order, 'DELIVERED', {
+          changedBy: user.id,
+          comment: 'Global: mijoz oldi',
+        });
+      } catch (e) {
+        if (e instanceof ConcurrentTransitionError) {
+          throw new GlobalFulfillmentError(409, 'CONCURRENT_UPDATE', 'Buyurtma holati o‘zgargan');
+        }
+        throw e;
+      }
+    }
+    return u;
   });
 
   if (input.status === 'DELIVERED' || input.status === 'CANCELLED' || input.status === 'REFUNDED') {
