@@ -81,6 +81,13 @@ class CategoryGrid extends StatelessWidget {
   ];
 
   static IconData _iconFor(String slug) => switch (slug) {
+        // Bo'limlar (packages/database/prisma/kategoriya-daraxti.ts).
+        'ayollar' => Icons.woman,
+        'erkaklar' => Icons.man,
+        'bolalar' => Icons.child_care_outlined,
+        'gozallik-parfyumeriya' => Icons.spa_outlined,
+        'maishiy-texnika' => Icons.kitchen_outlined,
+        // Eski tekis kategoriyalar.
         'clothing' => Icons.checkroom,
         'shoes' => Icons.ice_skating_outlined,
         'perfume' => Icons.local_florist_outlined,

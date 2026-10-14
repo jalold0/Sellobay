@@ -4,7 +4,7 @@
 import { withApi } from '@/lib/api-handler';
 import { PUBLIC_CATALOG } from '@/lib/product-visibility';
 
-import { scopeWhere, type CatalogScope } from '../../../lib/catalog';
+import { categoryFilterIds, scopeWhere, type CatalogScope } from '../../../lib/catalog';
 import { prisma } from '../../../lib/db';
 
 import type { Prisma } from '@ecom/database';
@@ -61,7 +61,9 @@ export const GET = withApi(async (req: NextRequest) => {
   if (featured === 'true') where.isFeatured = true;
   if (brand) where.brand = { slug: brand };
   if (category) {
-    where.categories = { some: { category: { slug: category } } };
+    // Bo'lim tanlansa — ichidagi barcha turlarning mahsulotlari ham.
+    const categoryIds = await categoryFilterIds(category);
+    where.categories = { some: { categoryId: { in: categoryIds ?? [] } } };
   }
   // Qidiruv: slug (lowercase) / name JSON (uz/ru/en) / SKU.
   // Eslatma: JSON string_contains katta-kichik harfga SEZGIR — shu bois q'ning

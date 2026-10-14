@@ -5,8 +5,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 
 import { FilterBar } from '../../../components/catalog/filter-bar';
+import { SubcategoryChips } from '../../../components/catalog/subcategory-chips';
 import { ProductCardClient } from '../../../components/product/product-card-client';
 import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../../../lib/catalog';
+import { findInTree } from '../../../lib/category-tree';
 import { findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
 
 interface CatalogPageProps {
@@ -46,13 +48,19 @@ export default async function CatalogPage({ params, searchParams }: CatalogPageP
     sort: searchParams.sort,
   });
 
-  const selectedCategory = searchParams.category
-    ? findBySlug(categories, searchParams.category)
-    : undefined;
+  // Ichki tur ham topiladi (sarlavha uchun), va uning bo'limi — ikkinchi
+  // qatordagi turlar shu bo'limniki.
+  const hit = searchParams.category ? findInTree(categories, searchParams.category) : null;
+  const selectedCategory = hit?.node;
+  const department = hit?.root;
   const selectedBrand = searchParams.brand ? findBySlug(brands, searchParams.brand) : undefined;
 
+  // Ichki tur nomi yolg'iz noaniq («Kiyim» — kimniki?), shuning uchun
+  // bo'lim bilan: «Ayollar · Kiyim».
   const title = selectedCategory
-    ? pickLocale(selectedCategory.name, locale)
+    ? department && department.slug !== selectedCategory.slug
+      ? `${pickLocale(department.name, locale)} · ${pickLocale(selectedCategory.name, locale)}`
+      : pickLocale(selectedCategory.name, locale)
     : selectedBrand
       ? selectedBrand.name
       : searchParams.q
@@ -78,7 +86,21 @@ export default async function CatalogPage({ params, searchParams }: CatalogPageP
                 {product('breadcrumbCatalog')}
               </Link>
               <span aria-hidden>/</span>
-              <span className="text-brand-ink font-semibold">{title}</span>
+              {/* Ichki tur tanlansa — uning bo'limi ham (Ayollar / Poyabzal). */}
+              {department && department.slug !== selectedCategory?.slug && (
+                <>
+                  <Link
+                    href={`/catalog?category=${department.slug}`}
+                    className="hover:text-brand-ink transition-colors"
+                  >
+                    {pickLocale(department.name, locale)}
+                  </Link>
+                  <span aria-hidden>/</span>
+                </>
+              )}
+              <span className="text-brand-ink font-semibold">
+                {selectedCategory ? pickLocale(selectedCategory.name, locale) : title}
+              </span>
             </>
           ) : (
             <span className="text-brand-ink font-semibold">{product('breadcrumbCatalog')}</span>
@@ -116,6 +138,23 @@ export default async function CatalogPage({ params, searchParams }: CatalogPageP
           all: common('all'),
         }}
       />
+
+      {department && department.children.length > 0 && (
+        <SubcategoryChips
+          department={{
+            slug: department.slug,
+            label: common('all'),
+          }}
+          items={department.children.map((c) => ({
+            slug: c.slug,
+            label: pickLocale(c.name, locale),
+            count: c.productCount,
+          }))}
+          activeSlug={searchParams.category ?? ''}
+          keep={{ brand: searchParams.brand, sort: searchParams.sort, q: searchParams.q }}
+          ariaLabel={pickLocale(department.name, locale)}
+        />
+      )}
 
       {list.length === 0 ? (
         <EmptyState

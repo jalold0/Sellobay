@@ -24,7 +24,8 @@
     "typecheck": "tsc --noEmit",
     "seed:test-accounts": "tsx prisma/seed-test-accounts.ts",
     "migrate:status": "prisma migrate status",
-    "check:payment-dupes": "node scripts/tekshir-tolov-dublikat.mjs"
+    "check:payment-dupes": "node scripts/tekshir-tolov-dublikat.mjs",
+    "categories:tree": "tsx scripts/kategoriya-daraxti.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0"

@@ -317,10 +317,30 @@ export function createCategory(input: {
   name: { uz: string; ru?: string; en?: string };
   slug?: string;
   parentId?: string | null;
+  position?: number;
+  iconUrl?: string | null;
+  isActive?: boolean;
 }) {
   return api<{ category: AdminCategory }>('/api/categories', {
     method: 'POST',
     body: JSON.stringify(input),
+  });
+}
+
+/** Slug o'zgarmaydi — havolalarda ishlatiladi. */
+export function updateCategory(
+  id: string,
+  patch: {
+    name?: { uz: string; ru?: string; en?: string };
+    parentId?: string | null;
+    position?: number;
+    iconUrl?: string | null;
+    isActive?: boolean;
+  },
+) {
+  return api<{ category: AdminCategory }>(`/api/categories/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
   });
 }
 

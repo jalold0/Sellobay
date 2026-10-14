@@ -175,10 +175,9 @@ class CatalogRepository {
   /// katalogga tushadi. Web'da bu filtr serverda bajariladi, mobil uchun
   /// esa alohida endpoint yo'q — shuning uchun shu yerda.
   ///
-  /// Eslatma: `productCount` kategoriyaga BOG'LANGAN hamma mahsulotni
-  /// sanaydi (status va qamrovga qaramay), ro'yxat esa LOKAL va ACTIVE
-  /// bilan cheklangan. Ya'ni son ro'yxatdan katta bo'lishi mumkin — bu
-  /// farq web'da ham bor.
+  /// `productCount` server tomonida ko'rinadigan (faol, lokal) mahsulotlardan
+  /// sanaladi; bo'limda — ichki turlardagi takrorlanmaganlari. Bo'sh ichki
+  /// tur ham olib tashlanadi ([CategorySummary.withoutEmpty]).
   ///
   /// Natija qisqa muddat ESLAB qolinadi: bosh sahifa ham, katalog ham
   /// shu ro'yxatni so'raydi va ilova ochilganda ikki bir xil so'rov
@@ -191,7 +190,12 @@ class CatalogRepository {
     if (!refresh && cached != null && at != null && DateTime.now().difference(at) < storefrontTtl) {
       return cached;
     }
-    final request = fetchCategories().then((all) => all.where((c) => c.productCount > 0).toList());
+    final request = fetchCategories().then(
+      (all) => [
+        for (final c in all)
+          if (c.productCount > 0) c.withoutEmpty(),
+      ],
+    );
     _storefront = request;
     _storefrontAt = DateTime.now();
     request.then<void>((_) {}, onError: (Object _) {
