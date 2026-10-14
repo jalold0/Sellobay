@@ -18,10 +18,11 @@ import {
   getRelatedProducts,
 } from '../../../../lib/product-details';
 import { notFoundMetadata } from '../../../../lib/seo';
+import { siteUrl } from '../../../../lib/site-url';
 
 import type { Metadata } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = siteUrl();
 
 interface PageProps {
   params: { slug: string; locale: Locale };

@@ -18,6 +18,7 @@ import { ServiceWorkerRegister } from '../../components/pwa/service-worker-regis
 import { StickyInstallBar } from '../../components/pwa/sticky-install-bar';
 import { OrganizationJsonLd } from '../../components/seo/structured-data';
 import { fetchStorefrontCategories } from '../../lib/catalog';
+import { siteUrl } from '../../lib/site-url';
 import { QueryProvider } from '../../providers/query-provider';
 import { StoreHydrator } from '../../store/hydrate';
 import { StoreSync } from '../../store/store-sync';
@@ -51,7 +52,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
   title: {
     template: '%s · Sellobay',
     default: "Sellobay — O'zbekiston uchun onlayn marketplace",
