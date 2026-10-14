@@ -180,7 +180,13 @@
       "flash": "Flash chegirmalar",
       "secure": "Xavfsiz to'lov"
     },
-    "brandsCount": "{count} brend"
+    "brandsCount": "{count} brend",
+    "banner": {
+      "brandsTitle": "Minglab brendlar, bitta ilovada",
+      "saleTitle": "Chegirmadagi tovarlar",
+      "globalCta": "Global tovarlarni ko‘rish"
+    },
+    "global": "Global"
   },
   "featured": {
     "eyebrow": "Edit · Premium",
@@ -1376,5 +1382,14 @@
   "push": {
     "paymentConfirmed": "Karta to‘lovingiz tasdiqlandi — buyurtma tayyorlanmoqda",
     "paymentRejected": "Chek rad etildi. Buyurtmani ochib, yangi chek yuklang"
+  },
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "empty": "Hozircha xabar yo‘q",
+    "emptyHint": "Buyurtmangiz holati o‘zgarganda shu yerda ko‘rasiz.",
+    "markAllRead": "Hammasini o‘qildi deb belgilash",
+    "loginTitle": "Bildirishnomalar akkauntingizga keladi",
+    "loginHint": "Buyurtma holatini kuzatish uchun tizimga kiring.",
+    "unread": "O‘qilmagan"
   }
 }

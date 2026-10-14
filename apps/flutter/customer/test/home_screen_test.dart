@@ -99,6 +99,13 @@ Future<HomeTabsController> pumpHome(
   return tabs;
 }
 
+/// Ro'yxatda pastda turgan elementni ko'rinadigan qilib bosadi.
+Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pump();
+  await tester.tap(finder);
+}
+
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -109,11 +116,16 @@ void main() {
   testWidgets('bo`limlar serverdan kelgan narsaga qarab chiziladi', (tester) async {
     await pumpHome(tester, _backend());
 
-    expect(find.text('Kategoriyalar'), findsOneWidget);
-    expect(find.text('Tanlangan kolleksiya'), findsOneWidget);
-    expect(find.text("Eng ko'p sotilganlar"), findsOneWidget);
-    expect(find.text('Nike Air Max'), findsOneWidget);
-    expect(find.text('Puma RS-X'), findsOneWidget);
+    // Kategoriyalar to'ri: serverdagilar + doim «Global» va «Barchasi».
+    expect(find.text('Poyabzal'), findsOneWidget);
+    expect(find.text('Kiyim-kechak'), findsOneWidget);
+    expect(find.text('Global'), findsOneWidget);
+    expect(find.text('Barchasi'), findsOneWidget);
+    // Tovar qatorlari banner ostida — ekrandan pastda bo'lishi mumkin.
+    expect(find.text('Tanlangan kolleksiya', skipOffstage: false), findsOneWidget);
+    expect(find.text("Eng ko'p sotilganlar", skipOffstage: false), findsOneWidget);
+    expect(find.text('Nike Air Max', skipOffstage: false), findsOneWidget);
+    expect(find.text('Puma RS-X', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('bo`sh bo`lim KO`RSATILMAYDI', (tester) async {
@@ -121,8 +133,8 @@ void main() {
     // to'ldiradi — bu yerda shunday qilinmaydi.
     await pumpHome(tester, _backend(featured: const []));
 
-    expect(find.text('Tanlangan kolleksiya'), findsNothing);
-    expect(find.text("Eng ko'p sotilganlar"), findsOneWidget);
+    expect(find.text('Tanlangan kolleksiya', skipOffstage: false), findsNothing);
+    expect(find.text("Eng ko'p sotilganlar", skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('hammasi bo`sh — to`qima tovar chiqmaydi', (tester) async {
@@ -131,8 +143,8 @@ void main() {
       _backend(categories: '{"items":[]}', featured: const [], popular: const []),
     );
 
-    expect(find.byType(ProductCard), findsNothing);
-    expect(find.text('Hech narsa topilmadi'), findsOneWidget);
+    expect(find.byType(ProductCard, skipOffstage: false), findsNothing);
+    expect(find.text('Hech narsa topilmadi', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('«tanlangan» va «ommabop» ALOHIDA so`raladi', (tester) async {
@@ -157,7 +169,7 @@ void main() {
     final backend = _backend();
     final tabs = await pumpHome(tester, backend, shell: true);
 
-    await tester.tap(find.widgetWithText(ActionChip, 'Poyabzal'));
+    await tester.tap(find.text('Poyabzal'));
     await settle(tester);
 
     expect(tabs.tab, HomeTab.catalog);
@@ -172,7 +184,7 @@ void main() {
     final backend = _backend();
     final tabs = await pumpHome(tester, backend, shell: true);
 
-    await tester.tap(find.text("Barchasini ko'rish").first);
+    await tapVisible(tester, find.text("Barchasini ko'rish", skipOffstage: false).first);
     await settle(tester);
 
     expect(tabs.tab, HomeTab.catalog);
@@ -186,12 +198,34 @@ void main() {
     final backend = _backend();
     await pumpHome(tester, backend, shell: true);
 
-    await tester.tap(find.text("Barchasini ko'rish").last);
+    await tapVisible(tester, find.text("Barchasini ko'rish", skipOffstage: false).last);
     await settle(tester);
 
     final lastQuery = backend.queries[backend.calls.lastIndexOf('/api/products')];
     expect(lastQuery?['sort'], 'popular');
     expect(lastQuery?.containsKey('featured'), isNot(isTrue));
+  });
+
+  testWidgets('«Global» katagi katalogni Global tovarlar bilan ochadi', (tester) async {
+    final backend = _backend();
+    final tabs = await pumpHome(tester, backend, shell: true);
+
+    await tester.tap(find.text('Global'));
+    await settle(tester);
+
+    expect(tabs.tab, HomeTab.catalog);
+    final lastQuery = backend.queries[backend.calls.lastIndexOf('/api/products')];
+    expect(lastQuery?['scope'], 'GLOBAL');
+    // Katalogda filtr chipi — bosilsa oddiy katalogga qaytadi.
+    expect(find.widgetWithText(InputChip, 'Global'), findsOneWidget);
+  });
+
+  testWidgets('kirilmagan bo`lsa qo`ng`iroq soni so`ralmaydi', (tester) async {
+    final backend = _backend();
+    await pumpHome(tester, backend);
+
+    expect(backend.calls, isNot(contains('/api/notifications')));
+    expect(find.byTooltip('Bildirishnomalar'), findsOneWidget);
   });
 
   testWidgets('xato — qayta urinish', (tester) async {

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import '../home_tabs.dart';
+import '../widgets/home/category_grid.dart';
+import '../widgets/home/notification_bell.dart';
+import '../widgets/home/promo_carousel.dart';
+import '../widgets/home/trust_strip.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton.dart';
 import 'product_screen.dart';
@@ -36,6 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   CatalogRepository get _repo => SellobayRuntimeScope.of(context).catalog;
+
+  /// Tortib yangilashda qo'ng'iroqdagi son ham qayta so'raladi.
+  int _refreshToken = 0;
 
   Future<void> _load() async {
     setState(() => _error = null);
@@ -73,12 +80,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // Logotip so'zi — web sarlavhasidagi kabi serif (`font-serif`).
-        title: Text(
-          context.t('common.appName'),
-          style: SellobayType.heading(SellobayType.screen, color: SellobayColors.ink),
-        ),
+        titleSpacing: 16,
+        title: _brand(context),
         actions: [
+          NotificationBell(refreshToken: _refreshToken),
           // Sevimlilar ilgari faqat profil ichida edi: eng ko'p ishlatiladigan
           // ro'yxat uchun ikki bosish ortiqcha.
           IconButton(
@@ -88,9 +93,16 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute<void>(builder: (_) => const WishlistScreen()),
             ),
           ),
+          const SizedBox(width: 4),
         ],
       ),
-      body: RefreshIndicator(onRefresh: _load, child: _body(context)),
+      body: RefreshIndicator(
+        onRefresh: () {
+          setState(() => _refreshToken++);
+          return _load();
+        },
+        child: _body(context),
+      ),
     );
   }
 
@@ -126,10 +138,19 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(bottom: 28),
       children: [
         _searchBar(context),
-        if (_categories.isNotEmpty) ...[
-          _sectionHeader(context, context.t('home.categoriesTitle')),
-          _categoryRow(context, locale),
-        ],
+        const SizedBox(height: 8),
+        PromoCarousel(slides: _slides(context)),
+        const SizedBox(height: 16),
+        const TrustStrip(),
+        const SizedBox(height: 18),
+        // Kategoriyalar bo'sh bo'lsa ham «Global» va «Barchasi» qoladi —
+        // ikkalasi ham ishlaydigan yo'l.
+        CategoryGrid(
+          categories: _categories,
+          onCategory: (c) => _openCatalog(ProductQuery(categorySlug: c.slug)),
+          onGlobal: () => _openCatalog(const ProductQuery(scope: CatalogScope.global)),
+          onAll: () => _openCatalog(const ProductQuery()),
+        ),
         if (_featured.isNotEmpty) ...[
           _sectionHeader(
             context,
@@ -211,22 +232,59 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  Widget _categoryRow(BuildContext context, String locale) => SizedBox(
-        height: 42,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: _categories.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final category = _categories[i];
-            return ActionChip(
-              label: Text(category.name.pick(locale)),
-              onPressed: () => _openCatalog(ProductQuery(categorySlug: category.slug)),
-            );
-          },
-        ),
+  /// Logotip: ilova belgisi + serif nom (web sarlavhasidagi kabi).
+  Widget _brand(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset('assets/brand/icon.png', width: 36, height: 36),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.t('common.appName'),
+                style: SellobayType.heading(SellobayType.cardTitle, color: SellobayColors.ink),
+              ),
+              Text(
+                context.t('common.marketplace'),
+                style: const TextStyle(fontSize: SellobayType.micro, color: SellobayColors.mutedText),
+              ),
+            ],
+          ),
+        ],
       );
+
+  /// Bannerlar. Matn i18n'dan — web bosh sahifasidagi bilan bir xil kalitlar.
+  List<PromoSlide> _slides(BuildContext context) => [
+        PromoSlide(
+          eyebrow: context.t('hero.eyebrow'),
+          title: context.t('home.banner.brandsTitle'),
+          text: context.t('hero.subheadline'),
+          cta: context.t('hero.ctaShop'),
+          style: PromoSlideStyle.crimson,
+          onTap: () => _openCatalog(const ProductQuery()),
+        ),
+        PromoSlide(
+          eyebrow: context.t('featured.title'),
+          title: context.t('home.promo.title'),
+          text: context.t('home.promo.subtitleNoSale'),
+          cta: context.t('home.viewAllLong'),
+          style: PromoSlideStyle.ink,
+          onTap: () => _openCatalog(const ProductQuery(featured: true)),
+        ),
+        PromoSlide(
+          eyebrow: context.t('home.promo.globalEyebrow'),
+          title: context.t('home.promo.globalTitle'),
+          text: context.t('home.promo.globalText'),
+          cta: context.t('home.banner.globalCta'),
+          style: PromoSlideStyle.soft,
+          onTap: () => _openCatalog(const ProductQuery(scope: CatalogScope.global)),
+        ),
+      ];
 
   Widget _productRow(
     BuildContext context,
