@@ -1,7 +1,8 @@
 import { ChevronRight } from 'lucide-react';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+
+import { Link } from '@/i18n/navigation';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { ProductDetail } from '../../../../components/product/product-detail';
@@ -22,6 +23,10 @@ import { siteUrl } from '../../../../lib/site-url';
 
 import type { Metadata } from 'next';
 
+// ISR: sahifa CDN'dan beriladi, narx/zaxira ko'rinishi 60 s ichida yangilanadi
+// (buyurtmada zaxira baribir serverda tekshiriladi).
+export const revalidate = 60;
+
 const SITE_URL = siteUrl();
 
 interface PageProps {
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const dbProduct = await fetchProductBySlug(params.slug);
   const detail = dbProduct ? buildProductDetail(dbProduct) : getProductDetail(params.slug);
   if (!detail) {
-    const t = await getTranslations('product');
+    const t = await getTranslations({ locale: params.locale, namespace: 'product' });
     return notFoundMetadata(t('notFound'));
   }
   const { product, description } = detail;
@@ -68,23 +73,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
+  setRequestLocale(params.locale);
   const dbProduct = await fetchProductBySlug(params.slug);
-  // Real rasm galereyasi + variantlar (rang/o'lcham) — DB'dan
-  const extras = dbProduct ? await fetchProductDetailExtras(params.slug) : null;
+  // Real rasm galereyasi + variantlar (rang/o'lcham) va o'xshash tovarlar — parallel.
+  const [extras, relatedDb] = await Promise.all([
+    dbProduct ? fetchProductDetailExtras(params.slug) : null,
+    dbProduct?.categoryId ? fetchProducts({ category: dbProduct.categoryId, limit: 5 }) : null,
+  ]);
   const detail = dbProduct
     ? buildProductDetail(dbProduct, extras ?? undefined)
     : getProductDetail(params.slug);
   if (!detail) notFound();
 
-  const locale = (await getLocale()) as Locale;
+  const locale = params.locale;
   const t = await getTranslations('product');
 
   // O'xshash mahsulotlar — DB mahsuloti bo'lsa DB'dan (kartochka savatga to'g'ri UUID
   // beradi va checkout ishlaydi); aks holda mock fallback.
   let related: MockProduct[];
-  if (dbProduct && dbProduct.categoryId) {
-    const { items } = await fetchProducts({ category: dbProduct.categoryId, limit: 5 });
-    related = items.filter((p) => p.id !== dbProduct.id).slice(0, 4);
+  if (dbProduct && relatedDb) {
+    related = relatedDb.items.filter((p) => p.id !== dbProduct.id).slice(0, 4);
   } else {
     related = getRelatedProducts(detail.product.id, 4);
   }

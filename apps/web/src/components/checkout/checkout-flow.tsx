@@ -13,10 +13,11 @@ import {
 import { toast } from '@ecom/ui';
 import { Package, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link, useRouter } from '@/i18n/navigation';
 
 import { COIN_VALUE_SOM } from '../../lib/loyalty';
 import { isOnlineProvider } from '../../lib/payments';

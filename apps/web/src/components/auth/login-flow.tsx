@@ -2,11 +2,11 @@
 
 import { toast } from '@ecom/ui';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import { Link } from '@/i18n/navigation';
 import { loginWithEmail, sendOtp, verifyOtp } from '@/lib/auth/client';
 
 import { SellobayMark } from '../brand/sellobay-mark';

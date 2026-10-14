@@ -2,9 +2,10 @@
 
 import { Button } from '@ecom/ui';
 import { Cookie, X } from 'lucide-react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 const STORAGE_KEY = 'ecom_cookie_consent_v1';
 

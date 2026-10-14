@@ -2,11 +2,12 @@ import { jwtVerify } from 'jose';
 import { NextResponse } from 'next/server';
 import createIntlMiddleware from 'next-intl/middleware';
 
+import { routing } from '@/i18n/routing';
 import { COOKIE_ACCESS, COOKIE_REFRESH, accessSecretOrNull } from '@/lib/auth/constants';
 
 import type { NextRequest } from 'next/server';
 
-const LOCALES = ['uz', 'ru', 'en'] as const;
+const LOCALES = routing.locales;
 type Locale = (typeof LOCALES)[number];
 
 // Auth talab qiladigan yo'llar (locale prefix tashlangandan keyin)
@@ -20,11 +21,7 @@ const PROTECTED_PREFIXES = ['/profile'];
 // mos kelgandagina keladi.
 const PROTECTED_EXCLUDES: string[] = [];
 
-const intlMiddleware = createIntlMiddleware({
-  locales: LOCALES as unknown as string[],
-  defaultLocale: 'uz',
-  localePrefix: 'always',
-});
+const intlMiddleware = createIntlMiddleware(routing);
 
 function detectLocale(pathname: string): Locale {
   for (const loc of LOCALES) {

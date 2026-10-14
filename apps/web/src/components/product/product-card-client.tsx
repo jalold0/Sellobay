@@ -3,20 +3,33 @@
 import { FREE_SHIPPING_THRESHOLD } from '@ecom/core-domain';
 import { ProductCard, toast, type ProductCardProps } from '@ecom/ui';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link, useRouter } from '@/i18n/navigation';
 
 import { type MockProduct, pickLocale, productImage } from '../../lib/mock-data';
 import { useCart } from '../../store/cart';
 import { useWishlist } from '../../store/wishlist';
 
-const NextLink = (props: { href: string; className?: string; children: React.ReactNode }) => (
-  // typedRoutes muammosini oldini olish uchun any
-  <Link href={props.href as never} className={props.className} prefetch={false}>
-    {props.children}
-  </Link>
-);
+// Kartochka ko'rinishi bilan prefetch qilinmaydi (katalogda o'nlab tovar — mobil trafik),
+// lekin kursor yoki barmoq tekkanda sahifa oldindan olinadi: bosilganda tayyor turadi.
+// `prefetch={false}` App Router'da hover prefetch'ni ham o'chiradi, shuning uchun qo'lda.
+const NextLink = (props: { href: string; className?: string; children: React.ReactNode }) => {
+  const router = useRouter();
+  const warm = () => router.prefetch(props.href);
+  return (
+    <Link
+      href={props.href}
+      className={props.className}
+      prefetch={false}
+      onMouseEnter={warm}
+      onTouchStart={warm}
+    >
+      {props.children}
+    </Link>
+  );
+};
 
 const NextImageWrapper = (props: {
   src: string;

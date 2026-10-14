@@ -2,9 +2,10 @@
 
 import { Button, EmptyState, Skeleton } from '@ecom/ui';
 import { Heart } from 'lucide-react';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { fetchProductsByIds } from '../../../../lib/api-products';

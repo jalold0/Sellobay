@@ -3,9 +3,10 @@
 import { EmptyState, Skeleton, cn } from '@ecom/ui';
 import { Globe, Package } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import { formatDate as fmtDate, formatMoney } from '../../../../lib/format';
 

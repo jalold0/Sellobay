@@ -2,9 +2,10 @@
 
 import { Clock, Search, TrendingUp, X } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { useRouter } from '@/i18n/navigation';
 
 import { pickLocale, type Locale, type LocalizedText } from '../../lib/mock-data';
 
@@ -59,7 +60,12 @@ export function AnimatedSearch({ className }: { className?: string }) {
 
   React.useEffect(() => {
     if (open || suggestions.length === 0) return undefined;
-    const id = setInterval(() => setIdx((i) => (i + 1) % suggestions.length), 2500);
+    // Header'da ikki nusxa bor (mobil va desktop qatori), biri doim `display:none`.
+    // Yashirin nusxa ham har 2.5 s qayta render qilmasin.
+    const id = setInterval(() => {
+      if (!rootRef.current?.offsetParent) return;
+      setIdx((i) => (i + 1) % suggestions.length);
+    }, 2500);
     return () => clearInterval(id);
   }, [open, suggestions.length]);
 
@@ -124,13 +130,13 @@ export function AnimatedSearch({ className }: { className?: string }) {
   const goCatalog = (q: string) => {
     saveRecent(q);
     setOpen(false);
-    router.push(`/${locale}/catalog?q=${encodeURIComponent(q)}`);
+    router.push(`/catalog?q=${encodeURIComponent(q)}`);
   };
 
   const goProduct = (slug: string) => {
     saveRecent(value);
     setOpen(false);
-    router.push(`/${locale}/product/${slug}`);
+    router.push(`/product/${slug}`);
   };
 
   const onSubmit = (e: React.FormEvent) => {
@@ -267,7 +273,7 @@ export function AnimatedSearch({ className }: { className?: string }) {
                           type="button"
                           onClick={() => {
                             setOpen(false);
-                            router.push(`/${locale}/catalog?category=${c.slug}`);
+                            router.push(`/catalog?category=${c.slug}`);
                           }}
                           className="hover:bg-accent block w-full rounded px-3 py-2 text-left text-sm"
                         >
@@ -288,7 +294,7 @@ export function AnimatedSearch({ className }: { className?: string }) {
                           type="button"
                           onClick={() => {
                             setOpen(false);
-                            router.push(`/${locale}/catalog?brand=${b.slug}`);
+                            router.push(`/catalog?brand=${b.slug}`);
                           }}
                           className="hover:bg-accent block w-full rounded px-3 py-2 text-left text-sm"
                         >

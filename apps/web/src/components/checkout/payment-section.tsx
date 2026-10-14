@@ -100,8 +100,10 @@ export function PaymentSection({
         })}
       </div>
 
-      {/* Karta orqali to'lov — kartalar + chek yuklash */}
-      {payment === 'UZCARD' ? (
+      {/* Karta orqali to'lov — kartalar + chek yuklash. Faqat usul haqiqatan mavjud
+          bo'lsa: ilgari boshlang'ich `payment` 'UZCARD' bo'lgani uchun panel serverdan
+          javob kelguncha ko'rinib, keyin yo'qolardi va forma sakrardi. */}
+      {payment === 'UZCARD' && available.includes('UZCARD') ? (
         <div className="border-primary/30 bg-primary/[0.03] mt-4 space-y-4 rounded-[14px] border p-4">
           <div>
             <h3 className="text-brand-ink text-sm font-bold">{t('payment.cardTransferTitle')}</h3>

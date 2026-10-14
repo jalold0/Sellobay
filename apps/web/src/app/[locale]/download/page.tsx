@@ -1,3 +1,5 @@
+import { setRequestLocale } from 'next-intl/server';
+
 import { DownloadView } from '../../../components/download/download-view';
 
 import type { Metadata } from 'next';
@@ -8,6 +10,7 @@ export const metadata: Metadata = {
     "Sellobay ilovasini iPhone, Android yoki kompyuteringizga yuklab oling. PWA — alohida o'rnatish kerak emas, brauzer orqali.",
 };
 
-export default function DownloadPage() {
+export default function DownloadPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return <DownloadView />;
 }

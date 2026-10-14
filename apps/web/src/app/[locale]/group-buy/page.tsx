@@ -1,6 +1,6 @@
 import { Badge } from '@ecom/ui';
 import { Gift, Share2, Users } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { GroupBuyCard } from '../../../components/group-buy/group-buy-card';
 import { getCurrentUser } from '../../../lib/auth/session';
@@ -10,12 +10,17 @@ import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('groupBuy');
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'groupBuy' });
   return { title: t('metaTitle'), description: t('metaDescription') };
 }
 
-export default async function GroupBuyPage() {
+export default async function GroupBuyPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   const t = await getTranslations('groupBuy');
 
   // Haqiqiy guruhlar DB'dan. Hech narsa bo'lmasa — bo'sh holat ko'rsatiladi

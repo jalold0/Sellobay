@@ -3,9 +3,10 @@
 import { Button } from '@ecom/ui';
 import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, Home, RotateCw } from 'lucide-react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 export default function Error({
   error,

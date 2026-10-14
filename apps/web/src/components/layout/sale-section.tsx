@@ -2,9 +2,11 @@
 
 import { Button } from '@ecom/ui';
 import { ArrowRight, Flame } from 'lucide-react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import { type Locale, type MockProduct, productImage } from '../../lib/mock-data';
 import { ProductCardClient } from '../product/product-card-client';
@@ -108,11 +110,14 @@ export function SaleSection({ locale, saleProducts }: Props) {
                 key={p.id}
                 className="relative aspect-square overflow-hidden rounded-xl border border-white/20 bg-white/10"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={productImage(p.imageSeed)}
+                {/* next/image: ekrandan pastda — kech yuklanadi, o'lchamga mos siqiladi
+                    (ilgari 4 ta to'liq JPG sahifa ochilishi bilan yuklanardi). */}
+                <Image
+                  src={p.imageUrl ?? productImage(p.imageSeed)}
                   alt=""
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="160px"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute inset-x-2 bottom-2 text-white">
