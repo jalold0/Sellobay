@@ -34,25 +34,55 @@ class _CatalogScreenState extends State<CatalogScreen> {
   bool _loadingMore = false;
   Object? _error;
 
+  /// Keyingi sahifa kelmadi. Shu holatda surish yangi so'rov
+  /// YUBORMAYDI — ilgari `_hasMore` `true` qolardi va har surishda
+  /// so'rov + snackbar takrorlanardi. Ro'yxat oxirida «Qayta urinish».
+  Object? _loadMoreError;
+
   Timer? _searchDebounce;
 
   /// Har yangi so'rovga raqam beriladi. Kech kelgan javob yangisini
   /// bosib ketmasligi uchun: foydalanuvchi tez yozganda birinchi
-  /// so'rov ikkinchisidan keyin qaytishi mumkin.
+  /// so'rov ikkinchisidan keyin qaytishi mumkin. Keyingi sahifa
+  /// so'rovi ham shu raqamni oladi — filtr almashgach eski ro'yxatning
+  /// 2-sahifasi yangi natijaga qo'shilib ketmasin.
   int _requestId = 0;
+
+  /// Bo'limlar controller'i — katalog bo'limi ochilganda bosh sahifadan
+  /// kelgan filtrni qo'llash uchun tinglanadi.
+  HomeTabsController? _tabs;
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Bosh sahifadan filtr bilan kelingan bo'lsa — birinchi so'rov
+      // shu filtr bilan ketadi (ikki so'rov emas).
+      final pending = _tabs?.takePendingCatalog();
+      if (pending != null) _query = pending.copyWith(page: 1);
       _loadCategories();
       _reload();
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // `didChangeDependencies` bo'lim almashganda CHAQIRILMAYDI (ekran
+    // `IndexedStack` da tirik turadi) — ilgari katalog bir marta
+    // ochilgach, bosh sahifadagi kategoriya bosilishi hech narsa
+    // qilmasdi. Shuning uchun controller'ning o'zi tinglanadi.
+    final tabs = HomeTabsScope.read(context);
+    if (identical(tabs, _tabs)) return;
+    _tabs?.removeListener(_onTabsChanged);
+    _tabs = tabs?..addListener(_onTabsChanged);
+  }
+
+  @override
   void dispose() {
+    _tabs?.removeListener(_onTabsChanged);
     _searchDebounce?.cancel();
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
@@ -63,16 +93,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
   CatalogRepository get _repo => SellobayRuntimeScope.of(context).catalog;
 
   void _onScroll() {
-    if (!_hasMore || _loadingMore || _loading) return;
+    if (!_hasMore || _loadingMore || _loading || _loadMoreError != null) return;
     if (_scroll.position.pixels < _scroll.position.maxScrollExtent - 400) return;
     _loadMore();
   }
 
-  Future<void> _loadCategories() async {
+  Future<void> _loadCategories({bool refresh = false}) async {
     try {
       // Bo'sh kategoriya ko'rsatilmaydi — bosilsa bo'sh ro'yxatga
       // olib borardi (web'dagi `fetchStorefrontCategories()` qoidasi).
-      final categories = await _repo.fetchStorefrontCategories();
+      // Ro'yxat bosh sahifa bilan bo'lishiladi — qarang repozitoriy.
+      final categories = await _repo.fetchStorefrontCategories(refresh: refresh);
       if (!mounted) return;
       setState(() => _categories = categories);
     } catch (_) {
@@ -81,16 +112,25 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
-  Future<void> _reload() async {
+  /// Birinchi sahifani qayta yuklaydi.
+  ///
+  /// [quiet] — tortib yangilash: bor ro'yxat skeletga almashmaydi,
+  /// yangisi kelguncha ko'rinib turadi (spinnerni `RefreshIndicator`
+  /// o'zi ko'rsatadi). Filtr almashganda esa eski natija noto'g'ri —
+  /// u holda skelet.
+  Future<void> _reload({bool quiet = false}) async {
     final id = ++_requestId;
     setState(() {
-      _loading = true;
+      if (!quiet || _items.isEmpty) _loading = true;
       _error = null;
+      _loadingMore = false;
+      _loadMoreError = null;
     });
     try {
       final page = await _repo.fetchProducts(_query.copyWith(page: 1));
       if (!mounted || id != _requestId) return;
       setState(() {
+        _query = _query.copyWith(page: 1);
         _items
           ..clear()
           ..addAll(page.items);
@@ -108,11 +148,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   Future<void> _loadMore() async {
+    final id = _requestId;
     final nextPage = _query.page + 1;
-    setState(() => _loadingMore = true);
+    setState(() {
+      _loadingMore = true;
+      _loadMoreError = null;
+    });
     try {
       final page = await _repo.fetchProducts(_query.copyWith(page: nextPage));
-      if (!mounted) return;
+      // Shu orada filtr yoki qidiruv o'zgargan — bu sahifa eski
+      // so'rovniki, yangi ro'yxatga qo'shilmaydi.
+      if (!mounted || id != _requestId) return;
       setState(() {
         _query = _query.copyWith(page: nextPage);
         _items.addAll(page.items);
@@ -120,25 +166,27 @@ class _CatalogScreenState extends State<CatalogScreen> {
         _loadingMore = false;
       });
     } catch (e) {
-      if (!mounted) return;
-      // Keyingi sahifa kelmadi — bor ro'yxatni YO'QOTMAYMIZ, faqat
-      // xabar beramiz va qayta urinish imkonini qoldiramiz.
-      setState(() => _loadingMore = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.errorText(e))),
-      );
+      if (!mounted || id != _requestId) return;
+      // Keyingi sahifa kelmadi — bor ro'yxatni YO'QOTMAYMIZ. Avtomatik
+      // qayta urinish to'xtaydi; ro'yxat oxirida tugma chiqadi.
+      setState(() {
+        _loadingMore = false;
+        _loadMoreError = e;
+      });
     }
   }
 
-  /// Bosh sahifadan kelgan kategoriya filtri.
-  ///
-  /// Qobiq ichida bu ekran TIRIK qoladi, ya'ni unga yangi parametr
-  /// bilan qayta kirib bo'lmaydi. Shuning uchun filtr `HomeTabsController`
-  /// da qoldiriladi va shu yerda olinadi.
-  void _takePendingCategory() {
-    final slug = HomeTabsScope.read(context)?.takePendingCategory();
-    if (slug == null || slug == _query.categorySlug) return;
-    _apply(_query.copyWith(categorySlug: slug, search: null));
+  /// Bosh sahifadan kelgan filtr (kategoriya, «tanlangan», saralash).
+  void _onTabsChanged() {
+    final tabs = _tabs;
+    if (tabs == null || tabs.tab != HomeTab.catalog) return;
+    final pending = tabs.takePendingCatalog();
+    if (pending == null) return;
+    // Bosh sahifadagi tanlov — yangi ko'rinish: eski qidiruv matni
+    // ham olib tashlanadi, aks holda filtr qidiruv bilan kesishardi.
+    _searchDebounce?.cancel();
+    _searchField.clear();
+    _apply(pending);
   }
 
   void _apply(ProductQuery query) {
@@ -147,8 +195,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   void _onSearchChanged(String value) {
-    // Tozalash tugmasi matn bor-yo'qligiga qarab chiqadi.
-    setState(() {});
+    // `setState` YO'Q: tozalash tugmasi o'zi kontrollerni tinglaydi.
+    // Ilgari har harf butun ekranni (to'rni ham) qayta qurardi.
     _searchDebounce?.cancel();
     // Har harfda so'rov yubormaymiz.
     _searchDebounce = Timer(const Duration(milliseconds: 400), () {
@@ -157,15 +205,19 @@ class _CatalogScreenState extends State<CatalogScreen> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Bo'lim almashganda qobiq qayta quradi — shu paytda tekshiramiz.
-    // `build` ichida qilib bo'lmaydi: u holat o'zgartiradi.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _takePendingCategory();
-    });
+  /// Klaviaturadagi «Qidirish» — kutmasdan darhol.
+  void _onSearchSubmitted(String value) {
+    _searchDebounce?.cancel();
+    if ((_query.search ?? '') == value) return;
+    _apply(_query.copyWith(search: value));
   }
+
+  /// Tortib yangilash: kategoriyalar va mahsulotlar BIRGA so'raladi,
+  /// ro'yxat esa yangisi kelguncha joyida qoladi.
+  Future<void> _refresh() => Future.wait([
+        _loadCategories(refresh: true),
+        _reload(quiet: true),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -174,17 +226,18 @@ class _CatalogScreenState extends State<CatalogScreen> {
       // xil bo'lsa, qaysi bo'limda turganini ajratib bo'lmasdi.
       appBar: AppBar(title: Text(context.t('nav.catalog'))),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await _loadCategories();
-          await _reload();
-        },
+        onRefresh: _refresh,
         child: CustomScrollView(
           controller: _scroll,
           // Natija bo'sh bo'lganda ham tortib yangilash ishlashi uchun.
           physics: const AlwaysScrollableScrollPhysics(),
+          // Ro'yxatni surish klaviaturani yopadi — qidiruvdan keyin
+          // natijani ko'rish uchun alohida «orqaga» shart emas.
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverToBoxAdapter(child: _searchBar(context)),
-            if (_categories.isNotEmpty) SliverToBoxAdapter(child: _categoryChips(context)),
+            if (_categories.isNotEmpty || _query.featured == true)
+              SliverToBoxAdapter(child: _categoryChips(context)),
             SliverToBoxAdapter(child: _resultBar(context)),
             ..._body(context),
             SliverToBoxAdapter(child: _footer(context)),
@@ -196,23 +249,31 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
   Widget _searchBar(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-        child: TextField(
-          controller: _searchField,
-          onChanged: _onSearchChanged,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: context.t('common.search'),
-            prefixIcon: const Icon(Icons.search, size: 20),
-            suffixIcon: _searchField.text.isEmpty
-                ? null
-                : IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    onPressed: () {
-                      _searchField.clear();
-                      _apply(_query.copyWith(search: null));
-                    },
-                  ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        // Faqat qidiruv qatori matnni tinglaydi (tozalash tugmasi uchun) —
+        // har harfda butun ekran, ya'ni to'r ham, qayta qurilmaydi.
+        child: ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _searchField,
+          builder: (context, value, _) => TextField(
+            controller: _searchField,
+            onChanged: _onSearchChanged,
+            onSubmitted: _onSearchSubmitted,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: context.t('common.search'),
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: value.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: context.t('common.clear'),
+                      icon: const Icon(Icons.close, size: 18),
+                      onPressed: () {
+                        _searchDebounce?.cancel();
+                        _searchField.clear();
+                        _apply(_query.copyWith(search: null));
+                      },
+                    ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
           ),
         ),
       );
@@ -225,6 +286,30 @@ class _CatalogScreenState extends State<CatalogScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
+          // Bosh sahifadagi «Tanlangan kolleksiya» dan kelingan filtr.
+          // Kategoriyalar orasida tanlab bo'lmaydi, shuning uchun alohida
+          // chip: ko'rinib turadi va bitta bosishda olib tashlanadi —
+          // aks holda ro'yxat nega qisqa ekani tushunarsiz qolardi.
+          if (_query.featured == true)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: InputChip(
+                label: Text(context.t('featured.title')),
+                selected: true,
+                showCheckmark: false,
+                onPressed: () => _apply(_query.copyWith(featured: null)),
+                onDeleted: () => _apply(_query.copyWith(featured: null)),
+                deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+                deleteButtonTooltipMessage: context.t('common.clear'),
+                labelStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+                selectedColor: SellobayColors.primary,
+                side: const BorderSide(color: SellobayColors.primary),
+              ),
+            ),
           _chip(
             label: context.t('common.all'),
             selected: _query.categorySlug == null,
@@ -405,6 +490,29 @@ class _CatalogScreenState extends State<CatalogScreen> {
             height: 22,
             child: CircularProgressIndicator(strokeWidth: 2.2, color: SellobayColors.primary),
           ),
+        ),
+      );
+    }
+    final loadMoreError = _loadMoreError;
+    if (loadMoreError != null) {
+      // Bor ro'yxat joyida qoladi — faqat davomi kelmadi. Avtomatik
+      // qayta urinish yo'q (har surishda so'rov ketardi), shuning uchun
+      // sabab va tugma shu yerda.
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(32, 4, 32, 28),
+        child: Column(
+          children: [
+            Text(
+              context.errorText(loadMoreError),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: SellobayColors.mutedText),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: _loadMore,
+              child: Text(context.t('common.retry')),
+            ),
+          ],
         ),
       );
     }

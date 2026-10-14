@@ -270,5 +270,54 @@ void main() {
       expect(data['items'], isA<List<dynamic>>());
       expect(data['total'], isNotNull);
     });
+
+    group('do`kon kategoriyalari', () {
+      const categories = '{"items":['
+          '{"id":"c1","slug":"shoes","name":{"uz":"Poyabzal"},"iconUrl":null,"productCount":4},'
+          '{"id":"c3","slug":"beauty","name":{"uz":"Go`zallik"},"iconUrl":null,"productCount":0}'
+          ']}';
+
+      test('bosh sahifa va katalog BITTA so`rovni bo`lishadi', () async {
+        // Ilgari ilova ochilganda ikkala ekran ham alohida so'rardi.
+        final backend = FakeBackend((options, body) => okJson(categories));
+        final repo = CatalogRepository(buildClient(backend).api);
+
+        final both = await Future.wait([
+          repo.fetchStorefrontCategories(),
+          repo.fetchStorefrontCategories(),
+        ]);
+        final later = await repo.fetchStorefrontCategories();
+
+        expect(backend.countOf('/api/categories'), 1);
+        // Bo'sh kategoriya baribir chiqarib tashlanadi.
+        expect(both.first.map((c) => c.slug), ['shoes']);
+        expect(later.map((c) => c.slug), ['shoes']);
+      });
+
+      test('tortib yangilash keshni chetlab o`tadi', () async {
+        final backend = FakeBackend((options, body) => okJson(categories));
+        final repo = CatalogRepository(buildClient(backend).api);
+
+        await repo.fetchStorefrontCategories();
+        await repo.fetchStorefrontCategories(refresh: true);
+
+        expect(backend.countOf('/api/categories'), 2);
+      });
+
+      test('xato KESHLANMAYDI — keyingi chaqiruv qayta uriniladi', () async {
+        var fail = true;
+        final backend = FakeBackend(
+          (options, body) => fail ? apiErr(500, 'SERVER', 'Ichki xato') : okJson(categories),
+        );
+        final repo = CatalogRepository(buildClient(backend).api);
+
+        await expectLater(repo.fetchStorefrontCategories(), throwsA(isA<ApiException>()));
+        fail = false;
+        final next = await repo.fetchStorefrontCategories();
+
+        expect(next.map((c) => c.slug), ['shoes']);
+        expect(backend.countOf('/api/categories'), 2);
+      });
+    });
   });
 }

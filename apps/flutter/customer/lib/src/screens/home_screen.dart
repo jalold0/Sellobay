@@ -63,8 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _openCatalog({String? categorySlug}) =>
-      HomeTabsScope.read(context)?.openCatalog(categorySlug: categorySlug);
+  /// Katalogga o'tadi. [query] berilsa katalog shu filtr bilan ochiladi:
+  /// «Barchasini ko'rish» o'sha bo'limning o'zini ko'rsatadi, butun
+  /// katalogni emas.
+  void _openCatalog([ProductQuery? query]) =>
+      HomeTabsScope.read(context)?.openCatalog(query: query);
 
   @override
   Widget build(BuildContext context) {
@@ -128,11 +131,19 @@ class _HomeScreenState extends State<HomeScreen> {
           _categoryRow(context, locale),
         ],
         if (_featured.isNotEmpty) ...[
-          _sectionHeader(context, context.t('featured.title'), onViewAll: _openCatalog),
+          _sectionHeader(
+            context,
+            context.t('featured.title'),
+            onViewAll: () => _openCatalog(const ProductQuery(featured: true)),
+          ),
           _productRow(context, _featured, locale, baseUrl),
         ],
         if (_popular.isNotEmpty) ...[
-          _sectionHeader(context, context.t('home.bestSellersTitle'), onViewAll: _openCatalog),
+          _sectionHeader(
+            context,
+            context.t('home.bestSellersTitle'),
+            onViewAll: () => _openCatalog(const ProductQuery(sort: ProductSort.popular)),
+          ),
           _productRow(context, _popular, locale, baseUrl),
         ],
         // Hamma bo'lim bo'sh — katalog ham bo'sh degani.
@@ -153,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _searchBar(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child: InkWell(
-          onTap: _openCatalog,
+          onTap: () => _openCatalog(),
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -211,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final category = _categories[i];
             return ActionChip(
               label: Text(category.name.pick(locale)),
-              onPressed: () => _openCatalog(categorySlug: category.slug),
+              onPressed: () => _openCatalog(ProductQuery(categorySlug: category.slug)),
             );
           },
         ),

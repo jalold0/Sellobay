@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sellobay_shared/sellobay_shared.dart';
 
 /// Pastki navigatsiyadagi bo'limlar.
 enum HomeTab { home, catalog, cart, orders, profile }
@@ -24,13 +25,15 @@ class HomeTabsController extends ChangeNotifier {
   /// qolmasligi kerak.
   int _ordersEpoch = 0;
 
-  /// Katalogga o'tishda qo'llanadigan kategoriya.
+  /// Katalogga o'tishda qo'llanadigan so'rov (kategoriya, «tanlangan»,
+  /// saralash).
   ///
-  /// Bosh sahifadagi kategoriya bosilganda katalog o'sha filtr bilan
-  /// ochilishi kerak. Katalog ekrani qobiqda TIRIK qoladi
-  /// (`IndexedStack`), ya'ni unga parametr uzatib bo'lmaydi — shuning
-  /// uchun kategoriya shu yerda qoldiriladi va ekran uni o'zi oladi.
-  String? _pendingCategory;
+  /// Bosh sahifadagi kategoriya yoki «Barchasini ko'rish» bosilganda
+  /// katalog o'sha filtr bilan ochilishi kerak. Katalog ekrani qobiqda
+  /// TIRIK qoladi (`IndexedStack`), ya'ni unga parametr uzatib
+  /// bo'lmaydi — shuning uchun so'rov shu yerda qoldiriladi, katalog esa
+  /// bu controller'ni tinglab, bo'lim ochilganda uni o'zi oladi.
+  ProductQuery? _pendingCatalog;
 
   HomeTab get tab => _tab;
   bool isVisited(HomeTab tab) => _visited.contains(tab);
@@ -47,17 +50,20 @@ class HomeTabsController extends ChangeNotifier {
 
   void goIndex(int index) => go(HomeTab.values[index]);
 
-  /// Katalogni ochadi, xohlasa kategoriya filtri bilan.
-  void openCatalog({String? categorySlug}) {
-    _pendingCategory = categorySlug;
+  /// Katalogni ochadi, xohlasa tayyor filtr bilan.
+  ///
+  /// [query] berilmasa katalog o'z holatida qoladi (qidiruv, filtr) —
+  /// masalan bosh sahifadagi qidiruv qatoridan o'tilganda.
+  void openCatalog({ProductQuery? query}) {
+    _pendingCatalog = query;
     go(HomeTab.catalog);
   }
 
-  /// Kutayotgan kategoriyani OLIB qo'yadi — bir marta qo'llanadi.
-  String? takePendingCategory() {
-    final slug = _pendingCategory;
-    _pendingCategory = null;
-    return slug;
+  /// Kutayotgan so'rovni OLIB qo'yadi — bir marta qo'llanadi.
+  ProductQuery? takePendingCatalog() {
+    final query = _pendingCatalog;
+    _pendingCatalog = null;
+    return query;
   }
 }
 
