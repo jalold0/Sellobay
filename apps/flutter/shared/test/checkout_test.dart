@@ -107,6 +107,27 @@ void main() {
       expect(order.replayed, isFalse);
     });
 
+    test('bo`sh viloyat YUBORILMAYDI — server standartini qo`llaydi', () async {
+      // Ilgari forma 'Toshkent' bilan oldindan to'ldirilardi. Endi maydon
+      // bo'sh (faqat maslahat), bo'sh satr esa `min(2)` da 400 berardi.
+      final backend = FakeBackend((options, body) => rawJson(_orderOk()));
+      final repo = CheckoutRepository(buildClient(backend).api);
+
+      await repo.createOrder(
+        items: [_line(_productA)],
+        recipientName: 'Dilnoza',
+        phone: '+998901234567',
+        region: '  ',
+        city: 'Yunusobod',
+        street: 'Amir Temur 1',
+        deliveryMethod: DeliveryMethod.homeDelivery,
+        paymentProvider: PaymentProvider.cashOnDelivery,
+        idempotencyKey: 'kalit-2',
+      );
+
+      expect(backend.bodies.single!.containsKey('region'), isFalse);
+    });
+
     test('punkt tanlansa `pickupPointId` qo`shiladi', () async {
       final backend = FakeBackend((options, body) => rawJson(_orderOk()));
       final repo = CheckoutRepository(buildClient(backend).api);

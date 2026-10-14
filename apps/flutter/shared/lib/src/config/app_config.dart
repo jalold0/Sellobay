@@ -8,16 +8,16 @@ class AppConfig {
   /// (`apps/web/src/app/api/**`). Web ham, mobil ham ayni o'shanga
   /// ulanadi, shuning uchun alohida `api.` subdomeni ham yo'q.
   ///
-  /// DIQQAT: bu yerda ilgari `https://sellobay.uz` turardi, lekin o'sha
-  /// domen hali RO'YXATDAN O'TMAGAN — DNS'da umuman yo'q. Natijada
-  /// reliz APK har bir so'rovda «tarmoq yo'q» deb turardi va buni
-  /// telefon aybi deb o'ylash oson edi. `.env.example` dagi
-  /// `NEXT_PUBLIC_SITE_URL=https://sellobay.uz` — kelajak rejasi, hozirgi
-  /// haqiqat emas.
+  /// Aynan `www.` bilan: yalang'och `https://sellobay.uz` Vercel'da
+  /// `308` bilan `www.` ga yo'naltiriladi, Dart'ning HTTP klienti esa
+  /// POST so'rovida redirect'ga ERGASHMAYDI — kirish, savat va buyurtma
+  /// jim yiqilardi (GET ishlagani uchun nuqson darhol ko'rinmasdi).
   ///
-  /// Domen ulangach shu qator o'zgaradi (va eski manzil Vercel'da
-  /// redirect bo'lib qoladi, shuning uchun eski APK'lar ham ishlaydi).
-  static const prodBaseUrl = 'https://sellobay-web.vercel.app';
+  /// Eski APK'lar `https://sellobay-web.vercel.app` ga ulanib turadi:
+  /// o'sha host Vercel'da redirect'siz, TO'G'RIDAN-TO'G'RI xizmat
+  /// qiladi, shuning uchun ular ham ishlayveradi. Yangi manzil esa
+  /// foydalanuvchiga faqat yangi APK bilan yetadi.
+  static const prodBaseUrl = 'https://www.sellobay.uz';
 
   /// Android emulyatorida `localhost` ISHLAMAYDI — `10.0.2.2` kerak
   /// (emulyator uchun host mashina shu manzilda).

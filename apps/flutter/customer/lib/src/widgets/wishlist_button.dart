@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
+
 /// Sevimlilar yurakchasi.
 ///
 /// Belgi DARHOL o'zgaradi, so'rov keyin ketadi. Xato bo'lsa
@@ -26,8 +28,21 @@ class WishlistButton extends StatelessWidget {
     );
 
     Future<void> onTap() async {
+      // Sevimlilar FAQAT serverda saqlanadi (mahalliy nusxa yo'q) —
+      // mehmonga avval kirish taklif qilinadi. Kirgach belgi o'sha
+      // mahsulotga qo'yiladi: foydalanuvchi bosgan amal yo'qolmasin.
+      final wasGuest = isGuest(AuthScope.read(context));
+      if (!await requireSignIn(context) || !context.mounted) return;
+      final store = WishlistScope.read(context);
       try {
-        await WishlistScope.read(context).toggle(productId);
+        if (wasGuest) {
+          // Kirgan zahoti serverdagi ro'yxat hali kelmagan bo'lishi
+          // mumkin. Uni kutmasak, allaqachon saqlangan mahsulotni
+          // «almashtirish» uni O'CHIRIB yuborardi — mijoz esa qo'shmoqchi edi.
+          await store.load();
+          if (store.contains(productId)) return;
+        }
+        await store.toggle(productId);
       } catch (e) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

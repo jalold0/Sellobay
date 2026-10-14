@@ -20,10 +20,23 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   late final _label = TextEditingController(text: widget.existing?.label ?? '');
   late final _recipient = TextEditingController(text: widget.existing?.recipientName ?? '');
   late final _phone = TextEditingController(text: widget.existing?.phone ?? '');
-  late final _region = TextEditingController(text: widget.existing?.region ?? 'Toshkent');
+  // Yangi manzilda viloyat OLDINDAN yozilmaydi — faqat maslahat. Bo'sh
+  // qolsa server o'z standartini qo'llaydi; «Toshkent» ni oldindan
+  // qo'ysak, boshqa viloyatdagi mijoz uni o'chirishni unutardi.
+  late final _region = TextEditingController(text: widget.existing?.region ?? '');
   late final _city = TextEditingController(text: widget.existing?.city ?? '');
   late final _street = TextEditingController(text: widget.existing?.street ?? '');
   late final _apartment = TextEditingController(text: widget.existing?.apartment ?? '');
+
+  /// Majburiy maydonlar — xato va fokus uchun.
+  late final _focus = {
+    for (final c in [_recipient, _phone, _region, _city, _street]) c: FocusNode(),
+  };
+
+  /// Maydon ostidagi xatolar.
+  Map<TextEditingController, String> _fieldErrors = const {};
+
+  final _bannerKey = GlobalKey();
 
   late AddressType _type = widget.existing?.type ?? AddressType.home;
 
@@ -46,6 +59,9 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   void dispose() {
     for (final c in [_label, _recipient, _phone, _region, _city, _street, _apartment]) {
       c.dispose();
+    }
+    for (final node in _focus.values) {
+      node.dispose();
     }
     super.dispose();
   }
@@ -76,17 +92,35 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     });
   }
 
+  /// Noto'g'ri maydonlar va sababi — forma tartibida.
+  Map<TextEditingController, String> _validate() {
+    final required = context.t('common.fieldRequired');
+    final phone = _phone.text.trim();
+    final region = _region.text.trim();
+    return {
+      if (_recipient.text.trim().length < 2) _recipient: required,
+      if (phone.isEmpty)
+        _phone: required
+      else if (!isValidUzPhone(phone))
+        _phone: context.t('auth.phoneInvalid'),
+      // Viloyat ixtiyoriy, lekin yozilgan bo'lsa server kamida 2 belgi kutadi.
+      if (region.isNotEmpty && region.length < 2) _region: required,
+      if (_city.text.trim().length < 2) _city: required,
+      if (_street.text.trim().length < 2) _street: required,
+    };
+  }
+
   Future<void> _save() async {
     final phone = _phone.text.trim();
-    if (_recipient.text.trim().length < 2 ||
-        _city.text.trim().length < 2 ||
-        _street.text.trim().length < 2 ||
-        _region.text.trim().length < 2) {
-      setState(() => _error = context.t('profile.addressesPage.fillMain'));
-      return;
-    }
-    if (!isValidUzPhone(phone)) {
-      setState(() => _error = context.t('auth.phoneInvalid'));
+    final problems = _validate();
+    setState(() {
+      _fieldErrors = problems;
+      _error = null;
+    });
+    if (problems.isNotEmpty) {
+      // Xato tepadagi chiziqda emas, maydonning O'ZIDA; fokus birinchi
+      // noto'g'ri maydonni ko'rinadigan joyga suradi.
+      _focus[problems.keys.first]?.requestFocus();
       return;
     }
 
@@ -125,6 +159,18 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
         _saving = false;
         _error = context.errorText(e);
       });
+      // Saqlash tugmasi pastda, chiziq tepada — unga surib boramiz.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _bannerKey.currentContext;
+        if (target == null || !target.mounted) return;
+        Scrollable.ensureVisible(
+          target,
+          duration: MediaQuery.disableAnimationsOf(target)
+              ? Duration.zero
+              : const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+        );
+      });
     }
   }
 
@@ -138,10 +184,21 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
           context.t(isNew ? 'profile.addressesPage.newAddress' : 'profile.addressesPage.editAddress'),
         ),
       ),
-      body: ListView(
+      // `ListView` emas: dangasa ro'yxat tepadagi xato chizig'ini
+      // pastga surilganda daraxtdan chiqarib yuboradi — unga qaytib
+      // surib bo'lmasdi. Forma qisqa, dangasalikdan foyda yo'q.
+      body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: AutofillGroup(child: _form(context)),
+      ),
+    );
+  }
+
+  Widget _form(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FormErrorBanner(_error),
+          FormErrorBanner(_error, key: _bannerKey),
           Wrap(
             spacing: 8,
             children: [
@@ -157,13 +214,17 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
           _field(_label, 'profile.addressesPage.fieldLabel',
               hintKey: 'profile.addressesPage.labelPlaceholder'),
           _field(_recipient, 'profile.addressesPage.recipient',
-              capitalize: TextCapitalization.words),
-          _field(_phone, 'profile.addressesPage.phone', keyboard: TextInputType.phone),
-          _field(_region, 'profile.addressesPage.region'),
-          _field(_city, 'profile.addressesPage.city'),
+              capitalize: TextCapitalization.words, autofill: AutofillHints.name),
+          _field(_phone, 'profile.addressesPage.phone',
+              keyboard: TextInputType.phone, autofill: AutofillHints.telephoneNumber),
+          _field(_region, 'profile.addressesPage.region',
+              hintKey: 'checkout.address.regionPlaceholder', autofill: AutofillHints.addressState),
+          _field(_city, 'profile.addressesPage.city', autofill: AutofillHints.addressCity),
           _field(_street, 'profile.addressesPage.street',
-              hintKey: 'profile.addressesPage.streetPlaceholder'),
-          _field(_apartment, 'profile.addressesPage.apartment'),
+              hintKey: 'profile.addressesPage.streetPlaceholder',
+              autofill: AutofillHints.streetAddressLine1),
+          _field(_apartment, 'profile.addressesPage.apartment',
+              autofill: AutofillHints.streetAddressLine2, last: true),
           const SizedBox(height: 4),
           // Xaritadan tanlash — MAJBURIY EMAS: internet sekin bo'lsa
           // yoki xarita yuklanmasa, manzilni qo'lda kiritib saqlash
@@ -199,9 +260,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
+      );
 
   Widget _field(
     TextEditingController controller,
@@ -209,16 +268,29 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     String? hintKey,
     TextInputType? keyboard,
     TextCapitalization capitalize = TextCapitalization.none,
+    String? autofill,
+    bool last = false,
   }) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: TextField(
           controller: controller,
+          focusNode: _focus[controller],
           keyboardType: keyboard,
           textCapitalization: capitalize,
+          // «Keyingi» keyingi maydonga o'tadi, oxirgisida «Tayyor».
+          textInputAction: last ? TextInputAction.done : TextInputAction.next,
+          autofillHints: autofill == null ? null : [autofill],
+          onChanged: (_) {
+            // Tuzatilayotgan maydonning eski xatosi olib tashlanadi.
+            if (!_fieldErrors.containsKey(controller)) return;
+            setState(() => _fieldErrors = {..._fieldErrors}..remove(controller));
+          },
           decoration: InputDecoration(
             labelText: context.t(labelKey),
             hintText: hintKey == null ? null : context.t(hintKey),
+            errorText: _fieldErrors[controller],
+            errorMaxLines: 2,
           ),
         ),
       );

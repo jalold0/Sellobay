@@ -125,7 +125,10 @@ class AddressInput {
         'type': type.value,
         'recipientName': recipientName.trim(),
         'phone': phone.trim(),
-        'region': region.trim(),
+        // Bo'sh viloyat yuborilmaydi — server standartini qo'llaydi
+        // (`/api/addresses` sxemasidagi `.default`). Bo'sh satr esa
+        // `min(2)` dan o'tmasdi.
+        if (region.trim().isNotEmpty) 'region': region.trim(),
         'city': city.trim(),
         'street': street.trim(),
         'apartment': _orNull(apartment),

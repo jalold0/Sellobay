@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
+
 /// SMS kodni tasdiqlash.
 ///
 /// Bu ekran HAM KIRISH, HAM RO'YXATDAN O'TISH yakuni: server telefonni
@@ -70,9 +72,9 @@ class _OtpScreenState extends State<OtpScreen> {
     try {
       await auth.signInWithOtp(phone: widget.challenge.phone, code: _code.text);
       if (!mounted) return;
-      // Ildizga qaytamiz: `AuthGate` endi bosh ekranni ko'rsatadi.
-      // Bo'lmasa bu ekran bosh sahifa ustida osilib qolardi.
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Kirish oqimi yopiladi va mijoz uni boshlagan ekranga qaytadi
+      // (sevimliga qo'shmoqchi bo'lgan mahsulot, buyurtmalar bo'limi).
+      finishSignIn(context);
     } catch (e) {
       if (!mounted) return;
       setState(() {

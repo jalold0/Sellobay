@@ -11,10 +11,8 @@
 // Natija: tool/shots/*.png
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sellobay_customer/src/home_tabs.dart';
 import 'package:sellobay_customer/src/screens/addresses_screen.dart';
@@ -47,52 +45,12 @@ Future<void> _settle(WidgetTester tester) async {
 /// `flutter test` standart holda har bir glifni to'rtburchak chizadigan
 /// sinov shriftini ishlatadi. Unda matn kengligi = belgi soni × kegl,
 /// ya'ni haqiqatdan ancha keng — surat o'qib bo'lmas, ustiga ustak
-/// YOLG'ON overflow beradi. Roboto Flutter SDK bilan birga keladi
-/// (Android'dagi standart shrift), shuning uchun tashqi fayl kerak emas.
-Future<void> loadRealFonts() async {
-  final root = Platform.environment['FLUTTER_ROOT'];
-  if (root == null) throw StateError('FLUTTER_ROOT yo`q — `flutter test` orqali ishga tushiring');
-  final dir = Directory('$root/bin/cache/artifacts/material_fonts');
+/// YOLG'ON overflow beradi. Brend shriftlari (Inter, Playfair) shared
+/// paketda — surat qurilmadagi tipografiyani ko'rsatadi.
+Future<void> loadRealFonts() => loadBrandFontsForScreens();
 
-  Future<void> family(String name, List<String> files) async {
-    final loader = FontLoader(name);
-    for (final file in files) {
-      final bytes = File('${dir.path}/$file').readAsBytesSync();
-      loader.addFont(Future.value(ByteData.sublistView(bytes)));
-    }
-    await loader.load();
-  }
-
-  await family('Roboto', const [
-    'roboto-regular.ttf',
-    'roboto-medium.ttf',
-    'roboto-bold.ttf',
-    'roboto-black.ttf',
-  ]);
-  await family('MaterialIcons', const ['materialicons-regular.otf']);
-}
-
-/// Mavzu + haqiqiy shrift oilasi.
-ThemeData previewTheme() {
-  final theme = buildSellobayTheme();
-
-  // `ButtonStyle.textStyle` uslubni MERGE qilmaydi, butunlay almashtiradi.
-  // Mavzuda u shrift oilasisiz berilgan — haqiqiy qurilmada bu platforma
-  // shriftiga tushadi (to'g'ri), testda esa sinov shriftiga, ya'ni
-  // tugma matni to'rtburchakka aylanadi. Shu yerda oilani qo'shamiz.
-  final filled = theme.filledButtonTheme.style;
-  return theme.copyWith(
-    textTheme: theme.textTheme.apply(fontFamily: 'Roboto'),
-    primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Roboto'),
-    filledButtonTheme: FilledButtonThemeData(
-      style: filled?.copyWith(
-        textStyle: WidgetStatePropertyAll(
-          filled.textStyle?.resolve(const <WidgetState>{})?.copyWith(fontFamily: 'Roboto'),
-        ),
-      ),
-    ),
-  );
-}
+/// Mavzu — ilovadagi bilan AYNAN bir xil (shriftlar ham).
+ThemeData previewTheme() => buildSellobayTheme();
 
 /// Bitta ekranni suratga oladi.
 Future<void> shoot(

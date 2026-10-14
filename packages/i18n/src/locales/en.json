@@ -49,7 +49,8 @@
     "all": "All",
     "unexpectedResponse": "The server returned an unexpected response ({status}). Please try again later.",
     "networkError": "No internet connection. Check your network.",
-    "notConnectedYet": "This section is not connected yet"
+    "notConnectedYet": "This section is not connected yet",
+    "fieldRequired": "Fill in this field"
   },
   "nav": {
     "home": "Home",
@@ -647,7 +648,15 @@
     "bankName": "Bank name",
     "bankAccount": "Bank account (20 digits)",
     "sellerKycTitle": "Shop and bank details",
-    "sellerKycHint": "Shop name and tax ID are required; bank details can be added later. An admin reviews them before approving, and payouts go to the account you enter."
+    "sellerKycHint": "Shop name and tax ID are required; bank details can be added later. An admin reviews them before approving, and payouts go to the account you enter.",
+    "guest": {
+      "ordersTitle": "Your orders will appear here",
+      "ordersHint": "Sign in to see and track your orders. An order placed without an account can be tracked by its number and phone.",
+      "profileTitle": "Sign in to your account",
+      "profileHint": "Your addresses, wishlist and Sello Coins are kept in your account.",
+      "wishlistTitle": "Sign in to save favourites",
+      "wishlistHint": "Saved items stay in your account and show up on any device."
+    }
   },
   "profile": {
     "groupAccount": "Account",

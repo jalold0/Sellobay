@@ -122,7 +122,10 @@ class CheckoutRepository {
         // transformatsiyasi sxemada), lekin biz ham E.164 yuboramiz —
         // CLAUDE.md qoidasi.
         'phone': phone.trim(),
-        'region': region.trim(),
+        // Bo'sh viloyat YUBORILMAYDI: server o'z standartini qo'llaydi
+        // (`orders-server.ts`, web forma ham shunday). Bo'sh satr esa
+        // `min(2)` dan o'tmay, 400 berardi.
+        if (region.trim().isNotEmpty) 'region': region.trim(),
         'city': city.trim(),
         'street': street.trim(),
         if (apartment != null && apartment.trim().isNotEmpty) 'apartment': apartment.trim(),

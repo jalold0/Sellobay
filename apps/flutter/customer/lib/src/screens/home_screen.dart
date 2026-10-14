@@ -70,7 +70,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.t('common.appName')),
+        // Logotip so'zi — web sarlavhasidagi kabi serif (`font-serif`).
+        title: Text(
+          context.t('common.appName'),
+          style: SellobayType.heading(SellobayType.screen, color: SellobayColors.ink),
+        ),
         actions: [
           // Sevimlilar ilgari faqat profil ichida edi: eng ko'p ishlatiladigan
           // ro'yxat uchun ikki bosish ortiqcha.

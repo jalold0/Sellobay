@@ -6,9 +6,10 @@ import 'wishlist_repository.dart';
 /// Sevimlilar ro'yxati — faqat ID'lar.
 ///
 /// Mahalliy saqlov YO'Q, savatdan farqli. Sabab: sevimlilar serverda
-/// turadi va ilova baribir tizimga kirishni talab qiladi
-/// (`AuthGate`). Mehmon uchun ikkinchi, sinxronlanadigan nusxa
-/// yaratish — hozircha hech kim ishlatmaydigan murakkablik.
+/// turadi; mehmon yurakchani bossa, ilova avval kirishni so'raydi
+/// (mijoz ilovasidagi `requireSignIn`). Mehmon uchun ikkinchi,
+/// sinxronlanadigan nusxa yaratish — ikki manbani kelishtirish
+/// murakkabligi, foydasi esa kirish taklifidan ko'p emas.
 class WishlistStore extends ChangeNotifier {
   /// Maydonlar ochiq — `CartSync` dagi kabi: ularni testda tekshirish
   /// va ilova ichida qayta ishlatish mumkin.

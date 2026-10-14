@@ -20,6 +20,7 @@ class ManualCardPanel extends StatelessWidget {
     required this.receiptUploaded,
     required this.receiptBusy,
     required this.onPickReceipt,
+    this.receiptError,
   });
 
   /// Platforma kartalari — `/api/payment-cards` dan.
@@ -35,6 +36,10 @@ class ManualCardPanel extends StatelessWidget {
   final bool receiptUploaded;
   final bool receiptBusy;
   final VoidCallback onPickReceipt;
+
+  /// Chek bo'yicha xato (yuklanmadi yoki yuklanmagan holda yuborildi) —
+  /// tugmaning o'zi ostida ko'rsatiladi.
+  final String? receiptError;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -93,6 +98,17 @@ class ManualCardPanel extends StatelessWidget {
             ],
             const SizedBox(height: 12),
             _receiptButton(context),
+            if (receiptError != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    receiptError!,
+                    style: const TextStyle(fontSize: 12.5, color: SellobayColors.destructive),
+                  ),
+                ),
+              ),
             const SizedBox(height: 10),
             TextField(
               controller: noteController,

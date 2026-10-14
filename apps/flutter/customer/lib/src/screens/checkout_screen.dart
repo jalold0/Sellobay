@@ -6,6 +6,7 @@ import 'pickup_points_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../auth_flow.dart';
 import '../widgets/checkout/checkout_address_section.dart';
 import '../widgets/checkout/checkout_coins_row.dart';
 import '../widgets/checkout/checkout_delivery_section.dart';
@@ -36,12 +37,43 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
-  final _region = TextEditingController(text: 'Toshkent');
+  // Viloyat OLDINDAN to'ldirilmaydi: Samarqanddagi mijoz «Toshkent» ni
+  // o'chirishni unutsa, buyurtma noto'g'ri hududga hisoblanardi. Maydon
+  // bo'sh, maslahat — misol; bo'sh qolsa server o'z standartini qo'llaydi.
+  final _region = TextEditingController();
   final _city = TextEditingController();
   final _street = TextEditingController();
   final _apartment = TextEditingController();
   final _notes = TextEditingController();
   final _promoField = TextEditingController();
+
+  late final Map<CheckoutField, TextEditingController> _controllers = {
+    CheckoutField.name: _name,
+    CheckoutField.phone: _phone,
+    CheckoutField.region: _region,
+    CheckoutField.city: _city,
+    CheckoutField.street: _street,
+    CheckoutField.apartment: _apartment,
+    CheckoutField.notes: _notes,
+  };
+
+  /// Xato bo'lsa birinchi noto'g'ri maydonga fokus beriladi — maydon
+  /// o'zi ko'rinadigan joyga suriladi va klaviatura ochiladi.
+  final Map<CheckoutField, FocusNode> _focus = {
+    for (final field in CheckoutField.values) field: FocusNode(),
+  };
+
+  /// Maydon ostidagi xatolar.
+  Map<CheckoutField, String> _fieldErrors = const {};
+
+  /// Sahifa tepasidagi xato chizig'i — unga surib boriladi.
+  final _bannerKey = GlobalKey();
+  final _deliveryKey = GlobalKey();
+  final _paymentKey = GlobalKey();
+
+  String? _promoError;
+  String? _receiptError;
+  String? _pickupError;
 
   /// Takroriy yuborishdan himoya: kalit checkout boshida BIR MARTA
   /// hosil qilinadi va qayta urinishlarda o'zgarmaydi. Har urinishda
@@ -84,10 +116,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _region, _city, _street, _apartment, _notes, _promoField]) {
+    for (final c in [..._controllers.values, _promoField, _paymentNote]) {
       c.dispose();
     }
-    _paymentNote.dispose();
+    for (final node in _focus.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -95,73 +129,112 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   bool get _signedIn => AuthScope.read(context).isSignedIn;
 
+  /// To'lov usullari, coin balansi va saqlangan manzillar — BIRGA.
+  ///
+  /// Ilgari ular ketma-ket so'ralardi va forma birinchi javobdan keyin
+  /// ochilardi: mijoz yozishni boshlagan paytda manzillar kelib, uning
+  /// matnini ustidan yozib yuborardi. Endi uchala so'rov parallel ketadi,
+  /// forma hammasi kelgach ochiladi va oldindan to'ldirish faqat BO'SH
+  /// maydonlarga tegadi (kirgandan keyin qayta yuklashda ham).
   Future<void> _load() async {
+    final runtime = SellobayRuntimeScope.of(context);
     final user = AuthScope.read(context).user;
-    if (user != null) {
-      _name.text = user.displayName;
-      _phone.text = user.phone ?? '';
-    }
+    final signedIn = _signedIn;
 
+    final optionsRequest = _repo.fetchPaymentOptions();
+    // Ikkalasi ham faqat kirgan foydalanuvchida (`401`) va yordamchi:
+    // olinmasa coin bo'limi ko'rsatilmaydi, forma qo'lda to'ldiriladi.
+    final loyaltyRequest = signedIn
+        ? runtime.loyalty
+            .fetchSummary()
+            .then<LoyaltySummary?>((s) => s)
+            .catchError((Object _) => null)
+        : Future<LoyaltySummary?>.value();
+    final addressesRequest = signedIn
+        ? _repo
+            .fetchAddresses()
+            .then<List<SavedAddress>?>((a) => a)
+            .catchError((Object _) => null)
+        : Future<List<SavedAddress>?>.value();
+
+    PaymentOptions? options;
+    Object? failure;
     try {
-      final options = await _repo.fetchPaymentOptions();
-      if (!mounted) return;
+      options = await optionsRequest;
+    } catch (e) {
+      failure = e;
+    }
+    final loyalty = await loyaltyRequest;
+    final addresses = await addressesRequest;
+    if (!mounted) return;
 
-      // Mehmon onlayn to'lovni BOSHLAY OLMAYDI: `/api/payments/create`
-      // auth talab qiladi va 401 beradi. Shuning uchun unga faqat
-      // naqd pul taklif qilinadi — tanlab, keyin devorga urilmasin.
-      // Qo'lda karta (`UZCARD`) mehmonga ham ochiq: redirect yo'q va
-      // chek yuklash endpointi auth talab qilmaydi.
-      final usable = _signedIn
-          ? options.selectable
-          : options.selectable.where((p) => !p.isOnline).toList();
-
-      setState(() {
+    setState(() {
+      if (options != null) {
+        // Mehmon onlayn to'lovni BOSHLAY OLMAYDI: `/api/payments/create`
+        // auth talab qiladi va 401 beradi. Shuning uchun unga faqat
+        // naqd pul taklif qilinadi — tanlab, keyin devorga urilmasin.
+        // Qo'lda karta (`UZCARD`) mehmonga ham ochiq: redirect yo'q va
+        // chek yuklash endpointi auth talab qilmaydi.
+        final usable = signedIn
+            ? options.selectable
+            : options.selectable.where((p) => !p.isOnline).toList();
         _options = options;
         _providers = usable;
-        _payment = usable.isEmpty ? null : usable.first;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = context.errorText(e);
-      });
-    }
-
-    // Coin balansi — faqat kirgan foydalanuvchida (`/api/loyalty` 401).
-    if (_signedIn) {
-      try {
-        final loyalty = await SellobayRuntimeScope.of(context).loyalty.fetchSummary();
-        if (mounted) setState(() => _coinBalance = loyalty.coins);
-      } catch (_) {
-        // Balans olinmasa coin bo'limi ko'rsatilmaydi. Raqamni
-        // o'zimiz o'ylab topmaymiz.
+        // Qayta yuklashda mijozning tanlovi saqlanadi.
+        _payment = usable.contains(_payment) ? _payment : usable.firstOrNull;
       }
-    }
+      if (failure != null) _error = context.errorText(failure);
+      if (loyalty != null) _coinBalance = loyalty.coins;
+      if (addresses != null) _addresses = addresses;
+      _loading = false;
+    });
 
-    // Saqlangan manzillar — faqat kirgan foydalanuvchida.
-    if (_signedIn) {
-      try {
-        final addresses = await _repo.fetchAddresses();
-        if (!mounted) return;
-        setState(() => _addresses = addresses);
-        final preferred = addresses.where((a) => a.isDefault).firstOrNull ?? addresses.firstOrNull;
-        if (preferred != null) _applyAddress(preferred);
-      } catch (_) {
-        // Manzillar yordamchi qulaylik — yuklanmasa forma qo'lda to'ldiriladi.
-      }
+    final preferred = addresses?.where((a) => a.isDefault).firstOrNull ?? addresses?.firstOrNull;
+    // Avval manzil (aniqroq), keyin profil — ikkalasi ham faqat bo'shga.
+    if (preferred != null) _fillEmpty(_addressValues(preferred));
+    if (user != null) {
+      _fillEmpty({
+        // `displayName` EMAS: ismsiz hisobda u telefonni qaytaradi va
+        // «Ism» maydoniga raqam tushib qolardi.
+        CheckoutField.name: [user.firstName, user.lastName]
+            .whereType<String>()
+            .where((s) => s.isNotEmpty)
+            .join(' '),
+        CheckoutField.phone: user.phone ?? '',
+      });
     }
   }
 
+  /// Mehmon onlayn to'lov uchun kiradi va checkout'ga qaytadi.
+  Future<void> _signInForOnlinePayment() async {
+    if (!await requireSignIn(context) || !mounted) return;
+    await _load();
+  }
+
+  Map<CheckoutField, String> _addressValues(SavedAddress address) => {
+        CheckoutField.name: address.recipientName,
+        CheckoutField.phone: address.phone,
+        CheckoutField.region: address.region,
+        CheckoutField.city: address.city,
+        CheckoutField.street: address.street,
+        CheckoutField.apartment: address.apartment ?? '',
+      };
+
+  /// Faqat BO'SH maydonlarni to'ldiradi — yozilgan matnga tegmaydi.
+  void _fillEmpty(Map<CheckoutField, String> values) {
+    setState(() {
+      values.forEach((field, value) {
+        final controller = _controllers[field]!;
+        if (controller.text.trim().isEmpty && value.isNotEmpty) controller.text = value;
+      });
+    });
+  }
+
+  /// Mijoz saqlangan manzilni O'ZI tanladi — formani to'liq almashtiradi.
   void _applyAddress(SavedAddress address) {
     setState(() {
-      _name.text = address.recipientName;
-      _phone.text = address.phone;
-      _region.text = address.region;
-      _city.text = address.city;
-      _street.text = address.street;
-      _apartment.text = address.apartment ?? '';
+      _addressValues(address).forEach((field, value) => _controllers[field]!.text = value);
+      _fieldErrors = const {};
     });
   }
 
@@ -173,8 +246,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       setState(() => _pickupPoints = points);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = context.errorText(e));
+      setState(() => _pickupError = context.errorText(e));
     }
+  }
+
+  /// Xato ko'rinadigan joyga suradi.
+  ///
+  /// Uzun sahifada tepadagi chiziq yoki o'rtadagi bo'lim pastdagi
+  /// tugmani bosgan odamga ko'rinmasdi — u «hech narsa bo'lmadi» deb
+  /// o'ylardi.
+  void _reveal(GlobalKey key) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = key.currentContext;
+      if (target == null || !target.mounted) return;
+      Scrollable.ensureVisible(
+        target,
+        alignment: 0.1,
+        duration: MediaQuery.disableAnimationsOf(target)
+            ? Duration.zero
+            : const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   CartTotals _totals(BuildContext context) => computeCartTotals(
@@ -213,7 +306,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final totals = _totals(context);
     setState(() {
       _checkingPromo = true;
-      _error = null;
+      _promoError = null;
     });
     try {
       final preview = await _repo.validatePromo(
@@ -230,35 +323,74 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!mounted) return;
       setState(() {
         _checkingPromo = false;
-        _error = context.errorText(e);
+        // Promokod qatorining O'ZIDA — mijoz shu yerda turibdi.
+        _promoError = context.errorText(e);
       });
     }
   }
 
-  String? _validate(BuildContext context) {
-    if (_name.text.trim().length < 2) return context.t('checkout.errors.required');
-    if (!isValidUzPhone(_phone.text)) return context.t('auth.phoneInvalid');
-    if (_city.text.trim().length < 2 || _street.text.trim().length < 2) {
-      return context.t('checkout.errors.required');
-    }
-    if (_delivery == DeliveryMethod.pickupPoint && _pickupPoint == null) {
-      return context.t('checkout.shipping.selectPickup');
-    }
-    if (_payment == null) return context.t('checkout.payment.title');
+  /// Manzil maydonlari: bo'sh yoki noto'g'ri bo'lganlari va sababi.
+  Map<CheckoutField, String> _addressErrors(BuildContext context) {
+    final required = context.t('common.fieldRequired');
+    final region = _region.text.trim();
+    return {
+      if (_name.text.trim().length < 2) CheckoutField.name: required,
+      if (_phone.text.trim().isEmpty)
+        CheckoutField.phone: required
+      else if (!isValidUzPhone(_phone.text))
+        CheckoutField.phone: context.t('auth.phoneInvalid'),
+      // Viloyat ixtiyoriy (bo'sh bo'lsa server standarti), lekin
+      // yozilgan bo'lsa server kamida 2 belgi talab qiladi.
+      if (region.isNotEmpty && region.length < 2) CheckoutField.region: required,
+      if (_city.text.trim().length < 2) CheckoutField.city: required,
+      if (_street.text.trim().length < 2) CheckoutField.street: required,
+    };
+  }
+
+  /// Yuborishdan oldingi tekshiruv. Xato bo'lsa uni KO'RINADIGAN joyda
+  /// ko'rsatadi va `false` qaytaradi.
+  ///
+  /// Ilgari hamma xato sahifa tepasidagi chiziqqa yozilardi, mijoz esa
+  /// pastdagi tugmani bosib turardi — u xatoni ko'rmay, «tugma
+  /// ishlamayapti» deb o'ylardi.
+  bool _validate(BuildContext context) {
+    final fieldErrors = _addressErrors(context);
+    final pickupMissing = _delivery == DeliveryMethod.pickupPoint && _pickupPoint == null;
     // Chek serverda ham MAJBURIY (`400 RECEIPT_REQUIRED`) — oldindan
     // aytganimiz yaxshi.
-    if (_payment!.requiresReceipt && _receiptPath == null) {
-      return context.t('checkout.payment.receiptRequired');
+    final receiptMissing = (_payment?.requiresReceipt ?? false) && _receiptPath == null;
+
+    setState(() {
+      _error = null;
+      _fieldErrors = fieldErrors;
+      _pickupError = pickupMissing ? context.t('checkout.shipping.selectPickup') : null;
+      _receiptError = receiptMissing ? context.t('checkout.payment.receiptRequired') : null;
+      if (_payment == null) _error = context.t('checkout.payment.title');
+    });
+
+    if (fieldErrors.isNotEmpty) {
+      // Birinchi noto'g'ri maydon: fokus uni ko'rinadigan joyga suradi.
+      final first = CheckoutField.values.firstWhere(fieldErrors.containsKey);
+      _focus[first]!.requestFocus();
+      return false;
     }
-    return null;
+    if (pickupMissing) {
+      _reveal(_deliveryKey);
+      return false;
+    }
+    if (_payment == null) {
+      _reveal(_bannerKey);
+      return false;
+    }
+    if (receiptMissing) {
+      _reveal(_paymentKey);
+      return false;
+    }
+    return true;
   }
 
   Future<void> _submit() async {
-    final problem = _validate(context);
-    if (problem != null) {
-      setState(() => _error = problem);
-      return;
-    }
+    if (!_validate(context)) return;
 
     final cart = CartScope.read(context);
     final repo = _repo;
@@ -295,6 +427,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _submitting = false;
         _error = context.errorText(e);
       });
+      // Server xatosi (zaxira, promokod, tarmoq) — sahifa tepasida;
+      // mijoz esa pastdagi tugma yonida. Chiziqqa surib boramiz.
+      _reveal(_bannerKey);
       return;
     }
 
@@ -343,30 +478,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2.5, color: SellobayColors.primary),
               ),
             )
-          : ListView(
+          // `ListView` EMAS: dangasa ro'yxat ekrandan tashqaridagi
+          // bo'limlarni umuman qurmaydi — u holda xatoga surib bo'lmaydi
+          // va klaviaturadagi «Keyingi» qurilmagan maydonga o'ta olmaydi.
+          // Forma o'n besh-yigirma bolali, dangasalikdan foyda yo'q.
+          : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-              children: [
-                FormErrorBanner(_error),
-                if (_addresses.isNotEmpty) ...[
-                  _sectionTitle(context.t('checkout.review.addressLabel')),
-                  _savedAddresses(context),
-                  const SizedBox(height: 18),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FormErrorBanner(_error, key: _bannerKey),
+                  if (_addresses.isNotEmpty) ...[
+                    _sectionTitle(context.t('checkout.review.addressLabel')),
+                    _savedAddresses(context),
+                    const SizedBox(height: 18),
+                  ],
+                  _sectionTitle(context.t('checkout.address.title')),
+                  _addressForm(context),
+                  const SizedBox(height: 22),
+                  KeyedSubtree(
+                    key: _deliveryKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _sectionTitle(context.t('checkout.shipping.title')),
+                        _deliveryOptions(context),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  _coinsRow(context),
+                  _sectionTitle(context.t('checkout.payment.title')),
+                  KeyedSubtree(key: _paymentKey, child: _paymentOptions(context)),
+                  const SizedBox(height: 22),
+                  _sectionTitle(context.t('cart.promoCode')),
+                  _promoRow(context),
+                  const SizedBox(height: 24),
+                  _summary(context, totals),
                 ],
-                _sectionTitle(context.t('checkout.address.title')),
-                _addressForm(context),
-                const SizedBox(height: 22),
-                _sectionTitle(context.t('checkout.shipping.title')),
-                _deliveryOptions(context),
-                const SizedBox(height: 22),
-                _coinsRow(context),
-                _sectionTitle(context.t('checkout.payment.title')),
-                _paymentOptions(context),
-                const SizedBox(height: 22),
-                _sectionTitle(context.t('cart.promoCode')),
-                _promoRow(context),
-                const SizedBox(height: 24),
-                _summary(context, totals),
-              ],
+              ),
             ),
       bottomNavigationBar: _loading ? null : _submitBar(context, totals),
     );
@@ -420,13 +571,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
 
   Widget _addressForm(BuildContext context) => CheckoutAddressForm(
-        name: _name,
-        phone: _phone,
-        region: _region,
-        city: _city,
-        street: _street,
-        apartment: _apartment,
-        notes: _notes,
+        controllers: _controllers,
+        focusNodes: _focus,
+        errors: _fieldErrors,
+        // Maydon tuzatilayotganda uning xatosi olib tashlanadi — eskirgan
+        // qizil yozuv to'g'ri qiymat ostida turib qolmasin.
+        onChanged: (field) {
+          if (!_fieldErrors.containsKey(field)) return;
+          setState(() => _fieldErrors = {..._fieldErrors}..remove(field));
+        },
         // Viloyat o'zgarsa yuklangan punktlar eskiradi.
         onRegionChanged: () => _pickupPoints = const [],
       );
@@ -434,13 +587,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget _deliveryOptions(BuildContext context) => CheckoutDeliverySection(
         method: _delivery,
         onMethodChanged: (value) {
-          setState(() => _delivery = value);
+          setState(() {
+            _delivery = value;
+            _pickupError = null;
+          });
           // Punktlar FAQAT kerak bo'lganda yuklanadi — har checkout
           // ochilishida emas.
           if (value == DeliveryMethod.pickupPoint) _loadPickupPoints();
         },
         pickupPoint: _pickupPoint,
         onChoosePickup: _openPickupPoints,
+        pickupError: _pickupError,
       );
 
   Future<void> _openPickupPoints() async {
@@ -455,7 +612,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
     );
-    if (picked != null && mounted) setState(() => _pickupPoint = picked);
+    if (picked != null && mounted) {
+      setState(() {
+        _pickupPoint = picked;
+        _pickupError = null;
+      });
+    }
   }
 
   Widget _paymentOptions(BuildContext context) {
@@ -470,7 +632,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       children: [
         RadioGroup<PaymentProvider>(
           groupValue: _payment,
-          onChanged: (value) => setState(() => _payment = value),
+          onChanged: (value) => setState(() {
+            _payment = value;
+            _receiptError = null;
+          }),
           child: Column(
             children: [
               for (final provider in _providers)
@@ -495,12 +660,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         if (!_signedIn && (_options?.providers.any((p) => p.isOnline) ?? false))
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              // Mehmonda `/api/payments/create` 401 beradi. Matn
-              // AYNAN shu haqda: buyurtmaning o'zini mehmon ham
-              // bera oladi (qo'lda karta yoki naqd bilan).
-              context.t('auth.loginForOnlinePayment'),
-              style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    // Mehmonda `/api/payments/create` 401 beradi. Matn
+                    // AYNAN shu haqda: buyurtmaning o'zini mehmon ham
+                    // bera oladi (qo'lda karta yoki naqd bilan).
+                    context.t('auth.loginForOnlinePayment'),
+                    style: const TextStyle(fontSize: 12, color: SellobayColors.mutedText),
+                  ),
+                ),
+                // Kirgach checkout'ning o'zida qolamiz va to'lov usullari
+                // qayta so'raladi — yozilgan manzil yo'qolmaydi.
+                TextButton(
+                  onPressed: _submitting ? null : _signInForOnlinePayment,
+                  child: Text(context.t('auth.loginSubmit')),
+                ),
+              ],
             ),
           ),
       ],
@@ -515,6 +692,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         receiptUploaded: _receiptPath != null,
         receiptBusy: _receiptBusy,
         onPickReceipt: _pickReceipt,
+        receiptError: _receiptError,
       );
 
   /// Chekni tanlaydi va DARHOL yuklaydi.
@@ -534,7 +712,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     setState(() {
       _receiptBusy = true;
-      _error = null;
+      _receiptError = null;
     });
     try {
       final bytes = await picked.readAsBytes();
@@ -550,7 +728,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         _receiptBusy = false;
         // Eski chek saqlanib qolmasin — mijoz yuklandi deb o'ylamasin.
         _receiptPath = null;
-        _error = context.errorText(e);
+        // Tugmaning O'ZI ostida: mijoz chek panelida turibdi.
+        _receiptError = context.errorText(e);
       });
     }
   }
@@ -560,6 +739,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         onApply: _applyPromo,
         checking: _checkingPromo,
         result: _promo,
+        error: _promoError,
       );
 
   /// Sello Coins kaliti — alohida vidjet.

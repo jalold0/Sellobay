@@ -4,10 +4,8 @@
 //
 //   flutter test tool/screens.dart --update-goldens
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sellobay_courier/src/screens/deliveries_screen.dart';
 import 'package:sellobay_courier/src/screens/delivery_detail_screen.dart';
@@ -23,51 +21,10 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
-/// Sinov shrifti o'rniga SDK bilan kelgan Roboto.
-Future<void> loadRealFonts() async {
-  final root = Platform.environment['FLUTTER_ROOT'];
-  if (root == null) throw StateError('FLUTTER_ROOT yo`q — `flutter test` orqali ishga tushiring');
-  final dir = Directory('$root/bin/cache/artifacts/material_fonts');
+/// Sinov shrifti o'rniga brend shriftlari (shared paketdan).
+Future<void> loadRealFonts() => loadBrandFontsForScreens();
 
-  Future<void> family(String name, List<String> files) async {
-    final loader = FontLoader(name);
-    for (final file in files) {
-      loader.addFont(
-        Future.value(ByteData.sublistView(File('${dir.path}/$file').readAsBytesSync())),
-      );
-    }
-    await loader.load();
-  }
-
-  await family('Roboto', const [
-    'roboto-regular.ttf',
-    'roboto-medium.ttf',
-    'roboto-bold.ttf',
-    'roboto-black.ttf',
-  ]);
-  await family('MaterialIcons', const ['materialicons-regular.otf']);
-}
-
-ThemeData previewTheme() {
-  final theme = buildSellobayTheme();
-
-  // `ButtonStyle.textStyle` uslubni MERGE qilmaydi, butunlay almashtiradi.
-  // Mavzuda u shrift oilasisiz berilgan — haqiqiy qurilmada bu platforma
-  // shriftiga tushadi (to'g'ri), testda esa sinov shriftiga, ya'ni
-  // tugma matni to'rtburchakka aylanadi. Shu yerda oilani qo'shamiz.
-  final filled = theme.filledButtonTheme.style;
-  return theme.copyWith(
-    textTheme: theme.textTheme.apply(fontFamily: 'Roboto'),
-    primaryTextTheme: theme.primaryTextTheme.apply(fontFamily: 'Roboto'),
-    filledButtonTheme: FilledButtonThemeData(
-      style: filled?.copyWith(
-        textStyle: WidgetStatePropertyAll(
-          filled.textStyle?.resolve(const <WidgetState>{})?.copyWith(fontFamily: 'Roboto'),
-        ),
-      ),
-    ),
-  );
-}
+ThemeData previewTheme() => buildSellobayTheme();
 
 Future<void> shoot(WidgetTester tester, String name, Widget home, {FakeBackend? backend}) async {
   tester.view

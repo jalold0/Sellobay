@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../auth_flow.dart';
 import 'otp_screen.dart';
 import 'register_screen.dart';
 
@@ -102,25 +103,29 @@ class _LoginScreenState extends State<LoginScreen> {
         identifier: _email.text,
         password: _password.text,
       );
+      // Mijoz kirish ekraniga qayerdan kelgan bo'lsa, o'sha yerga qaytadi.
+      if (mounted) finishSignIn(context);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Ekran mehmon amali ustiga suriladi — ortga qaytish yo'li bo'lsin.
+      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 context.t('auth.welcomeTitle'),
-                style: const TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
+                // Web'dagi kirish sarlavhasi bilan bir xil: serif, 600.
+                style: SellobayType.heading(
+                  SellobayType.hero,
+                  weight: FontWeight.w600,
                   color: SellobayColors.ink,
-                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),
@@ -158,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
         TextField(
           controller: _phone,
           keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.done,
           autofillHints: const [AutofillHints.telephoneNumber],
           enabled: !_busy,
           decoration: InputDecoration(
@@ -192,6 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.username],
                 enabled: !_busy,
                 decoration: InputDecoration(
@@ -203,6 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _password,
                 obscureText: true,
+                textInputAction: TextInputAction.done,
                 autofillHints: const [AutofillHints.password],
                 enabled: !_busy,
                 decoration: InputDecoration(
@@ -219,8 +227,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 20),
         _submitButton(context, label: context.t('auth.loginSubmit'), onPressed: _signIn),
         const SizedBox(height: 18),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // Wrap: katta tizim shriftida ikkinchi qatorga o'tadi, toshmaydi.
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
               context.t('auth.noAccount'),
