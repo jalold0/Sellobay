@@ -1,5 +1,6 @@
 // GET  /api/categories — kategoriyalar daraxti (mahsulot soni bilan)
-// POST /api/categories — yangi kategoriya (ixtiyoriy ota-kategoriya bilan)
+// POST /api/categories — yangi kategoriya (ixtiyoriy ota-kategoriya va ikonka bilan)
+// PATCH /api/categories/[id] — tahrirlash (alohida faylda)
 //
 // Ilgari admin kategoriyalar sahifasi `mockCategories` ni ko'rsatardi va
 // "Yangi kategoriya" / "Qo'shish" tugmalari onClick'siz edi. Ortida route
@@ -11,17 +12,12 @@ import { assertAdmin, slugify } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
+import { categoryIconUrl, localizedName } from './schema';
+
 import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-/** Nom uch tilda saqlanadi (Category.name — Json). */
-const localizedName = z.object({
-  uz: z.string().trim().min(2, 'O`zbekcha nom kamida 2 belgi').max(80),
-  ru: z.string().trim().max(80).optional(),
-  en: z.string().trim().max(80).optional(),
-});
 
 const createSchema = z.object({
   name: localizedName,
@@ -29,6 +25,7 @@ const createSchema = z.object({
   parentId: z.string().uuid().optional().nullable(),
   position: z.number().int().min(0).max(9999).default(0),
   isActive: z.boolean().default(true),
+  iconUrl: categoryIconUrl.optional(),
 });
 
 export async function GET() {
@@ -99,6 +96,7 @@ export async function POST(req: NextRequest) {
       parentId: input.parentId ?? null,
       position: input.position,
       isActive: input.isActive,
+      iconUrl: input.iconUrl || null,
     },
     select: {
       id: true,

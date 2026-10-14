@@ -8,6 +8,7 @@ class CategorySummary {
     required this.name,
     required this.iconUrl,
     required this.productCount,
+    this.children = const [],
   });
 
   factory CategorySummary.fromJson(Map<String, dynamic> json) => CategorySummary(
@@ -16,8 +17,14 @@ class CategorySummary {
         name: LocalizedText.fromJson(json['name']),
         iconUrl: json['iconUrl'] as String?,
         // HAQIQIY son. Ilgari web'da "1 280+" kabi to'qima raqamlar
-        // yozilgan edi — bazada esa o'nlab mahsulot bor edi.
+        // yozilgan edi — bazada esa o'nlab mahsulot bor edi. Bo'limda —
+        // ichki turlardagi takrorlanmagan mahsulotlar soni.
         productCount: (json['productCount'] as num?)?.toInt() ?? 0,
+        // Eski server `children` yubormaydi — u holda bo'sh ro'yxat.
+        children: (json['children'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(CategorySummary.fromJson)
+            .toList(),
       );
 
   final String id;
@@ -25,6 +32,39 @@ class CategorySummary {
   final LocalizedText name;
   final String? iconUrl;
   final int productCount;
+
+  /// Ichki turlar (Ayollar › Kiyim, Poyabzal...). Bo'sh bo'lishi mumkin.
+  final List<CategorySummary> children;
+
+  /// Mahsuloti bor ichki turlar — mijozga faqat shular ko'rsatiladi.
+  CategorySummary withoutEmpty() => CategorySummary(
+        id: id,
+        slug: slug,
+        name: name,
+        iconUrl: iconUrl,
+        productCount: productCount,
+        children: [
+          for (final c in children)
+            if (c.productCount > 0) c.withoutEmpty(),
+        ],
+      );
+}
+
+/// [slug] ga mos tugun va uning bo'limi (ildizi). Topilmasa `null`.
+({CategorySummary node, CategorySummary department})? findCategory(
+  List<CategorySummary> roots,
+  String slug,
+) {
+  for (final root in roots) {
+    if (root.slug == slug) return (node: root, department: root);
+    final stack = [...root.children];
+    while (stack.isNotEmpty) {
+      final c = stack.removeLast();
+      if (c.slug == slug) return (node: c, department: root);
+      stack.addAll(c.children);
+    }
+  }
+  return null;
 }
 
 /// Brend (`GET /api/brands`).

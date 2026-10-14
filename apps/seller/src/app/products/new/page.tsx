@@ -11,7 +11,9 @@ import {
   PageHeader,
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
   Tabs,
@@ -33,6 +35,23 @@ interface CategoryItem {
   id: string;
   slug: string;
   name: { uz?: string; ru?: string; en?: string } | string;
+  parentId?: string | null;
+}
+
+function categoryLabel(c: CategoryItem): string {
+  return typeof c.name === 'string' ? c.name : (c.name.uz ?? c.name.ru ?? c.slug);
+}
+
+/**
+ * Bo'lim → ichki turlar. Mahsulot ichki turga qo'yiladi (Ayollar › Kiyim);
+ * ichki turi yo'q bo'lim (masalan Aksessuarlar) o'zi tanlanadi.
+ */
+function groupCategories(items: CategoryItem[]) {
+  const roots = items.filter((c) => !c.parentId || !items.some((p) => p.id === c.parentId));
+  return roots.map((root) => {
+    const children = items.filter((c) => c.parentId === root.id);
+    return { root, options: children.length > 0 ? children : [root] };
+  });
 }
 
 interface BrandItem {
@@ -382,10 +401,17 @@ export default function SellerNewProductPage() {
                     <SelectValue placeholder="Tanlang" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.slug} value={c.slug}>
-                        {typeof c.name === 'string' ? c.name : (c.name.uz ?? c.name.ru ?? c.slug)}
-                      </SelectItem>
+                    {groupCategories(categories).map(({ root, options }) => (
+                      <SelectGroup key={root.slug}>
+                        <SelectLabel>{categoryLabel(root)}</SelectLabel>
+                        {options.map((c) => (
+                          <SelectItem key={c.slug} value={c.slug}>
+                            {c.id === root.id
+                              ? categoryLabel(c)
+                              : `${categoryLabel(root)} › ${categoryLabel(c)}`}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>

@@ -325,6 +325,47 @@ void main() {
     expectNoRawKeys(tester);
   });
 
+  testWidgets('bo`lim tanlansa — ikkinchi qatorda uning turlari', (tester) async {
+    const tree = '''
+{"items":[
+  {"id":"d1","slug":"ayollar","name":{"uz":"Ayollar"},"iconUrl":null,"productCount":5,"children":[
+    {"id":"s1","slug":"ayollar-kiyim","name":{"uz":"Kiyim"},"iconUrl":null,"productCount":3,"children":[]},
+    {"id":"s2","slug":"ayollar-poyabzal","name":{"uz":"Poyabzal"},"iconUrl":null,"productCount":2,"children":[]},
+    {"id":"s3","slug":"ayollar-sumkalar","name":{"uz":"Sumkalar"},"iconUrl":null,"productCount":0,"children":[]}
+  ]}
+]}''';
+    final backend = FakeBackend((options, body) {
+      if (options.path == '/api/categories') return okJson(tree);
+      return okJson(productsJson());
+    });
+    await pumpCatalog(tester, backend);
+
+    // Bo'lim tanlanmaguncha ikkinchi qator yo'q.
+    expect(find.text('Kiyim · 3'), findsNothing);
+
+    await tester.tap(find.text('Ayollar · 5'));
+    await settle(tester);
+
+    expect(find.text('Kiyim · 3'), findsOneWidget);
+    expect(find.text('Poyabzal · 2'), findsOneWidget);
+    // Bo'sh tur ko'rsatilmaydi.
+    expect(find.textContaining('Sumkalar'), findsNothing);
+
+    // Qator gorizontal suriladi — chip ekrandan o'ngda bo'lishi mumkin.
+    await tester.ensureVisible(find.text('Poyabzal · 2'));
+    await tester.pump();
+    await tester.tap(find.text('Poyabzal · 2'));
+    await settle(tester);
+
+    final productQueries =
+        backend.queries.indexed.where((e) => backend.calls[e.$1] == '/api/products');
+    expect(productQueries.last.$2!['category'], 'ayollar-poyabzal');
+    // Ichki tur tanlanganda ham bo'lim belgilangan, ikkinchi qator joyida.
+    final dept = tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Ayollar · 5'));
+    expect(dept.selected, isTrue);
+    expect(find.text('Kiyim · 3'), findsOneWidget);
+  });
+
   testWidgets('keyingi sahifa kelmasa — ro`yxat qoladi, oxirida «Qayta urinish»', (tester) async {
     final firstPage = [
       for (var i = 0; i < 10; i++) product(slug: 'tovar-$i', nameUz: 'Tovar $i', price: '100000'),

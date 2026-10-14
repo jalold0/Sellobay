@@ -6,6 +6,8 @@ import {
   StockMovementType,
 } from '@prisma/client';
 
+import { applyCategoryTree } from './kategoriya-daraxti';
+
 const prisma = new PrismaClient();
 
 // ===================================================================
@@ -583,6 +585,13 @@ async function main() {
     groupBuyCount++;
   }
   console.info(`[seed] ${groupBuyCount} guruh xaridi tayyor`);
+
+  // Bo'limlar (Ayollar, Erkaklar...) — mahsulotlar yaratilgandan KEYIN:
+  // eski kiyim/poyabzal mahsulotlari yangi turlarga bog'lanadi.
+  const tree = await applyCategoryTree(prisma);
+  console.info(
+    `[seed] kategoriya daraxti: +${tree.created.length} yangi, ${tree.linked} bog'lanish`,
+  );
 
   console.info('[seed] DONE! Sellobay DB ishga tayyor.');
 }

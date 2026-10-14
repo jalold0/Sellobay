@@ -209,8 +209,9 @@ export function buildProductDetail(
   real?: ProductDetailRealExtras,
 ): ProductFullDetail {
   const categorySlug = categoryIdToSlug(product.categoryId) || product.categoryId;
-  const isFootwear = categorySlug === 'shoes';
-  const isClothing = categorySlug === 'clothing';
+  // Bo'limlardagi turlar ham (ayollar-poyabzal, erkaklar-kiyim...).
+  const isFootwear = categorySlug === 'shoes' || categorySlug.endsWith('-poyabzal');
+  const isClothing = categorySlug === 'clothing' || categorySlug.endsWith('-kiyim');
   const hasSizes = isFootwear || isClothing;
   // Sharhlar faqat bazadan. Bo'lmasa — bo'sh ro'yxat, hech narsa to'qilmaydi.
   const reviews = real?.reviews ?? [];

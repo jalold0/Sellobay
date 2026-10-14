@@ -62,7 +62,7 @@ export function FeaturedCollection({ saleProducts, ctaHref = '/catalog?featured=
         {/* O'ng ustun — rasm karta + crimson SALE karta */}
         <div className="grid grid-rows-2 gap-5">
           <Link
-            href="/catalog?category=clothing"
+            href="/catalog?category=ayollar"
             className="group relative block min-h-[200px] overflow-hidden rounded-[20px]"
           >
             <Image

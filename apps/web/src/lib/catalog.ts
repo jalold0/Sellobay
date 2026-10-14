@@ -13,6 +13,13 @@
 import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { unstable_cache } from 'next/cache';
 
+import {
+  buildCategoryTree,
+  descendantIds,
+  pruneEmpty,
+  type CategoryNode,
+  type CategorySummary,
+} from './category-tree';
 import { prisma } from './db';
 import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
 import { PUBLIC_CATALOG } from './product-visibility';
@@ -156,7 +163,11 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
       ...scopeWhere(scope),
     };
     if (brand) where.brand = { slug: brand };
-    if (category) where.categories = { some: { category: { slug: category } } };
+    if (category) {
+      // Bo'lim tanlansa — ichidagi barcha turlarning mahsulotlari ham.
+      const ids = await categoryFilterIds(category);
+      where.categories = { some: { categoryId: { in: ids ?? [] } } };
+    }
     if (q) {
       // JSON string_contains katta-kichik harfga sezgir — bosh-harfli variantni ham sinaymiz
       const qCap = q.charAt(0).toUpperCase() + q.slice(1);
@@ -216,7 +227,7 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
 
 // Keshlangan o'rama — bir xil query 120s ichida DB'ga qayta urmaydi.
 // unstable_cache argumentlarni avtomatik kalit qiladi (query obyekti serializatsiya bo'ladi).
-const cachedQueryProducts = unstable_cache(queryProductsFromDb, ['catalog-products-v1'], {
+const cachedQueryProducts = unstable_cache(queryProductsFromDb, ['catalog-products-v2'], {
   revalidate: CATALOG_REVALIDATE_SECONDS,
   tags: [CATALOG_CACHE_TAG],
 });
@@ -428,37 +439,51 @@ export async function fetchHomeProducts(): Promise<{
 
 // ─── Kategoriyalar ──────────────────────────────────────────────
 
-export interface CategorySummary {
-  id: string;
-  slug: string;
-  name: LocalizedText;
-  iconUrl: string | null;
-  /** Shu kategoriyadagi mahsulotlarning HAQIQIY soni. */
-  productCount: number;
+export type { CategorySummary };
+
+/** Faol kategoriyalar tekis ro'yxati — daraxt va avlod filtri uchun. */
+const cachedCategoryNodes = unstable_cache(
+  async (): Promise<CategoryNode[]> => {
+    const rows = await prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, slug: true, parentId: true, name: true, iconUrl: true, position: true },
+    });
+    return rows.map((c) => ({ ...c, name: c.name as LocalizedText }));
+  },
+  ['category-nodes-v1'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATEGORIES_CACHE_TAG] },
+);
+
+/**
+ * Kategoriya filtri uchun id'lar: o'zi va barcha ichki turlari.
+ * Slug topilmasa `null` — chaqiruvchi bo'sh natija beradi.
+ */
+export async function categoryFilterIds(slug: string): Promise<string[] | null> {
+  return descendantIds(await cachedCategoryNodes(), slug);
 }
 
 const cachedQueryCategories = unstable_cache(
   async (): Promise<CategorySummary[]> => {
-    const rows = await prisma.category.findMany({
-      where: { isActive: true, parentId: null },
-      orderBy: { position: 'asc' },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        iconUrl: true,
-        _count: { select: { products: true } },
-      },
-    });
-    return rows.map((c) => ({
-      id: c.id,
-      slug: c.slug,
-      name: c.name as LocalizedText,
-      iconUrl: c.iconUrl,
-      productCount: c._count.products,
-    }));
+    const [nodes, links] = await Promise.all([
+      cachedCategoryNodes(),
+      // Son mijoz KO'RADIGAN mahsulotlardan: faol, ommaviy, lokal katalog —
+      // chip bosilganda chiqadigan ro'yxat bilan bir xil.
+      prisma.productCategory.findMany({
+        where: {
+          product: { status: 'ACTIVE', deletedAt: null, ...PUBLIC_CATALOG, ...scopeWhere('LOCAL') },
+        },
+        select: { productId: true, categoryId: true },
+      }),
+    ]);
+    const byCategory = new Map<string, Set<string>>();
+    for (const { categoryId, productId } of links) {
+      const set = byCategory.get(categoryId) ?? new Set<string>();
+      set.add(productId);
+      byCategory.set(categoryId, set);
+    }
+    return buildCategoryTree(nodes, byCategory);
   },
-  ['categories'],
+  ['categories-tree-v1'],
   { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATEGORIES_CACHE_TAG] },
 );
 
@@ -494,8 +519,8 @@ export async function fetchTopCategories(): Promise<CategorySummary[]> {
  * katalog yon paneli, header navigatsiyasi) — bitta joyga yig'ildi.
  */
 export async function fetchStorefrontCategories(): Promise<CategorySummary[]> {
-  const all = await fetchTopCategories();
-  return all.filter((c) => c.productCount > 0);
+  // Har darajada: bo'sh bo'lim ham, bo'sh ichki tur ham ko'rsatilmaydi.
+  return pruneEmpty(await fetchTopCategories());
 }
 
 // ─── Brendlar ───────────────────────────────────────────────────

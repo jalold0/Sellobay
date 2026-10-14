@@ -238,6 +238,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
             SliverToBoxAdapter(child: _searchBar(context)),
             if (_categories.isNotEmpty || _query.featured == true || _query.scope == CatalogScope.global)
               SliverToBoxAdapter(child: _categoryChips(context)),
+            if (department case final dept? when dept.children.isNotEmpty)
+              SliverToBoxAdapter(child: _subcategoryChips(context, dept)),
             SliverToBoxAdapter(child: _resultBar(context)),
             ..._body(context),
             SliverToBoxAdapter(child: _footer(context)),
@@ -313,13 +315,73 @@ class _CatalogScreenState extends State<CatalogScreen> {
               // Mahsulot soni HAQIQIY (`productCount`) — ilgari web'da
               // bu yerda "1 280+" kabi to'qima raqamlar turardi.
               label: '${category.name.pick(locale)} · ${category.productCount}',
-              selected: _query.categorySlug == category.slug,
+              // Ichki tur tanlangan bo'lsa ham bo'limi belgilangan qoladi.
+              selected: department?.slug == category.slug,
               onSelected: () => _apply(_query.copyWith(categorySlug: category.slug)),
             ),
         ],
       ),
     );
   }
+
+  /// Tanlangan bo'lim (ichki tur tanlangan bo'lsa — uning bo'limi).
+  CategorySummary? get department {
+    final slug = _query.categorySlug;
+    return slug == null ? null : findCategory(_categories, slug)?.department;
+  }
+
+  /// Ikkinchi qator: tanlangan bo'limning ichki turlari.
+  ///
+  /// «Barchasi» — bo'limning o'zi (server bo'lim tanlanganda uning barcha
+  /// turlarini qaytaradi).
+  Widget _subcategoryChips(BuildContext context, CategorySummary dept) {
+    final locale = SellobayRuntimeScope.of(context).locale.locale;
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          _subChip(
+            label: context.t('common.all'),
+            selected: _query.categorySlug == dept.slug,
+            onSelected: () => _apply(_query.copyWith(categorySlug: dept.slug)),
+          ),
+          for (final sub in dept.children)
+            _subChip(
+              label: '${sub.name.pick(locale)} · ${sub.productCount}',
+              selected: _query.categorySlug == sub.slug,
+              onSelected: () => _apply(_query.copyWith(categorySlug: sub.slug)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Ikkinchi qator chipi — birinchisidan yengilroq: ierarxiya ko'rinsin.
+  Widget _subChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onSelected,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => onSelected(),
+          visualDensity: VisualDensity.compact,
+          labelStyle: TextStyle(
+            fontSize: SellobayType.caption,
+            fontWeight: FontWeight.w600,
+            color: selected ? SellobayColors.primary : SellobayColors.ink,
+          ),
+          selectedColor: SellobayColors.primary.withValues(alpha: 0.08),
+          backgroundColor: Colors.white,
+          side: BorderSide(color: selected ? SellobayColors.primary : SellobayColors.border),
+          showCheckmark: false,
+        ),
+      );
 
   /// Tashqaridan kelgan filtr: ko'rinib turadi va bitta bosishda olinadi.
   Widget _removableChip(
