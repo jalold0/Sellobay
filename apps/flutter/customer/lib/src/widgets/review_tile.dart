@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import 'review_photos.dart';
+
 /// Yulduzchalar qatori.
 class StarRow extends StatelessWidget {
   const StarRow({super.key, required this.rating, this.size = 15});
@@ -100,6 +102,10 @@ class ReviewTile extends StatelessWidget {
               review.body!,
               style: const TextStyle(fontSize: 13.5, height: 1.5, color: SellobayColors.mutedText),
             ),
+          ],
+          if (review.images.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ReviewPhotoStrip(urls: review.images),
           ],
         ],
       ),

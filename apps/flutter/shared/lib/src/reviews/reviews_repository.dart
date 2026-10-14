@@ -11,10 +11,20 @@ class ReviewsRepository {
 
   final ApiClient _api;
 
-  Future<ReviewPage> fetchForProduct(String slug, {int page = 1, int limit = 10}) async {
+  Future<ReviewPage> fetchForProduct(
+    String slug, {
+    int page = 1,
+    int limit = 10,
+    ReviewFilter filter = const AllReviews(),
+  }) async {
     final data = await _api.get<Map<String, dynamic>>(
       '/api/products/$slug/reviews',
-      query: {'page': '$page', 'limit': '$limit'},
+      query: {
+        'page': '$page',
+        'limit': '$limit',
+        if (filter is ReviewsWithPhotos) 'withPhotos': '1',
+        if (filter is ReviewsByStars) 'rating': '${filter.stars}',
+      },
     );
     return ReviewPage.fromJson(data);
   }
@@ -24,6 +34,7 @@ class ReviewsRepository {
     required int rating,
     String? title,
     String? body,
+    List<String> images = const [],
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/api/reviews',
@@ -35,6 +46,7 @@ class ReviewsRepository {
         // bo'sh sarlavha turardi.
         'title': _orNull(title),
         'body': _orNull(body),
+        if (images.isNotEmpty) 'images': images,
       },
     );
     return ProductReview.fromJson(data['review'] as Map<String, dynamic>);

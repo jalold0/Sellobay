@@ -38,6 +38,8 @@ export interface MockProduct {
   /** Sotuvchi tasdiqlangan (ACTIVE) yoki platform-rasmiy mahsulot. `false` bo'lsa "Tasdiqlangan"
    *  chip ko'rsatilmaydi. Aniqlanmagan (mock demo) = rasmiy deb hisoblanadi. */
   sellerVerified?: boolean;
+  /** Do'kon (o'xshash tovarlar kartochkasida nomi va bahosi). Rasmiy/mock — yo'q. */
+  seller?: { id: string; name: string; rating: number };
   /**
    * Global (Xitoydan) tovarmi. Savatni guruhlash va yetkazish muddatini ko'rsatish uchun.
    * Bu FAQAT UI ishorasi — buyurtma yaratishda haqiqat serverda tekshiriladi

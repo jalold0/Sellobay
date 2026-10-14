@@ -6,12 +6,17 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { FilterBar } from '../../../components/catalog/filter-bar';
 import { SubcategoryChips } from '../../../components/catalog/subcategory-chips';
 import { ProductCardClient } from '../../../components/product/product-card-client';
-import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../../../lib/catalog';
+import {
+  fetchBrands,
+  fetchProducts,
+  fetchSellerName,
+  fetchStorefrontCategories,
+} from '../../../lib/catalog';
 import { findInTree } from '../../../lib/category-tree';
 import { findBySlug, pickLocale, type Locale } from '../../../lib/mock-data';
 
 interface CatalogPageProps {
-  searchParams: { category?: string; brand?: string; sort?: string; q?: string };
+  searchParams: { category?: string; brand?: string; sort?: string; q?: string; seller?: string };
 }
 
 export const dynamic = 'force-dynamic';
@@ -36,13 +41,19 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   // variantni bosgan mijoz esa bo'sh natija olardi.
   //
   // Bo'sh kategoriya ko'rsatilmaydi — u filtr sifatida foydasiz.
-  const [categories, brands] = await Promise.all([fetchStorefrontCategories(), fetchBrands()]);
+  const [categories, brands, sellerFilter] = await Promise.all([
+    fetchStorefrontCategories(),
+    fetchBrands(),
+    searchParams.seller ? fetchSellerName(searchParams.seller) : Promise.resolve(null),
+  ]);
 
   const { items: list } = await fetchProducts({
     category: searchParams.category,
     brand: searchParams.brand,
     q: searchParams.q,
     sort: searchParams.sort,
+    // Do'kon sahifasi: tovar sahifasidagi «Do'konga o'tish».
+    seller: sellerFilter?.id,
   });
 
   // Ichki tur ham topiladi (sarlavha uchun), va uning bo'limi — ikkinchi
@@ -58,13 +69,15 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     ? department && department.slug !== selectedCategory.slug
       ? `${pickLocale(department.name, locale)} · ${pickLocale(selectedCategory.name, locale)}`
       : pickLocale(selectedCategory.name, locale)
-    : selectedBrand
-      ? selectedBrand.name
-      : searchParams.q
-        ? t('searchResults', { q: searchParams.q })
-        : t('title');
+    : sellerFilter
+      ? sellerFilter.name
+      : selectedBrand
+        ? selectedBrand.name
+        : searchParams.q
+          ? t('searchResults', { q: searchParams.q })
+          : t('title');
 
-  const hasFilters = Boolean(selectedCategory || selectedBrand || searchParams.q);
+  const hasFilters = Boolean(selectedCategory || selectedBrand || sellerFilter || searchParams.q);
 
   return (
     <div className="space-y-6">

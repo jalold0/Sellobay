@@ -59,6 +59,18 @@ export const GET = withApi(async (req: NextRequest) => {
   };
   if (byIds) where.id = { in: ids };
   if (featured === 'true') where.isFeatured = true;
+  // Do'kon sahifasi: ?seller=<id>. O'xshash tovarlar: ?excludeSeller=<id>
+  // (shu do'kondan boshqalari) va ?excludeId=<id> (ko'rilayotgan tovar).
+  const sellerId = uuidParam(url, 'seller');
+  const excludeSeller = uuidParam(url, 'excludeSeller');
+  const excludeId = uuidParam(url, 'excludeId');
+  if (sellerId) where.sellerId = sellerId;
+  if (excludeSeller) {
+    // Faqat BOSHQA do'konlar: platformaning o'z tovari (sotuvchisiz) bu yerga
+    // kirmaydi — u do'kon emas va reyting bo'yicha saralab bo'lmaydi.
+    where.AND = [{ sellerId: { not: null } }, { sellerId: { not: excludeSeller } }];
+  }
+  if (excludeId) where.id = { ...(where.id ?? {}), not: excludeId };
   if (brand) where.brand = { slug: brand };
   if (category) {
     // Bo'lim tanlansa — ichidagi barcha turlarning mahsulotlari ham.
@@ -96,11 +108,17 @@ export const GET = withApi(async (req: NextRequest) => {
           : sort === 'rating'
             ? { rating: 'desc' }
             : { publishedAt: 'desc' };
+  // «Boshqa do'konlardagi o'xshash tovarlar»: avval ishonchli do'kon,
+  // keyin tovarning o'z bahosi va sotuvi.
+  const orderByList: Prisma.ProductOrderByWithRelationInput[] =
+    sort === 'seller-rating'
+      ? [{ seller: { rating: 'desc' } }, { rating: 'desc' }, { soldCount: 'desc' }]
+      : [orderBy];
 
   const [items, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      orderBy,
+      orderBy: orderByList,
       skip: (page - 1) * limit,
       take: limit,
       select: {
@@ -117,12 +135,14 @@ export const GET = withApi(async (req: NextRequest) => {
         isFeatured: true,
         publishedAt: true,
         brand: { select: { id: true, slug: true, name: true } },
+        seller: { select: { id: true, brandName: true, rating: true } },
         images: {
           select: { url: true, alt: true },
           orderBy: { position: 'asc' },
           take: 1,
         },
         categories: {
+          where: { category: { isActive: true } },
           select: { category: { select: { slug: true, name: true } } },
           take: 1,
         },
@@ -151,6 +171,10 @@ export const GET = withApi(async (req: NextRequest) => {
       soldCount: p.soldCount,
       isFeatured: p.isFeatured,
       brand: p.brand,
+      // O'xshash tovarlar kartochkasida do'kon nomi va bahosi.
+      seller: p.seller
+        ? { id: p.seller.id, brandName: p.seller.brandName, rating: Number(p.seller.rating) }
+        : null,
       imageUrl: p.images[0]?.url ?? null,
       category: p.categories[0]?.category ?? null,
       stock,
@@ -166,3 +190,9 @@ export const GET = withApi(async (req: NextRequest) => {
     hasMore: page * limit < total,
   };
 });
+
+/** UUID ko'rinishidagi parametr, aks holda `null` (noto'g'ri qiymat filtrni buzmasin). */
+function uuidParam(url: URL, key: string): string | null {
+  const value = url.searchParams.get(key)?.trim() ?? '';
+  return /^[a-f0-9-]{36}$/i.test(value) ? value : null;
+}

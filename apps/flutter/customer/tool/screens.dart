@@ -226,7 +226,7 @@ final _detailJson = json.encode({
   'reviewCount': 78,
   'soldCount': 156,
   'brand': {'id': 'b1', 'slug': 'nike', 'name': 'Nike'},
-  'seller': {'brandName': 'SportLine'},
+  'seller': {'id': '22222222-2222-4222-8222-222222222222', 'brandName': 'SportLine', 'rating': 4.8, 'productCount': 34},
   'images': <Map<String, dynamic>>[],
   'stock': 3,
   'inStock': true,

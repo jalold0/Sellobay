@@ -31,6 +31,7 @@ import { useWishlist } from '../../store/wishlist';
 
 import { ProductGallery } from './product-gallery';
 import { ProductTabs } from './product-tabs';
+import { SellerCard } from './seller-card';
 import { StickyCartBar } from './sticky-cart-bar';
 
 interface Props {
@@ -384,6 +385,8 @@ export function ProductDetail({ detail, locale }: Props) {
               </div>
             ))}
           </div>
+
+          {detail.seller && <SellerCard seller={detail.seller} />}
         </div>
       </div>
 

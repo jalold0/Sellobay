@@ -58,7 +58,11 @@ async function main() {
     const realSold = soldByProduct.get(product.id) ?? 0;
 
     const oldRating = Number(product.rating);
-    if (oldRating === realRating && product.reviewCount === realCount && product.soldCount === realSold) {
+    if (
+      oldRating === realRating &&
+      product.reviewCount === realCount &&
+      product.soldCount === realSold
+    ) {
       continue;
     }
     changes.push({

@@ -3,13 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
-import '../widgets/review_tile.dart';
-import 'review_form_screen.dart';
-
+import '../home_tabs.dart';
 import '../widgets/cart_button.dart';
+import '../widgets/product_card.dart';
+import '../widgets/review_tile.dart';
+import '../widgets/seller_card.dart';
 import '../widgets/skeleton.dart';
 import '../widgets/wishlist_button.dart';
 import 'cart_screen.dart';
+import 'review_form_screen.dart';
 
 /// Mahsulot sahifasi.
 ///
@@ -82,6 +84,7 @@ class _ProductScreenState extends State<ProductScreen> {
       final product = await SellobayRuntimeScope.of(context).catalog.fetchProduct(widget.slug);
       if (!mounted) return;
       unawaited(_loadReviews(product.slug));
+      unawaited(_loadOthers(product));
       setState(() {
         _product = product;
         _loading = false;
@@ -322,25 +325,137 @@ class _ProductScreenState extends State<ProductScreen> {
                   ),
                 ),
               ],
-              ..._reviewsSection(context, product),
-              if (product.sellerName != null) ...[
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    const Icon(Icons.storefront_outlined, size: 17, color: SellobayColors.mutedText),
-                    const SizedBox(width: 8),
-                    Text(
-                      product.sellerName!,
-                      style: const TextStyle(fontSize: 13.5, color: SellobayColors.mutedText),
-                    ),
-                  ],
-                ),
+              if (product.seller case final seller?) ...[
+                const SizedBox(height: 22),
+                SellerCard(seller: seller, onOpen: () => _openStore(seller)),
               ],
+              ..._reviewsSection(context, product),
             ],
           ),
         ),
+        ..._otherSellersSection(context),
       ],
     );
+  }
+
+  /// Do'konning boshqa tovarlari: katalog bo'limiga do'kon filtri bilan.
+  void _openStore(SellerRef seller) {
+    HomeTabsScope.read(context)?.openCatalog(
+      query: ProductQuery(sellerId: seller.id, sellerName: seller.name),
+    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  /// Boshqa do'konlardagi o'xshash tovarlar — ishonchli do'kon birinchi.
+  List<ProductSummary> _others = const [];
+
+  Future<void> _loadOthers(ProductDetail product) async {
+    final seller = product.seller;
+    final category = product.categorySlug;
+    if (seller == null || category == null) return;
+    try {
+      final page = await SellobayRuntimeScope.of(context).catalog.fetchProducts(
+            ProductQuery(
+              categorySlug: category,
+              excludeSellerId: seller.id,
+              excludeId: product.id,
+              rankBySeller: true,
+              limit: 8,
+            ),
+          );
+      if (mounted) setState(() => _others = page.items);
+    } catch (_) {
+      // Qo'shimcha bo'lim — kelmasa sahifa baribir to'liq.
+    }
+  }
+
+  List<Widget> _otherSellersSection(BuildContext context) {
+    if (_others.isEmpty) return const [];
+    final locale = SellobayRuntimeScope.of(context).locale.locale;
+    final baseUrl = SellobayRuntimeScope.of(context).api.baseUrl;
+    return [
+      Container(height: 8, color: SellobayColors.soft),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+        child: Text(
+          context.t('product.otherSellers'),
+          style: const TextStyle(fontSize: SellobayType.cardTitle, fontWeight: FontWeight.w700),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: Text(
+          context.t('product.otherSellersHint'),
+          style: const TextStyle(fontSize: SellobayType.caption, color: SellobayColors.mutedText),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _others.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 12,
+            // Katalogdagi kartochka hisobi + do'kon qatori uchun joy.
+            mainAxisExtent: _otherCellHeight(context),
+          ),
+          itemBuilder: (context, i) {
+            final p = _others[i];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ProductCard(
+                    product: p,
+                    locale: locale,
+                    baseUrl: baseUrl,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => ProductScreen(slug: p.slug)),
+                    ),
+                  ),
+                ),
+                if (p.seller case final s?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 2),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.storefront_outlined, size: 13, color: SellobayColors.mutedText),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            s.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: SellobayType.caption, color: SellobayColors.mutedText),
+                          ),
+                        ),
+                        if (s.rating > 0) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star_rounded, size: 13, color: SellobayColors.accent),
+                          Text(
+                            s.rating.toStringAsFixed(1),
+                            style: const TextStyle(fontSize: SellobayType.caption, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    ];
+  }
+
+  static double _otherCellHeight(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final imageSide = (width - 32 - 12) / 2;
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.8);
+    return imageSide + 158 * scale + 22 * scale;
   }
 
   /// Sharhlar bo'limi.

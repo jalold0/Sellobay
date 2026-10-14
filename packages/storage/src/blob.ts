@@ -58,6 +58,8 @@ export const FOLDER = {
   receipts: 'receipts',
   /** Yetkazib berish isboti — kuryer topshirish payti olgan surat. */
   deliveryProofs: 'delivery-proofs',
+  /** Mijoz sharhiga biriktirgan surat — ochiq, sharh bilan ko'rinadi. */
+  reviewImages: 'reviews',
 } as const;
 
 export type StorageFolder = (typeof FOLDER)[keyof typeof FOLDER];

@@ -3,6 +3,7 @@
 // Faqat mahsulotni YETKAZIB OLGAN mijoz yoza oladi va bitta mahsulotga
 // bitta sharh. Tekshiruv `@/lib/reviews-server` da.
 
+import { FOLDER, MAX_REVIEW_IMAGES, isOwnPublicImageUrl } from '@ecom/storage';
 import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
@@ -19,6 +20,19 @@ const schema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().trim().max(120).optional().nullable(),
   body: z.string().trim().max(2000).optional().nullable(),
+  // Faqat `/api/uploads/review-image` qaytargan manzillar: begona sayt
+  // rasmi o'chib qolishi yoki kuzatuv pikseli bo'lishi mumkin.
+  images: z
+    .array(
+      z
+        .string()
+        .url()
+        .refine((u) => isOwnPublicImageUrl(u, FOLDER.reviewImages), {
+          message: 'Surat «Surat qo`shish» tugmasi orqali yuklanishi kerak',
+        }),
+    )
+    .max(MAX_REVIEW_IMAGES, `Eng ko'pi bilan ${MAX_REVIEW_IMAGES} ta surat`)
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {
