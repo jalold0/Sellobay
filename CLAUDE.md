@@ -82,7 +82,7 @@ kechiring.
 
 Joriy holat — merge kutayotgan MR'lar, ochiq vazifalar, har kompyuterdagi push qilinmagan ish
 va ish jurnali — git'ga bog'liq emas, claude.ai'dagi «Sellobay holati» sahifasida turadi:
-https://claude.ai/artifact/Jdv3TkWAb1nVWG6orpLo5g
+https://claude.ai/artifact/C6nvKSPdxN3URUmu4i5fqJ
 
 - Sessiya boshida o'qing: `Artifact read` (sahifa) va `ArtifactData list` — `holat`,
   `vazifalar`, `mashinalar`, `jurnal` kolleksiyalari.
