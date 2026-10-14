@@ -24,6 +24,8 @@ import {
   RETURN_WINDOW_DAYS,
   SHIPPING_FEE,
   TASHKENT_CITY_BBOX,
+  UZ_REGIONS,
+  regionAllowsHomeDelivery,
   TIERS,
 } from '@ecom/core-domain';
 import { locales } from '@ecom/i18n';
@@ -56,6 +58,16 @@ export const GET = withApi(async () => ({
   geo: {
     /** Toshkent shahri chegarasi — yetkazish hududini tekshirish uchun. */
     tashkentCityBbox: TASHKENT_CITY_BBOX,
+    /**
+     * Checkout'dagi hudud tanlovi (web bilan bir xil ro'yxat). Nom
+     * klientda tarjimadan (`regions.<slug>`); `name` — buyurtmaga
+     * yoziladigan o'zbekcha nom. `homeDelivery` — uygacha yetkaziladimi.
+     */
+    regions: UZ_REGIONS.map((r) => ({
+      slug: r.slug,
+      name: r.uz,
+      homeDelivery: regionAllowsHomeDelivery(r.slug),
+    })),
   },
   locales,
   /**

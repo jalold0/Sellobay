@@ -276,7 +276,25 @@ const realConfigResponse = '''
     ]
   },
   "returns": { "windowDays": 14 },
-  "geo": { "tashkentCityBbox": { "latMin": 41.15, "latMax": 41.4, "lngMin": 69.1, "lngMax": 69.45 } },
+  "geo": {
+    "tashkentCityBbox": { "latMin": 41.15, "latMax": 41.4, "lngMin": 69.1, "lngMax": 69.45 },
+    "regions": [
+      { "slug": "toshkent-shahri", "name": "Toshkent shahri", "homeDelivery": true },
+      { "slug": "toshkent-viloyati", "name": "Toshkent viloyati", "homeDelivery": false },
+      { "slug": "andijon", "name": "Andijon viloyati", "homeDelivery": false },
+      { "slug": "buxoro", "name": "Buxoro viloyati", "homeDelivery": false },
+      { "slug": "fargona", "name": "Farg'ona viloyati", "homeDelivery": false },
+      { "slug": "jizzax", "name": "Jizzax viloyati", "homeDelivery": false },
+      { "slug": "xorazm", "name": "Xorazm viloyati", "homeDelivery": false },
+      { "slug": "namangan", "name": "Namangan viloyati", "homeDelivery": false },
+      { "slug": "navoiy", "name": "Navoiy viloyati", "homeDelivery": false },
+      { "slug": "qashqadaryo", "name": "Qashqadaryo viloyati", "homeDelivery": false },
+      { "slug": "qoraqalpogiston", "name": "Qoraqalpog'iston Respublikasi", "homeDelivery": false },
+      { "slug": "samarqand", "name": "Samarqand viloyati", "homeDelivery": false },
+      { "slug": "sirdaryo", "name": "Sirdaryo viloyati", "homeDelivery": false },
+      { "slug": "surxondaryo", "name": "Surxondaryo viloyati", "homeDelivery": false }
+    ]
+  },
   "locales": ["uz", "ru", "en"]
 }
 ''';

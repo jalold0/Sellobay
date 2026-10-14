@@ -564,7 +564,27 @@
     "premiumPoints": "You'll earn +{points} points on this order — Sellobay Premium",
     "pcs": "{count} pcs",
     "newAddress": "+ New address",
-    "promoDiscount": "Promo discount"
+    "promoDiscount": "Promo discount",
+    "destination": {
+      "title": "Where should we deliver?",
+      "regionLabel": "Region",
+      "homeHint": "We deliver to your door anywhere in Tashkent city.",
+      "pickupOnly": "In this region you collect your order at a pickup point — free of charge.",
+      "mapPick": "Pick on map",
+      "mapChange": "Change point",
+      "mapTitle": "Delivery point",
+      "mapHint": "Tap the map or drag the pin to your home.",
+      "useLocation": "My location",
+      "confirmPoint": "Use this point",
+      "locating": "Finding the address…",
+      "outsideCity": "This point is outside Tashkent city — door delivery is not available. Change the region or choose a pickup point.",
+      "pointChosen": "Pinned on the map",
+      "savedTitle": "Saved addresses",
+      "pickupNone": "No pickup points in this region yet. Choose another region or try later.",
+      "workingHours": "Hours: {hours}",
+      "mapUnavailable": "The map did not load. Type the address instead.",
+      "locationDenied": "Location access was not allowed."
+    }
   },
   "auth": {
     "loginForOnlinePayment": "Sign up to pay online",
@@ -1391,5 +1411,21 @@
     "loginTitle": "Notifications come to your account",
     "loginHint": "Sign in to follow your order status.",
     "unread": "Unread"
+  },
+  "regions": {
+    "toshkent-shahri": "Tashkent city",
+    "toshkent-viloyati": "Tashkent region",
+    "andijon": "Andijan region",
+    "buxoro": "Bukhara region",
+    "fargona": "Fergana region",
+    "jizzax": "Jizzakh region",
+    "xorazm": "Khorezm region",
+    "namangan": "Namangan region",
+    "navoiy": "Navoi region",
+    "qashqadaryo": "Kashkadarya region",
+    "qoraqalpogiston": "Republic of Karakalpakstan",
+    "samarqand": "Samarkand region",
+    "sirdaryo": "Syrdarya region",
+    "surxondaryo": "Surkhandarya region"
   }
 }

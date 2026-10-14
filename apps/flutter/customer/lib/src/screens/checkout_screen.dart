@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
 import 'pickup_points_screen.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../auth_flow.dart';
+import '../map/location_picker_screen.dart';
 import '../widgets/checkout/checkout_address_section.dart';
 import '../widgets/checkout/checkout_coins_row.dart';
 import '../widgets/checkout/checkout_delivery_section.dart';
@@ -100,6 +102,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   DeliveryMethod _delivery = DeliveryMethod.homeDelivery;
   PickupPoint? _pickupPoint;
+
+  /// Tanlangan hudud (serverdagi ro'yxatdan). Ro'yxat kelmagan bo'lsa
+  /// `null` — eski erkin matn maydoni ishlaydi.
+  String? _regionSlug;
+
+  /// Xaritadagi nuqta — server hududni koordinatadan tekshiradi.
+  LatLng? _point;
+
+  List<UzRegion> get _regions =>
+      SellobayRuntimeScope.of(context).config.value?.regions ?? const [];
+
+  UzRegion? get _selectedRegion {
+    final regions = _regions;
+    if (regions.isEmpty) return null;
+    return regions.where((r) => r.slug == _regionSlug).firstOrNull ?? regions.first;
+  }
+
+  /// Uygacha yetkaziladimi. Hudud ro'yxati bo'lmasa — eski xatti-harakat.
+  bool get _homeAllowed => _selectedRegion?.homeDelivery ?? true;
+
+  /// Uy manzili kerakmi: hudud ro'yxati bor va filial tanlangan bo'lsa — yo'q
+  /// (manzil filialniki).
+  bool get _needsHomeAddress => _regionSlug == null || _delivery != DeliveryMethod.pickupPoint;
   PaymentProvider? _payment;
   PromoPreview? _promo;
 
@@ -189,9 +214,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _loading = false;
     });
 
+    // Hudud standart — ro'yxatning birinchisi (Toshkent shahri).
+    if (_regionSlug == null && _regions.isNotEmpty) _setRegion(_regions.first.slug);
+
     final preferred = addresses?.where((a) => a.isDefault).firstOrNull ?? addresses?.firstOrNull;
     // Avval manzil (aniqroq), keyin profil — ikkalasi ham faqat bo'shga.
-    if (preferred != null) _fillEmpty(_addressValues(preferred));
+    if (preferred != null) {
+      // Hudud ham shu manzildan — aks holda maydonlar Samarqandniki,
+      // tanlov esa Toshkent bo'lib qolardi.
+      final slug = _slugForText(preferred.region, preferred.city);
+      if (slug != null && slug != _regionSlug) _setRegion(slug);
+      if (_point == null && preferred.latitude != null && preferred.longitude != null) {
+        _point = LatLng(preferred.latitude!, preferred.longitude!);
+      }
+      _fillEmpty(_addressValues(preferred));
+      final region = _selectedRegion;
+      if (region != null) _region.text = region.name;
+    }
     if (user != null) {
       _fillEmpty({
         // `displayName` EMAS: ismsiz hisobda u telefonni qaytaradi va
@@ -232,16 +271,79 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   /// Mijoz saqlangan manzilni O'ZI tanladi — formani to'liq almashtiradi.
   void _applyAddress(SavedAddress address) {
+    final slug = _slugForText(address.region, address.city);
+    if (slug != null) _setRegion(slug);
     setState(() {
       _addressValues(address).forEach((field, value) => _controllers[field]!.text = value);
+      final region = _selectedRegion;
+      if (region != null) _region.text = region.name;
+      _point = address.latitude != null && address.longitude != null
+          ? LatLng(address.latitude!, address.longitude!)
+          : null;
       _fieldErrors = const {};
+    });
+  }
+
+  /// Hudud almashdi: punktlar va xaritadagi nuqta eskiradi; Toshkent
+  /// shahridan tashqarida faqat filial.
+  void _setRegion(String slug) {
+    setState(() {
+      _regionSlug = slug;
+      final region = _selectedRegion;
+      if (region != null) _region.text = region.name;
+      _point = null;
+      _pickupPoints = const [];
+      _pickupPoint = null;
+      _pickupError = null;
+      _delivery = _homeAllowed ? DeliveryMethod.homeDelivery : DeliveryMethod.pickupPoint;
+    });
+  }
+
+  /// Saqlangan manzil matnidan hudud — oldindan tanlash uchun qulaylik,
+  /// yakuniy tekshiruv serverda. Toshkent viloyati shahar emas.
+  String? _slugForText(String region, String city) {
+    String norm(String t) => t.toLowerCase().replaceAll(RegExp("['`ʻʼ‘’]"), '');
+    final text = '${norm(region)} ${norm(city)}';
+    final isTashkent =
+        text.contains('toshkent') || text.contains('tashkent') || text.contains('ташкент');
+    if (isTashkent) {
+      final province = norm(region).contains('viloyat') || norm(region).contains('област');
+      return province ? 'toshkent-viloyati' : 'toshkent-shahri';
+    }
+    for (final r in _regions) {
+      final first = norm(r.name).split(' ').first;
+      if (first.length > 3 && text.contains(first)) return r.slug;
+    }
+    return null;
+  }
+
+  Future<void> _pickOnMap() async {
+    final picked = await Navigator.of(context).push<PickedLocation>(
+      MaterialPageRoute(builder: (_) => LocationPickerScreen(initial: _point)),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _point = LatLng(picked.latitude, picked.longitude);
+      // Mijoz yozganini ustidan yozmaymiz — faqat bo'sh maydonlar.
+      final city = picked.city ?? '';
+      if (_city.text.trim().isEmpty && city.isNotEmpty) _city.text = city;
+      final street = [picked.street, picked.building]
+          .whereType<String>()
+          .where((s) => s.isNotEmpty)
+          .join(', ');
+      if (_street.text.trim().isEmpty && street.isNotEmpty) _street.text = street;
+      _fieldErrors = {..._fieldErrors}
+        ..remove(CheckoutField.city)
+        ..remove(CheckoutField.street);
     });
   }
 
   Future<void> _loadPickupPoints() async {
     if (_pickupPoints.isNotEmpty) return;
     try {
-      final points = await _repo.fetchPickupPoints(region: _region.text.trim());
+      final points = _regionSlug != null
+          ? await _repo.fetchPickupPoints(regionSlug: _regionSlug)
+          : await _repo.fetchPickupPoints(region: _region.text.trim());
       if (!mounted) return;
       setState(() => _pickupPoints = points);
     } catch (e) {
@@ -342,8 +444,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // Viloyat ixtiyoriy (bo'sh bo'lsa server standarti), lekin
       // yozilgan bo'lsa server kamida 2 belgi talab qiladi.
       if (region.isNotEmpty && region.length < 2) CheckoutField.region: required,
-      if (_city.text.trim().length < 2) CheckoutField.city: required,
-      if (_street.text.trim().length < 2) CheckoutField.street: required,
+      // Filialdan olinsa manzil — filialniki; shahar/ko'cha so'ralmaydi.
+      if (_needsHomeAddress && _city.text.trim().length < 2) CheckoutField.city: required,
+      if (_needsHomeAddress && _street.text.trim().length < 2) CheckoutField.street: required,
     };
   }
 
@@ -389,6 +492,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return true;
   }
 
+  /// Filialdan olinadigan buyurtmada manzil — filialniki.
+  PickupPoint? get _pickupAddress => _needsHomeAddress ? null : _pickupPoint;
+
   Future<void> _submit() async {
     if (!_validate(context)) return;
 
@@ -407,10 +513,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         recipientName: _name.text,
         // E.164 — CLAUDE.md qoidasi (server ham normallashtiradi).
         phone: normalizeUzPhone(_phone.text) ?? _phone.text,
-        region: _region.text,
-        city: _city.text,
-        street: _street.text,
-        apartment: _apartment.text,
+        region: _pickupAddress?.region ?? _region.text,
+        city: _pickupAddress?.city ?? _city.text,
+        street: _pickupAddress?.street ?? _street.text,
+        apartment: _needsHomeAddress ? _apartment.text : null,
+        latitude: _delivery != DeliveryMethod.pickupPoint ? _point?.latitude : null,
+        longitude: _delivery != DeliveryMethod.pickupPoint ? _point?.longitude : null,
         deliveryMethod: _delivery,
         pickupPointId: _pickupPoint?.id,
         paymentProvider: provider,
@@ -582,7 +690,47 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         },
         // Viloyat o'zgarsa yuklangan punktlar eskiradi.
         onRegionChanged: () => _pickupPoints = const [],
+        regionField: _regions.isEmpty ? null : _regionDropdown(context),
+        homeAddress: _needsHomeAddress,
+        mapButton: _homeAllowed ? _mapButton(context) : null,
       );
+
+  Widget _regionDropdown(BuildContext context) => DropdownButtonFormField<String>(
+        key: ValueKey(_regionSlug),
+        initialValue: _selectedRegion?.slug,
+        isExpanded: true,
+        // Boshqa maydonlar bilan bir xil matn uslubi.
+        // Mavzudan (brend shrifti bilan) — boshqa maydonlar matni bilan bir xil.
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: SellobayColors.ink),
+        decoration: InputDecoration(
+          labelText: context.t('checkout.destination.regionLabel'),
+          helperText: _homeAllowed
+              ? context.t('checkout.destination.homeHint')
+              : context.t('checkout.destination.pickupOnly'),
+          helperMaxLines: 2,
+        ),
+        items: [
+          for (final r in _regions)
+            DropdownMenuItem(value: r.slug, child: Text(context.t('regions.${r.slug}'))),
+        ],
+        onChanged: (slug) {
+          if (slug != null && slug != _regionSlug) _setRegion(slug);
+        },
+      );
+
+  Widget _mapButton(BuildContext context) {
+    final point = _point;
+    return OutlinedButton.icon(
+      onPressed: _pickOnMap,
+      icon: Icon(point == null ? Icons.map_outlined : Icons.check_circle_outline, size: 18),
+      label: Text(
+        point == null
+            ? context.t('checkout.destination.mapPick')
+            : context.t('checkout.destination.mapChange'),
+      ),
+      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+    );
+  }
 
   Widget _deliveryOptions(BuildContext context) => CheckoutDeliverySection(
         method: _delivery,
@@ -598,6 +746,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         pickupPoint: _pickupPoint,
         onChoosePickup: _openPickupPoints,
         pickupError: _pickupError,
+        homeAllowed: _homeAllowed,
       );
 
   Future<void> _openPickupPoints() async {
@@ -608,7 +757,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           // Formada yozilgan shahar oldindan tanlanadi — mijoz
           // odatda o'sha shahardagi punktdan olib ketadi. Bo'sh
           // bo'lsa barcha shaharlar ko'rsatiladi.
-          initialCity: _city.text.trim().isEmpty ? null : _city.text.trim(),
+          initialCity: _regionSlug != null || _city.text.trim().isEmpty ? null : _city.text.trim(),
+          regionSlug: _regionSlug,
         ),
       ),
     );

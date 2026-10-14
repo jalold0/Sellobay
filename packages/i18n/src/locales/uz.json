@@ -571,7 +571,27 @@
       "staleItems": "Savatdagi ba'zi mahsulotlar eskirgan va olib tashlandi. Iltimos, qaytadan qo'shing.",
       "promoNoLongerValid": "Promokod bu buyurtma uchun yaroqli emas — olib tashlandi"
     },
-    "promoDiscount": "Promokod chegirmasi"
+    "promoDiscount": "Promokod chegirmasi",
+    "destination": {
+      "title": "Qayerga yetkazamiz?",
+      "regionLabel": "Hudud",
+      "homeHint": "Toshkent shahri bo‘ylab uyingizgacha yetkazamiz.",
+      "pickupOnly": "Bu hududda tovarni filialdan olasiz — yetkazish bepul.",
+      "mapPick": "Xaritadan belgilash",
+      "mapChange": "Nuqtani o‘zgartirish",
+      "mapTitle": "Yetkazish nuqtasi",
+      "mapHint": "Xaritani bosing yoki pinni uyingizga suring.",
+      "useLocation": "Mening joylashuvim",
+      "confirmPoint": "Shu nuqtani tanlash",
+      "locating": "Manzil aniqlanmoqda…",
+      "outsideCity": "Bu nuqta Toshkent shahridan tashqarida — uygacha yetkazilmaydi. Hududni o‘zgartiring yoki filialni tanlang.",
+      "pointChosen": "Xaritada belgilangan",
+      "savedTitle": "Saqlangan manzillar",
+      "pickupNone": "Bu hududda hali filial yo‘q. Boshqa hududni tanlang yoki keyinroq urinib ko‘ring.",
+      "workingHours": "Ish vaqti: {hours}",
+      "mapUnavailable": "Xarita yuklanmadi. Manzilni qo‘lda yozing.",
+      "locationDenied": "Joylashuvni aniqlashga ruxsat berilmadi."
+    }
   },
   "auth": {
     "loginForOnlinePayment": "Onlayn to'lov uchun ro'yxatdan o'ting",
@@ -1391,5 +1411,21 @@
     "loginTitle": "Bildirishnomalar akkauntingizga keladi",
     "loginHint": "Buyurtma holatini kuzatish uchun tizimga kiring.",
     "unread": "O‘qilmagan"
+  },
+  "regions": {
+    "toshkent-shahri": "Toshkent shahri",
+    "toshkent-viloyati": "Toshkent viloyati",
+    "andijon": "Andijon viloyati",
+    "buxoro": "Buxoro viloyati",
+    "fargona": "Farg'ona viloyati",
+    "jizzax": "Jizzax viloyati",
+    "xorazm": "Xorazm viloyati",
+    "namangan": "Namangan viloyati",
+    "navoiy": "Navoiy viloyati",
+    "qashqadaryo": "Qashqadaryo viloyati",
+    "qoraqalpogiston": "Qoraqalpog'iston Respublikasi",
+    "samarqand": "Samarqand viloyati",
+    "sirdaryo": "Sirdaryo viloyati",
+    "surxondaryo": "Surxondaryo viloyati"
   }
 }

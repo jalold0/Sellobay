@@ -1,9 +1,19 @@
 'use client';
 
+import {
+  TASHKENT_CITY_REGION,
+  UZ_REGIONS,
+  regionAllowsHomeDelivery,
+  regionName,
+  regionSlugFromText,
+  type UzRegionSlug,
+} from '@ecom/core-domain';
 import { Button, Card, EmptyState, Input, Label, Skeleton, toast } from '@ecom/ui';
-import { Briefcase, Home, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Briefcase, Check, Home, MapPin, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { MapPickerDialog } from '../../../../components/map/map-picker-dialog';
 
 interface Address {
   id: string;
@@ -19,6 +29,9 @@ interface Address {
   apartment: string | null;
   landmark: string | null;
   isDefault: boolean;
+  /** Decimal — JSON'da satr bo'lib keladi. */
+  latitude: string | number | null;
+  longitude: string | number | null;
 }
 
 interface ApiResult<T> {
@@ -39,7 +52,7 @@ const EMPTY_FORM = {
   type: 'HOME' as Address['type'],
   recipientName: '',
   phone: '+998 ',
-  region: 'Toshkent',
+  region: regionName(TASHKENT_CITY_REGION),
   city: '',
   district: '',
   street: '',
@@ -47,6 +60,8 @@ const EMPTY_FORM = {
   apartment: '',
   landmark: '',
   isDefault: false,
+  latitude: null as number | null,
+  longitude: null as number | null,
 };
 
 export default function AddressesPage() {
@@ -57,6 +72,16 @@ export default function AddressesPage() {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [form, setForm] = React.useState(EMPTY_FORM);
+  const [mapOpen, setMapOpen] = React.useState(false);
+  const tRegion = useTranslations('regions');
+  const tDest = useTranslations('checkout.destination');
+  // Eski manzillarda hudud erkin matn — ro'yxatdagi qiymatga keltiramiz.
+  const formRegion: UzRegionSlug =
+    regionSlugFromText(form.region, form.city) ?? TASHKENT_CITY_REGION;
+  const point =
+    form.latitude != null && form.longitude != null
+      ? { lat: form.latitude, lng: form.longitude }
+      : null;
 
   const openNew = () => {
     setEditingId(null);
@@ -79,6 +104,8 @@ export default function AddressesPage() {
       apartment: a.apartment ?? '',
       landmark: a.landmark ?? '',
       isDefault: a.isDefault,
+      latitude: a.latitude == null ? null : Number(a.latitude),
+      longitude: a.longitude == null ? null : Number(a.longitude),
     });
     setShowForm(true);
   };
@@ -229,12 +256,25 @@ export default function AddressesPage() {
               />
             </div>
             <div>
-              <Label className="text-xs">{t('region')}</Label>
-              <Input
-                value={form.region}
-                onChange={(e) => setForm({ ...form, region: e.target.value })}
-                placeholder="Toshkent"
-              />
+              <Label htmlFor="address-region" className="text-xs">
+                {t('region')}
+              </Label>
+              <select
+                id="address-region"
+                value={formRegion}
+                onChange={(e) => {
+                  const slug = e.target.value as UzRegionSlug;
+                  // Hudud almashsa eski nuqta noto'g'ri bo'lib qoladi.
+                  setForm({ ...form, region: regionName(slug), latitude: null, longitude: null });
+                }}
+                className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+              >
+                {UZ_REGIONS.map((r) => (
+                  <option key={r.slug} value={r.slug}>
+                    {tRegion(r.slug)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <Label className="text-xs">{t('city')}</Label>
@@ -244,6 +284,22 @@ export default function AddressesPage() {
                 required
               />
             </div>
+            {regionAllowsHomeDelivery(formRegion) && (
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setMapOpen(true)}
+                  className={
+                    point
+                      ? 'border-primary/30 bg-primary/5 text-primary flex w-full items-center justify-center gap-2 rounded-md border py-2.5 text-sm font-semibold'
+                      : 'border-primary/40 text-primary hover:bg-primary/5 flex w-full items-center justify-center gap-2 rounded-md border border-dashed py-2.5 text-sm font-semibold'
+                  }
+                >
+                  {point ? <Check className="h-4 w-4" /> : <MapPin className="h-4 w-4" />}
+                  {point ? tDest('mapChange') : tDest('mapPick')}
+                </button>
+              </div>
+            )}
             <div className="sm:col-span-2">
               <Label className="text-xs">{t('street')}</Label>
               <Input
@@ -288,6 +344,21 @@ export default function AddressesPage() {
               </Button>
             </div>
           </form>
+          <MapPickerDialog
+            open={mapOpen}
+            onOpenChange={setMapOpen}
+            initial={point}
+            onConfirm={(p) =>
+              setForm((f) => ({
+                ...f,
+                latitude: p.lat,
+                longitude: p.lng,
+                city: f.city.trim() || p.district,
+                street: f.street.trim() || p.street,
+                building: f.building.trim() || p.house,
+              }))
+            }
+          />
         </Card>
       ) : null}
 

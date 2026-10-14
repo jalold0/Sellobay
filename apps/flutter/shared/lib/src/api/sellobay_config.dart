@@ -105,6 +105,22 @@ class SupportChannels {
   }
 }
 
+/// Hudud: slug (nomi tarjimada `regions.<slug>`), buyurtmaga yoziladigan
+/// o'zbekcha nom va uygacha yetkazish mumkinligi.
+class UzRegion {
+  const UzRegion({required this.slug, required this.name, required this.homeDelivery});
+
+  factory UzRegion.fromJson(Map<String, dynamic> json) => UzRegion(
+        slug: json['slug'] as String,
+        name: json['name'] as String? ?? json['slug'] as String,
+        homeDelivery: json['homeDelivery'] as bool? ?? false,
+      );
+
+  final String slug;
+  final String name;
+  final bool homeDelivery;
+}
+
 class GeoBbox {
   const GeoBbox({
     required this.latMin,
@@ -135,6 +151,7 @@ class SellobayConfig {
     required this.loyalty,
     required this.returnWindowDays,
     required this.tashkentCityBbox,
+    this.regions = const [],
     this.support = const SupportChannels(),
     required this.locales,
   });
@@ -145,6 +162,10 @@ class SellobayConfig {
   /// Yetkazilgandan keyin necha kun ichida qaytarish mumkin.
   final int returnWindowDays;
   final GeoBbox tashkentCityBbox;
+
+  /// Checkout'dagi hudud tanlovi (web bilan bir xil ro'yxat, serverdan).
+  /// Eski server bermasa — bo'sh, u holda erkin matn maydoni qoladi.
+  final List<UzRegion> regions;
 
   /// Qo'llab-quvvatlash kanallari — yordam markazida ishlatiladi.
   final SupportChannels support;
@@ -157,6 +178,10 @@ class SellobayConfig {
             ((json['returns'] as Map<String, dynamic>)['windowDays'] as num).toInt(),
         tashkentCityBbox: GeoBbox.fromJson(
             (json['geo'] as Map<String, dynamic>)['tashkentCityBbox'] as Map<String, dynamic>),
+        regions: ((json['geo'] as Map<String, dynamic>)['regions'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(UzRegion.fromJson)
+            .toList(),
         support: SupportChannels.fromJson(json['support'] as Map<String, dynamic>?),
         locales: (json['locales'] as List<dynamic>).cast<String>(),
       );

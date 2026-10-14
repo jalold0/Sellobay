@@ -1,6 +1,7 @@
 // Yetkazib berish hududi — koordinatadan/matndan Toshkent shaharni aniqlash.
 // Uygacha yetkazish FAQAT Toshkent shahar uchun; qolgan joy — olib ketish punkti.
 // Sof funksiyalar — GPS/framework'ga bog'liq emas (klient va server bir xil qoida).
+import { regionSlugFromText } from './uz-regions.ts';
 
 export interface LatLng {
   lat: number;
@@ -36,6 +37,7 @@ export function isInTashkentCity(lat: number, lng: number): boolean {
  * Klient (checkout) va server (/api/orders) BIR XIL qoidani ishlatishi shart.
  */
 export function looksLikeTashkentCityText(region: string, city: string): boolean {
-  const text = `${region} ${city}`.toLowerCase();
-  return text.includes('toshkent') || text.includes('tashkent') || text.includes('ташкент');
+  // «Toshkent viloyati» (Chirchiq, Angren...) — shahar EMAS. Ilgari u ham
+  // «toshkent» so'zi bor deb uygacha yetkazishga o'tib ketardi.
+  return regionSlugFromText(region, city) === 'toshkent-shahri';
 }

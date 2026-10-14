@@ -13,6 +13,7 @@ class CheckoutDeliverySection extends StatelessWidget {
     required this.pickupPoint,
     required this.onChoosePickup,
     this.pickupError,
+    this.homeAllowed = true,
   });
 
   final DeliveryMethod method;
@@ -26,6 +27,10 @@ class CheckoutDeliverySection extends StatelessWidget {
   /// Punkt tanlanmagan holda yuborildi — tanlash tugmasi ostida.
   final String? pickupError;
 
+  /// Tanlangan hududda uygacha yetkaziladimi (faqat Toshkent shahri).
+  /// Yo'q bo'lsa faqat filial taklif qilinadi.
+  final bool homeAllowed;
+
   @override
   Widget build(BuildContext context) => Column(
         children: [
@@ -37,6 +42,7 @@ class CheckoutDeliverySection extends StatelessWidget {
             child: Column(
               children: [
                 for (final option in DeliveryMethod.values)
+                  if (homeAllowed || option == DeliveryMethod.pickupPoint)
                   RadioListTile<DeliveryMethod>(
                     value: option,
                     contentPadding: EdgeInsets.zero,
@@ -57,6 +63,14 @@ class CheckoutDeliverySection extends StatelessWidget {
               ],
             ),
           ),
+          if (!homeAllowed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                context.t('checkout.destination.pickupOnly'),
+                style: const TextStyle(fontSize: 12.5, color: SellobayColors.mutedText),
+              ),
+            ),
           if (method == DeliveryMethod.pickupPoint) _pickupPicker(context),
         ],
       );
