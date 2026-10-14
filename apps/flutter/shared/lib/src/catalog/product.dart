@@ -158,6 +158,7 @@ class ProductDetail {
     required this.brandSlug,
     required this.seller,
     this.categorySlug,
+    this.specs = const [],
     required this.images,
     required this.stock,
     required this.inStock,
@@ -185,6 +186,11 @@ class ProductDetail {
       seller: SellerRef.maybeFromJson(seller),
       categorySlug: ((json['categories'] as List<dynamic>?)?.firstOrNull as Map<String, dynamic>?)?['slug']
           as String?,
+      specs: (json['specs'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ProductSpec.fromJson)
+          .where((s) => s.value.isNotEmpty && (s.key != null || s.label != null))
+          .toList(),
       images: (json['images'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()
           .map(ProductImageRef.fromJson)
@@ -218,6 +224,9 @@ class ProductDetail {
 
   /// Asosiy (faol) kategoriya — o'xshash tovarlar uchun.
   final String? categorySlug;
+
+  /// Sotuvchi kiritgan xususiyatlar (material, tarkib...).
+  final List<ProductSpec> specs;
   final List<ProductImageRef> images;
   final int stock;
   final bool inStock;
@@ -302,4 +311,20 @@ class SellerRef {
 
   /// Faqat tovar sahifasida keladi.
   final int? productCount;
+}
+
+/// Tovar xususiyati. [key] bo'lsa nomi tarjimadan (`product.spec.<key>`),
+/// aks holda sotuvchi yozgan [label].
+class ProductSpec {
+  const ProductSpec({this.key, this.label, required this.value});
+
+  factory ProductSpec.fromJson(Map<String, dynamic> json) => ProductSpec(
+        key: json['key'] as String?,
+        label: json['label'] as String?,
+        value: (json['value'] as String? ?? '').trim(),
+      );
+
+  final String? key;
+  final String? label;
+  final String value;
 }

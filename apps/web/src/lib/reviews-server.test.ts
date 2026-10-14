@@ -19,7 +19,9 @@ const db = {
     delete: vi.fn(),
     aggregate: vi.fn(),
     groupBy: vi.fn(),
+    update: vi.fn(),
   },
+  reviewVote: { deleteMany: vi.fn(), createMany: vi.fn(), count: vi.fn(), findMany: vi.fn() },
   // Tranzaksiya shu obyektning o'zini beradi — chaqiruvlarni sanash
   // uchun shu yetarli.
   $transaction: vi.fn(),
@@ -31,6 +33,7 @@ const {
   createReview,
   listProductReviews,
   reviewSummary,
+  toggleHelpful,
   deleteReview,
   reviewEligibility,
   serializeReview,
@@ -343,5 +346,63 @@ describe('do`kon reytingi', () => {
     await createReview({ userId: 'u1', productId: 'p1', rating: 5 });
 
     expect(db.seller.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('«foydali» ovozi', () => {
+  const APPROVED = { id: 'r1', userId: 'author', isApproved: true };
+
+  it('birinchi bosish — ovoz qo`yiladi, son jadvaldan', async () => {
+    db.review.findUnique.mockResolvedValue(APPROVED);
+    db.reviewVote.deleteMany.mockResolvedValue({ count: 0 });
+    db.reviewVote.createMany.mockResolvedValue({ count: 1 });
+    db.reviewVote.count.mockResolvedValue(4);
+
+    const res = await toggleHelpful('u1', 'r1');
+
+    expect(res).toEqual({ helpful: true, helpfulCount: 4 });
+    expect(db.reviewVote.createMany.mock.calls[0]?.[0]).toEqual({
+      data: [{ reviewId: 'r1', userId: 'u1' }],
+      skipDuplicates: true,
+    });
+    expect(db.review.update.mock.calls[0]?.[0]).toEqual({
+      where: { id: 'r1' },
+      data: { helpfulCount: 4 },
+    });
+  });
+
+  it('ikkinchi bosish — ovoz qaytarib olinadi', async () => {
+    db.review.findUnique.mockResolvedValue(APPROVED);
+    db.reviewVote.deleteMany.mockResolvedValue({ count: 1 });
+    db.reviewVote.count.mockResolvedValue(3);
+
+    const res = await toggleHelpful('u1', 'r1');
+
+    expect(res).toEqual({ helpful: false, helpfulCount: 3 });
+    expect(db.reviewVote.createMany).not.toHaveBeenCalled();
+  });
+
+  it('o`z sharhiga ovoz berib bo`lmaydi', async () => {
+    db.review.findUnique.mockResolvedValue({ ...APPROVED, userId: 'u1' });
+    await expect(toggleHelpful('u1', 'r1')).rejects.toMatchObject({
+      status: 403,
+      code: 'OWN_REVIEW',
+    });
+  });
+
+  it('tasdiqlanmagan sharh — 404', async () => {
+    db.review.findUnique.mockResolvedValue({ ...APPROVED, isApproved: false });
+    await expect(toggleHelpful('u1', 'r1')).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('ro`yxatda ko`ruvchining ovozlari belgilanadi', async () => {
+    db.review.findMany.mockResolvedValue([reviewRow({ id: 'r1' }), reviewRow({ id: 'r2' })]);
+    db.review.count.mockResolvedValue(2);
+    db.reviewVote.findMany.mockResolvedValue([{ reviewId: 'r2' }]);
+
+    const page = await listProductReviews('p1', { viewerId: 'u1', sort: 'helpful' });
+
+    expect(page.items.map((r) => r.votedByMe)).toEqual([false, true]);
+    expect(db.review.findMany.mock.calls[0]?.[0].orderBy[0]).toEqual({ helpfulCount: 'desc' });
   });
 });

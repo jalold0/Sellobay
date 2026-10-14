@@ -76,7 +76,7 @@ export function serializeReview(r: ReviewRow) {
   };
 }
 
-export const REVIEW_SORTS = ['newest', 'rating-high', 'rating-low'] as const;
+export const REVIEW_SORTS = ['newest', 'helpful', 'rating-high', 'rating-low'] as const;
 export type ReviewSort = (typeof REVIEW_SORTS)[number];
 
 export interface ReviewListOptions {
@@ -87,6 +87,8 @@ export interface ReviewListOptions {
   /** Faqat surati bor sharhlar. */
   withPhotos?: boolean;
   sort?: ReviewSort;
+  /** Tizimga kirgan mijoz — qaysi sharhlarga «foydali» bosganini bilish uchun. */
+  viewerId?: string | null;
 }
 
 /**
@@ -126,7 +128,14 @@ export async function reviewSummary(productId: string) {
 
 /** Mahsulotning ko'rinadigan sharhlari (filtr va saralash bilan). */
 export async function listProductReviews(productId: string, opts: ReviewListOptions = {}) {
-  const { page = 1, limit = REVIEW_PAGE_SIZE, rating, withPhotos = false, sort = 'newest' } = opts;
+  const {
+    page = 1,
+    limit = REVIEW_PAGE_SIZE,
+    rating,
+    withPhotos = false,
+    sort = 'newest',
+    viewerId = null,
+  } = opts;
   const take = Math.min(Math.max(limit, 1), 50);
   const skip = (Math.max(page, 1) - 1) * take;
 
@@ -137,19 +146,34 @@ export async function listProductReviews(productId: string, opts: ReviewListOpti
     ...(withPhotos ? { images: { isEmpty: false } } : {}),
   };
   const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
-    sort === 'rating-high'
-      ? [{ rating: 'desc' }, { createdAt: 'desc' }]
-      : sort === 'rating-low'
-        ? [{ rating: 'asc' }, { createdAt: 'desc' }]
-        : [{ createdAt: 'desc' }];
+    sort === 'helpful'
+      ? [{ helpfulCount: 'desc' }, { createdAt: 'desc' }]
+      : sort === 'rating-high'
+        ? [{ rating: 'desc' }, { createdAt: 'desc' }]
+        : sort === 'rating-low'
+          ? [{ rating: 'asc' }, { createdAt: 'desc' }]
+          : [{ createdAt: 'desc' }];
 
   const [items, total] = await Promise.all([
     prisma.review.findMany({ where, orderBy, select: reviewSelect, skip, take }),
     prisma.review.count({ where }),
   ]);
 
+  // Ko'ruvchi ovoz bergan sharhlar — bitta so'rov, sahifadagilar uchun.
+  const voted =
+    viewerId && items.length > 0
+      ? new Set(
+          (
+            await prisma.reviewVote.findMany({
+              where: { userId: viewerId, reviewId: { in: items.map((r) => r.id) } },
+              select: { reviewId: true },
+            })
+          ).map((v) => v.reviewId),
+        )
+      : null;
+
   return {
-    items: items.map(serializeReview),
+    items: items.map((r) => ({ ...serializeReview(r), votedByMe: voted?.has(r.id) ?? false })),
     total,
     page: Math.max(page, 1),
     limit: take,
@@ -337,4 +361,39 @@ export async function listMyReviews(userId: string) {
     ...serializeReview(r),
     product: { slug: r.product.slug, name: r.product.name },
   }));
+}
+
+/**
+ * «Foydali» ovozini almashtiradi: bosilmagan bo'lsa qo'yadi, bosilgan
+ * bo'lsa qaytarib oladi. Bir mijoz bir sharhga bitta ovoz — jadvalning
+ * birlamchi kaliti (reviewId, userId) buni bazada kafolatlaydi.
+ *
+ * O'z sharhiga ovoz berib bo'lmaydi: aks holda muallif o'z sharhini
+ * «eng foydali» qatoriga chiqarardi.
+ */
+export async function toggleHelpful(
+  userId: string,
+  reviewId: string,
+): Promise<{ helpful: boolean; helpfulCount: number }> {
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: { id: true, userId: true, isApproved: true },
+  });
+  if (!review || !review.isApproved) throw new ReviewError(404, 'NOT_FOUND', 'Sharh topilmadi');
+  if (review.userId === userId) {
+    throw new ReviewError(403, 'OWN_REVIEW', 'O`z sharhingizga ovoz bera olmaysiz');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const removed = await tx.reviewVote.deleteMany({ where: { reviewId, userId } });
+    if (removed.count === 0) {
+      // Parallel ikki bosish: ikkinchisi kalit to'qnashuvida jim o'tadi.
+      await tx.reviewVote.createMany({ data: [{ reviewId, userId }], skipDuplicates: true });
+    }
+    // Hisoblagich jadvaldan qayta sanaladi — +1/-1 emas: poyga bo'lsa ham
+    // son haqiqatdan uzoqlashmaydi.
+    const helpfulCount = await tx.reviewVote.count({ where: { reviewId } });
+    await tx.review.update({ where: { id: reviewId }, data: { helpfulCount } });
+    return { helpful: removed.count === 0, helpfulCount };
+  });
 }

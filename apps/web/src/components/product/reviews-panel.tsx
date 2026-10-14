@@ -7,8 +7,16 @@
 // manba. Taqsimot BUTUN sharhlardan (`summary`), ilgari sahifa faqat
 // birinchi 20 tadan hisoblardi.
 
-import { Avatar, AvatarFallback, Dialog, DialogContent, DialogTitle, Rating } from '@ecom/ui';
-import { Check, ImageIcon, Star } from 'lucide-react';
+import {
+  Avatar,
+  AvatarFallback,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Rating,
+  toast,
+} from '@ecom/ui';
+import { Check, ImageIcon, Star, ThumbsUp } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
@@ -25,6 +33,9 @@ interface ReviewItem {
   isVerifiedPurchase: boolean;
   createdAt: string;
   author: string;
+  helpfulCount: number;
+  /** Ko'ruvchi «foydali» bosganmi (mehmonda doim false). */
+  votedByMe?: boolean;
 }
 
 interface Summary {
@@ -44,8 +55,10 @@ type Filter = { kind: 'all' } | { kind: 'photos' } | { kind: 'stars'; star: numb
 
 const STARS = [5, 4, 3, 2, 1] as const;
 
-function query(filter: Filter, page: number): string {
-  const p = new URLSearchParams({ page: String(page), limit: '10' });
+type Sort = 'newest' | 'helpful';
+
+function query(filter: Filter, page: number, sort: Sort): string {
+  const p = new URLSearchParams({ page: String(page), limit: '10', sort });
   if (filter.kind === 'photos') p.set('withPhotos', '1');
   if (filter.kind === 'stars') p.set('rating', String(filter.star));
   return p.toString();
@@ -63,12 +76,46 @@ export function ReviewsPanel({ productId, slug }: { productId: string; slug: str
   const [failed, setFailed] = React.useState(false);
   const [photo, setPhoto] = React.useState<string | null>(null);
   const [reloadKey, setReloadKey] = React.useState(0);
+  const [sort, setSort] = React.useState<Sort>('newest');
+  const [voting, setVoting] = React.useState<string | null>(null);
+
+  // «Foydali»: server holat va sonni qaytaradi — klient o'zi hisoblamaydi.
+  const toggleHelpful = async (id: string) => {
+    if (voting) return;
+    setVoting(id);
+    try {
+      const res = await fetch(`/api/reviews/${id}/helpful`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      const json = (await res.json().catch(() => null)) as {
+        success: boolean;
+        data?: { helpful: boolean; helpfulCount: number };
+        error?: { message: string };
+      } | null;
+      if (!json?.success || !json.data) {
+        toast({
+          title: res.status === 401 ? tr('helpfulLogin') : (json?.error?.message ?? tr('noMatch')),
+          variant: 'destructive',
+        });
+        return;
+      }
+      const { helpful, helpfulCount } = json.data;
+      setItems((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, votedByMe: helpful, helpfulCount } : r)),
+      );
+    } finally {
+      setVoting(null);
+    }
+  };
 
   React.useEffect(() => {
     let active = true;
     setLoading(true);
     setFailed(false);
-    fetch(`/api/products/${slug}/reviews?${query(filter, page)}`, { credentials: 'same-origin' })
+    fetch(`/api/products/${slug}/reviews?${query(filter, page, sort)}`, {
+      credentials: 'same-origin',
+    })
       .then((r) => r.json() as Promise<{ success: boolean; data?: Page }>)
       .then((json) => {
         if (!active) return;
@@ -84,7 +131,7 @@ export function ReviewsPanel({ productId, slug }: { productId: string; slug: str
     return () => {
       active = false;
     };
-  }, [slug, filter, page, reloadKey]);
+  }, [slug, filter, page, sort, reloadKey]);
 
   const choose = (f: Filter) => {
     setFilter(f);
@@ -199,6 +246,24 @@ export function ReviewsPanel({ productId, slug }: { productId: string; slug: str
           </div>
         </div>
 
+        <div className="flex justify-end">
+          <label htmlFor="reviews-sort" className="sr-only">
+            {t('tabReviews')}
+          </label>
+          <select
+            id="reviews-sort"
+            value={sort}
+            onChange={(e) => {
+              setSort(e.target.value as Sort);
+              setPage(1);
+            }}
+            className="border-border bg-background rounded-full border px-3 py-1.5 text-xs font-medium"
+          >
+            <option value="newest">{tr('sortNewest')}</option>
+            <option value="helpful">{tr('sortHelpful')}</option>
+          </select>
+        </div>
+
         {failed && items.length === 0 ? (
           <p className="text-muted-foreground rounded-xl border border-dashed p-6 text-center text-sm">
             {tr('noMatch')}
@@ -251,6 +316,24 @@ export function ReviewsPanel({ productId, slug }: { productId: string; slug: str
                   ))}
                 </div>
               )}
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => void toggleHelpful(r.id)}
+                  disabled={voting === r.id}
+                  aria-pressed={r.votedByMe ?? false}
+                  className={
+                    r.votedByMe
+                      ? 'border-primary bg-primary/5 text-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold'
+                      : 'border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium'
+                  }
+                >
+                  <ThumbsUp size={12} className={r.votedByMe ? 'fill-current' : undefined} />
+                  {r.helpfulCount > 0
+                    ? tr('helpfulCount', { count: r.helpfulCount })
+                    : tr('helpful')}
+                </button>
+              </div>
             </article>
           ))
         )}

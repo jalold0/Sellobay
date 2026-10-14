@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -50,6 +51,10 @@ final _detailJson = json.encode({
   'categories': [
     {'slug': 'erkaklar-poyabzal', 'name': {'uz': 'Poyabzal'}},
   ],
+  'specs': [
+    {'key': 'material', 'value': 'Paxta 95%'},
+    {'label': 'Yoqa turi', 'value': 'Polo'},
+  ],
   'images': <Map<String, dynamic>>[],
   'stock': 5,
   'inStock': true,
@@ -83,7 +88,7 @@ Map<String, dynamic> _review(String id, int rating, {List<String> images = const
       'body': 'Matn $id',
       'images': images,
       'isVerifiedPurchase': true,
-      'helpfulCount': 0,
+      'helpfulCount': id == 'r2' ? 4 : 0,
       'createdAt': '2026-10-04T08:00:00.000Z',
       'author': 'Dilnoza K.',
       'userId': 'someone',
@@ -101,6 +106,12 @@ FakeBackend _backend() => FakeBackend((options, body) {
             'limit': 8,
             'hasMore': false,
           }));
+        case '/api/reviews/r2/helpful':
+          return apiOk({'helpful': true, 'helpfulCount': 5});
+        case '/api/auth/login':
+          return apiOk({'user': userJson(), 'tokens': tokenPair('1')});
+        case '/api/auth/me':
+          return apiOk({'user': userJson(roles: ['CUSTOMER'])});
         case '/api/products/nike-air-max/reviews':
           final q = options.queryParameters;
           final all = [
@@ -232,11 +243,77 @@ void main() {
     expect(find.text('Matn r2'), findsOneWidget);
     expect(find.byType(ReviewPhotoStrip), findsOneWidget);
 
+    // Filtrlar qatori gorizontal suriladi — chip ekrandan o'ngda bo'lishi mumkin.
+    await tester.ensureVisible(find.text('Suratli (1)', skipOffstage: false));
+    await tester.pump();
     await tester.tap(find.text('Suratli (1)'));
     await settle(tester);
 
     expect(backend.queries.last?['withPhotos'], '1');
     expect(find.text('Matn r2'), findsNothing);
     expect(find.text('Matn r1'), findsOneWidget);
+  });
+
+  testWidgets('xususiyatlar: ma`lum tur tarjimadan, boshqasi o`z nomi bilan', (tester) async {
+    await pumpProduct(tester, _backend());
+    await scrollTo(tester, find.text('Yoqa turi'));
+
+    expect(find.text('Xususiyatlari'), findsOneWidget);
+    expect(find.text('Material'), findsOneWidget);
+    expect(find.text('Paxta 95%'), findsOneWidget);
+    expect(find.text('Polo'), findsOneWidget);
+  });
+
+  testWidgets('«foydali»: kirgan mijoz bossa — serverdagi son ko`rinadi', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390 * 3, 844 * 3)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final backend = _backend();
+    final runtime = buildRuntime(backend, locale: uz);
+    unawaited(runtime.auth.signInWithPassword(identifier: '+998901234567', password: 'parol1234'));
+    await tester.pumpWidget(
+      SellobayScope(
+        runtime: runtime,
+        child: MaterialApp(
+          theme: buildSellobayTheme(),
+          home: const ReviewsScreen(slug: 'nike-air-max', productName: 'Nike Air Max'),
+        ),
+      ),
+    );
+    await settle(tester);
+
+    expect(find.text('Foydali · 4'), findsOneWidget);
+    await tester.tap(find.text('Foydali · 4'));
+    await settle(tester);
+
+    expect(backend.calls, contains('/api/reviews/r2/helpful'));
+    expect(find.text('Foydali · 5'), findsOneWidget);
+  });
+
+  testWidgets('«foydali»: mehmon bossa — so`rov ketmaydi, kirish taklifi', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390 * 3, 844 * 3)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final backend = _backend();
+    final runtime = buildRuntime(backend, locale: uz);
+    unawaited(runtime.auth.restore());
+    await tester.pumpWidget(
+      SellobayScope(
+        runtime: runtime,
+        child: MaterialApp(
+          theme: buildSellobayTheme(),
+          home: const ReviewsScreen(slug: 'nike-air-max', productName: 'Nike Air Max'),
+        ),
+      ),
+    );
+    await settle(tester);
+
+    await tester.tap(find.text('Foydali · 4'));
+    await settle(tester);
+
+    expect(backend.calls, isNot(contains('/api/reviews/r2/helpful')));
+    expect(find.text('Ovoz berish uchun tizimga kiring'), findsOneWidget);
   });
 }

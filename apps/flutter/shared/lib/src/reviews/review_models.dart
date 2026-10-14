@@ -25,6 +25,8 @@ class ProductReview {
     required this.isVerifiedPurchase,
     required this.createdAt,
     this.images = const [],
+    this.helpfulCount = 0,
+    this.votedByMe = false,
     this.product,
   });
 
@@ -39,6 +41,8 @@ class ProductReview {
         isVerifiedPurchase: json['isVerifiedPurchase'] as bool? ?? false,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
         images: (json['images'] as List<dynamic>? ?? const []).whereType<String>().toList(),
+        helpfulCount: (json['helpfulCount'] as num?)?.toInt() ?? 0,
+        votedByMe: json['votedByMe'] as bool? ?? false,
         product: json['product'] is Map<String, dynamic>
             ? ReviewedProduct.fromJson(json['product'] as Map<String, dynamic>)
             : null,
@@ -60,6 +64,12 @@ class ProductReview {
 
   /// Mijoz biriktirgan suratlar (ochiq manzillar). Bo'sh bo'lishi mumkin.
   final List<String> images;
+
+  /// «Foydali» deganlar soni.
+  final int helpfulCount;
+
+  /// Ko'ruvchi «foydali» bosganmi (mehmonda doim `false`).
+  final bool votedByMe;
 
   /// Faqat «mening sharhlarim» ro'yxatida bor.
   final ReviewedProduct? product;

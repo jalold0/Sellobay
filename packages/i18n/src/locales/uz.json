@@ -395,7 +395,16 @@
     "storeProducts": "{count} ta tovar",
     "storeNoRating": "Hali baho yo‘q",
     "otherSellers": "Boshqa do‘konlarda",
-    "otherSellersHint": "Shu turdagi tovarlar — ishonchli do‘konlar birinchi"
+    "otherSellersHint": "Shu turdagi tovarlar — ishonchli do‘konlar birinchi",
+    "spec": {
+      "material": "Material",
+      "composition": "Tarkibi",
+      "country": "Ishlab chiqarilgan mamlakat",
+      "season": "Mavsum",
+      "care": "Parvarish",
+      "warranty": "Kafolat"
+    },
+    "specsTitle": "Xususiyatlari"
   },
   "cart": {
     "title": "Savatcha",
@@ -1065,7 +1074,12 @@
     "filterPhotos": "Suratli ({count})",
     "filterStars": "{star} yulduz",
     "showMore": "Yana ko‘rsatish",
-    "noMatch": "Bu filtr bo‘yicha sharh yo‘q"
+    "noMatch": "Bu filtr bo‘yicha sharh yo‘q",
+    "sortHelpful": "Eng foydali",
+    "sortNewest": "Yangilari",
+    "helpful": "Foydali",
+    "helpfulCount": "Foydali · {count}",
+    "helpfulLogin": "Ovoz berish uchun tizimga kiring"
   },
   "brand": {
     "notFound": "Brend topilmadi",

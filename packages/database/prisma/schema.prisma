@@ -264,6 +264,7 @@ model User {
   carts               Cart[]
   wishlist            WishlistItem[]
   reviews             Review[]
+  reviewVotes         ReviewVote[]
   questions           ProductQuestion[]
   notifications       Notification[]
   tickets             SupportTicket[]
@@ -491,6 +492,9 @@ model Product {
   currency         String                   @default("UZS")
   taxRate          Decimal                  @default(0) @db.Decimal(5, 2)
   weightGrams      Int?
+  /// Xususiyatlar: [{ key?, label?, value }] — key ma'lum bo'lsa (material,
+  /// composition, country...) nomi tarjimadan, aks holda sotuvchi yozgan label.
+  specs            Json?
   metaTitle        Json?
   metaDescription  Json?
   searchVector     Unsupported("tsvector")?
@@ -590,25 +594,39 @@ model VariantAttribute {
 // ===================================================================
 
 model Review {
-  id                 String   @id @default(uuid()) @db.Uuid
-  productId          String   @db.Uuid
-  userId             String   @db.Uuid
-  orderId            String?  @db.Uuid
+  id                 String       @id @default(uuid()) @db.Uuid
+  productId          String       @db.Uuid
+  userId             String       @db.Uuid
+  orderId            String?      @db.Uuid
   rating             Int // 1-5
   title              String?
   body               String?
   images             String[]
-  isVerifiedPurchase Boolean  @default(false)
-  isApproved         Boolean  @default(false)
-  helpfulCount       Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  order              Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  isVerifiedPurchase Boolean      @default(false)
+  isApproved         Boolean      @default(false)
+  helpfulCount       Int          @default(0)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  product            Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order              Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  votes              ReviewVote[]
 
   @@unique([productId, userId, orderId])
   @@index([productId])
+}
+
+/// «Foydali» ovozi: bir mijoz bir sharhga BIR marta. `Review.helpfulCount` —
+/// shu jadvaldagi yozuvlar soni (ovoz bilan bir tranzaksiyada yangilanadi).
+model ReviewVote {
+  reviewId  String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, userId])
+  @@index([userId])
 }
 
 model ProductQuestion {
