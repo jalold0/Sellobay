@@ -324,4 +324,46 @@ void main() {
     expect(find.text("Savatga qo'shish"), findsOneWidget);
     expectNoRawKeys(tester);
   });
+
+  testWidgets('keyingi sahifa kelmasa — ro`yxat qoladi, oxirida «Qayta urinish»', (tester) async {
+    final firstPage = [
+      for (var i = 0; i < 10; i++) product(slug: 'tovar-$i', nameUz: 'Tovar $i', price: '100000'),
+    ];
+    var failNext = true;
+    var secondPageCalls = 0;
+    final backend = FakeBackend((options, body) {
+      if (options.path == '/api/categories') return okJson(_categoriesJson);
+      if (options.queryParameters['page'] == '2') {
+        secondPageCalls++;
+        if (failNext) return apiErr(500, 'INTERNAL', 'Ichki xato');
+        return okJson(productsJson(
+          total: 11,
+          items: [product(slug: 'tovar-10', nameUz: 'Tovar 10', price: '100000')],
+        ));
+      }
+      return okJson(productsJson(total: 11, hasMore: true, items: firstPage));
+    });
+    await pumpCatalog(tester, backend);
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -6000));
+    await settle(tester);
+
+    expect(secondPageCalls, 1);
+    expect(find.text('Ichki xato'), findsOneWidget);
+    // Ro'yxat oxiri joyida — xato uni bo'sh holatga almashtirmagan.
+    expect(find.text('Tovar 9'), findsOneWidget);
+
+    // Yana surish yangi so'rov YUBORMAYDI — faqat tugma.
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await settle(tester);
+    expect(secondPageCalls, 1);
+
+    failNext = false;
+    await tester.tap(find.text('Qayta urinish'));
+    await settle(tester);
+
+    expect(secondPageCalls, 2);
+    expect(find.text('Qayta urinish'), findsNothing);
+    expect(find.text('Tovar 10', skipOffstage: false), findsOneWidget);
+  });
 }

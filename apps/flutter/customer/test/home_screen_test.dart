@@ -163,18 +163,35 @@ void main() {
     expect(tabs.tab, HomeTab.catalog);
     // Katalog filtrni O'ZI oladi — shuning uchun kalit bo'shagan
     // bo'lishi kerak.
-    expect(tabs.takePendingCategory(), isNull);
+    expect(tabs.takePendingCatalog(), isNull);
     final lastQuery = backend.queries[backend.calls.lastIndexOf('/api/products')];
     expect(lastQuery?['category'], 'shoes');
   });
 
-  testWidgets('«barchasini ko`rish» katalogga o`tkazadi', (tester) async {
-    final tabs = await pumpHome(tester, _backend(), shell: true);
+  testWidgets('«tanlangan»dagi «barchasini ko`rish» — katalog FAQAT tanlanganlar bilan', (tester) async {
+    final backend = _backend();
+    final tabs = await pumpHome(tester, backend, shell: true);
 
     await tester.tap(find.text("Barchasini ko'rish").first);
     await settle(tester);
 
     expect(tabs.tab, HomeTab.catalog);
+    final lastQuery = backend.queries[backend.calls.lastIndexOf('/api/products')];
+    expect(lastQuery?['featured'], 'true');
+    // Filtr ko'rinib turadi — ro'yxat nega qisqaligi tushunarli.
+    expect(find.widgetWithText(InputChip, 'Tanlangan kolleksiya'), findsOneWidget);
+  });
+
+  testWidgets('«ommabop»dagi «barchasini ko`rish» — katalog ommabop saralashda', (tester) async {
+    final backend = _backend();
+    await pumpHome(tester, backend, shell: true);
+
+    await tester.tap(find.text("Barchasini ko'rish").last);
+    await settle(tester);
+
+    final lastQuery = backend.queries[backend.calls.lastIndexOf('/api/products')];
+    expect(lastQuery?['sort'], 'popular');
+    expect(lastQuery?.containsKey('featured'), isNot(isTrue));
   });
 
   testWidgets('xato — qayta urinish', (tester) async {

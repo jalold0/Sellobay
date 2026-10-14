@@ -64,6 +64,7 @@ class ProductQuery {
     Object? brandSlug = _unset,
     ProductSort? sort,
     CatalogScope? scope,
+    Object? featured = _unset,
     int? page,
     int? limit,
   }) {
@@ -76,7 +77,7 @@ class ProductQuery {
       brandSlug: identical(brandSlug, _unset) ? this.brandSlug : brandSlug as String?,
       sort: sort ?? this.sort,
       scope: scope ?? this.scope,
-      featured: featured,
+      featured: identical(featured, _unset) ? this.featured : featured as bool?,
       page: page ?? this.page,
       limit: limit ?? this.limit,
     );
@@ -178,10 +179,34 @@ class CatalogRepository {
   /// sanaydi (status va qamrovga qaramay), ro'yxat esa LOKAL va ACTIVE
   /// bilan cheklangan. Ya'ni son ro'yxatdan katta bo'lishi mumkin — bu
   /// farq web'da ham bor.
-  Future<List<CategorySummary>> fetchStorefrontCategories() async {
-    final all = await fetchCategories();
-    return all.where((c) => c.productCount > 0).toList();
+  ///
+  /// Natija qisqa muddat ESLAB qolinadi: bosh sahifa ham, katalog ham
+  /// shu ro'yxatni so'raydi va ilova ochilganda ikki bir xil so'rov
+  /// ketardi. Bir vaqtda kelgan chaqiruvlar bitta so'rovni bo'lishadi.
+  /// [refresh] — tortib yangilashda keshni chetlab o'tadi. Xato
+  /// keshlanmaydi: keyingi chaqiruv qayta urinadi.
+  Future<List<CategorySummary>> fetchStorefrontCategories({bool refresh = false}) {
+    final cached = _storefront;
+    final at = _storefrontAt;
+    if (!refresh && cached != null && at != null && DateTime.now().difference(at) < storefrontTtl) {
+      return cached;
+    }
+    final request = fetchCategories().then((all) => all.where((c) => c.productCount > 0).toList());
+    _storefront = request;
+    _storefrontAt = DateTime.now();
+    request.then<void>((_) {}, onError: (Object _) {
+      if (!identical(_storefront, request)) return;
+      _storefront = null;
+      _storefrontAt = null;
+    });
+    return request;
   }
+
+  /// Kategoriyalar ro'yxati qancha vaqt eslab qolinadi.
+  static const storefrontTtl = Duration(minutes: 5);
+
+  Future<List<CategorySummary>>? _storefront;
+  DateTime? _storefrontAt;
 
   Future<List<BrandSummary>> fetchBrands() async {
     final json = await _api.get<Map<String, dynamic>>('/api/brands');
