@@ -1,10 +1,12 @@
 import { FileText } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { LegalPage } from '../../../components/static/legal-page';
 
 export const metadata = { title: 'Ommaviy oferta' };
 
-export default function OfferPage() {
+export default function OfferPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <LegalPage
       icon={FileText}

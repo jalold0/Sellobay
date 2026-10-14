@@ -1,6 +1,7 @@
 import { SectionTitle } from '@ecom/ui';
-import Link from 'next/link';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+
+import { Link } from '@/i18n/navigation';
 
 import { CategoryGrid } from '../../components/layout/category-grid';
 import { FeaturedCollection } from '../../components/layout/featured-collection';
@@ -17,8 +18,9 @@ import type { Locale } from '../../lib/mock-data';
 // ISR — har 2 daqiqada DB'dan yangilanadi (Neon serverless'ni tejaydi)
 export const revalidate = 120;
 
-export default async function HomePage() {
-  const locale = (await getLocale()) as Locale;
+export default async function HomePage({ params }: { params: { locale: Locale } }) {
+  setRequestLocale(params.locale);
+  const locale = params.locale;
   // Ikki so'rov parallel — kategoriyalar mahsulotlarni kutib turmaydi.
   const [{ featured, sale }, categories, brands] = await Promise.all([
     fetchHomeProducts(),

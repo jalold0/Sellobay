@@ -2,9 +2,10 @@
 
 import { pickLocalized, type Locale } from '@ecom/i18n';
 import { Heart, Menu, ShoppingBag } from 'lucide-react';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import { SellobayMark } from '../brand/sellobay-mark';
 
@@ -34,7 +35,7 @@ export function Header({ categories }: Props) {
   const utility = useTranslations('utilityBar');
   const locale = useLocale();
 
-  // Utility bar scroll bilan yashirinadi
+  // Sarlavha tagidagi soya — faqat ko'rinish, o'lcham o'zgarmaydi.
   const [scrolled, setScrolled] = React.useState(false);
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -43,19 +44,13 @@ export function Header({ categories }: Props) {
   }, []);
 
   return (
-    <header
-      className={
-        'bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky top-0 z-40 backdrop-blur transition-shadow ' +
-        (scrolled ? 'shadow-[0_2px_20px_rgba(0,0,0,0.08)]' : '')
-      }
-    >
-      {/* Utility bar — 38px, ink bg, gold nuqta + yetkazish va'dasi */}
-      <div
-        className={
-          'bg-brand-ink overflow-hidden transition-all duration-300 ease-in-out ' +
-          (scrolled ? 'max-h-0 opacity-0' : 'max-h-12 opacity-100')
-        }
-      >
+    <>
+      {/* Utility bar — 38px, ink bg, gold nuqta + yetkazish va'dasi.
+          Sticky sarlavhadan TASHQARIDA: sahifa bilan birga oddiy suriladi.
+          Ilgari u sticky ichida edi va 40px aylantirilganda balandligi 0 ga
+          tushardi — butun sahifa 38px yuqoriga sakrardi, boshqa sahifaga
+          o'tilganda (scroll tepaga qaytganda) esa yana pastga itarardi. */}
+      <div className="bg-brand-ink">
         <div className="container flex h-[38px] items-center justify-between text-xs font-medium text-white/75">
           <div className="flex items-center gap-2">
             <span className="text-brand-gold">●</span>
@@ -76,98 +71,109 @@ export function Header({ categories }: Props) {
         </div>
       </div>
 
-      {/* Main header — 44px logo tile + Playfair wordmark + pill search + ikonka stack */}
-      <div className="border-b">
-        <div className="container flex items-center gap-3 py-4 md:gap-10">
-          <MobileNav categories={categories} />
+      <header
+        className={
+          'bg-background/95 supports-[backdrop-filter]:bg-background/85 sticky top-0 z-40 backdrop-blur transition-shadow ' +
+          (scrolled ? 'shadow-[0_2px_20px_rgba(0,0,0,0.08)]' : '')
+        }
+      >
+        {/* Main header — 44px logo tile + Playfair wordmark + pill search + ikonka stack */}
+        <div className="md:border-b">
+          {/* Mobilda sticky sarlavha ixcham: ilgari qidiruv bilan birga ~150px
+              (ekranning beshdan biri) doim tepada turardi. */}
+          <div className="container flex items-center gap-3 py-2.5 md:gap-10 md:py-4">
+            <MobileNav categories={categories} />
 
-          {/* Logo */}
-          <Link href="/" className="flex shrink-0 items-center gap-3">
-            <SellobayMark size={44} priority />
-            <span className="text-brand-ink hidden font-serif text-2xl font-bold tracking-[0.01em] md:inline">
-              {common('appName')}
-            </span>
-          </Link>
-
-          {/* Pill search */}
-          <div className="hidden flex-1 md:block">
-            <AnimatedSearch />
-          </div>
-
-          {/* Icon stack: Sevimlilar / Savat / Kirish */}
-          <div className="ml-auto flex items-center gap-5 md:gap-7">
-            <Link
-              href="/profile/wishlist"
-              className="relative hidden flex-col items-center gap-[3px] md:flex"
-              aria-label={nav('wishlist')}
-            >
-              <Heart size={22} strokeWidth={1.8} className="text-brand-ink" />
-              <WishlistBadge />
-              <span className="text-[10.5px] font-semibold text-[#55555c]">{nav('wishlist')}</span>
+            {/* Logo */}
+            <Link href="/" className="flex shrink-0 items-center gap-3">
+              <SellobayMark size={44} priority />
+              <span className="text-brand-ink hidden font-serif text-2xl font-bold tracking-[0.01em] md:inline">
+                {common('appName')}
+              </span>
             </Link>
-            {/* min-h-11/min-w-11 = 44px teginish nishoni.
+
+            {/* Pill search */}
+            <div className="hidden flex-1 md:block">
+              <AnimatedSearch />
+            </div>
+
+            {/* Icon stack: Sevimlilar / Savat / Kirish */}
+            <div className="ml-auto flex items-center gap-5 md:gap-7">
+              <Link
+                href="/profile/wishlist"
+                className="relative hidden flex-col items-center gap-[3px] md:flex"
+                aria-label={nav('wishlist')}
+              >
+                <Heart size={22} strokeWidth={1.8} className="text-brand-ink" />
+                <WishlistBadge />
+                <span className="text-[10.5px] font-semibold text-[#55555c]">
+                  {nav('wishlist')}
+                </span>
+              </Link>
+              {/* min-h-11/min-w-11 = 44px teginish nishoni.
                 Mobilda sevimlilar va kirish yashiriladi, savatcha esa
                 yorlig'ini yo'qotadi va yolg'iz 22px ikonka bo'lib qoladi —
                 ya'ni xarid ilovasidagi eng ko'p bosiladigan tugma WCAG 2.5.8
                 talab qiladigan 24px dan ham kichik edi. Ikonka o'lchami
                 o'zgarmaydi, atrofidagi bosiladigan maydon kengayadi. */}
-            <Link
-              href="/cart"
-              className="relative flex min-h-11 min-w-11 flex-col items-center justify-center gap-[3px]"
-              aria-label={nav('cart')}
-            >
-              <ShoppingBag size={22} strokeWidth={1.8} className="text-brand-ink" />
-              <CartBadge />
-              <span className="hidden text-[10.5px] font-semibold text-[#55555c] md:inline">
-                {nav('cart')}
-              </span>
-            </Link>
-            <AuthMenu />
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile search */}
-      <div className="container border-b pb-3 pt-3 md:hidden">
-        <AnimatedSearch />
-      </div>
-
-      {/* Category nav — 48px, SALE crimson, o'ngda Premium */}
-      <nav className="hidden border-b bg-white md:block">
-        <div className="container flex h-12 items-center gap-8 text-[13.5px] font-semibold text-[#3a3a40]">
-          <Link
-            href="/catalog"
-            className="text-brand-ink hover:text-primary flex shrink-0 items-center gap-2"
-          >
-            <Menu size={16} strokeWidth={2} />
-            {nav('catalog')}
-          </Link>
-          <div className="flex items-center gap-8 overflow-x-auto">
-            {categories.map((c) => (
               <Link
-                key={c.id}
-                href={`/catalog?category=${c.slug}`}
-                className="hover:text-brand-ink whitespace-nowrap"
+                href="/cart"
+                className="relative flex min-h-11 min-w-11 flex-col items-center justify-center gap-[3px]"
+                aria-label={nav('cart')}
               >
-                {pickLocalized(c.name, locale as Locale)}
+                <ShoppingBag size={22} strokeWidth={1.8} className="text-brand-ink" />
+                <CartBadge />
+                <span className="hidden text-[10.5px] font-semibold text-[#55555c] md:inline">
+                  {nav('cart')}
+                </span>
               </Link>
-            ))}
+              <AuthMenu />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile search */}
+        <div className="container border-b pb-2.5 md:hidden">
+          <AnimatedSearch />
+        </div>
+
+        {/* Category nav — 48px, SALE crimson, o'ngda Premium */}
+        <nav className="hidden border-b bg-white md:block">
+          <div className="container flex h-12 items-center gap-8 text-[13.5px] font-semibold text-[#3a3a40]">
             <Link
-              href="/sale"
-              className="text-primary whitespace-nowrap font-extrabold tracking-[0.04em]"
+              href="/catalog"
+              className="text-brand-ink hover:text-primary flex shrink-0 items-center gap-2"
             >
-              SALE
+              <Menu size={16} strokeWidth={2} />
+              {nav('catalog')}
+            </Link>
+            <div className="flex items-center gap-8 overflow-x-auto">
+              {categories.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/catalog?category=${c.slug}`}
+                  className="hover:text-brand-ink whitespace-nowrap"
+                >
+                  {pickLocalized(c.name, locale as Locale)}
+                </Link>
+              ))}
+              <Link
+                href="/sale"
+                className="text-primary whitespace-nowrap font-extrabold tracking-[0.04em]"
+              >
+                SALE
+              </Link>
+            </div>
+            <Link
+              href="/profile/loyalty"
+              className="text-brand-gold-text ml-auto flex shrink-0 items-center gap-1.5 font-semibold"
+            >
+              <span className="text-brand-gold">◆</span>
+              {utility('premium')}
             </Link>
           </div>
-          <Link
-            href="/profile/loyalty"
-            className="text-brand-gold-text ml-auto flex shrink-0 items-center gap-1.5 font-semibold"
-          >
-            <span className="text-brand-gold">◆</span>
-            {utility('premium')}
-          </Link>
-        </div>
-      </nav>
-    </header>
+        </nav>
+      </header>
+    </>
   );
 }

@@ -18,7 +18,7 @@ if (dsn) {
   Sentry.init({
     dsn,
     environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
-    tracesSampleRate: 0.1,
+    // Brauzerda tracing yo'q (next.config.mjs: __SENTRY_TRACING__ = false) — faqat xatolar.
     // Shaxsiy ma'lumot yubormaymiz — checkout formasida telefon va manzil bor.
     sendDefaultPii: false,
     // Session replay ataylab yoqilmagan: to'lov cheki va manzil ekranga

@@ -1,19 +1,24 @@
 import { EXPRESS_FEE, FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from '@ecom/core-domain';
 import { Card } from '@ecom/ui';
 import { Bike, Building, Clock, Map, Package, Truck } from 'lucide-react';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { PageHero } from '../../../components/static/page-hero';
 import { formatMoney } from '../../../lib/format';
 
 import type { Metadata } from 'next';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('deliveryPage');
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'deliveryPage' });
   return { title: t('metaTitle') };
 }
 
-export default async function DeliveryPage() {
+export default async function DeliveryPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   const t = await getTranslations('deliveryPage');
 
   // Narxlar @ecom/core-domain KONSTANTALARIDAN. Ilgari ular sahifada matn

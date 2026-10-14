@@ -1,6 +1,8 @@
 import { Button, Card } from '@ecom/ui';
 import { HelpCircle, Mail, MessageCircle, Phone, Send, Truck, Undo2 } from 'lucide-react';
-import Link from 'next/link';
+import { setRequestLocale } from 'next-intl/server';
+
+import { Link } from '@/i18n/navigation';
 
 import { PageHero } from '../../../components/static/page-hero';
 
@@ -25,7 +27,8 @@ const CONTACTS = [
   { icon: MessageCircle, label: 'Live chat', value: '24/7 onlayn', href: '#' },
 ];
 
-export default function HelpPage() {
+export default function HelpPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <div className="space-y-10">
       <PageHero

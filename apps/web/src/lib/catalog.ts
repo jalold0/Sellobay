@@ -13,6 +13,7 @@
 import { readProductSpecs, type ProductSpecEntry } from '@ecom/core-domain';
 import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 
 import {
   buildCategoryTree,
@@ -285,10 +286,15 @@ export async function fetchProducts(query: CatalogQuery = {}): Promise<{
 /**
  * Bitta mahsulot (slug bo'yicha) — DB'dan real ma'lumot + zaxira (inStock). Topilmasa null.
  * Mahsulot detali sahifasi uchun: real DB UUID/slug/narx/zaxira qaytaradi (mock EMAS),
- * shunda "Savatga qo'shish" to'g'ri UUID beradi va checkout ishlaydi. Keshsiz — zaxira
- * yangiroq bo'lsin (oversell'ning avtoritar himoyasi baribir checkout'da).
+ * shunda "Savatga qo'shish" to'g'ri UUID beradi va checkout ishlaydi. Ma'lumotlar keshi
+ * yo'q — zaxira yangiroq bo'lsin (oversell'ning avtoritar himoyasi baribir checkout'da);
+ * sahifaning o'zi ISR (product/[slug]/page.tsx: revalidate).
+ *
+ * React `cache`: bitta render ichida (generateMetadata + sahifa) so'rov BIR marta ketadi.
  */
-export async function fetchProductBySlug(slug: string): Promise<MockProduct | null> {
+export const fetchProductBySlug = cache(async function fetchProductBySlug(
+  slug: string,
+): Promise<MockProduct | null> {
   try {
     const row = await prisma.product.findFirst({
       where: { slug, status: 'ACTIVE', deletedAt: null, ...PUBLIC_CATALOG },
@@ -303,7 +309,7 @@ export async function fetchProductBySlug(slug: string): Promise<MockProduct | nu
     if (ALLOW_MOCK_FALLBACK) return null;
     throw err;
   }
-}
+});
 
 /**
  * Detal sahifasi uchun BAZADAGI haqiqiy qo'shimchalar.

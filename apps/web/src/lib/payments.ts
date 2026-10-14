@@ -7,6 +7,8 @@
 //
 // Merchant hisob ochilgach shu kalitlarni qo'ying — kod tayyor.
 
+import { siteUrl } from './site-url';
+
 export type PaymentProvider =
   | 'CLICK'
   | 'PAYME'
@@ -35,7 +37,7 @@ export function isPrepaidProvider(p: PaymentProvider): boolean {
 }
 
 function appUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+  return siteUrl();
 }
 
 /**

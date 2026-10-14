@@ -1,6 +1,8 @@
 // JSON-LD structured data — SEO uchun zarur.
 // Google'ga sahifa tarkibini aniq tushuntiradi.
 
+import { siteUrl } from '../../lib/site-url';
+
 interface OrgProps {}
 
 export function OrganizationJsonLd(_props: OrgProps = {}) {
@@ -8,8 +10,8 @@ export function OrganizationJsonLd(_props: OrgProps = {}) {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Sellobay',
-    url: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
-    logo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/icon-512.png`,
+    url: siteUrl(),
+    logo: `${siteUrl()}/icon-512.png`,
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+998-71-200-00-00',

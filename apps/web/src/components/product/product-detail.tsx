@@ -18,10 +18,10 @@ import {
   Truck,
   Undo2,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link, useRouter } from '@/i18n/navigation';
 
 import { formatMoney, discountPercent } from '../../lib/format';
 import { type Locale, pickLocale, productImage } from '../../lib/mock-data';

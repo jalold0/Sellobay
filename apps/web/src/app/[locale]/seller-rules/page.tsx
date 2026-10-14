@@ -1,10 +1,12 @@
 import { ScrollText } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { LegalPage } from '../../../components/static/legal-page';
 
 export const metadata = { title: 'Sotuvchi qoidalari' };
 
-export default function SellerRulesPage() {
+export default function SellerRulesPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <LegalPage
       icon={ScrollText}

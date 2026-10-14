@@ -95,7 +95,7 @@ function SellerLoginForm() {
               <p className="text-muted-foreground text-center text-xs">
                 Hali sotuvchi emasmisiz?{' '}
                 <a
-                  href="https://sellobay-web.vercel.app/uz/register?role=seller"
+                  href={`${process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.sellobay.uz'}/uz/register?role=seller`}
                   className="text-primary hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"

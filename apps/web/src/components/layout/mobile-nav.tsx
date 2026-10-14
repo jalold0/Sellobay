@@ -3,9 +3,10 @@
 import { pickLocalized, type Locale } from '@ecom/i18n';
 import { Sheet, SheetContent, SheetTrigger } from '@ecom/ui';
 import { ChevronRight, Heart, Menu, Phone, ShoppingBag, User } from 'lucide-react';
-import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import type { CategorySummary } from '../../lib/catalog';
 

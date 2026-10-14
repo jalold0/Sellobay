@@ -11,7 +11,7 @@ import { useLocale } from 'next-intl';
 import * as React from 'react';
 
 import { fetchProductsByIds } from '../lib/api-products';
-import { me } from '../lib/auth/client';
+import { useMe } from '../lib/auth/use-me';
 import { type Locale } from '../lib/mock-data';
 
 import { useCart, type CartItem } from './cart';
@@ -85,20 +85,18 @@ function keyOf(productId: string, variantId?: string | null): string {
 
 export function StoreSync() {
   const locale = useLocale() as Locale;
-  const [authed, setAuthed] = React.useState<boolean | null>(null);
+  // Auth holati header bilan umumiy so'rovdan (useMe) — alohida /api/auth/me chaqirilmaydi.
+  const { data: user, isSuccess } = useMe();
+  const authed = isSuccess && Boolean(user);
   const cartItems = useCart((s) => s.items);
   const wishlistIds = useWishlist((s) => s.ids);
   const initialMergeDone = React.useRef(false);
 
-  // 1. Mount: auth holatini tekshirish va dastlabki sync
+  // 1. Kirgan foydalanuvchi aniqlangach: dastlabki sync (bir marta)
   React.useEffect(() => {
+    if (!authed || initialMergeDone.current) return;
     let cancelled = false;
-    me().then(async (res) => {
-      if (cancelled) return;
-      const ok = res.success;
-      setAuthed(ok);
-      if (!ok) return;
-
+    void (async () => {
       // INITIAL MERGE: lokal + server birlashadi
       const localWishlist = useWishlist.getState().ids;
       const merged = await syncWishlist(localWishlist);
@@ -163,14 +161,14 @@ export function StoreSync() {
         }
       }
       initialMergeDone.current = true;
-    });
+    })();
     return () => {
       cancelled = true;
     };
     // `locale` ataylab bog'liqlikda emas — u faqat tiklangan satr nomini
     // tanlash uchun, til almashtirilganda qayta birlashtirish kerak emas.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authed]);
 
   // 2. Wishlist o'zgarganda debounced PUT
   React.useEffect(() => {

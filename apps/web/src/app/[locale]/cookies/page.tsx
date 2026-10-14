@@ -1,10 +1,12 @@
 import { Cookie } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { LegalPage } from '../../../components/static/legal-page';
 
 export const metadata = { title: 'Cookie siyosati' };
 
-export default function CookiesPage() {
+export default function CookiesPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <LegalPage
       icon={Cookie}
@@ -13,7 +15,7 @@ export default function CookiesPage() {
       sections={[
         {
           title: 'Cookie nima',
-          body: "Cookie — bu saytlar tomonidan brauzeringizda saqlanadigan kichik fayllar. Saytdan qulay foydalanish uchun kerak.",
+          body: 'Cookie — bu saytlar tomonidan brauzeringizda saqlanadigan kichik fayllar. Saytdan qulay foydalanish uchun kerak.',
         },
         {
           title: 'Qaysi cookie ishlatamiz',

@@ -2,8 +2,9 @@
 
 import { Button, Card, CardContent, Input, Label, toast } from '@ecom/ui';
 import { ArrowLeft, Loader2, Mail } from 'lucide-react';
-import Link from 'next/link';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = React.useState('');
@@ -23,7 +24,7 @@ export default function ForgotPasswordPage() {
     <div className="mx-auto max-w-md">
       <Link
         href="/login"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1 text-sm"
       >
         <ArrowLeft size={14} /> Loginga qaytish
       </Link>
@@ -36,10 +37,10 @@ export default function ForgotPasswordPage() {
                   <Mail size={28} />
                 </div>
                 <h1 className="mt-4 text-2xl font-bold">Pochtangizni tekshiring</h1>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="text-muted-foreground mt-2 text-sm">
                   Biz <strong>{email}</strong> manziliga parolni tiklash havolasini yubordik.
                 </p>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-2 text-xs">
                   Email yetib kelmadimi? Spam papkasini tekshiring yoki{' '}
                   <button
                     type="button"
@@ -55,7 +56,7 @@ export default function ForgotPasswordPage() {
             <>
               <div className="text-center">
                 <h1 className="text-2xl font-bold">Parolni unutdingizmi?</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="text-muted-foreground mt-1 text-sm">
                   Emailingizni kiriting — parolni tiklash havolasini yuboramiz
                 </p>
               </div>
@@ -63,7 +64,7 @@ export default function ForgotPasswordPage() {
                 <div>
                   <Label className="text-xs">Email</Label>
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Mail className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                     <Input
                       type="email"
                       value={email}

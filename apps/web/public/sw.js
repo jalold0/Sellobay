@@ -2,15 +2,16 @@
 // CACHE VERSION'NI O'ZGARTIRGAN HAR SAFAR — eski cache avtomatik tozalanadi.
 // Network-first for HTML/API, cache-first for static assets.
 
-const CACHE_NAME = 'sellobay-v10'; // ⚠️ V4 bold S logo (2026-06-17)
+const CACHE_NAME = 'sellobay-v11'; // 2026-10-13: birinchi tashrifda reload yo'q, RSC/API SW'siz
 const STATIC_ASSETS = ['/', '/manifest.webmanifest', '/icon', '/apple-icon'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => null)),
   );
-  // Yangi SW darhol kuchga kiradi (eski versiyani kutmaydi)
-  self.skipWaiting();
+  // skipWaiting bu yerda YO'Q: yangi versiya foydalanuvchi «Yangilash»ni bosganda
+  // (SKIP_WAITING xabari) kuchga kiradi. Ilgari darhol kuchga kirib, birinchi tashrifda
+  // ham sahifani o'z-o'zidan qayta yuklatardi.
 });
 
 self.addEventListener('activate', (event) => {
@@ -18,12 +19,15 @@ self.addEventListener('activate', (event) => {
     (async () => {
       // 1. Eski cache'larni o'chiramiz (ecom-v1, sellobay-v1, sellobay-v2 va boshqalar)
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+      const old = keys.filter((k) => k !== CACHE_NAME);
+      await Promise.all(old.map((k) => caches.delete(k)));
 
       // 2. Hozirgi sahifalarni darhol nazoratga olamiz
       await self.clients.claim();
 
-      // 3. Barcha ochiq sahifalarga "yangilandi" signali yuboramiz
+      // 3. "Yangilandi" signali — faqat haqiqatan eski versiya bo'lgan bo'lsa
+      //    (birinchi o'rnatishda «Yangi versiya mavjud» chiqmasin).
+      if (old.length === 0) return;
       const clients = await self.clients.matchAll({ type: 'window' });
       clients.forEach((client) => {
         client.postMessage({ type: 'SW_UPDATED', version: CACHE_NAME });
@@ -65,7 +69,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML/dynamic: NETWORK-FIRST — har doim eng yangi versiyani olib keladi
+  // Sahifalararo o'tish (RSC so'rovlari) va API — SW'siz, to'g'ridan-to'g'ri tarmoqqa.
+  // Ularni o'rab olish har bosishga SW ishga tushish vaqtini qo'shardi, foydasi esa yo'q.
+  if (request.mode !== 'navigate') return;
+
+  // HTML sahifa: NETWORK-FIRST — har doim eng yangi versiya.
   // Cache faqat offline holatda fallback sifatida
   event.respondWith(
     fetch(request)
