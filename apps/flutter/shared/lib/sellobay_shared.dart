@@ -36,6 +36,7 @@ export 'src/i18n/locale_controller.dart';
 export 'src/i18n/translations.dart';
 export 'src/i18n/translations_scope.dart';
 export 'src/loyalty/loyalty_repository.dart';
+export 'src/notifications/notifications_repository.dart';
 export 'src/orders/order_models.dart';
 export 'src/orders/orders_repository.dart';
 export 'src/promo/promo_repository.dart';

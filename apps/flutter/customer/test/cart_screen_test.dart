@@ -124,7 +124,11 @@ Future<SellobayRuntime> pumpCatalog(
 /// uchun daraxtda ikkita nusxa bo'ladi — shuning uchun finder'larda
 /// `.first` va `findsWidgets` ishlatiladi.
 Future<void> addFirstProduct(WidgetTester tester) async {
-  await tester.tap(find.byType(ProductCard).first);
+  // Bosh sahifada tovarlar banner ostida — avval ko'rinadigan qilinadi.
+  final card = find.byType(ProductCard, skipOffstage: false).first;
+  await tester.ensureVisible(card);
+  await tester.pump();
+  await tester.tap(card);
   await settleRoute(tester);
   await tester.tap(find.text("Savatga qo'shish"));
   await settle(tester);

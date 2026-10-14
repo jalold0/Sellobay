@@ -236,7 +236,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverToBoxAdapter(child: _searchBar(context)),
-            if (_categories.isNotEmpty || _query.featured == true)
+            if (_categories.isNotEmpty || _query.featured == true || _query.scope == CatalogScope.global)
               SliverToBoxAdapter(child: _categoryChips(context)),
             SliverToBoxAdapter(child: _resultBar(context)),
             ..._body(context),
@@ -291,24 +291,17 @@ class _CatalogScreenState extends State<CatalogScreen> {
           // chip: ko'rinib turadi va bitta bosishda olib tashlanadi —
           // aks holda ro'yxat nega qisqa ekani tushunarsiz qolardi.
           if (_query.featured == true)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: InputChip(
-                label: Text(context.t('featured.title')),
-                selected: true,
-                showCheckmark: false,
-                onPressed: () => _apply(_query.copyWith(featured: null)),
-                onDeleted: () => _apply(_query.copyWith(featured: null)),
-                deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
-                deleteButtonTooltipMessage: context.t('common.clear'),
-                labelStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-                selectedColor: SellobayColors.primary,
-                side: const BorderSide(color: SellobayColors.primary),
-              ),
+            _removableChip(
+              context,
+              label: context.t('featured.title'),
+              onRemove: () => _apply(_query.copyWith(featured: null)),
+            ),
+          // Bosh sahifadagi «Global» — Xitoydan keladigan tovarlar.
+          if (_query.scope == CatalogScope.global)
+            _removableChip(
+              context,
+              label: context.t('home.global'),
+              onRemove: () => _apply(_query.copyWith(scope: CatalogScope.local)),
             ),
           _chip(
             label: context.t('common.all'),
@@ -327,6 +320,32 @@ class _CatalogScreenState extends State<CatalogScreen> {
       ),
     );
   }
+
+  /// Tashqaridan kelgan filtr: ko'rinib turadi va bitta bosishda olinadi.
+  Widget _removableChip(
+    BuildContext context, {
+    required String label,
+    required VoidCallback onRemove,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: InputChip(
+          label: Text(label),
+          selected: true,
+          showCheckmark: false,
+          onPressed: onRemove,
+          onDeleted: onRemove,
+          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
+          deleteButtonTooltipMessage: context.t('common.clear'),
+          labelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          selectedColor: SellobayColors.primary,
+          side: const BorderSide(color: SellobayColors.primary),
+        ),
+      );
 
   Widget _chip({
     required String label,

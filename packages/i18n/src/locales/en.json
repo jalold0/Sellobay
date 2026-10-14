@@ -173,7 +173,13 @@
       "flash": "Flash deals",
       "secure": "Secure payment"
     },
-    "brandsCount": "{count} brands"
+    "brandsCount": "{count} brands",
+    "banner": {
+      "brandsTitle": "Thousands of brands in one app",
+      "saleTitle": "Items on sale",
+      "globalCta": "Browse Global"
+    },
+    "global": "Global"
   },
   "featured": {
     "eyebrow": "Edit · Premium",
@@ -1376,5 +1382,14 @@
   "push": {
     "paymentConfirmed": "Your card payment is confirmed — the order is being prepared",
     "paymentRejected": "Receipt rejected. Open the order and upload a new receipt"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "emptyHint": "Order status updates will show up here.",
+    "markAllRead": "Mark all as read",
+    "loginTitle": "Notifications come to your account",
+    "loginHint": "Sign in to follow your order status.",
+    "unread": "Unread"
   }
 }
