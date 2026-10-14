@@ -1,4 +1,5 @@
 import { fetchBrands, fetchProducts, fetchStorefrontCategories } from '../lib/catalog';
+import { siteUrl } from '../lib/site-url';
 
 import type { BrandSummary, CategorySummary } from '../lib/catalog';
 import type { MockProduct } from '../lib/mock-data';
@@ -10,7 +11,7 @@ import type { MetadataRoute } from 'next';
 export const revalidate = 3600;
 
 const LOCALES = ['uz', 'ru', 'en'] as const;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+const SITE_URL = siteUrl();
 
 // Sitemap uchun butun katalog kerak. Hozircha katalog kichik, shu sababli
 // bitta so'rov kifoya; o'sganda bu yerga sahifalash qo'shiladi.

@@ -1,5 +1,6 @@
 import { Card } from '@ecom/ui';
 import { Building2, Globe, Heart, Target, Users } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { PageHero } from '../../../components/static/page-hero';
 
@@ -21,7 +22,8 @@ const VALUES = [
   { icon: Globe, title: 'Global standartlar', text: 'Xalqaro tajriba va texnologiya.' },
 ];
 
-export default function AboutPage() {
+export default function AboutPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <div className="space-y-10">
       <PageHero

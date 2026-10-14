@@ -1,6 +1,6 @@
 import { Badge, EmptyState } from '@ecom/ui';
 import { Flame } from 'lucide-react';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../components/product/product-card-client';
 import { fetchProducts } from '../../../lib/catalog';
@@ -12,8 +12,12 @@ import type { Metadata } from 'next';
 // ISR — bosh sahifa bilan bir xil ritm.
 export const revalidate = 120;
 
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('sale');
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'sale' });
   return {
     title: t('metaTitle'),
     description: t('metaDescription'),
@@ -32,8 +36,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * "Aksiya tugashiga: 3 kun 14 soat 22 daqiqa" va "Mijozlar yutishi 12 480".
  * Ikkalasi ham olib tashlandi — ortida ma'lumot yo'q.
  */
-export default async function SalePage() {
-  const locale = (await getLocale()) as Locale;
+export default async function SalePage({ params }: { params: { locale: Locale } }) {
+  setRequestLocale(params.locale);
+  const locale = params.locale;
   const t = await getTranslations('sale');
 
   const { items } = await fetchProducts({ sort: 'popularity', limit: 48 });

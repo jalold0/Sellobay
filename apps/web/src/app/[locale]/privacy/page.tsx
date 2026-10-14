@@ -1,4 +1,5 @@
 import { ShieldCheck } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { LegalPage } from '../../../components/static/legal-page';
 
@@ -53,7 +54,8 @@ Ma'lumotlar "Shaxsga doir ma'lumotlar to'g'risida"gi O'zbekiston Respublikasi qo
   },
 ];
 
-export default function PrivacyPage() {
+export default function PrivacyPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <LegalPage
       icon={ShieldCheck}

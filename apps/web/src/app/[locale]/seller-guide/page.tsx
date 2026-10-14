@@ -1,10 +1,12 @@
 import { BookOpen } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { ComingSoon } from '../../../components/static/coming-soon';
 
 export const metadata = { title: "Sotuvchi qo'llanmasi" };
 
-export default function SellerGuidePage() {
+export default function SellerGuidePage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <ComingSoon
       icon={BookOpen}

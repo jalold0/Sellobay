@@ -1,18 +1,30 @@
 import { Button, Card, Input, Label, Textarea } from '@ecom/ui';
 import { Building2, Clock, Mail, MapPin, Phone, Send } from 'lucide-react';
+import { setRequestLocale } from 'next-intl/server';
 
 import { PageHero } from '../../../components/static/page-hero';
 
 export const metadata = { title: "Aloqa ma'lumotlari" };
 
 const CONTACTS = [
-  { icon: Phone, label: 'Telefon', primary: '+998 71 200 00 00', secondary: '24/7 qo`llab-quvvatlash' },
+  {
+    icon: Phone,
+    label: 'Telefon',
+    primary: '+998 71 200 00 00',
+    secondary: '24/7 qo`llab-quvvatlash',
+  },
   { icon: Mail, label: 'Email', primary: 'info@example.uz', secondary: 'Umumiy savollar' },
   { icon: MapPin, label: 'Manzil', primary: 'Toshkent sh., IT Park', secondary: '5-bino, 3-qavat' },
-  { icon: Clock, label: 'Ish vaqti', primary: 'Du-Sh: 09:00–18:00', secondary: 'Yakshanba: dam olish' },
+  {
+    icon: Clock,
+    label: 'Ish vaqti',
+    primary: 'Du-Sh: 09:00–18:00',
+    secondary: 'Yakshanba: dam olish',
+  },
 ];
 
-export default function ContactsPage() {
+export default function ContactsPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
   return (
     <div className="space-y-10">
       <PageHero
@@ -27,12 +39,14 @@ export default function ContactsPage() {
           const Icon = c.icon;
           return (
             <Card key={c.label} className="p-5">
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+              <div className="bg-primary/10 text-primary grid h-10 w-10 place-items-center rounded-lg">
                 <Icon size={18} />
               </div>
-              <div className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">{c.label}</div>
+              <div className="text-muted-foreground mt-3 text-xs uppercase tracking-wide">
+                {c.label}
+              </div>
               <div className="text-base font-semibold">{c.primary}</div>
-              <div className="text-xs text-muted-foreground">{c.secondary}</div>
+              <div className="text-muted-foreground text-xs">{c.secondary}</div>
             </Card>
           );
         })}
@@ -41,7 +55,7 @@ export default function ContactsPage() {
       <section className="grid gap-6 lg:grid-cols-2">
         <Card className="p-5 md:p-6">
           <h2 className="text-2xl font-bold">Xabar yuboring</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Biz 24 soat ichida javob beramiz</p>
+          <p className="text-muted-foreground mt-1 text-sm">Biz 24 soat ichida javob beramiz</p>
           <form className="mt-5 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>

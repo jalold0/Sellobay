@@ -2,10 +2,11 @@
 
 import { Skeleton, cn, toast } from '@ecom/ui';
 import { ArrowLeft, Check, CircleDot, MapPin, X } from 'lucide-react';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import {
   GlobalOrderTracker,

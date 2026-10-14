@@ -8,9 +8,10 @@
 
 import { Button, Card, EmptyState, Rating, Skeleton, toast } from '@ecom/ui';
 import { Star, Trash2 } from 'lucide-react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 import { formatRelative } from '../../../../lib/format';
 import { pickLocale, type Locale, type LocalizedText } from '../../../../lib/mock-data';
@@ -88,10 +89,7 @@ export default function MyReviewsPage({ params }: { params: { locale: Locale } }
           {items.map((r) => (
             <Card key={r.id} className="p-4">
               <div className="flex items-center justify-between gap-3">
-                <Link
-                  href={`/${params.locale}/product/${r.product.slug}`}
-                  className="font-medium hover:underline"
-                >
+                <Link href={`/product/${r.product.slug}`} className="font-medium hover:underline">
                   {pickLocale(r.product.name, params.locale)}
                 </Link>
                 <div className="flex shrink-0 items-center gap-2">

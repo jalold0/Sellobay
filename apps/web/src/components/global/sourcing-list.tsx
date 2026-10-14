@@ -3,13 +3,14 @@
 
 'use client';
 
-import { Button, Card, EmptyState } from '@ecom/ui';
 import { pickLocales, pickLocalized } from '@ecom/i18n/pick';
+import { Button, Card, EmptyState } from '@ecom/ui';
 import { Clock, ExternalLink, Loader2, PackageSearch, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
+
+import { Link, useRouter } from '@/i18n/navigation';
 
 import { useCart } from '../../store/cart';
 

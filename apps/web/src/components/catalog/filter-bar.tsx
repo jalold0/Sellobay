@@ -1,9 +1,10 @@
 'use client';
 
 import { Check, ChevronDown, X } from 'lucide-react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
+
+import { Link } from '@/i18n/navigation';
 
 export interface FilterOption {
   value: string;

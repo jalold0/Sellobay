@@ -1,6 +1,7 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+
+import { Link } from '@/i18n/navigation';
 
 // Redesign: ink karta 1.2fr/1fr — eyebrow, Playfair sarlavha, 3 gold-✓, crimson pill CTA
 export function SellerBanner() {

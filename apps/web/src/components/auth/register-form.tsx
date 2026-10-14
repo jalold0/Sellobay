@@ -2,11 +2,11 @@
 
 import { Button, Card, CardContent, Checkbox, Input, Label, toast } from '@ecom/ui';
 import { Landmark, Loader2, Lock, Mail, Phone, Store, User } from 'lucide-react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import { Link } from '@/i18n/navigation';
 import { registerWithEmail } from '@/lib/auth/client';
 
 export function RegisterForm() {

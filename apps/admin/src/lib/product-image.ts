@@ -8,7 +8,7 @@
 
 import { resolveProductImageUrl } from '@ecom/utils';
 
-const WEB_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://sellobay-web.vercel.app';
+const WEB_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.sellobay.uz';
 
 /** Bazadagi rasm manzilini admin panelida ko'rsatishga tayyor holga keltiradi. */
 export function adminProductImage(dbUrl: string | null | undefined, slug: string): string {

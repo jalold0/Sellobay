@@ -154,16 +154,22 @@
 
   /* Flash-aksiya hisoblagichi — diqqatni bir joyga tortadigan yagona
      to'xtovsiz harakat. prefers-reduced-motion yuqorida o'chiradi. */
+  /* Faqat `opacity` animatsiya qilinadi (will-change bilan alohida qatlam) — GPU'da,
+     sahifani qayta chizmasdan. Ilgari box-shadow animatsiyasi har kadrda butun
+     sahifani (7800px) qayta chizdirardi: soniyasiga ~55 marta, telefonda CPU va
+     batareyani yerdi. Porlash o'zi statik drop-shadow. */
   .flash-glow {
+    filter: drop-shadow(0 0 4px hsl(var(--brand-gold) / 0.8));
     animation: flash-pulse 2s ease-in-out infinite;
+    will-change: opacity;
   }
   @keyframes flash-pulse {
     0%,
     100% {
-      box-shadow: 0 0 10px hsl(var(--brand-gold) / 0.5);
+      opacity: 0.55;
     }
     50% {
-      box-shadow: 0 0 24px hsl(var(--brand-gold) / 0.9);
+      opacity: 1;
     }
   }
 }

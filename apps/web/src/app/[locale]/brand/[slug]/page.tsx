@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { ProductCardClient } from '../../../../components/product/product-card-client';
 import { fetchBrandBySlug, fetchProducts } from '../../../../lib/catalog';
@@ -9,14 +9,14 @@ import type { Locale } from '../../../../lib/mock-data';
 import type { Metadata } from 'next';
 
 interface PageProps {
-  params: { slug: string };
+  params: { slug: string; locale: Locale };
 }
 
 // ISR — katalog bilan bir xil ritm.
 export const revalidate = 120;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const t = await getTranslations('brand');
+  const t = await getTranslations({ locale: params.locale, namespace: 'brand' });
   const brand = await fetchBrandBySlug(params.slug);
   if (!brand) return notFoundMetadata(t('notFound'));
   return { title: brand.name, description: t('metaDescription', { name: brand.name }) };
@@ -32,10 +32,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * "Invalid uuid" bilan yiqilardi).
  */
 export default async function BrandPage({ params }: PageProps) {
+  setRequestLocale(params.locale);
   const brand = await fetchBrandBySlug(params.slug);
   if (!brand) notFound();
 
-  const locale = (await getLocale()) as Locale;
+  const locale = params.locale;
   const t = await getTranslations('brand');
   const { items: brandProducts } = await fetchProducts({ brand: params.slug, limit: 48 });
 
