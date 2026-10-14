@@ -76,23 +76,76 @@ export function serializeReview(r: ReviewRow) {
   };
 }
 
-/** Mahsulotning ko'rinadigan sharhlari. */
-export async function listProductReviews(
-  productId: string,
-  { page = 1, limit = REVIEW_PAGE_SIZE }: { page?: number; limit?: number } = {},
-) {
+export const REVIEW_SORTS = ['newest', 'rating-high', 'rating-low'] as const;
+export type ReviewSort = (typeof REVIEW_SORTS)[number];
+
+export interface ReviewListOptions {
+  page?: number;
+  limit?: number;
+  /** Faqat shu yulduzli sharhlar (1..5). */
+  rating?: number | null;
+  /** Faqat surati bor sharhlar. */
+  withPhotos?: boolean;
+  sort?: ReviewSort;
+}
+
+/**
+ * Mahsulot sharhlari xulosasi: o'rtacha, jami, har yulduz soni va
+ * surati borlar. BUTUN sharhlardan hisoblanadi — ilgari web sahifadagi
+ * taqsimot faqat yuklangan 20 ta sharhdan chiqarilardi.
+ */
+export async function reviewSummary(productId: string) {
+  const where = { productId, isApproved: true };
+  const [groups, withPhotos] = await Promise.all([
+    prisma.review.groupBy({ by: ['rating'], where, _count: { _all: true } }),
+    prisma.review.count({ where: { ...where, images: { isEmpty: false } } }),
+  ]);
+  const breakdown: Record<'1' | '2' | '3' | '4' | '5', number> = {
+    '1': 0,
+    '2': 0,
+    '3': 0,
+    '4': 0,
+    '5': 0,
+  };
+  let total = 0;
+  let sum = 0;
+  for (const g of groups) {
+    const key = String(g.rating) as keyof typeof breakdown;
+    if (!(key in breakdown)) continue;
+    breakdown[key] = g._count._all;
+    total += g._count._all;
+    sum += g.rating * g._count._all;
+  }
+  return {
+    total,
+    average: total > 0 ? Math.round((sum / total) * 10) / 10 : 0,
+    breakdown,
+    withPhotos,
+  };
+}
+
+/** Mahsulotning ko'rinadigan sharhlari (filtr va saralash bilan). */
+export async function listProductReviews(productId: string, opts: ReviewListOptions = {}) {
+  const { page = 1, limit = REVIEW_PAGE_SIZE, rating, withPhotos = false, sort = 'newest' } = opts;
   const take = Math.min(Math.max(limit, 1), 50);
   const skip = (Math.max(page, 1) - 1) * take;
 
+  const where: Prisma.ReviewWhereInput = {
+    productId,
+    isApproved: true,
+    ...(rating && rating >= 1 && rating <= 5 ? { rating } : {}),
+    ...(withPhotos ? { images: { isEmpty: false } } : {}),
+  };
+  const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
+    sort === 'rating-high'
+      ? [{ rating: 'desc' }, { createdAt: 'desc' }]
+      : sort === 'rating-low'
+        ? [{ rating: 'asc' }, { createdAt: 'desc' }]
+        : [{ createdAt: 'desc' }];
+
   const [items, total] = await Promise.all([
-    prisma.review.findMany({
-      where: { productId, isApproved: true },
-      orderBy: { createdAt: 'desc' },
-      select: reviewSelect,
-      skip,
-      take,
-    }),
-    prisma.review.count({ where: { productId, isApproved: true } }),
+    prisma.review.findMany({ where, orderBy, select: reviewSelect, skip, take }),
+    prisma.review.count({ where }),
   ]);
 
   return {
@@ -157,14 +210,37 @@ async function recomputeProductRating(
     _count: { _all: true },
   });
 
-  await tx.product.update({
+  const product = await tx.product.update({
     where: { id: productId },
     data: {
       // `Decimal(3,2)` — 0.00..9.99 oralig'i, ya'ni ikki kasr yetarli.
       rating: new Prisma.Decimal((agg._avg.rating ?? 0).toFixed(2)),
       reviewCount: agg._count._all,
     },
+    select: { sellerId: true },
   });
+
+  if (product.sellerId) await recomputeSellerRating(tx, product.sellerId);
+}
+
+/**
+ * Do'kon reytingi — uning BARCHA mahsulotlaridagi tasdiqlangan sharhlar
+ * o'rtachasi (har sharh bir ovoz: 100 sharhli mahsulot 1 sharhlidan og'ir).
+ *
+ * `Seller.rating` ilgari hech qachon yozilmasdi va 0 turardi. U «boshqa
+ * do'konlardagi o'xshash tovarlar» saralashida ishlatiladi.
+ */
+export async function recomputeSellerRating(
+  tx: Prisma.TransactionClient,
+  sellerId: string,
+): Promise<number> {
+  const agg = await tx.review.aggregate({
+    where: { isApproved: true, product: { sellerId } },
+    _avg: { rating: true },
+  });
+  const rating = new Prisma.Decimal((agg._avg.rating ?? 0).toFixed(2));
+  await tx.seller.update({ where: { id: sellerId }, data: { rating } });
+  return rating.toNumber();
 }
 
 export interface CreateReviewInput {
@@ -173,6 +249,8 @@ export interface CreateReviewInput {
   rating: number;
   title?: string | null;
   body?: string | null;
+  /** `reviews/` papkasidagi ochiq surat manzillari (route tekshiradi). */
+  images?: string[];
 }
 
 /** Sharh yozadi va mahsulot bahosini yangilaydi. */
@@ -211,6 +289,7 @@ export async function createReview(input: CreateReviewInput) {
         rating: input.rating,
         title: input.title?.trim() || null,
         body: input.body?.trim() || null,
+        images: [...new Set(input.images ?? [])],
         isVerifiedPurchase: true,
         // Tasdiqlaydigan admin ekrani yo'q — `false` qoldirsak sharh
         // hech qachon ko'rinmasdi. Yozish huquqi allaqachon xaridga

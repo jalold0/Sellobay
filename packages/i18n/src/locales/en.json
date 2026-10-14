@@ -384,7 +384,11 @@
     "deliveryFastShort": "2-3 days",
     "noDescription": "No description has been added for this product yet.",
     "noReviews": "No reviews yet. Be the first — you can leave one after your order arrives.",
-    "noQuestions": "No questions about this product yet."
+    "noQuestions": "No questions about this product yet.",
+    "storeProducts": "{count} products",
+    "storeNoRating": "No ratings yet",
+    "otherSellers": "From other stores",
+    "otherSellersHint": "Similar items — most trusted stores first"
   },
   "cart": {
     "title": "Cart",
@@ -1044,7 +1048,17 @@
     "verified": "Verified purchase",
     "yours": "Your review",
     "viewAll": "All reviews",
-    "ratingRequired": "Pick a rating"
+    "ratingRequired": "Pick a rating",
+    "addPhotos": "Add photos",
+    "photosHint": "Up to 5 photos",
+    "photoUploadFailed": "The photo did not upload. Try again or send the review without photos.",
+    "removePhoto": "Remove photo",
+    "photo": "Review photo",
+    "filterAll": "All",
+    "filterPhotos": "With photos ({count})",
+    "filterStars": "{star} stars",
+    "showMore": "Show more",
+    "noMatch": "No reviews match this filter"
   },
   "brand": {
     "notFound": "Brand not found",

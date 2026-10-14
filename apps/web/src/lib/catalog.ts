@@ -57,7 +57,7 @@ interface DbProductRow {
   // Ombor: mahsulot zaxirasi = varyantlari inventarining yig'indisi (admin/seller ham shunday)
   variants: { inventory: { quantityOnHand: number }[] }[];
   // Sotuvchi — verified chip uchun (null = platform-rasmiy mahsulot)
-  seller: { status: string } | null;
+  seller: { id: string; status: string; brandName: string; rating: { toString(): string } } | null;
   // Global (Xitoy) manbasi bor bo'lsa — bu global tovar
   globalSource: { id: string } | null;
 }
@@ -98,6 +98,9 @@ function toMockProduct(p: DbProductRow): MockProduct {
     stock,
     // Verified: seller yo'q (platform-rasmiy) yoki seller ACTIVE holatda
     sellerVerified: !p.seller || p.seller.status === 'ACTIVE',
+    seller: p.seller
+      ? { id: p.seller.id, name: p.seller.brandName, rating: Number(p.seller.rating) }
+      : undefined,
     isGlobal: p.globalSource !== null,
   };
 }
@@ -116,9 +119,15 @@ const PRODUCT_SELECT = {
   publishedAt: true,
   brand: { select: { slug: true, name: true } },
   images: { select: { url: true }, orderBy: { position: 'asc' as const }, take: 1 },
-  categories: { select: { category: { select: { slug: true } } }, take: 1 },
+  // Faqat FAOL kategoriya: eski (nofaol qilingan) kategoriya «asosiy» bo'lib
+  // qolsa, o'xshash tovarlar va katalog havolasi bo'sh natija beradi.
+  categories: {
+    where: { category: { isActive: true } },
+    select: { category: { select: { slug: true } } },
+    take: 1,
+  },
   variants: { select: { inventory: { select: { quantityOnHand: true } } } },
-  seller: { select: { status: true } },
+  seller: { select: { id: true, status: true, brandName: true, rating: true } },
   globalSource: { select: { id: true } },
 } as const;
 
@@ -136,7 +145,13 @@ export interface CatalogQuery {
   category?: string; // category slug
   brand?: string; // brand slug
   q?: string; // qidiruv matni
-  sort?: string; // popularity | price-asc | price-desc | rating | newest
+  sort?: string; // popularity | price-asc | price-desc | rating | newest | seller-rating
+  /** Faqat shu do'kon tovarlari (do'kon sahifasi). */
+  seller?: string;
+  /** Shu do'kondan boshqalari (o'xshash tovarlar). */
+  excludeSeller?: string;
+  /** Ko'rilayotgan tovarning o'zi ro'yxatga tushmasin. */
+  excludeId?: string;
   limit?: number;
   /** Standart LOCAL — global tovar tasodifan lokal katalogga chiqmasin. */
   scope?: CatalogScope;
@@ -154,7 +169,17 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
   items: MockProduct[];
   source: 'db' | 'mock';
 }> {
-  const { category, brand, q, sort, limit = 48, scope = 'LOCAL' } = query;
+  const {
+    category,
+    brand,
+    q,
+    sort,
+    limit = 48,
+    scope = 'LOCAL',
+    seller,
+    excludeSeller,
+    excludeId,
+  } = query;
 
   try {
     const where: Record<string, unknown> = {
@@ -164,6 +189,13 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
       ...scopeWhere(scope),
     };
     if (brand) where.brand = { slug: brand };
+    if (seller) where.sellerId = seller;
+    if (excludeId) where.id = { not: excludeId };
+    // Faqat BOSHQA do'konlar: platformaning o'z tovari (sotuvchisiz) kirmaydi —
+    // u do'kon emas va reyting bo'yicha saralab bo'lmaydi.
+    if (excludeSeller) {
+      where.AND = [{ sellerId: { not: null } }, { sellerId: { not: excludeSeller } }];
+    }
     if (category) {
       // Bo'lim tanlansa — ichidagi barcha turlarning mahsulotlari ham.
       const ids = await categoryFilterIds(category);
@@ -198,10 +230,19 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
             : sort === 'newest'
               ? { publishedAt: 'desc' as const }
               : { soldCount: 'desc' as const }; // default: popularity
+    // Avval ishonchli do'kon, keyin tovarning o'z bahosi.
+    const orderByList =
+      sort === 'seller-rating'
+        ? [
+            { seller: { rating: 'desc' as const } },
+            { rating: 'desc' as const },
+            { soldCount: 'desc' as const },
+          ]
+        : [orderBy];
 
     const rows = await prisma.product.findMany({
       where,
-      orderBy,
+      orderBy: orderByList,
       take: limit,
       select: PRODUCT_SELECT,
       // Brand/images/categories'ni bitta LATERAL JOIN'da yuklash (N+1 ni yo'qotadi)
@@ -210,7 +251,7 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
 
     // Filtersiz so'rov bo'sh qaytsa — DB hali seed qilinmagan. DEV'da mock ko'rsatamiz,
     // production'da bo'sh ro'yxat (soxta, sotib bo'lmaydigan mahsulotlar emas).
-    if (rows.length === 0 && !category && !brand && !q && scope !== 'GLOBAL') {
+    if (rows.length === 0 && !category && !brand && !q && !seller && scope !== 'GLOBAL') {
       return ALLOW_MOCK_FALLBACK
         ? { items: filterMock(query), source: 'mock' }
         : { items: [], source: 'db' };
@@ -228,7 +269,7 @@ async function queryProductsFromDb(query: CatalogQuery): Promise<{
 
 // Keshlangan o'rama — bir xil query 120s ichida DB'ga qayta urmaydi.
 // unstable_cache argumentlarni avtomatik kalit qiladi (query obyekti serializatsiya bo'ladi).
-const cachedQueryProducts = unstable_cache(queryProductsFromDb, ['catalog-products-v2'], {
+const cachedQueryProducts = unstable_cache(queryProductsFromDb, ['catalog-products-v3'], {
   revalidate: CATALOG_REVALIDATE_SECONDS,
   tags: [CATALOG_CACHE_TAG],
 });
@@ -301,6 +342,17 @@ export interface ProductDetailExtras {
   weightGrams: number | null;
   description: LocalizedText | null; // sotuvchi yozgan tavsif
   reviews: DbProductReview[]; // tasdiqlangan sharhlar (bo'lmasa bo'sh)
+  /** Do'kon bloki. `null` — platformaning o'z tovari. */
+  seller: ProductSellerInfo | null;
+}
+
+export interface ProductSellerInfo {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  /** 0 — hali baho yo'q. */
+  rating: number;
+  productCount: number;
 }
 
 /** Bazadagi sharh — interfeys uchun tayyorlangan ko'rinish. */
@@ -334,6 +386,15 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
         sku: true,
         weightGrams: true,
         description: true,
+        seller: {
+          select: {
+            id: true,
+            brandName: true,
+            logoUrl: true,
+            rating: true,
+            _count: { select: { products: { where: { status: 'ACTIVE', deletedAt: null } } } },
+          },
+        },
         images: { select: { url: true }, orderBy: { position: 'asc' } },
         // Faqat TASDIQLANGAN sharhlar. Sharh yo'q bo'lsa ro'yxat bo'sh qoladi —
         // ilgari bu yerda sharhlar to'qib chiqarilardi (soxta ism va matn bilan).
@@ -407,6 +468,15 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
       sku: row.sku,
       weightGrams: row.weightGrams,
       description: (row.description as LocalizedText | null) ?? null,
+      seller: row.seller
+        ? {
+            id: row.seller.id,
+            name: row.seller.brandName,
+            logoUrl: row.seller.logoUrl,
+            rating: Number(row.seller.rating),
+            productCount: row.seller._count.products,
+          }
+        : null,
       reviews: row.reviews.map((review) => ({
         id: review.id,
         author: reviewAuthorName(review.user),
@@ -601,4 +671,22 @@ function filterMock(query: CatalogQuery): MockProduct[] {
       list.sort((a, b) => b.reviewCount - a.reviewCount);
   }
   return list.slice(0, query.limit ?? 48);
+}
+
+/**
+ * Do'kon sahifasi sarlavhasi uchun. Faqat faol do'kon; topilmasa `null`
+ * (katalog oddiy holatda ochiladi, begona id bilan bo'sh sahifa emas).
+ */
+export async function fetchSellerName(id: string): Promise<{ id: string; name: string } | null> {
+  if (!/^[a-f0-9-]{36}$/i.test(id)) return null;
+  try {
+    const seller = await prisma.seller.findFirst({
+      where: { id, status: 'ACTIVE' },
+      select: { id: true, brandName: true },
+    });
+    return seller ? { id: seller.id, name: seller.brandName } : null;
+  } catch (err) {
+    console.error('[catalog] fetchSellerName DB xato:', err);
+    return null;
+  }
 }

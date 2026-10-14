@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const db = {
   product: { findUnique: vi.fn(), update: vi.fn() },
+  seller: { update: vi.fn() },
   orderItem: { findFirst: vi.fn() },
   review: {
     findFirst: vi.fn(),
@@ -17,6 +18,7 @@ const db = {
     create: vi.fn(),
     delete: vi.fn(),
     aggregate: vi.fn(),
+    groupBy: vi.fn(),
   },
   // Tranzaksiya shu obyektning o'zini beradi — chaqiruvlarni sanash
   // uchun shu yetarli.
@@ -27,6 +29,8 @@ vi.mock('@/lib/db', () => ({ prisma: db }));
 
 const {
   createReview,
+  listProductReviews,
+  reviewSummary,
   deleteReview,
   reviewEligibility,
   serializeReview,
@@ -251,5 +255,93 @@ describe('yozish huquqi', () => {
       canReview: false,
       hasPurchased: false,
     });
+  });
+});
+
+describe('suratlar, filtrlar va xulosa', () => {
+  it('sharh suratlari takrorlanmasdan saqlanadi', async () => {
+    db.product.findUnique.mockResolvedValue(ACTIVE_PRODUCT);
+    db.orderItem.findFirst.mockResolvedValue({ orderId: 'o1' });
+    db.review.findFirst.mockResolvedValue(null);
+    db.review.create.mockResolvedValue(reviewRow());
+    const a = 'https://x.public.blob.vercel-storage.com/reviews/a.jpg';
+
+    await createReview({ userId: 'u1', productId: 'p1', rating: 5, images: [a, a] });
+
+    expect(firstCallData(db.review.create).images).toEqual([a]);
+  });
+
+  it('yulduz va surat filtri so`rovga qo`shiladi', async () => {
+    db.review.findMany.mockResolvedValue([]);
+    db.review.count.mockResolvedValue(0);
+
+    await listProductReviews('p1', { rating: 5, withPhotos: true, sort: 'rating-low' });
+
+    const args = db.review.findMany.mock.calls[0]?.[0];
+    expect(args.where).toEqual({
+      productId: 'p1',
+      isApproved: true,
+      rating: 5,
+      images: { isEmpty: false },
+    });
+    expect(args.orderBy[0]).toEqual({ rating: 'asc' });
+  });
+
+  it('noto`g`ri yulduz e`tiborsiz qoldiriladi', async () => {
+    db.review.findMany.mockResolvedValue([]);
+    db.review.count.mockResolvedValue(0);
+    await listProductReviews('p1', { rating: 9 });
+    expect(db.review.findMany.mock.calls[0]?.[0].where).toEqual({
+      productId: 'p1',
+      isApproved: true,
+    });
+  });
+
+  it('xulosa BUTUN sharhlardan: taqsimot, o`rtacha, suratlilar', async () => {
+    db.review.groupBy.mockResolvedValue([
+      { rating: 5, _count: { _all: 3 } },
+      { rating: 4, _count: { _all: 1 } },
+    ]);
+    db.review.count.mockResolvedValue(2);
+
+    const s = await reviewSummary('p1');
+
+    expect(s.breakdown).toEqual({ '1': 0, '2': 0, '3': 0, '4': 1, '5': 3 });
+    expect(s.total).toBe(4);
+    expect(s.average).toBe(4.8);
+    expect(s.withPhotos).toBe(2);
+  });
+});
+
+describe('do`kon reytingi', () => {
+  it('sharhdan keyin do`kon reytingi ham qayta hisoblanadi', async () => {
+    db.product.findUnique.mockResolvedValue(ACTIVE_PRODUCT);
+    db.orderItem.findFirst.mockResolvedValue({ orderId: 'o1' });
+    db.review.findFirst.mockResolvedValue(null);
+    db.review.create.mockResolvedValue(reviewRow());
+    db.product.update.mockResolvedValue({ sellerId: 's1' });
+    db.review.aggregate.mockResolvedValue({ _avg: { rating: 4.666 }, _count: { _all: 3 } });
+
+    await createReview({ userId: 'u1', productId: 'p1', rating: 5 });
+
+    expect(db.review.aggregate.mock.calls[1]?.[0].where).toEqual({
+      isApproved: true,
+      product: { sellerId: 's1' },
+    });
+    const update = db.seller.update.mock.calls[0]?.[0];
+    expect(update.where).toEqual({ id: 's1' });
+    expect(update.data.rating.toString()).toBe('4.67');
+  });
+
+  it('sotuvchisiz (platforma) mahsulotda do`kon yangilanmaydi', async () => {
+    db.product.findUnique.mockResolvedValue(ACTIVE_PRODUCT);
+    db.orderItem.findFirst.mockResolvedValue({ orderId: 'o1' });
+    db.review.findFirst.mockResolvedValue(null);
+    db.review.create.mockResolvedValue(reviewRow());
+    db.product.update.mockResolvedValue({ sellerId: null });
+
+    await createReview({ userId: 'u1', productId: 'p1', rating: 5 });
+
+    expect(db.seller.update).not.toHaveBeenCalled();
   });
 });

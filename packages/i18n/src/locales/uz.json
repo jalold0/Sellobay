@@ -391,7 +391,11 @@
     "deliveryFastShort": "2-3 kun",
     "noDescription": "Bu mahsulot uchun tavsif hali qo`shilmagan.",
     "noReviews": "Bu mahsulotga hali sharh qoldirilmagan. Birinchi bo`ling — buyurtma yetkazilgach sharh yozishingiz mumkin.",
-    "noQuestions": "Bu mahsulot bo`yicha hali savol berilmagan."
+    "noQuestions": "Bu mahsulot bo`yicha hali savol berilmagan.",
+    "storeProducts": "{count} ta tovar",
+    "storeNoRating": "Hali baho yo‘q",
+    "otherSellers": "Boshqa do‘konlarda",
+    "otherSellersHint": "Shu turdagi tovarlar — ishonchli do‘konlar birinchi"
   },
   "cart": {
     "title": "Savatcha",
@@ -1051,7 +1055,17 @@
     "verified": "Tasdiqlangan xarid",
     "yours": "Sizning sharhingiz",
     "viewAll": "Barcha sharhlar",
-    "ratingRequired": "Bahoni tanlang"
+    "ratingRequired": "Bahoni tanlang",
+    "addPhotos": "Surat qo‘shish",
+    "photosHint": "Eng ko‘pi bilan 5 ta surat",
+    "photoUploadFailed": "Surat yuklanmadi. Qayta urinib ko‘ring yoki sharhni suratsiz yuboring.",
+    "removePhoto": "Suratni olib tashlash",
+    "photo": "Sharh surati",
+    "filterAll": "Barchasi",
+    "filterPhotos": "Suratli ({count})",
+    "filterStars": "{star} yulduz",
+    "showMore": "Yana ko‘rsatish",
+    "noMatch": "Bu filtr bo‘yicha sharh yo‘q"
   },
   "brand": {
     "notFound": "Brend topilmadi",

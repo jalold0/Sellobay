@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Star, Store } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
@@ -75,10 +75,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProductDetailPage({ params }: PageProps) {
   setRequestLocale(params.locale);
   const dbProduct = await fetchProductBySlug(params.slug);
+  // Do'koni bor tovar — o'xshashlar BOSHQA do'konlardan (pastda izoh).
+  const otherSellers = Boolean(dbProduct?.seller);
   // Real rasm galereyasi + variantlar (rang/o'lcham) va o'xshash tovarlar — parallel.
   const [extras, relatedDb] = await Promise.all([
     dbProduct ? fetchProductDetailExtras(params.slug) : null,
-    dbProduct?.categoryId ? fetchProducts({ category: dbProduct.categoryId, limit: 5 }) : null,
+    dbProduct?.categoryId
+      ? fetchProducts({
+          category: dbProduct.categoryId,
+          limit: otherSellers ? 8 : 5,
+          ...(otherSellers && dbProduct.seller
+            ? { excludeSeller: dbProduct.seller.id, excludeId: dbProduct.id, sort: 'seller-rating' }
+            : {}),
+        })
+      : null,
   ]);
   const detail = dbProduct
     ? buildProductDetail(dbProduct, extras ?? undefined)
@@ -90,9 +100,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   // O'xshash mahsulotlar — DB mahsuloti bo'lsa DB'dan (kartochka savatga to'g'ri UUID
   // beradi va checkout ishlaydi); aks holda mock fallback.
+  //
+  // Do'koni bor tovar uchun — BOSHQA do'konlardagi o'xshashlari, ishonchli
+  // (reytingi yuqori) do'kon birinchi: xaridor shu tovarni boshqa joydan ham
+  // solishtira oladi.
   let related: MockProduct[];
   if (dbProduct && relatedDb) {
-    related = relatedDb.items.filter((p) => p.id !== dbProduct.id).slice(0, 4);
+    related = relatedDb.items.filter((p) => p.id !== dbProduct.id).slice(0, otherSellers ? 8 : 4);
   } else {
     related = getRelatedProducts(detail.product.id, 4);
   }
@@ -145,10 +159,29 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       {related.length > 0 && (
         <section className="border-t pt-8">
-          <h2 className="mb-5 text-2xl font-bold tracking-tight">{t('sameCategory')}</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <h2 className="text-2xl font-bold tracking-tight">
+            {otherSellers ? t('otherSellers') : t('sameCategory')}
+          </h2>
+          {otherSellers && (
+            <p className="text-muted-foreground mt-1 text-sm">{t('otherSellersHint')}</p>
+          )}
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {related.map((p) => (
-              <ProductCardClient key={p.id} product={p} locale={locale} />
+              <div key={p.id} className="flex min-w-0 flex-col gap-1.5">
+                <ProductCardClient product={p} locale={locale} />
+                {otherSellers && p.seller && (
+                  <p className="text-muted-foreground flex items-center gap-1 truncate px-1 text-xs">
+                    <Store size={12} className="shrink-0" />
+                    <span className="truncate">{p.seller.name}</span>
+                    {p.seller.rating > 0 && (
+                      <span className="text-foreground inline-flex shrink-0 items-center gap-0.5 font-medium">
+                        <Star size={11} className="fill-amber-400 text-amber-400" />
+                        {p.seller.rating.toFixed(1)}
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
             ))}
           </div>
         </section>

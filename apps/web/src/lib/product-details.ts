@@ -3,7 +3,7 @@
 
 import { findById, type LocalizedText, type MockProduct, products } from './mock-data';
 
-import type { ProductVariantRow } from './catalog';
+import type { ProductSellerInfo, ProductVariantRow } from './catalog';
 
 export interface ProductGalleryImage {
   seed: string;
@@ -69,6 +69,8 @@ export interface ProductFullDetail {
   reviews: ProductReview[];
   questions: ProductQuestion[];
   ratingBreakdown: Record<1 | 2 | 3 | 4 | 5, number>; // %
+  /** Do'kon. `null` — platformaning o'z tovari yoki mock. */
+  seller: ProductSellerInfo | null;
 }
 
 const FALLBACK_COLORS: ProductVariantColor[] = [
@@ -152,6 +154,8 @@ export interface ProductDetailRealExtras {
   reviews?: ProductReview[];
   /** DB variantlari (id bilan) — savatga to'g'ri variant qo'shish uchun. */
   variants?: ProductVariantRow[];
+  /** Do'kon bloki uchun. */
+  seller?: ProductSellerInfo | null;
 }
 
 // Keng tarqalgan rang nomlari → hex (variant rang tanlagichi uchun)
@@ -288,6 +292,7 @@ export function buildProductDetail(
     // o'ylab topilgan javoblar ko'rsatardi.
     questions: [],
     ratingBreakdown: ratingBreakdownFrom(reviews),
+    seller: real?.seller ?? null,
   };
 }
 

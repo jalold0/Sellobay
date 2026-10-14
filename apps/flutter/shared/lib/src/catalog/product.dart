@@ -24,6 +24,7 @@ class ProductSummary {
     required this.categorySlug,
     required this.stock,
     required this.inStock,
+    this.seller,
   });
 
   factory ProductSummary.fromJson(Map<String, dynamic> json) {
@@ -50,8 +51,12 @@ class ProductSummary {
       categorySlug: category?['slug'] as String?,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       inStock: json['inStock'] as bool? ?? false,
+      seller: SellerRef.maybeFromJson(json['seller']),
     );
   }
+
+  /// Do'kon (ro'yxatda nom va baho). Platformaning o'z tovarida `null`.
+  final SellerRef? seller;
 
   final String id;
   final String slug;
@@ -151,7 +156,8 @@ class ProductDetail {
     required this.soldCount,
     required this.brandName,
     required this.brandSlug,
-    required this.sellerName,
+    required this.seller,
+    this.categorySlug,
     required this.images,
     required this.stock,
     required this.inStock,
@@ -176,7 +182,9 @@ class ProductDetail {
       soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
       brandName: brand?['name'] as String?,
       brandSlug: brand?['slug'] as String?,
-      sellerName: seller?['brandName'] as String?,
+      seller: SellerRef.maybeFromJson(seller),
+      categorySlug: ((json['categories'] as List<dynamic>?)?.firstOrNull as Map<String, dynamic>?)?['slug']
+          as String?,
       images: (json['images'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()
           .map(ProductImageRef.fromJson)
@@ -204,7 +212,12 @@ class ProductDetail {
   final int soldCount;
   final String? brandName;
   final String? brandSlug;
-  final String? sellerName;
+  /// Do'kon bloki uchun. Platformaning o'z tovarida `null`.
+  final SellerRef? seller;
+  String? get sellerName => seller?.name;
+
+  /// Asosiy (faol) kategoriya — o'xshash tovarlar uchun.
+  final String? categorySlug;
   final List<ProductImageRef> images;
   final int stock;
   final bool inStock;
@@ -255,4 +268,38 @@ class ProductPage {
   final int page;
   final int limit;
   final bool hasMore;
+}
+
+/// Do'kon (sotuvchi) haqida qisqa ma'lumot.
+class SellerRef {
+  const SellerRef({
+    required this.id,
+    required this.name,
+    required this.rating,
+    this.logoUrl,
+    this.productCount,
+  });
+
+  static SellerRef? maybeFromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final id = json['id'] as String?;
+    if (id == null) return null;
+    return SellerRef(
+      id: id,
+      name: json['brandName'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      logoUrl: json['logoUrl'] as String?,
+      productCount: (json['productCount'] as num?)?.toInt(),
+    );
+  }
+
+  final String id;
+  final String name;
+
+  /// Do'kon tovarlaridagi sharhlar o'rtachasi. 0 — hali baho yo'q.
+  final double rating;
+  final String? logoUrl;
+
+  /// Faqat tovar sahifasida keladi.
+  final int? productCount;
 }

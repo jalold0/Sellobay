@@ -25,9 +25,21 @@ export const GET = withApi<{ slug: string }>(async (_req, { params }) => {
     },
     include: {
       brand: { select: { id: true, slug: true, name: true, logoUrl: true } },
-      seller: { select: { id: true, brandName: true, rating: true } },
+      // Tovar sahifasidagi do'kon bloki: nom, logo, baho va tovarlar soni.
+      seller: {
+        select: {
+          id: true,
+          brandName: true,
+          rating: true,
+          logoUrl: true,
+          _count: { select: { products: { where: { status: 'ACTIVE', deletedAt: null } } } },
+        },
+      },
       images: { orderBy: { position: 'asc' } },
+      // Faqat FAOL kategoriyalar: nofaol qilingan eski kategoriya mobil
+      // ilovada «o'xshash tovarlar» so'rovini bo'sh qoldirardi.
       categories: {
+        where: { category: { isActive: true } },
         include: { category: { select: { slug: true, name: true } } },
       },
       // Ombor: zaxira = varyantlar inventarining yig'indisi.
@@ -106,7 +118,15 @@ export const GET = withApi<{ slug: string }>(async (_req, { params }) => {
     isFeatured: product.isFeatured,
     publishedAt: product.publishedAt,
     brand: product.brand,
-    seller: product.seller ? { ...product.seller, rating: Number(product.seller.rating) } : null,
+    seller: product.seller
+      ? {
+          id: product.seller.id,
+          brandName: product.seller.brandName,
+          logoUrl: product.seller.logoUrl,
+          rating: Number(product.seller.rating),
+          productCount: product.seller._count.products,
+        }
+      : null,
     images: product.images,
     categories: product.categories.map((c: (typeof product.categories)[number]) => c.category),
     stock,
