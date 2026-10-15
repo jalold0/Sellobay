@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
 
 import { CheckoutFlow } from '../../../components/checkout/checkout-flow';
+import { PRIVATE_PAGE_ROBOTS } from '../../../lib/seo';
 
 import type { Metadata } from 'next';
 
@@ -11,7 +12,7 @@ export async function generateMetadata({
   params: { locale: string };
 }): Promise<Metadata> {
   const t = await getTranslations({ locale: params.locale, namespace: 'checkout' });
-  return { title: t('title') };
+  return { title: t('title'), robots: PRIVATE_PAGE_ROBOTS };
 }
 
 export default function CheckoutPage({ params }: { params: { locale: string } }) {

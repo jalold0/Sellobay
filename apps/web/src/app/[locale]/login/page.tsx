@@ -1,3 +1,4 @@
+import { safeInternalPath } from '@ecom/utils';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/lib/auth/session';
@@ -18,7 +19,9 @@ export default async function LoginPage({
   const user = await getCurrentUser();
   if (user) {
     const next = searchParams.next;
-    redirect(next && next.startsWith('/') ? next : `/${params.locale}/profile`);
+    // `//evil.com` ham '/' bilan boshlanadi — oddiy startsWith tekshiruvi tashqi saytga
+    // yo'llardi (audit SEC-03). safeInternalPath bunday qiymatni '/' ga aylantiradi.
+    redirect(next ? safeInternalPath(next) : `/${params.locale}/profile`);
   }
   return <LoginFlow />;
 }

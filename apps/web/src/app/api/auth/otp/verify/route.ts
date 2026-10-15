@@ -67,11 +67,28 @@ export async function POST(req: NextRequest) {
   });
 
   // User'ni topamiz yoki yaratamiz (auto-register on first OTP)
-  let user = await prisma.user.findUnique({
+  const existing = await prisma.user.findUnique({
     where: { phone: normalized },
-    select: { id: true, status: true, email: true, phone: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      status: true,
+      email: true,
+      phone: true,
+      firstName: true,
+      lastName: true,
+      phoneVerifiedAt: true,
+    },
   });
 
+  // Bloklangan/o'chirilgan hisob — HECH NARSA yozmasdan rad etamiz. Ilgari tekshiruv
+  // yangilashdan KEYIN edi va `select` da `phoneVerifiedAt` yo'qligi sababli har bir
+  // OTP kirish holatni ACTIVE ga qaytarardi: ikkinchi urinishda admin bloki bekor
+  // bo'lardi (audit SEC-02).
+  if (existing && (existing.status === 'BLOCKED' || existing.status === 'DELETED')) {
+    return apiError(403, 'ACCOUNT_BLOCKED', 'Hisob bloklangan');
+  }
+
+  let user: Omit<NonNullable<typeof existing>, 'phoneVerifiedAt'> | null = existing;
   if (!user) {
     const created = await prisma.user.create({
       data: {
@@ -84,15 +101,16 @@ export async function POST(req: NextRequest) {
       select: { id: true, status: true, email: true, phone: true, firstName: true, lastName: true },
     });
     user = created;
-  } else if (!('phoneVerifiedAt' in user) || user.status === 'PENDING') {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { phoneVerifiedAt: new Date(), status: 'ACTIVE' },
+  } else if (existing && (existing.phoneVerifiedAt === null || existing.status === 'PENDING')) {
+    // Raqam endi tasdiqlandi. Holat FAQAT `PENDING` dan `ACTIVE` ga o'tadi; shart
+    // UPDATE ichida ham — parallel admin bloki shu orada yozilsa, uni bosib ketmaymiz.
+    await prisma.user.updateMany({
+      where: { id: existing.id, status: { in: ['PENDING', 'ACTIVE'] } },
+      data: {
+        ...(existing.phoneVerifiedAt === null ? { phoneVerifiedAt: new Date() } : {}),
+        ...(existing.status === 'PENDING' ? { status: 'ACTIVE' as const } : {}),
+      },
     });
-  }
-
-  if (user.status === 'BLOCKED' || user.status === 'DELETED') {
-    return apiError(403, 'ACCOUNT_BLOCKED', 'Hisob bloklangan');
   }
 
   const tokens = await createSession(user.id, requestMeta());

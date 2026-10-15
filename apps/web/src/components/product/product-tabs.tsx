@@ -26,7 +26,10 @@ export function ProductTabs({ detail, locale }: Props) {
   return (
     <section className="border-t pt-8">
       <Tabs defaultValue="description">
-        <TabsList>
+        {/* To'rtta tab telefonda (375px) sig'maydi: o'ralmaydigan qator butun sahifani
+            457px gacha kengaytirib, brauzer sahifani kichraytirardi (audit UX-01).
+            Endi qator o'z ichida aylanadi, sahifa kengligi o'zgarmaydi. */}
+        <TabsList className="max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="description">{t('tabDescription')}</TabsTrigger>
           <TabsTrigger value="specs">{t('tabSpecs')}</TabsTrigger>
           <TabsTrigger value="reviews" id="reviews">

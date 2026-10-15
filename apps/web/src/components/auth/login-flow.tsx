@@ -1,6 +1,7 @@
 'use client';
 
 import { toast } from '@ecom/ui';
+import { safeInternalPath } from '@ecom/utils';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -18,7 +19,8 @@ type Method = 'email' | 'phone';
 function useNextHref(): string {
   const params = useSearchParams();
   const next = params.get('next');
-  return next && next.startsWith('/') ? next : '/profile';
+  // Tashqi manzil (`//evil.com`, `/\evil.com`) qabul qilinmaydi (audit SEC-03).
+  return next ? safeInternalPath(next) : '/profile';
 }
 
 /** "90 123 45 67" ko'rinishida guruhlash — faqat ko'rinish uchun */

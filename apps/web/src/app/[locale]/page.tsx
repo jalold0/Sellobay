@@ -22,7 +22,7 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
   setRequestLocale(params.locale);
   const locale = params.locale;
   // Ikki so'rov parallel — kategoriyalar mahsulotlarni kutib turmaydi.
-  const [{ featured, sale }, categories, brands] = await Promise.all([
+  const [{ featured, sale, discounted }, categories, brands] = await Promise.all([
     fetchHomeProducts(),
     fetchStorefrontCategories(),
     fetchBrands(),
@@ -71,7 +71,8 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
 
       {/* 5. Aksiya — editorialdan OLDIN: xarid niyati bilan kelgan odam
           chegirmalarni birinchi ekrandan keyin darrov ko'rishi kerak. */}
-      <SaleSection locale={locale} saleProducts={sale} />
+      {/* Faqat haqiqiy chegirma bo'lsa — aks holda «aksiya» va'da qilmaymiz (audit TRU-02). */}
+      {discounted.length > 0 ? <SaleSection locale={locale} saleProducts={discounted} /> : null}
 
       {/* 6. Editorial kolleksiya — brend hikoyasi, xariddan keyin */}
       <FeaturedCollection saleProducts={sale} />

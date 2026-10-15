@@ -24,3 +24,10 @@ export function notFoundMetadata(title: string): Metadata {
     robots: { index: false, follow: false },
   };
 }
+
+/**
+ * Shaxsiy yoki tranzaksion sahifalar (savat, checkout, profil, buyurtma kuzatish):
+ * qidiruvda chiqmasligi kerak. Global layout `index: true` beradi, shuning uchun
+ * har biri buni aniq bekor qiladi (audit SEO-01).
+ */
+export const PRIVATE_PAGE_ROBOTS: Metadata['robots'] = { index: false, follow: false };

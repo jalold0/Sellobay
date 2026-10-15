@@ -134,7 +134,16 @@ function ratingBreakdownFrom(reviews: ProductReview[]): Record<1 | 2 | 3 | 4 | 5
   return empty;
 }
 
+/**
+ * Demo (mock) mahsulot — FAQAT lokal ishlab chiqish uchun.
+ *
+ * Production'da `undefined`: bazada yo'q slug 404 bo'lishi kerak. Ilgari
+ * `/uz/product/nike-air-max-270` kabi demo sahifalar prod'da soxta narx va
+ * sharhlar bilan ochilar, savatga qo'shilar va Google'ga JSON-LD bilan
+ * berilardi (audit FUN-02). `catalog.ts` dagi ALLOW_MOCK_FALLBACK bilan bir xil qoida.
+ */
 export function getProductDetail(slugOrId: string): ProductFullDetail | undefined {
+  if (process.env.NODE_ENV === 'production') return undefined;
   const product = products.find((p) => p.slug === slugOrId || p.id === slugOrId);
   if (!product) return undefined;
   return buildProductDetail(product);

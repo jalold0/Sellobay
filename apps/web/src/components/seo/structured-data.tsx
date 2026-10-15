@@ -1,6 +1,7 @@
 // JSON-LD structured data — SEO uchun zarur.
 // Google'ga sahifa tarkibini aniq tushuntiradi.
 
+import { jsonLdHtml } from '../../lib/json-ld';
 import { siteUrl } from '../../lib/site-url';
 
 interface OrgProps {}
@@ -27,7 +28,7 @@ export function OrganizationJsonLd(_props: OrgProps = {}) {
     sameAs: ['https://www.instagram.com/', 'https://www.facebook.com/', 'https://t.me/'],
   };
   return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />
   );
 }
 
@@ -81,7 +82,7 @@ export function ProductJsonLd(p: ProductJsonLdProps) {
       : {}),
   };
   return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />
   );
 }
 
@@ -102,6 +103,6 @@ export function BreadcrumbJsonLd({ items }: { items: BreadcrumbItem[] }) {
     })),
   };
   return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />
   );
 }

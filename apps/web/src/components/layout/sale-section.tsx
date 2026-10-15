@@ -124,9 +124,13 @@ export function SaleSection({ locale, saleProducts }: Props) {
                   <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">
                     {p.brand}
                   </div>
-                  <div className="text-[11px] font-semibold leading-tight">
-                    −{Math.round(100 - (p.price / (p.oldPrice ?? p.price * 1.3)) * 100)}%
-                  </div>
+                  {/* Foiz faqat haqiqiy eski narxdan. Ilgari eski narx bo'lmasa
+                      `price * 1.3` deb o'ylab topilardi (audit TRU-02). */}
+                  {p.oldPrice != null && p.oldPrice > p.price ? (
+                    <div className="text-[11px] font-semibold leading-tight">
+                      −{Math.round(100 - (p.price / p.oldPrice) * 100)}%
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
