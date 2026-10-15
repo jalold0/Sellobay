@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { globalFulfillmentSelect, toCustomerGlobalView } from '@/lib/global-order-view';
 import { getGlobalSettings } from '@/lib/global-settings';
+import { handoverForOrder } from '@/lib/handover-server';
 import { COIN_VALUE_SOM, coinsForOrder } from '@/lib/loyalty';
 import { shippingFor, type DeliveryMethod } from '@/lib/orders-pricing';
 
@@ -208,8 +209,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!order) return apiError(404, 'NOT_FOUND', 'Buyurtma topilmadi');
   if (order.userId !== user.id) return apiError(403, 'FORBIDDEN', "Ruxsat yo'q");
 
-  const settings = order.globalFulfillment ? await getGlobalSettings() : null;
-  return apiOk({ order: serialize(order, settings?.freight) });
+  const [settings, handover] = await Promise.all([
+    order.globalFulfillment ? getGlobalSettings() : null,
+    handoverForOrder(order.id),
+  ]);
+  // Topshirish kodi (ADR 0017) — kuryer yo'lda bo'lganda; kuryerga shu kod aytiladi.
+  return apiOk({ order: { ...serialize(order, settings?.freight), handover } });
 }
 
 const patchSchema = z.object({

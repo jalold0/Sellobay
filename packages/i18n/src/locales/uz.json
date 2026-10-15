@@ -1425,7 +1425,37 @@
       "ARRIVED": "Yetib keldim",
       "DELIVERED": "Yetkazdim",
       "FAILED": "Yetkazib bo'lmadi"
-    }
+    },
+    "scan": "Skanerlash",
+    "scanTitle": "Posilka yorlig‘ini skanerlang",
+    "scanHandoverTitle": "Mijoz QR kodini skanerlang",
+    "scanHint": "QR kodni ramkaga tushiring",
+    "torch": "Chiroq",
+    "cameraDenied": "Kameraga ruxsat yo‘q. Sozlamalardan yoqing yoki kodni qo‘lda kiriting.",
+    "manualEntry": "Kodni qo‘lda kiritish",
+    "manualHint": "Yorliqdagi SB-XXXX-XXXX kodi",
+    "manualSubmit": "Posilkani olish",
+    "pickedUp": "Posilka olindi",
+    "alreadyHeld": "Bu posilka allaqachon sizda",
+    "cod": "Naqd oling: {amount}",
+    "codHint": "Posilkani berishdan oldin mijozdan oling",
+    "paid": "To‘langan — pul olinmaydi",
+    "notes": "Mijoz izohi",
+    "parcelCode": "Posilka",
+    "sku": "SKU {sku}",
+    "handOver": "Mijozga topshirish",
+    "handoverScan": "Mijoz QR kodini skanerlash",
+    "handoverScanHint": "Mijoz ilovasida yoki saytda buyurtma sahifasida",
+    "handoverCode": "4 xonali kodni kiritish",
+    "handoverCodeHint": "Mijoz aytgan kod",
+    "handoverPhoto": "Kodsiz topshirish",
+    "handoverPhotoHint": "Surat va sabab majburiy — admin tekshiradi",
+    "handoverReason": "Nega kodsiz?",
+    "handoverReasonHint": "Masalan: mijozning telefoni o‘chgan, qo‘shniga qoldirildi",
+    "handoverConfirm": "Topshirishni tasdiqlash",
+    "handoverDone": "Posilka topshirildi",
+    "attemptsLeft": "{count} ta urinish qoldi",
+    "handoverLocked": "Kod ko‘p marta xato kiritildi — faqat surat bilan topshirish mumkin"
   },
   "push": {
     "paymentConfirmed": "Karta to‘lovingiz tasdiqlandi — buyurtma tayyorlanmoqda",
@@ -1455,5 +1485,12 @@
     "samarqand": "Samarqand viloyati",
     "sirdaryo": "Sirdaryo viloyati",
     "surxondaryo": "Surxondaryo viloyati"
+  },
+  "handover": {
+    "title": "Kuryerga shu kodni ko‘rsating",
+    "hint": "Kuryer QR’ni skanerlaydi yoki 4 raqamni so‘raydi. Kodni posilka qo‘lingizga berilgandagina ayting.",
+    "codeLabel": "Topshirish kodi",
+    "parcel": "Posilka {code}",
+    "qrAlt": "Topshirish QR kodi"
   }
 }

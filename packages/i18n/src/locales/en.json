@@ -1425,7 +1425,37 @@
       "ARRIVED": "Arrived",
       "DELIVERED": "Delivered",
       "FAILED": "Could not deliver"
-    }
+    },
+    "scan": "Scan",
+    "scanTitle": "Scan the parcel label",
+    "scanHandoverTitle": "Scan the customer’s QR",
+    "scanHint": "Fit the QR code inside the frame",
+    "torch": "Torch",
+    "cameraDenied": "No camera access. Turn it on in settings or type the code.",
+    "manualEntry": "Type the code",
+    "manualHint": "The SB-XXXX-XXXX code on the label",
+    "manualSubmit": "Pick up parcel",
+    "pickedUp": "Parcel picked up",
+    "alreadyHeld": "This parcel is already with you",
+    "cod": "Collect cash: {amount}",
+    "codHint": "Collect before handing over the parcel",
+    "paid": "Paid — collect nothing",
+    "notes": "Customer note",
+    "parcelCode": "Parcel",
+    "sku": "SKU {sku}",
+    "handOver": "Hand over to customer",
+    "handoverScan": "Scan customer’s QR",
+    "handoverScanHint": "On the order page in the app or on the website",
+    "handoverCode": "Enter the 4-digit code",
+    "handoverCodeHint": "The code the customer tells you",
+    "handoverPhoto": "Hand over without a code",
+    "handoverPhotoHint": "Photo and reason required — an admin reviews it",
+    "handoverReason": "Why no code?",
+    "handoverReasonHint": "E.g. customer’s phone is off, left with a neighbour",
+    "handoverConfirm": "Confirm handover",
+    "handoverDone": "Parcel handed over",
+    "attemptsLeft": "{count} attempts left",
+    "handoverLocked": "Too many wrong codes — photo handover only"
   },
   "push": {
     "paymentConfirmed": "Your card payment is confirmed — the order is being prepared",
@@ -1455,5 +1485,12 @@
     "samarqand": "Samarkand region",
     "sirdaryo": "Syrdarya region",
     "surxondaryo": "Surkhandarya region"
+  },
+  "handover": {
+    "title": "Show this code to the courier",
+    "hint": "The courier scans the QR or asks for the 4 digits. Only share the code once the parcel is in your hands.",
+    "codeLabel": "Handover code",
+    "parcel": "Parcel {code}",
+    "qrAlt": "Handover QR code"
   }
 }

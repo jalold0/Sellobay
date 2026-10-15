@@ -33,6 +33,14 @@ const schema = z.object({
       message: 'Surat «yetkazish isboti» yuklash orqali biriktirilishi kerak',
     })
     .optional(),
+  // Mijozga topshirish (ADR 0017): mijoz QR'idagi butun matn yoki og'zaki aytilgan kod.
+  // Tekshiruv `updateDeliveryStatus` da — PIN serverdan tashqariga chiqmaydi.
+  handover: z
+    .object({
+      method: z.enum(['QR', 'CODE']),
+      value: z.string().trim().min(1).max(100),
+    })
+    .optional(),
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -51,6 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
       proofPhotoUrl: parsed.data.proofPhotoUrl,
+      handover: parsed.data.handover,
     });
     return apiOk({ delivery });
   } catch (e) {

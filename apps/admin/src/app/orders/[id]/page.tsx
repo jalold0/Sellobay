@@ -40,6 +40,7 @@ import * as React from 'react';
 
 import { Breadcrumbs } from '../../../components/layout/breadcrumbs';
 import { CarrierCard } from '../../../components/orders/carrier-card';
+import { CustodyCard } from '../../../components/orders/custody-card';
 import { RefundPanel } from '../../../components/payments/refund-panel';
 import { VerifyPaymentForm } from '../../../components/payments/verify-payment-form';
 import {
@@ -436,6 +437,8 @@ export default function OrderDetailPage() {
             events={order.carrierEvents}
             onChanged={() => void load()}
           />
+
+          {order.custody ? <CustodyCard custody={order.custody} /> : null}
 
           {order.shipments.length > 0 ? (
             <Card>

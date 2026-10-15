@@ -12,6 +12,7 @@ import {
   GlobalOrderTracker,
   type CustomerGlobalView,
 } from '../../../../../components/global/global-order-tracker';
+import { HandoverCard, type HandoverInfo } from '../../../../../components/orders/handover-card';
 import { ReceiptResubmit } from '../../../../../components/orders/receipt-resubmit';
 import { formatDate as fmtDate, formatMoney } from '../../../../../lib/format';
 
@@ -48,6 +49,8 @@ interface OrderDetail {
   placedAt: string;
   /** 3PL (ADR 0015): kim olib bormoqda va trek raqami. */
   tracking: { company: string | null; trackingNumber: string } | null;
+  /** Kuryer yo'lda — mijoz kuryerga aytadigan kod (ADR 0017). */
+  handover: HandoverInfo | null;
   editable: boolean;
   shippingAddress: {
     recipientName: string;
@@ -288,6 +291,8 @@ export default function OrderDetailPage() {
           </div>
         ) : null}
       </div>
+
+      {order.handover ? <HandoverCard handover={order.handover} /> : null}
 
       {/* 3PL — kim olib bormoqda va trek raqami (kompaniya saytida kuzatish uchun) */}
       {order.tracking ? (
