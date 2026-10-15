@@ -4,8 +4,19 @@
 // o'rin egalari turardi: `+998 71 200 00 00`, `support@example.uz`, `@ecom_uz_bot`,
 // `https://instagram.com`. Mijoz ularga yozar, javob olmasdi.
 //
-// Endi hammasi ENV dan. Sozlanmagan kanal UMUMAN ko'rsatilmaydi — bo'sh yoki soxta
-// tugmadan ko'ra yo'q tugma yaxshi.
+// Endi Sellobay'ning haqiqiy kanallari `SELLOBAY_CHANNELS` da; ENV (SUPPORT_*, SOCIAL_*)
+// berilsa, u ustun turadi. Kanal na ENV da, na bu yerda bo'lmasa — UMUMAN ko'rsatilmaydi:
+// bo'sh yoki soxta tugmadan ko'ra yo'q tugma yaxshi.
+
+/**
+ * Sellobay'ning rasmiy aloqa kanallari. Raqam yoki profil o'zgarsa — shu yerni tahrirlang
+ * (yoki ENV bilan bekor qiling). Hali ochilmagan tarmoqqa qiymat yozmang.
+ */
+export const SELLOBAY_CHANNELS = {
+  phone: '+998 95 685 99 95',
+  email: 'sellobay2026@gmail.com',
+  instagram: 'https://www.instagram.com/sellobay.uz/',
+} as const;
 
 /** ENV qiymatlari lug`ati — testda oddiy obyekt beriladi. */
 type EnvLike = Record<string, string | undefined>;
@@ -57,8 +68,8 @@ function profileUrl(raw: string | undefined): string | null {
 
 export function supportContacts(env: EnvLike = process.env): SupportContacts {
   return {
-    phone: clean(env.SUPPORT_PHONE),
-    email: clean(env.SUPPORT_EMAIL),
+    phone: clean(env.SUPPORT_PHONE) ?? SELLOBAY_CHANNELS.phone,
+    email: clean(env.SUPPORT_EMAIL) ?? SELLOBAY_CHANNELS.email,
     telegram: telegramHandle(env.SUPPORT_TELEGRAM),
   };
 }
@@ -66,7 +77,7 @@ export function supportContacts(env: EnvLike = process.env): SupportContacts {
 export function socialLinks(env: EnvLike = process.env): SocialLinks {
   const tg = telegramHandle(env.SOCIAL_TELEGRAM ?? env.SUPPORT_TELEGRAM);
   return {
-    instagram: profileUrl(env.SOCIAL_INSTAGRAM),
+    instagram: profileUrl(env.SOCIAL_INSTAGRAM) ?? SELLOBAY_CHANNELS.instagram,
     facebook: profileUrl(env.SOCIAL_FACEBOOK),
     youtube: profileUrl(env.SOCIAL_YOUTUBE),
     telegram: tg ? `https://t.me/${tg}` : null,

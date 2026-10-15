@@ -8,7 +8,7 @@ import { socialLinks, supportContacts } from '../../lib/support';
 interface OrgProps {}
 
 export function OrganizationJsonLd(_props: OrgProps = {}) {
-  // Telefon va ijtimoiy tarmoqlar ENV dan — ilgari Google'ga soxta raqam va saytlarning
+  // Telefon va ijtimoiy tarmoqlar `lib/support` dan — ilgari Google'ga soxta raqam va saytlarning
   // bosh sahifalari berilardi (audit TRU-01). Sozlanmagani yuborilmaydi.
   const support = supportContacts();
   const social = socialLinks();

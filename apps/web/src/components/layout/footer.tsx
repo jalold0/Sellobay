@@ -79,7 +79,7 @@ const PAY_METHODS: { name: string; color: string }[] = [
   { name: 'Master', color: 'text-orange-500' },
 ];
 
-// Ijtimoiy tarmoqlar ENV dan (SOCIAL_*). Ilgari bu yerda saytlarning bosh sahifalari
+// Ijtimoiy tarmoqlar `socialLinks()` dan (rasmiy profil yoki SOCIAL_* ENV). Ilgari bu yerda saytlarning bosh sahifalari
 // (`https://instagram.com`) turardi — Sellobay profili emas (audit TRU-01).
 function socials() {
   const links = socialLinks();
@@ -100,7 +100,7 @@ export function Footer() {
   const t = useTranslations('footer');
   const common = useTranslations('common');
   const nav = useTranslations('nav');
-  // Aloqa ENV dan; sozlanmagani ko'rsatilmaydi (audit TRU-01).
+  // Aloqa `supportContacts()` dan; kanali yo'gi ko'rsatilmaydi (audit TRU-01).
   const support = supportContacts();
   const socialItems = socials();
 

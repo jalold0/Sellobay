@@ -74,7 +74,7 @@ export const GET = withApi(async () => ({
   /**
    * Qo'llab-quvvatlash kanallari.
    *
-   * ENV dan o'qiladi va SOZLANMAGANI javobga tushmaydi: klient
+   * `supportContacts()` — ENV yoki rasmiy kanal; ikkalasi ham yo'q kanal null: klient
    * bo'sh tugma yoki to'qima raqam ko'rsatmasligi kerak. Ilgari
    * footer'da `info@example.uz` turardi — o'rin egasi, haqiqiy
    * manzil emas.
