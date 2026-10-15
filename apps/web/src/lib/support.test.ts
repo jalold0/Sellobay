@@ -1,12 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
-import { hasSupport, socialLinks, supportContacts, telegramHandle, telHref } from './support';
+import {
+  hasSupport,
+  SELLOBAY_CHANNELS,
+  socialLinks,
+  supportContacts,
+  telegramHandle,
+  telHref,
+} from './support';
 
 describe('supportContacts (audit TRU-01)', () => {
-  it('sozlanmagan kanal — null (soxta qiymat yo`q)', () => {
+  it('ENV sozlanmasa — Sellobay`ning rasmiy kanallari; rasmiysi yo`q kanal — null', () => {
     const c = supportContacts({});
-    expect(c).toEqual({ phone: null, email: null, telegram: null });
-    expect(hasSupport(c)).toBe(false);
+    expect(c).toEqual({
+      phone: SELLOBAY_CHANNELS.phone,
+      email: SELLOBAY_CHANNELS.email,
+      telegram: null,
+    });
+    expect(hasSupport(c)).toBe(true);
+  });
+
+  it('bo`sh ENV qiymati ham rasmiy kanalga tushadi', () => {
+    const c = supportContacts({ SUPPORT_PHONE: '  ', SUPPORT_EMAIL: '' });
+    expect(c.phone).toBe(SELLOBAY_CHANNELS.phone);
+    expect(c.email).toBe(SELLOBAY_CHANNELS.email);
   });
 
   it('ENV dan o`qiydi, bo`sh joylarni tashlaydi', () => {
@@ -43,10 +60,25 @@ describe('socialLinks', () => {
       SOCIAL_FACEBOOK: 'https://facebook.com/sellobay',
       SOCIAL_YOUTUBE: 'http://youtube.com/@sellobay',
     });
-    expect(s.instagram).toBeNull();
+    // Yaroqsiz Instagram ENV — rasmiy profilga tushadi, bosh sahifaga emas.
+    expect(s.instagram).toBe(SELLOBAY_CHANNELS.instagram);
     expect(s.facebook).toBe('https://facebook.com/sellobay');
     expect(s.youtube).toBeNull();
     expect(s.telegram).toBeNull();
+  });
+
+  it('ENV sozlanmasa — faqat rasmiy Instagram, qolgani yashirin', () => {
+    expect(socialLinks({})).toEqual({
+      instagram: 'https://www.instagram.com/sellobay.uz/',
+      facebook: null,
+      youtube: null,
+      telegram: null,
+    });
+  });
+
+  it('ENV dagi Instagram rasmiysidan ustun', () => {
+    const s = socialLinks({ SOCIAL_INSTAGRAM: 'https://instagram.com/boshqa' });
+    expect(s.instagram).toBe('https://instagram.com/boshqa');
   });
 });
 
