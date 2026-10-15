@@ -31,10 +31,14 @@ const TILES = [
 export function QuickTiles() {
   const t = useTranslations('home.quickTiles');
 
+  // Prefetch o'chirilgan: plitkalar birinchi ekranda va oltitasi ham darhol 100 KB lik
+  // RSC javobini oldindan yuklardi — telefonda bosh sahifa yuklanishi bilan raqobat
+  // qilib, asosiy oqimni band qilardi (mobil tezlik tahlili). Bosilganda yuklanadi.
   return (
     <section className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-6">
       {TILES.map(({ key, href, Icon, tint }) => (
         <Link
+          prefetch={false}
           key={key}
           href={href}
           className="border-border hover:border-brand-gold flex items-center gap-2.5 rounded-xl border bg-white px-3.5 py-3 transition"

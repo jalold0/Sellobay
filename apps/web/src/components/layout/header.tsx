@@ -57,13 +57,13 @@ export function Header({ categories }: Props) {
             <span>{utility('deliveryPromise')}</span>
           </div>
           <div className="flex items-center gap-7">
-            <Link href="/sell" className="hidden hover:text-white md:inline">
+            <Link href="/sell" prefetch={false} className="hidden hover:text-white md:inline">
               {utility('becomeSeller')}
             </Link>
-            <Link href="/help" className="hidden hover:text-white md:inline">
+            <Link href="/help" prefetch={false} className="hidden hover:text-white md:inline">
               {utility('help')}
             </Link>
-            <Link href="/orders" className="hidden hover:text-white md:inline">
+            <Link href="/orders" prefetch={false} className="hidden hover:text-white md:inline">
               {utility('trackOrder')}
             </Link>
             <LocaleSwitcher current={locale} />

@@ -183,6 +183,7 @@ export function Footer() {
                   {col.links.map((l) => (
                     <li key={l.href}>
                       <Link
+                        prefetch={false}
                         href={l.href}
                         className="group inline-flex items-center text-sm text-white/70 transition hover:translate-x-0.5 hover:text-white"
                       >
@@ -216,6 +217,7 @@ export function Footer() {
               ))}
             </div>
             <Link
+              prefetch={false}
               href="/download"
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
             >
