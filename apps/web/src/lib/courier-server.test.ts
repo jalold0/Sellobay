@@ -100,6 +100,9 @@ describe('yetkazish holati o`tishlari', () => {
   });
 });
 
+/** Pozitsiyaning rasm/SKU/variant maydonlari — o'girishga kerak, testga ahamiyatsiz. */
+const ITEM_EXTRA = { sku: 'SKU-1', variant: null, product: { images: [] } };
+
 describe('javobga o`girish', () => {
   // Faqat `serializeDelivery` ga kerak bo'lgan maydonlar; qolgani
   // o'girishga ta'sir qilmaydi.
@@ -116,6 +119,9 @@ describe('javobga o`girish', () => {
       deliveredAt: null,
       failureReason: null,
       proofPhotoUrl: null,
+      parcelCode: null,
+      handoverAttempts: 0,
+      handoverMethod: null,
       kind: 'OUTBOUND',
       pickupAddress: null,
       items: [],
@@ -128,6 +134,7 @@ describe('javobga o`girish', () => {
         placedAt: new Date('2026-10-04T07:55:00.000Z'),
         notes: null,
         shippingAddress: null,
+        payments: [],
         items: [],
       },
       ...over,
@@ -153,6 +160,7 @@ describe('javobga o`girish', () => {
       placedAt: new Date('2026-10-04T07:55:00.000Z'),
       notes: 'Domofon 12',
       shippingAddress: { recipientName: 'Ali Valiyev', phone: '+998901234567' },
+      payments: [],
       items: [],
     };
     const free = serializeDelivery(row({ courierId: null, order })).order;
@@ -182,7 +190,9 @@ describe('javobga o`girish', () => {
     const row2 = row({
       kind: 'RETURN',
       pickupAddress: 'Toshkent, Yunusobod 1',
-      items: [{ quantity: 2, orderItem: { id: 'oi-1', nameSnapshot: { uz: 'Nike' } } }],
+      items: [
+        { quantity: 2, orderItem: { id: 'oi-1', nameSnapshot: { uz: 'Nike' }, ...ITEM_EXTRA } },
+      ],
       order: {
         id: 'o1',
         number: 'ORD-1',
@@ -190,11 +200,12 @@ describe('javobga o`girish', () => {
         placedAt: new Date('2026-10-04T07:55:00.000Z'),
         notes: null,
         shippingAddress: null,
+        payments: [],
         // Buyurtmada UCHTA mahsulot bor, topshiriqda esa bittasi.
         items: [
-          { id: 'oi-1', quantity: 2, nameSnapshot: { uz: 'Nike' } },
-          { id: 'oi-2', quantity: 1, nameSnapshot: { uz: 'Adidas' } },
-          { id: 'oi-3', quantity: 5, nameSnapshot: { uz: 'Puma' } },
+          { id: 'oi-1', quantity: 2, nameSnapshot: { uz: 'Nike' }, ...ITEM_EXTRA },
+          { id: 'oi-2', quantity: 1, nameSnapshot: { uz: 'Adidas' }, ...ITEM_EXTRA },
+          { id: 'oi-3', quantity: 5, nameSnapshot: { uz: 'Puma' }, ...ITEM_EXTRA },
         ],
       },
     });
@@ -219,9 +230,10 @@ describe('javobga o`girish', () => {
           placedAt: new Date('2026-10-04T07:55:00.000Z'),
           notes: null,
           shippingAddress: null,
+          payments: [],
           items: [
-            { id: 'oi-1', quantity: 2, nameSnapshot: { uz: 'Nike' } },
-            { id: 'oi-2', quantity: 1, nameSnapshot: { uz: 'Adidas' } },
+            { id: 'oi-1', quantity: 2, nameSnapshot: { uz: 'Nike' }, ...ITEM_EXTRA },
+            { id: 'oi-2', quantity: 1, nameSnapshot: { uz: 'Adidas' }, ...ITEM_EXTRA },
           ],
         },
       }),
@@ -294,5 +306,109 @@ describe('buyurtma holati yetkazishga ergashadi', () => {
   it('`ASSIGNED` ham tegmaydi', () => {
     // Yozuv ochilishi mijoz uchun yangilik emas.
     expect(orderStatusFor('ASSIGNED')).toBeNull();
+  });
+});
+
+describe('posilka va topshirish (ADR 0017)', () => {
+  const order = (over: Record<string, unknown> = {}) => ({
+    id: 'o1',
+    number: 'ORD-1',
+    grandTotal: { toString: () => '620000' },
+    placedAt: new Date('2026-10-04T07:55:00.000Z'),
+    notes: null,
+    shippingAddress: null,
+    payments: [],
+    items: [],
+    ...over,
+  });
+  const row = (over: Record<string, unknown> = {}) =>
+    ({
+      id: 'd1',
+      status: 'PICKED_UP',
+      method: 'HOME_DELIVERY',
+      destinationAddress: 'Toshkent',
+      destinationLat: null,
+      destinationLng: null,
+      assignedAt: null,
+      pickedUpAt: null,
+      deliveredAt: null,
+      failureReason: null,
+      proofPhotoUrl: null,
+      parcelCode: '7K3M9QXZ',
+      handoverPin: '0420',
+      handoverAttempts: 0,
+      handoverMethod: null,
+      kind: 'OUTBOUND',
+      pickupAddress: null,
+      items: [],
+      createdAt: new Date('2026-10-04T08:00:00.000Z'),
+      courierId: 'c1',
+      order: order(),
+      ...over,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+
+  it('topshirish kodi (PIN) javobda HECH QACHON yo`q', () => {
+    expect(JSON.stringify(serializeDelivery(row()))).not.toContain('0420');
+  });
+
+  it('posilka kodi faqat olgan kuryerga, formatlangan holda', () => {
+    expect(serializeDelivery(row()).parcelCode).toBe('SB-7K3M-9QXZ');
+    expect(serializeDelivery(row({ courierId: null })).parcelCode).toBeNull();
+  });
+
+  it('kod faqat mijozga yetkazishda so`raladi', () => {
+    expect(serializeDelivery(row()).handover.required).toBe(true);
+    expect(serializeDelivery(row({ kind: 'RETURN' })).handover.required).toBe(false);
+  });
+
+  it('urinishlar tugasa — bloklangan', () => {
+    const h = serializeDelivery(row({ handoverAttempts: 5 })).handover;
+    expect(h).toMatchObject({ locked: true, attemptsLeft: 0 });
+  });
+
+  it('naqd buyurtmada olinadigan summa, to`langanda — null', () => {
+    const cod = serializeDelivery(row({ order: order({ payments: [{ id: 'p1' }] }) }));
+    expect(cod.order.codAmount).toBe('620000');
+    expect(serializeDelivery(row()).order.codAmount).toBeNull();
+  });
+
+  it('pozitsiyada variant SKU`si, rasm va tanlov nomi', () => {
+    const item = {
+      id: 'oi-1',
+      quantity: 1,
+      nameSnapshot: { uz: 'Ko`ylak' },
+      sku: 'SHIRT',
+      product: { images: [{ url: 'https://x/1.jpg' }] },
+      variant: {
+        sku: 'SHIRT-RED-M',
+        attributes: [
+          {
+            optionId: 'opt-red',
+            valueString: null,
+            valueNumber: null,
+            attribute: { name: { uz: 'Rang' }, unit: null },
+          },
+          {
+            optionId: null,
+            valueString: null,
+            valueNumber: { toString: () => '42' },
+            attribute: { name: { uz: 'O`lcham' }, unit: 'EU' },
+          },
+        ],
+      },
+    };
+    const out = serializeDelivery(
+      row({ order: order({ items: [item] }) }),
+      new Map([['opt-red', { uz: 'Qizil' }]]),
+    );
+    expect(out.order.items[0]).toMatchObject({
+      sku: 'SHIRT-RED-M',
+      imageUrl: 'https://x/1.jpg',
+      variant: [
+        { name: { uz: 'Rang' }, value: { uz: 'Qizil' } },
+        { name: { uz: 'O`lcham' }, value: '42 EU' },
+      ],
+    });
   });
 });

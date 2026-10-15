@@ -10,6 +10,11 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13+: bildirishnoma ko'rsatish uchun ruxsat so'raladi. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Posilka yorlig'i va mijoz QR kodini skanerlash (ADR 0017). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Holat o'zgarganda joylashuv jurnalga yoziladi — faqat ilova ochiq paytda. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
         android:label="Sellobay Kuryer"

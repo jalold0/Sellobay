@@ -8,9 +8,15 @@
 // ko'rsatadigan ma'lumot umuman yo'q edi.
 
 import { ApiDomainError } from '@ecom/api-contract';
-import { tashkentDayStart } from '@ecom/core-domain';
-import { Prisma, type DeliveryStatus, type OrderStatus } from '@ecom/database';
-import { restockReturnDelivery, settleDeliveredOrder } from '@ecom/order-ops';
+import {
+  MAX_HANDOVER_ATTEMPTS,
+  checkHandover,
+  formatParcelCode,
+  parseScan,
+  tashkentDayStart,
+} from '@ecom/core-domain';
+import { Prisma, type CustodyMethod, type DeliveryStatus, type OrderStatus } from '@ecom/database';
+import { ensureDeliveryCodes, restockReturnDelivery, settleDeliveredOrder } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 
 import { prisma } from '@/lib/db';
@@ -151,6 +157,66 @@ export function isTerminalDeliveryStatus(status: DeliveryStatus): boolean {
   return nextDeliveryStatuses(status).length === 0;
 }
 
+/**
+ * Kuryer posilkani tekshirishi uchun pozitsiya ma'lumoti: rasm, SKU va variant.
+ *
+ * Ilgari faqat nom va son kelardi — bir xil nomli ikki rangdagi ko'ylakni
+ * kuryer ajrata olmasdi va noto'g'ri posilkani olib ketish mumkin edi.
+ */
+const orderItemSelect = {
+  id: true,
+  quantity: true,
+  nameSnapshot: true,
+  sku: true,
+  variant: {
+    select: {
+      sku: true,
+      attributes: {
+        select: {
+          optionId: true,
+          valueString: true,
+          valueNumber: true,
+          attribute: { select: { name: true, unit: true } },
+        },
+      },
+    },
+  },
+  product: {
+    select: {
+      images: {
+        orderBy: [{ isPrimary: 'desc' }, { position: 'asc' }],
+        take: 1,
+        select: { url: true },
+      },
+    },
+  },
+} satisfies Prisma.OrderItemSelect;
+
+type OrderItemRow = Prisma.OrderItemGetPayload<{ select: typeof orderItemSelect }>;
+
+/** Variant tanlovlari nomlari (`AttributeOption.label`), id bo'yicha. */
+export type OptionLabels = ReadonlyMap<string, Prisma.JsonValue>;
+
+function itemView(i: OrderItemRow, quantity: number, options: OptionLabels) {
+  return {
+    id: i.id,
+    quantity,
+    nameSnapshot: i.nameSnapshot,
+    // Variantning o'z SKU'si aniqroq (rang/o'lcham bo'yicha) — bo'lmasa mahsulotniki.
+    sku: i.variant?.sku ?? i.sku,
+    imageUrl: i.product.images[0]?.url ?? null,
+    variant: (i.variant?.attributes ?? []).map((a) => ({
+      name: a.attribute.name,
+      value:
+        (a.optionId ? options.get(a.optionId) : undefined) ??
+        a.valueString ??
+        (a.valueNumber !== null
+          ? `${a.valueNumber.toString()}${a.attribute.unit ? ` ${a.attribute.unit}` : ''}`
+          : null),
+    })),
+  };
+}
+
 const deliverySelect = {
   id: true,
   kind: true,
@@ -165,6 +231,9 @@ const deliverySelect = {
   deliveredAt: true,
   failureReason: true,
   proofPhotoUrl: true,
+  parcelCode: true,
+  handoverAttempts: true,
+  handoverMethod: true,
   createdAt: true,
   courierId: true,
   order: {
@@ -177,7 +246,13 @@ const deliverySelect = {
       shippingAddress: {
         select: { recipientName: true, phone: true },
       },
-      items: { select: { id: true, quantity: true, nameSnapshot: true } },
+      items: { select: orderItemSelect },
+      // Naqd (COD) — pul hali olinmagan bo'lsa kuryer eshik oldida oladi.
+      payments: {
+        where: { provider: 'CASH_ON_DELIVERY', status: 'PENDING' },
+        select: { id: true },
+        take: 1,
+      },
     },
   },
   // Qaytarish topshirig'idagi mahsulotlar — buyurtmaning BIR QISMI.
@@ -185,19 +260,60 @@ const deliverySelect = {
   items: {
     select: {
       quantity: true,
-      orderItem: { select: { id: true, nameSnapshot: true } },
+      orderItem: { select: orderItemSelect },
     },
   },
 } satisfies Prisma.DeliverySelect;
 
 export type DeliveryRow = Prisma.DeliveryGetPayload<{ select: typeof deliverySelect }>;
 
+/** Qatorlardagi variant tanlovlarining nomlarini bitta so'rovda yuklaydi. */
+async function loadOptionLabels(rows: DeliveryRow[]): Promise<OptionLabels> {
+  const ids = new Set<string>();
+  for (const d of rows) {
+    const items = [...d.order.items, ...d.items.map((i) => i.orderItem)];
+    for (const it of items) {
+      for (const a of it.variant?.attributes ?? []) if (a.optionId) ids.add(a.optionId);
+    }
+  }
+  if (ids.size === 0) return new Map();
+  const options = await prisma.attributeOption.findMany({
+    where: { id: { in: [...ids] } },
+    select: { id: true, label: true },
+  });
+  return new Map(options.map((o) => [o.id, o.label]));
+}
+
+/** Bazadagi qatorlarni javobga o'giradi (variant nomlari bilan). */
+async function present(rows: DeliveryRow[]) {
+  const options = await loadOptionLabels(rows);
+  return rows.map((d) => serializeDelivery(d, options));
+}
+
+async function presentOne(deliveryId: string) {
+  const row = await prisma.delivery.findUniqueOrThrow({
+    where: { id: deliveryId },
+    select: deliverySelect,
+  });
+  return serializeDelivery(row, await loadOptionLabels([row]));
+}
+
+/**
+ * Mijozga topshirishda kod so'raladimi.
+ *
+ * Faqat do'kondan mijozga (`OUTBOUND`). Qaytarishda posilka omborga topshiriladi —
+ * u yerda mijoz yo'q.
+ */
+export function handoverRequired(kind: DeliveryRow['kind']): boolean {
+  return kind === 'OUTBOUND';
+}
+
 /**
  * Bazadagi qatorni klient javobiga o'giradi.
  *
  * Eksport qilingan — sof funksiya va testda bazasiz tekshiriladi.
  */
-export function serializeDelivery(d: DeliveryRow) {
+export function serializeDelivery(d: DeliveryRow, options: OptionLabels = new Map()) {
   const returnItems = d.items ?? [];
   // Mijozning ismi, telefoni va izohi FAQAT topshiriqni olgan kuryerga. Ilgari har bir kuryer
   // bo'sh ro'yxatdagi 50 tagacha buyurtma egasining ma'lumotini ko'rardi (audit P5). Manzil
@@ -226,6 +342,18 @@ export function serializeDelivery(d: DeliveryRow) {
      * suratni ko'rish kerak emas — uni admin ko'radi.
      */
     hasProofPhoto: d.proofPhotoUrl !== null,
+    /**
+     * Yorliqdagi posilka kodi (`SB-XXXX-XXXX`) — faqat olgan kuryerga: u skanerlagan
+     * posilka shu ekanini solishtiradi. Topshirish kodi (PIN) bu yerda HECH QACHON yo'q.
+     */
+    parcelCode: claimed && d.parcelCode ? formatParcelCode(d.parcelCode) : null,
+    handover: {
+      required: handoverRequired(d.kind),
+      attemptsLeft: Math.max(0, MAX_HANDOVER_ATTEMPTS - d.handoverAttempts),
+      /** Urinishlar tugagan — faqat surat bilan topshirish qoladi. */
+      locked: d.handoverAttempts >= MAX_HANDOVER_ATTEMPTS,
+      method: d.handoverMethod,
+    },
     createdAt: d.createdAt.toISOString(),
     /**
      * Kuryer biriktirilganmi.
@@ -243,6 +371,9 @@ export function serializeDelivery(d: DeliveryRow) {
       id: d.order.id,
       number: d.order.number,
       grandTotal: d.order.grandTotal.toString(),
+      /** Eshik oldida olinadigan naqd pul (`null` — to'langan). Faqat yetkazishda. */
+      codAmount:
+        d.kind === 'OUTBOUND' && d.order.payments.length > 0 ? d.order.grandTotal.toString() : null,
       placedAt: d.order.placedAt.toISOString(),
       notes: claimed ? d.order.notes : null,
       recipientName: claimed ? (d.order.shippingAddress?.recipientName ?? null) : null,
@@ -254,16 +385,8 @@ export function serializeDelivery(d: DeliveryRow) {
       itemCount: returnItems.length > 0 ? returnItems.length : d.order.items.length,
       items:
         returnItems.length > 0
-          ? returnItems.map((i) => ({
-              id: i.orderItem.id,
-              quantity: i.quantity,
-              nameSnapshot: i.orderItem.nameSnapshot,
-            }))
-          : d.order.items.map((i) => ({
-              id: i.id,
-              quantity: i.quantity,
-              nameSnapshot: i.nameSnapshot,
-            })),
+          ? returnItems.map((i) => itemView(i.orderItem, i.quantity, options))
+          : d.order.items.map((i) => itemView(i, i.quantity, options)),
     },
   };
 }
@@ -329,7 +452,8 @@ export async function listCourierDeliveries(userId: string) {
     }),
   ]);
 
-  return { mine: mine.map(serializeDelivery), available: available.map(serializeDelivery) };
+  const [mineOut, availableOut] = await Promise.all([present(mine), present(available)]);
+  return { mine: mineOut, available: availableOut };
 }
 
 /**
@@ -339,7 +463,11 @@ export async function listCourierDeliveries(userId: string) {
  * `courierId: null` sharti ikkinchisini to'xtatadi (0 qator yangilanadi)
  * — ya'ni bitta yetkazish ikki kishiga tushmaydi.
  */
-export async function claimDelivery(userId: string, deliveryId: string) {
+export async function claimDelivery(
+  userId: string,
+  deliveryId: string,
+  method: CustodyMethod = 'MANUAL',
+) {
   const courierId = await ensureCourierProfile(userId);
 
   // Ro'yxatdagi shartning o'zi — UPDATE ichida, shuning uchun to'lov/bekor
@@ -365,14 +493,12 @@ export async function claimDelivery(userId: string, deliveryId: string) {
   }
 
   await prisma.deliveryEvent.create({
-    data: { deliveryId, status: 'ASSIGNED', note: 'Kuryer o`ziga oldi' },
+    data: { deliveryId, status: 'ASSIGNED', note: 'Kuryer o`ziga oldi', actorId: userId, method },
   });
+  // Eski (kodsiz) yetkazish — kuryer olganda kodlar paydo bo'ladi.
+  await ensureDeliveryCodes(prisma, deliveryId);
 
-  const row = await prisma.delivery.findUniqueOrThrow({
-    where: { id: deliveryId },
-    select: deliverySelect,
-  });
-  return serializeDelivery(row);
+  return presentOne(deliveryId);
 }
 
 /**
@@ -391,6 +517,10 @@ export async function updateDeliveryStatus(
     longitude?: number;
     /** `/api/uploads/delivery-proof` qaytargan ichki yo'l. */
     proofPhotoUrl?: string;
+    /** Qanday bajarildi (skaner yoki tugma). `DELIVERED` da serverning o'zi aniqlaydi. */
+    method?: Extract<CustodyMethod, 'MANUAL' | 'SCAN'>;
+    /** Mijozga topshirish: mijoz QR'i (butun matn) yoki aytilgan 4 raqam. */
+    handover?: HandoverInput;
   } = {},
 ) {
   const courier = await prisma.courier.findUnique({
@@ -401,7 +531,14 @@ export async function updateDeliveryStatus(
 
   const current = await prisma.delivery.findUnique({
     where: { id: deliveryId },
-    select: { id: true, kind: true, status: true, courierId: true, orderId: true },
+    select: {
+      id: true,
+      kind: true,
+      status: true,
+      courierId: true,
+      orderId: true,
+      handoverAttempts: true,
+    },
   });
   if (!current) throw new CourierError(404, 'NOT_FOUND', 'Yetkazish topilmadi');
   if (current.courierId !== courier.id) {
@@ -454,6 +591,8 @@ export async function updateDeliveryStatus(
     );
   }
 
+  const method = await resolveCustodyMethod(current, next, extra, proof);
+
   const now = new Date();
   // Tranzaksiya ichida o'zgargan bo'lsagina push yuboriladi (qayta yozilmagan
   // yoki yopiq buyurtmaga hech narsa ketmaydi).
@@ -475,6 +614,7 @@ export async function updateDeliveryStatus(
         ...(next === 'DELIVERED' ? { deliveredAt: now } : {}),
         ...(next === 'FAILED' ? { failureReason: extra.note?.trim() ?? null } : {}),
         ...(proof ? { proofPhotoUrl: proof } : {}),
+        ...(next === 'DELIVERED' ? { handoverMethod: method } : {}),
       },
     });
     if (updated.count === 0) {
@@ -488,6 +628,8 @@ export async function updateDeliveryStatus(
         note: extra.note?.trim() || null,
         latitude: extra.latitude != null ? new Prisma.Decimal(extra.latitude) : null,
         longitude: extra.longitude != null ? new Prisma.Decimal(extra.longitude) : null,
+        actorId: userId,
+        method,
       },
     });
 
@@ -540,11 +682,127 @@ export async function updateDeliveryStatus(
   // `notifyOrderStatus` xato tashlamaydi — kuryer javobini buzmaydi.
   if (orderChangedTo) await getPushService().notifyOrderStatus(current.orderId, orderChangedTo);
 
-  const row = await prisma.delivery.findUniqueOrThrow({
-    where: { id: deliveryId },
-    select: deliverySelect,
+  return presentOne(deliveryId);
+}
+
+/** Mijozga topshirish kodi: mijoz QR'idagi butun matn yoki og'zaki aytilgan 4 raqam. */
+export interface HandoverInput {
+  method: 'QR' | 'CODE';
+  value: string;
+}
+
+/**
+ * Bu o'tish QANDAY bajarilganini aniqlaydi va mijozga topshirishni tekshiradi.
+ *
+ * Mijozga yetkazish (`OUTBOUND` → `DELIVERED`) endi tugma bilan bo'lmaydi
+ * (ADR 0017): kuryer mijozdan kod oladi (QR yoki og'zaki). Kod yo'q bo'lsa
+ * (mijozning telefoni o'chgan, qo'shniga qoldirildi) — faqat surat VA sabab bilan,
+ * `PHOTO` deb belgilanadi va admin ko'radi. Ilgari «yetkazdim» deyish uchun
+ * posilkani mijozga berish shart emas edi.
+ */
+async function resolveCustodyMethod(
+  current: { id: string; kind: DeliveryRow['kind']; handoverAttempts: number },
+  next: DeliveryStatus,
+  extra: { note?: string; method?: CustodyMethod; handover?: HandoverInput },
+  proof: string | undefined,
+): Promise<CustodyMethod> {
+  if (next !== 'DELIVERED' || !handoverRequired(current.kind)) return extra.method ?? 'MANUAL';
+
+  if (extra.handover) {
+    const codes = await ensureDeliveryCodes(prisma, current.id);
+    if (!codes) throw new CourierError(404, 'NOT_FOUND', 'Yetkazish topilmadi');
+    const result = checkHandover(
+      { parcelCode: codes.parcelCode, pin: codes.handoverPin, attempts: current.handoverAttempts },
+      extra.handover,
+    );
+    if (result.ok) return extra.handover.method;
+    switch (result.reason) {
+      case 'LOCKED':
+        throw new CourierError(
+          409,
+          'HANDOVER_LOCKED',
+          'Kod ko`p marta noto`g`ri kiritildi — surat va sabab bilan topshiring',
+        );
+      case 'WRONG_PARCEL':
+        throw new CourierError(400, 'HANDOVER_WRONG_PARCEL', 'Bu QR boshqa buyurtmaniki');
+      case 'MALFORMED':
+        throw new CourierError(400, 'HANDOVER_MALFORMED', 'Bu topshirish kodi emas');
+      case 'WRONG_PIN': {
+        // Faqat taxmin qilish mumkin bo'lgan xato hisoblanadi (begona QR emas).
+        // `lt` sharti: parallel urinishlar chegaradan oshirib yubormaydi.
+        await prisma.delivery.updateMany({
+          where: { id: current.id, handoverAttempts: { lt: MAX_HANDOVER_ATTEMPTS } },
+          data: { handoverAttempts: { increment: 1 } },
+        });
+        const left = Math.max(0, MAX_HANDOVER_ATTEMPTS - current.handoverAttempts - 1);
+        throw new CourierError(
+          400,
+          'HANDOVER_WRONG_PIN',
+          left > 0
+            ? `Kod noto\`g\`ri. Yana ${left} ta urinish qoldi`
+            : 'Kod noto`g`ri. Endi faqat surat va sabab bilan topshirish mumkin',
+        );
+      }
+    }
+  }
+
+  if (proof && extra.note?.trim()) return 'PHOTO';
+  throw new CourierError(
+    400,
+    'HANDOVER_REQUIRED',
+    'Mijozdan topshirish kodini oling. Kod bo`lmasa — surat va sabab bilan topshiring',
+  );
+}
+
+/**
+ * Yorliqni skanerlash — posilkani qo'lga olish (ADR 0017).
+ *
+ * Bitta harakat: egasiz posilka kuryerga biriktiriladi VA «olindi» bo'ladi;
+ * o'ziniki bo'lsa faqat «olindi». Ilgari kuryer ro'yxatdan topshiriqni tanlab,
+ * qo'lidagi posilka o'sha ekaniga ishonib tugma bosardi — adashish oson edi.
+ */
+export async function scanParcel(
+  userId: string,
+  payload: string,
+  gps: { latitude?: number; longitude?: number } = {},
+) {
+  const scan = parseScan(payload);
+  if (!scan) throw new CourierError(400, 'SCAN_UNKNOWN', 'Bu Sellobay posilka yorlig`i emas');
+  if (scan.kind === 'handover') {
+    throw new CourierError(
+      400,
+      'SCAN_IS_HANDOVER',
+      'Bu mijozning topshirish QR kodi — uni buyurtma sahifasida «Topshirish» orqali skanerlang',
+    );
+  }
+
+  const found = await prisma.delivery.findUnique({
+    where: { parcelCode: scan.parcelCode },
+    select: { id: true, courierId: true },
   });
-  return serializeDelivery(row);
+  if (!found) throw new CourierError(404, 'PARCEL_NOT_FOUND', 'Bunday posilka topilmadi');
+
+  const courierId = await ensureCourierProfile(userId);
+  if (found.courierId === null) {
+    await claimDelivery(userId, found.id, 'SCAN');
+  } else if (found.courierId !== courierId) {
+    throw new CourierError(409, 'PARCEL_OTHER_COURIER', 'Bu posilka boshqa kuryerga biriktirilgan');
+  }
+
+  const { status } = await prisma.delivery.findUniqueOrThrow({
+    where: { id: found.id },
+    select: { status: true },
+  });
+  if (status === 'ASSIGNED') {
+    const delivery = await updateDeliveryStatus(userId, found.id, 'PICKED_UP', {
+      method: 'SCAN',
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+    });
+    return { delivery, pickedUp: true };
+  }
+  // Allaqachon qo'lida — shunchaki ochib beramiz (qayta skanerlash xato emas).
+  return { delivery: await presentOne(found.id), pickedUp: false };
 }
 
 // Toshkent kuni — @ecom/core-domain (testlar shu yerdan import qiladi).
@@ -635,7 +893,7 @@ export async function listCourierHistory(
   const page = hasMore ? rows.slice(0, limit) : rows;
 
   return {
-    items: page.map(serializeDelivery),
+    items: await present(page),
     nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
   };
 }

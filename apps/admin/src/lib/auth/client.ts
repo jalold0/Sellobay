@@ -495,6 +495,8 @@ interface LocalizedText {
   ru?: string;
   en?: string;
 }
+export type CustodyMethodValue = 'MANUAL' | 'SCAN' | 'QR' | 'CODE' | 'PHOTO';
+
 export interface AdminOrderDetail {
   id: string;
   number: string;
@@ -546,6 +548,21 @@ export interface AdminOrderDetail {
   } | null;
   /** Hozir mumkin bo'lgan 3PL hodisalari. */
   carrierEvents: Array<'HANDED_OVER' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'REFUSED'>;
+  /** O'z kuryerimiz yetkazishining topshirish jurnali (ADR 0017). 3PL'da — null. */
+  custody: {
+    deliveryId: string;
+    parcelCode: string | null;
+    handoverMethod: CustodyMethodValue | null;
+    handoverAttempts: number;
+    events: Array<{
+      status: string;
+      method: CustodyMethodValue | null;
+      note: string | null;
+      at: string;
+      actor: string | null;
+      location: { lat: number; lng: number } | null;
+    }>;
+  } | null;
   /** Sotuvchi jo'natmalari (ADR 0015). */
   shipments: Array<{
     id: string;

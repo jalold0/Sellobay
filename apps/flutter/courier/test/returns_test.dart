@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sellobay_courier/src/courier_location.dart';
 import 'package:sellobay_courier/src/external_actions.dart';
 import 'package:sellobay_courier/src/screens/deliveries_screen.dart';
 import 'package:sellobay_courier/src/screens/delivery_detail_screen.dart';
@@ -106,6 +107,8 @@ Future<void> pump(WidgetTester tester, FakeBackend backend, Widget home) async {
 
 void main() {
   setUpAll(() async {
+    // Testda GPS yo'q — joylashuvsiz yuboriladi (ilovada ham «iloji bo'lsa»).
+    CourierLocation.source = () async => null;
     TestWidgetsFlutterBinding.ensureInitialized();
     uz = LocaleController(initialLocale: 'uz');
     await uz.load();
@@ -227,7 +230,7 @@ void main() {
       );
 
       expect(find.text('Nike Air Max'), findsOneWidget);
-      expect(find.text('2×'), findsOneWidget);
+      expect(find.text('×2'), findsOneWidget);
     });
   });
 }

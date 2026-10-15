@@ -14,7 +14,7 @@ import {
   looksLikeTashkentCityText,
 } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
-import { openSellerShipments } from '@ecom/order-ops';
+import { newDeliveryCodes, openSellerShipments } from '@ecom/order-ops';
 import { StorageNotConfiguredError } from '@ecom/storage';
 import { normalizeUzPhone } from '@ecom/utils';
 import { z } from 'zod';
@@ -692,6 +692,8 @@ export async function createOrder(
               .join(', '),
             destinationLat: input.latitude != null ? new Prisma.Decimal(input.latitude) : null,
             destinationLng: input.longitude != null ? new Prisma.Decimal(input.longitude) : null,
+            // Yorliqdagi posilka kodi va mijozga topshirish kodi (ADR 0017).
+            ...newDeliveryCodes(),
             events: { create: { status: 'ASSIGNED', note: 'Buyurtma yaratildi' } },
           },
         });

@@ -13,6 +13,7 @@ import {
   Package,
   PackageCheck,
   Percent,
+  QrCode,
   ReceiptText,
   Settings,
   ShoppingCart,
@@ -84,6 +85,7 @@ export const adminNav: NavItem[] = [
   { href: '/marketing', label: 'Marketing', icon: Megaphone, group: 'O`sish' },
   { href: '/analytics', label: 'Analitika', icon: BarChart3, group: 'O`sish' },
   { href: '/inbound', label: 'Ombor qabuli', icon: PackageCheck, group: 'Operatsiyalar' },
+  { href: '/labels', label: 'Posilka yorliqlari', icon: QrCode, group: 'Operatsiyalar' },
   { href: '/inventory', label: 'Inventar', icon: Boxes, group: 'Operatsiyalar' },
   {
     href: '/settings/marketplace',

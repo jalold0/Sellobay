@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../widgets/handover_card.dart';
 import '../widgets/order_status_chip.dart';
 
 /// Buyurtmani raqam va telefon bo'yicha kuzatish.
@@ -144,6 +145,11 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
                 OrderStatusChip(status: order.status, rawStatus: order.rawStatus),
               ],
             ),
+            if (order.handover != null) ...[
+              const SizedBox(height: 12),
+              HandoverCard(handover: order.handover!),
+              const HandoverHint(),
+            ],
             const SizedBox(height: 10),
             _row(context.t('tracking.total'), formatMoney(order.total)),
             _row(

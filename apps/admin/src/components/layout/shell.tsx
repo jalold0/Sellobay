@@ -8,8 +8,8 @@ import { Topbar } from './topbar';
 
 const COLLAPSED_KEY = 'ecom_admin_sidebar_collapsed';
 
-// Chrome-siz (sidebar/topbar'siz) to'liq ekran ko'rinadigan yo'llar — login sahifasi.
-const CHROMELESS_PREFIXES = ['/login'];
+// Chrome-siz (sidebar/topbar'siz) to'liq ekran ko'rinadigan yo'llar — login va yorliq chop etish.
+const CHROMELESS_PREFIXES = ['/login', '/labels/print'];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

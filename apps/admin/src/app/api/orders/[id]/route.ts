@@ -5,6 +5,7 @@ import {
   adminFulfillmentTargets,
   canAdminCancel,
   carrierEventsFor,
+  formatParcelCode,
   orderPaymentState,
 } from '@ecom/core-domain';
 
@@ -15,7 +16,7 @@ import { adminProductImage } from '@/lib/product-image';
 import { manualCardPayload, receiptSrc } from '@/lib/receipt';
 import { remainingFor } from '@/lib/refund-server';
 
-import type { Prisma } from '@ecom/database';
+import type { CustodyMethod, Prisma } from '@ecom/database';
 import type { NextRequest } from 'next/server';
 
 function carrierView(
@@ -44,6 +45,49 @@ function carrierView(
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type CustodyDelivery = {
+  id: string;
+  parcelCode: string | null;
+  handoverMethod: CustodyMethod | null;
+  handoverAttempts: number;
+  carrier: string | null;
+  events: Array<{
+    status: string;
+    method: CustodyMethod | null;
+    note: string | null;
+    latitude: Prisma.Decimal | null;
+    longitude: Prisma.Decimal | null;
+    createdAt: Date;
+    actor: { firstName: string | null; lastName: string | null; phone: string | null } | null;
+  }>;
+};
+
+/** O'z kuryerimiz yetkazishining topshirish jurnali (3PL'da — provayder kuzatadi). */
+function custodyView(d: CustodyDelivery | undefined) {
+  if (!d || d.carrier) return null;
+  return {
+    deliveryId: d.id,
+    parcelCode: d.parcelCode ? formatParcelCode(d.parcelCode) : null,
+    handoverMethod: d.handoverMethod,
+    handoverAttempts: d.handoverAttempts,
+    events: d.events.map((e) => ({
+      status: e.status,
+      method: e.method,
+      note: e.note,
+      at: e.createdAt.toISOString(),
+      actor: e.actor
+        ? [e.actor.firstName, e.actor.lastName].filter(Boolean).join(' ').trim() ||
+          e.actor.phone ||
+          null
+        : null,
+      location:
+        e.latitude !== null && e.longitude !== null
+          ? { lat: Number(e.latitude), lng: Number(e.longitude) }
+          : null,
+    })),
+  };
+}
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
@@ -109,8 +153,25 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: {
+          id: true,
           status: true,
           courierId: true,
+          parcelCode: true,
+          handoverMethod: true,
+          handoverAttempts: true,
+          // Posilka kimning qo'lida bo'lgani (ADR 0017) — skaner, kod, surat.
+          events: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              status: true,
+              method: true,
+              note: true,
+              latitude: true,
+              longitude: true,
+              createdAt: true,
+              actor: { select: { firstName: true, lastName: true, phone: true } },
+            },
+          },
           carrier: true,
           trackingNumber: true,
           carrierPayload: true,
@@ -204,6 +265,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       comment: h.comment ?? undefined,
     })),
     carrier: carrierView(o.deliveries[0]),
+    custody: custodyView(o.deliveries[0]),
     // 3PL tugmalari — o'z kuryerimiz olgan yetkazishga emas.
     carrierEvents: o.deliveries[0]?.courierId
       ? []

@@ -113,6 +113,20 @@ enum DeliveryKind {
   RETURN
 }
 
+/// Posilka qo'ldan-qo'lga QANDAY o'tgani (ADR 0017).
+enum CustodyMethod {
+  /// Ilovadagi tugma — skanersiz (eski oqim yoki yorliq yo'q).
+  MANUAL
+  /// Posilka yorlig'idagi QR skanerlandi.
+  SCAN
+  /// Mijoz ekranidagi QR skanerlandi.
+  QR
+  /// Mijoz aytgan 4 xonali kod kiritildi.
+  CODE
+  /// Kodsiz topshirildi — surat va sabab bilan, admin ko'rib chiqadi.
+  PHOTO
+}
+
 enum DeliveryStatus {
   ASSIGNED
   PICKED_UP
@@ -281,6 +295,7 @@ model User {
   sourcingQuotes      SourcingRequest[]           @relation("SourcingQuotedBy")
   globalFulfillments  GlobalFulfillment[]         @relation("GlobalOperator")
   groupBuyMemberships GroupBuyMember[]
+  deliveryEvents      DeliveryEvent[]             @relation("DeliveryEventActor")
 
   @@index([phone])
   @@index([email])
@@ -1074,6 +1089,14 @@ model Delivery {
   failureReason      String?
   signatureUrl       String?
   proofPhotoUrl      String?
+  /// Yorliqdagi posilka kodi (Crockford base32, 8 belgi) — sir emas, skanerlash uchun.
+  parcelCode         String?         @unique
+  /// Mijozga topshirish kodi (4 raqam) — FAQAT mijozga ko'rsatiladi, kuryerga hech qachon.
+  handoverPin        String?
+  /// Noto'g'ri kod urinishlari — MAX_HANDOVER_ATTEMPTS dan keyin kod bilan topshirish yopiladi.
+  handoverAttempts   Int             @default(0)
+  /// Mijozga qanday topshirildi (QR / CODE / PHOTO / MANUAL).
+  handoverMethod     CustodyMethod?
   /// `RETURN` uchun — mahsulot qaytariladigan ombor.
   ///
   /// Manzil matni `destinationAddress` da nusxalanadi: ombor keyin
@@ -1134,10 +1157,16 @@ model DeliveryEvent {
   note       String?
   latitude   Decimal?       @db.Decimal(10, 7)
   longitude  Decimal?       @db.Decimal(10, 7)
+  /// Kim bajardi (kuryer yoki admin) — posilka kimning qo'lida bo'lganini isbotlaydi.
+  actorId    String?        @db.Uuid
+  /// Qanday bajarildi: skaner, mijoz QR'i, kod, tugma...
+  method     CustodyMethod?
   createdAt  DateTime       @default(now())
   delivery   Delivery       @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  actor      User?          @relation("DeliveryEventActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([deliveryId])
+  @@index([actorId])
 }
 
 // ===================================================================

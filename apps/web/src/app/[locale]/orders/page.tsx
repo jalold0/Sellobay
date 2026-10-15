@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Package, Phone, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
+import { HandoverCard, type HandoverInfo } from '../../../components/orders/handover-card';
 import { formatDateTime, formatMoney } from '../../../lib/format';
 import { ORDER_STATUS_TONE, type OrderStatus } from '../../../lib/order-status';
 
@@ -29,6 +30,8 @@ interface TrackedOrder {
   deliveryMethod: string;
   itemCount: number;
   timeline: { status: OrderStatus; at: string }[];
+  /** Kuryer yo'lda — mehmon kuryerga aytadigan kod (ADR 0017). */
+  handover: HandoverInfo | null;
 }
 
 export default function OrderTrackerPage() {
@@ -117,6 +120,8 @@ export default function OrderTrackerPage() {
           <p className="text-muted-foreground mt-3 text-sm">{error}</p>
         </Card>
       ) : null}
+
+      {result?.handover ? <HandoverCard handover={result.handover} /> : null}
 
       {result ? (
         <Card className="overflow-hidden">

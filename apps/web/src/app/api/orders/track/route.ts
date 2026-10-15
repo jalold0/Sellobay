@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
+import { handoverForOrder } from '@/lib/handover-server';
 import { enforceRateLimit } from '@/lib/rate-limit';
 
 import type { NextRequest } from 'next/server';
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest) {
   const order = await prisma.order.findUnique({
     where: { number: parsed.data.number },
     select: {
+      id: true,
       number: true,
       status: true,
       placedAt: true,
@@ -82,8 +84,13 @@ export async function POST(req: NextRequest) {
     return apiError(404, 'NOT_FOUND', 'Bunday buyurtma topilmadi');
   }
 
+  // Mehmonning kabineti yo'q — topshirish kodini faqat shu yerda ko'ra oladi. Raqam + telefon
+  // (va IP bo'yicha cheklov) himoya qiladi; kodning o'zi posilkani faqat eshik oldida beradi.
+  const handover = await handoverForOrder(order.id);
+
   return apiOk({
     order: {
+      handover,
       number: order.number,
       status: order.status,
       placedAt: order.placedAt.toISOString(),

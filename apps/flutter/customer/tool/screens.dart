@@ -694,6 +694,26 @@ void main() {
   );
 
   testWidgets(
+    '17 buyurtma detali: kuryer yo`lda, topshirish kodi',
+    (t) => shoot(
+      t,
+      '17-order-handover',
+      const OrderDetailScreen(orderId: _orderId),
+      backend: _ordersBackend(
+        detail: {
+          ..._orderDetail(),
+          'status': 'OUT_FOR_DELIVERY',
+          'handover': {
+            'pin': '0420',
+            'qrPayload': 'SBH1:7K3M9QXZ:0420',
+            'parcelCode': 'SB-7K3M-9QXZ',
+          },
+        },
+      ),
+    ),
+  );
+
+  testWidgets(
     '16 buyurtma detali: chek rad etildi',
     (t) => shoot(
       t,

@@ -20,3 +20,4 @@ export * from './carrier.ts';
 export * from './category-parent.ts';
 export * from './uz-regions.ts';
 export * from './product-specs.ts';
+export * from './parcel-handover.ts';
