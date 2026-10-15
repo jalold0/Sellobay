@@ -29,11 +29,11 @@ const FAQ = [
     items: [
       {
         q: "Qanday to'lov usullari mavjud?",
-        a: 'Click, Payme, Uzum Bank, Uzcard, Humo va naqd (kuryer kelganda).',
+        a: 'Click, Payme, Uzcard, Humo va naqd (kuryer kelganda).',
       },
       {
         q: "To'lovim o'tmadi, nima qilay?",
-        a: "Karta mablag'ini va internetingizni tekshiring. Muammo davom etsa, support@example.uz ga yozing.",
+        a: "Karta mablag'ini va internetingizni tekshiring. Muammo davom etsa, «Yordam» sahifasidagi kanallar orqali bizga yozing.",
       },
     ],
   },

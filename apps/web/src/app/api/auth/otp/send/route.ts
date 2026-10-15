@@ -5,6 +5,7 @@ import { normalizeUzPhone } from '@ecom/utils';
 
 import { OTP_RESEND_COOLDOWN_SEC, OTP_TTL_MINUTES } from '@/lib/auth/constants';
 import { apiError, apiOk } from '@/lib/auth/errors';
+import { phoneLoginAvailable } from '@/lib/auth/sms';
 import { otpSendSchema } from '@/lib/auth/validators';
 import { prisma } from '@/lib/db';
 import { enforceRateLimit } from '@/lib/rate-limit';
@@ -15,6 +16,16 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // SMS yuboruvchi yo'q — «kod yuborildi» deb aldamaymiz (audit FUN-01). Mobil ilova
+  // ham shu xabarni ko'rsatadi va mijoz email bilan kiradi.
+  if (!phoneLoginAvailable()) {
+    return apiError(
+      503,
+      'SMS_UNAVAILABLE',
+      'SMS orqali kirish hozircha ishlamaydi — email va parol bilan kiring',
+    );
+  }
+
   // SMS-spam himoyasi (IP bo'yicha) — per-telefon cheklov pastda DB'da bor
   const limited = await enforceRateLimit(req, 'otp-send', { limit: 5, windowSec: 60 });
   if (limited) return limited;

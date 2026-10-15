@@ -502,8 +502,16 @@ export function CheckoutFlow() {
           return;
         }
       } catch {
-        // to'lov yaratishda xato — buyurtma baribir yaratildi, success'ga o'tamiz
+        // Tarmoq xatosi — pastda «to'lov boshlanmadi» holatiga o'tamiz.
       }
+      // To'lov boshlanmadi, buyurtma esa yaratilgan. Ilgari bu yerda «buyurtma qabul
+      // qilindi» deyilib, mijoz to'ladim deb o'ylardi (audit FUN-06). Endi success
+      // sahifasi `order` bo'yicha holatni tekshiradi va to'lash tugmasini beradi.
+      toast({ title: t('paymentNotStarted'), variant: 'destructive', duration: 6000 });
+      router.push(
+        `/orders/success?number=${encodeURIComponent(orderNumber)}&order=${encodeURIComponent(orderId)}`,
+      );
+      return;
     }
 
     toast({

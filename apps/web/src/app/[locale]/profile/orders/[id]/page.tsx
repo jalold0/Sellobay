@@ -13,6 +13,7 @@ import {
   type CustomerGlobalView,
 } from '../../../../../components/global/global-order-tracker';
 import { HandoverCard, type HandoverInfo } from '../../../../../components/orders/handover-card';
+import { OrderPayNow } from '../../../../../components/orders/order-pay-now';
 import { ReceiptResubmit } from '../../../../../components/orders/receipt-resubmit';
 import { formatDate as fmtDate, formatMoney } from '../../../../../lib/format';
 
@@ -411,6 +412,7 @@ export default function OrderDetailPage() {
               <span>{formatMoney(Number(order.grandTotal))}</span>
             </div>
           </div>
+          <OrderPayNow orderId={order.id} />
         </div>
       </div>
 

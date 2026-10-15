@@ -597,7 +597,8 @@
       "workingHours": "Hours: {hours}",
       "mapUnavailable": "The map did not load. Type the address instead.",
       "locationDenied": "Location access was not allowed."
-    }
+    },
+    "paymentNotStarted": "Order placed, but payment did not start — try again on the next page"
   },
   "auth": {
     "loginForOnlinePayment": "Sign up to pay online",
@@ -771,7 +772,13 @@
       "notifMarketingDesc": "About new products",
       "dangerTitle": "Danger zone",
       "dangerDesc": "Deleting your account is irreversible. All your data will be permanently deleted within 30 days.",
-      "deleteAccount": "Delete account"
+      "deleteAccount": "Delete account",
+      "passwordMismatch": "New passwords do not match",
+      "passwordHint": "At least 8 characters with letters and numbers",
+      "passwordSignedOut": "Signed out on your other devices",
+      "saving": "Saving…",
+      "dangerViaSupport": "To delete your account, contact support — we will verify the request and delete your account and personal data.",
+      "contactSupport": "Contact support"
     },
     "addressesPage": {
       "title": "Addresses",
@@ -1050,7 +1057,14 @@
     "subtitle": "An operator will contact you shortly to confirm your order.",
     "orderNumber": "Order number",
     "goToOrders": "Go to my orders",
-    "openInApp": "Open in the app"
+    "openInApp": "Open in the app",
+    "pendingTitle": "Order placed — payment pending",
+    "pendingDesc": "Payment has not gone through yet. We pack the order once it is paid; unpaid orders are cancelled after the deadline.",
+    "payWith": "Pay with {provider}",
+    "payFailed": "Could not open the payment page. Try again.",
+    "paidTitle": "Payment received",
+    "trackOrder": "Track order",
+    "checking": "Checking payment status…"
   },
   "wallet": {
     "title": "Wallet"

@@ -9,6 +9,8 @@ import * as React from 'react';
 import { HandoverCard, type HandoverInfo } from '../../../components/orders/handover-card';
 import { formatDateTime, formatMoney } from '../../../lib/format';
 import { ORDER_STATUS_TONE, type OrderStatus } from '../../../lib/order-status';
+import { telHref } from '../../../lib/support';
+import { useSupportContacts } from '../../../lib/use-support';
 
 /**
  * Buyurtmani kuzatish.
@@ -36,6 +38,7 @@ interface TrackedOrder {
 
 export default function OrderTrackerPage() {
   const t = useTranslations('tracking');
+  const support = useSupportContacts();
   const tStatus = useTranslations('order.status');
   const tc = useTranslations('common');
 
@@ -181,16 +184,19 @@ export default function OrderTrackerPage() {
         </Card>
       ) : null}
 
-      <Card className="p-5 text-sm">
-        <div className="font-semibold">{t('helpTitle')}</div>
-        <p className="text-muted-foreground mt-1">{t('helpDesc')}</p>
-        <a
-          href="tel:+998712000000"
-          className="bg-background hover:bg-accent mt-3 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
-        >
-          <Phone size={14} className="text-primary" /> +998 71 200 00 00
-        </a>
-      </Card>
+      {/* Yordam kartasi — faqat haqiqiy telefon sozlangan bo'lsa (audit TRU-01). */}
+      {support.phone ? (
+        <Card className="p-5 text-sm">
+          <div className="font-semibold">{t('helpTitle')}</div>
+          <p className="text-muted-foreground mt-1">{t('helpDesc')}</p>
+          <a
+            href={telHref(support.phone)}
+            className="bg-background hover:bg-accent mt-3 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+          >
+            <Phone size={14} className="text-primary" /> {support.phone}
+          </a>
+        </Card>
+      ) : null}
     </div>
   );
 }

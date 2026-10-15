@@ -12,7 +12,7 @@ export default function PressPage({ params }: { params: { locale: string } }) {
       icon={Newspaper}
       title="Matbuot markazi"
       description="Press-relizlar, media kitlari va brend ma'lumotlari."
-      cta={{ label: 'Press kontakt', href: 'mailto:press@example.uz' }}
+      cta={{ label: "Biz bilan bog'lanish", href: '/contacts' }}
     />
   );
 }

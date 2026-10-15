@@ -38,7 +38,8 @@ function goAfterAuth(nextHref: string) {
   window.location.assign(nextHref);
 }
 
-export function LoginFlow() {
+/** [phoneLogin] — SMS kod yuboriladimi (server aytadi, `lib/auth/sms.ts`). */
+export function LoginFlow({ phoneLogin = true }: { phoneLogin?: boolean }) {
   const t = useTranslations('auth');
 
   return (
@@ -76,14 +77,14 @@ export function LoginFlow() {
 
         {/* O'ng forma paneli */}
         <div className="flex items-center justify-center px-6 py-16 md:p-14">
-          <AuthForms />
+          <AuthForms phoneLogin={phoneLogin} />
         </div>
       </div>
     </div>
   );
 }
 
-function AuthForms() {
+function AuthForms({ phoneLogin }: { phoneLogin: boolean }) {
   const t = useTranslations('auth');
   // SMS hali yoqilmagani uchun email asosiy usul.
   const [method, setMethod] = React.useState<Method>('email');
@@ -98,25 +99,28 @@ function AuthForms() {
 
       <h1 className="text-brand-ink font-serif text-[30px] font-semibold">{t('welcomeTitle')}</h1>
 
-      {/* Usul tanlagich — Email | Telefon */}
-      <div className="border-border mt-6 flex rounded-full border p-1 text-[13.5px] font-bold">
-        {(['email', 'phone'] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMethod(m)}
-            className={`flex-1 rounded-full py-2.5 transition ${
-              method === m
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-muted-foreground hover:text-brand-ink'
-            }`}
-          >
-            {m === 'email' ? t('tabEmail') : t('tabPhone')}
-          </button>
-        ))}
-      </div>
+      {/* Usul tanlagich — Email | Telefon. SMS ishlamasa tanlagich yo'q: ilgari «Telefon»
+          tabi kod yubormasdan «yuborildi» deyardi (audit FUN-01). */}
+      {phoneLogin ? (
+        <div className="border-border mt-6 flex rounded-full border p-1 text-[13.5px] font-bold">
+          {(['email', 'phone'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMethod(m)}
+              className={`flex-1 rounded-full py-2.5 transition ${
+                method === m
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-muted-foreground hover:text-brand-ink'
+              }`}
+            >
+              {m === 'email' ? t('tabEmail') : t('tabPhone')}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      {method === 'email' ? <EmailForm /> : <PhoneOtpForm />}
+      {method === 'email' || !phoneLogin ? <EmailForm /> : <PhoneOtpForm />}
 
       {/* yoki ajratgich */}
       <div className="my-[26px] flex items-center gap-3.5">
