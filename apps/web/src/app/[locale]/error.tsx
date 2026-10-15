@@ -1,12 +1,13 @@
 'use client';
 
 import { Button } from '@ecom/ui';
-import * as Sentry from '@sentry/nextjs';
 import { AlertTriangle, Home, RotateCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { Link } from '@/i18n/navigation';
+
+import { captureExceptionLazy } from '../../lib/sentry-lazy';
 
 export default function Error({
   error,
@@ -22,7 +23,8 @@ export default function Error({
     // chegara uni yutadi va global handler ko'rmay qoladi. Foydalanuvchi eng
     // ko'p uchratadigan xatolar aynan shu yerga tushadi, shuning uchun uni
     // qo'lda qayd etamiz.
-    Sentry.captureException(error);
+    // SDK kechiktirib yuklanadi (lib/sentry-lazy.ts) — xato baribir yuboriladi.
+    captureExceptionLazy(error);
   }, [error]);
 
   return (
