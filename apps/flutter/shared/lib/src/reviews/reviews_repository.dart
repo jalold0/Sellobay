@@ -11,10 +11,22 @@ class ReviewsRepository {
 
   final ApiClient _api;
 
-  Future<ReviewPage> fetchForProduct(String slug, {int page = 1, int limit = 10}) async {
+  Future<ReviewPage> fetchForProduct(
+    String slug, {
+    int page = 1,
+    int limit = 10,
+    ReviewFilter filter = const AllReviews(),
+    bool mostHelpful = false,
+  }) async {
     final data = await _api.get<Map<String, dynamic>>(
       '/api/products/$slug/reviews',
-      query: {'page': '$page', 'limit': '$limit'},
+      query: {
+        'page': '$page',
+        'limit': '$limit',
+        if (filter is ReviewsWithPhotos) 'withPhotos': '1',
+        if (filter is ReviewsByStars) 'rating': '${filter.stars}',
+        if (mostHelpful) 'sort': 'helpful',
+      },
     );
     return ReviewPage.fromJson(data);
   }
@@ -24,6 +36,7 @@ class ReviewsRepository {
     required int rating,
     String? title,
     String? body,
+    List<String> images = const [],
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/api/reviews',
@@ -35,9 +48,19 @@ class ReviewsRepository {
         // bo'sh sarlavha turardi.
         'title': _orNull(title),
         'body': _orNull(body),
+        if (images.isNotEmpty) 'images': images,
       },
     );
     return ProductReview.fromJson(data['review'] as Map<String, dynamic>);
+  }
+
+  /// «Foydali» ovozini almashtiradi. Server yangi holat va sonni qaytaradi.
+  Future<({bool helpful, int helpfulCount})> toggleHelpful(String reviewId) async {
+    final data = await _api.post<Map<String, dynamic>>('/api/reviews/$reviewId/helpful');
+    return (
+      helpful: data['helpful'] as bool? ?? false,
+      helpfulCount: (data['helpfulCount'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<void> delete(String reviewId) =>

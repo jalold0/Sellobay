@@ -236,7 +236,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverToBoxAdapter(child: _searchBar(context)),
-            if (_categories.isNotEmpty || _query.featured == true || _query.scope == CatalogScope.global)
+            if (_categories.isNotEmpty ||
+                _query.featured == true ||
+                _query.scope == CatalogScope.global ||
+                _query.sellerId != null)
               SliverToBoxAdapter(child: _categoryChips(context)),
             if (department case final dept? when dept.children.isNotEmpty)
               SliverToBoxAdapter(child: _subcategoryChips(context, dept)),
@@ -297,6 +300,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
               context,
               label: context.t('featured.title'),
               onRemove: () => _apply(_query.copyWith(featured: null)),
+            ),
+          // Tovar sahifasidagi «Do'konga o'tish» — shu do'kon tovarlari.
+          if (_query.sellerId != null)
+            _removableChip(
+              context,
+              label: _query.sellerName ?? context.t('product.visitStore'),
+              onRemove: () => _apply(_query.copyWith(sellerId: null, sellerName: null)),
             ),
           // Bosh sahifadagi «Global» — Xitoydan keladigan tovarlar.
           if (_query.scope == CatalogScope.global)

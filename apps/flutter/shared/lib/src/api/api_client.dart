@@ -211,6 +211,22 @@ class ApiClient {
   }) =>
       _uploadImage('/api/uploads/receipt', bytes: bytes, filename: filename);
 
+  /// Sharh surati (mijoz ilovasi). Chek va isbotdan farqli — OCHIQ
+  /// saqlanadi va javobda to'g'ridan-to'g'ri manzil qaytadi; u sharh
+  /// yuborilganda `images` ichida ketadi.
+  Future<String> uploadReviewImage({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final form = FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    });
+    final data = _unwrap<Map<String, dynamic>>(
+      await _send(() => _dio.post<dynamic>('/api/uploads/review-image', data: form)),
+    );
+    return data['url'] as String;
+  }
+
   /// Yetkazib berish isboti surati (kuryer ilovasi).
   ///
   /// Chekdan farqli: bu endpoint mehmonga ochiq EMAS, `COURIER` roli

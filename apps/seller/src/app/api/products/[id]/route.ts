@@ -10,7 +10,7 @@
 //
 // Hamma o'zgarish faqat FAOL sotuvchiga va faqat o'z tovariga; jurnalga yoziladi.
 
-import { isValidCompareAtPrice } from '@ecom/core-domain';
+import { isValidCompareAtPrice, normalizeProductSpecs, readProductSpecs } from '@ecom/core-domain';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
@@ -33,6 +33,7 @@ const patchSchema = z
     descriptionUz: z.string().trim().max(5000).optional(),
     basePrice: moneySchema.optional(),
     compareAtPrice: optionalMoneySchema,
+    specs: z.unknown().optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), {
     message: 'O‘zgartirish uchun hech narsa berilmagan',
@@ -74,6 +75,7 @@ async function loadOwnProduct(userId: string, productId: string) {
       description: true,
       basePrice: true,
       compareAtPrice: true,
+      specs: true,
     },
   });
   // Boshqa sotuvchining tovari — "topilmadi" (mavjudligini ham oshkor qilmaymiz).
@@ -106,6 +108,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri ma'lumot");
   }
   const input = parsed.data;
+  const specs = input.specs === undefined ? null : normalizeProductSpecs(input.specs);
+  if (specs && !specs.ok) return apiError(400, 'VALIDATION', specs.error);
   if (product.status === 'ARCHIVED') {
     return apiError(409, 'ARCHIVED', 'Arxivdagi tovarni avval qayta yuboring');
   }
@@ -132,7 +136,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     nextName.uz !== name.uz ||
     nextName.ru !== name.ru ||
     nextName.en !== name.en ||
-    (input.descriptionUz !== undefined && input.descriptionUz !== description.uz);
+    (input.descriptionUz !== undefined && input.descriptionUz !== description.uz) ||
+    // Xususiyat ham mijozga ko'rinadigan matn — o'zgarsa qayta tekshiruv.
+    (specs?.ok === true &&
+      JSON.stringify(specs.specs) !== JSON.stringify(readProductSpecs(product.specs)));
 
   // Sotuvdagi tovar matni o'zgarsa — qayta moderatsiya (dev'da avto-tasdiq yaratishdagi kabi).
   const autoApprove =
@@ -157,6 +164,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           : {}),
         basePrice: price,
         compareAtPrice: compareAt,
+        ...(specs?.ok ? { specs: specs.specs as unknown as Prisma.InputJsonValue } : {}),
         status: nextStatus,
       },
     });

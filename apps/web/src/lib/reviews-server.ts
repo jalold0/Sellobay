@@ -76,27 +76,104 @@ export function serializeReview(r: ReviewRow) {
   };
 }
 
-/** Mahsulotning ko'rinadigan sharhlari. */
-export async function listProductReviews(
-  productId: string,
-  { page = 1, limit = REVIEW_PAGE_SIZE }: { page?: number; limit?: number } = {},
-) {
+export const REVIEW_SORTS = ['newest', 'helpful', 'rating-high', 'rating-low'] as const;
+export type ReviewSort = (typeof REVIEW_SORTS)[number];
+
+export interface ReviewListOptions {
+  page?: number;
+  limit?: number;
+  /** Faqat shu yulduzli sharhlar (1..5). */
+  rating?: number | null;
+  /** Faqat surati bor sharhlar. */
+  withPhotos?: boolean;
+  sort?: ReviewSort;
+  /** Tizimga kirgan mijoz — qaysi sharhlarga «foydali» bosganini bilish uchun. */
+  viewerId?: string | null;
+}
+
+/**
+ * Mahsulot sharhlari xulosasi: o'rtacha, jami, har yulduz soni va
+ * surati borlar. BUTUN sharhlardan hisoblanadi — ilgari web sahifadagi
+ * taqsimot faqat yuklangan 20 ta sharhdan chiqarilardi.
+ */
+export async function reviewSummary(productId: string) {
+  const where = { productId, isApproved: true };
+  const [groups, withPhotos] = await Promise.all([
+    prisma.review.groupBy({ by: ['rating'], where, _count: { _all: true } }),
+    prisma.review.count({ where: { ...where, images: { isEmpty: false } } }),
+  ]);
+  const breakdown: Record<'1' | '2' | '3' | '4' | '5', number> = {
+    '1': 0,
+    '2': 0,
+    '3': 0,
+    '4': 0,
+    '5': 0,
+  };
+  let total = 0;
+  let sum = 0;
+  for (const g of groups) {
+    const key = String(g.rating) as keyof typeof breakdown;
+    if (!(key in breakdown)) continue;
+    breakdown[key] = g._count._all;
+    total += g._count._all;
+    sum += g.rating * g._count._all;
+  }
+  return {
+    total,
+    average: total > 0 ? Math.round((sum / total) * 10) / 10 : 0,
+    breakdown,
+    withPhotos,
+  };
+}
+
+/** Mahsulotning ko'rinadigan sharhlari (filtr va saralash bilan). */
+export async function listProductReviews(productId: string, opts: ReviewListOptions = {}) {
+  const {
+    page = 1,
+    limit = REVIEW_PAGE_SIZE,
+    rating,
+    withPhotos = false,
+    sort = 'newest',
+    viewerId = null,
+  } = opts;
   const take = Math.min(Math.max(limit, 1), 50);
   const skip = (Math.max(page, 1) - 1) * take;
 
+  const where: Prisma.ReviewWhereInput = {
+    productId,
+    isApproved: true,
+    ...(rating && rating >= 1 && rating <= 5 ? { rating } : {}),
+    ...(withPhotos ? { images: { isEmpty: false } } : {}),
+  };
+  const orderBy: Prisma.ReviewOrderByWithRelationInput[] =
+    sort === 'helpful'
+      ? [{ helpfulCount: 'desc' }, { createdAt: 'desc' }]
+      : sort === 'rating-high'
+        ? [{ rating: 'desc' }, { createdAt: 'desc' }]
+        : sort === 'rating-low'
+          ? [{ rating: 'asc' }, { createdAt: 'desc' }]
+          : [{ createdAt: 'desc' }];
+
   const [items, total] = await Promise.all([
-    prisma.review.findMany({
-      where: { productId, isApproved: true },
-      orderBy: { createdAt: 'desc' },
-      select: reviewSelect,
-      skip,
-      take,
-    }),
-    prisma.review.count({ where: { productId, isApproved: true } }),
+    prisma.review.findMany({ where, orderBy, select: reviewSelect, skip, take }),
+    prisma.review.count({ where }),
   ]);
 
+  // Ko'ruvchi ovoz bergan sharhlar — bitta so'rov, sahifadagilar uchun.
+  const voted =
+    viewerId && items.length > 0
+      ? new Set(
+          (
+            await prisma.reviewVote.findMany({
+              where: { userId: viewerId, reviewId: { in: items.map((r) => r.id) } },
+              select: { reviewId: true },
+            })
+          ).map((v) => v.reviewId),
+        )
+      : null;
+
   return {
-    items: items.map(serializeReview),
+    items: items.map((r) => ({ ...serializeReview(r), votedByMe: voted?.has(r.id) ?? false })),
     total,
     page: Math.max(page, 1),
     limit: take,
@@ -157,14 +234,37 @@ async function recomputeProductRating(
     _count: { _all: true },
   });
 
-  await tx.product.update({
+  const product = await tx.product.update({
     where: { id: productId },
     data: {
       // `Decimal(3,2)` — 0.00..9.99 oralig'i, ya'ni ikki kasr yetarli.
       rating: new Prisma.Decimal((agg._avg.rating ?? 0).toFixed(2)),
       reviewCount: agg._count._all,
     },
+    select: { sellerId: true },
   });
+
+  if (product.sellerId) await recomputeSellerRating(tx, product.sellerId);
+}
+
+/**
+ * Do'kon reytingi — uning BARCHA mahsulotlaridagi tasdiqlangan sharhlar
+ * o'rtachasi (har sharh bir ovoz: 100 sharhli mahsulot 1 sharhlidan og'ir).
+ *
+ * `Seller.rating` ilgari hech qachon yozilmasdi va 0 turardi. U «boshqa
+ * do'konlardagi o'xshash tovarlar» saralashida ishlatiladi.
+ */
+export async function recomputeSellerRating(
+  tx: Prisma.TransactionClient,
+  sellerId: string,
+): Promise<number> {
+  const agg = await tx.review.aggregate({
+    where: { isApproved: true, product: { sellerId } },
+    _avg: { rating: true },
+  });
+  const rating = new Prisma.Decimal((agg._avg.rating ?? 0).toFixed(2));
+  await tx.seller.update({ where: { id: sellerId }, data: { rating } });
+  return rating.toNumber();
 }
 
 export interface CreateReviewInput {
@@ -173,6 +273,8 @@ export interface CreateReviewInput {
   rating: number;
   title?: string | null;
   body?: string | null;
+  /** `reviews/` papkasidagi ochiq surat manzillari (route tekshiradi). */
+  images?: string[];
 }
 
 /** Sharh yozadi va mahsulot bahosini yangilaydi. */
@@ -211,6 +313,7 @@ export async function createReview(input: CreateReviewInput) {
         rating: input.rating,
         title: input.title?.trim() || null,
         body: input.body?.trim() || null,
+        images: [...new Set(input.images ?? [])],
         isVerifiedPurchase: true,
         // Tasdiqlaydigan admin ekrani yo'q — `false` qoldirsak sharh
         // hech qachon ko'rinmasdi. Yozish huquqi allaqachon xaridga
@@ -258,4 +361,39 @@ export async function listMyReviews(userId: string) {
     ...serializeReview(r),
     product: { slug: r.product.slug, name: r.product.name },
   }));
+}
+
+/**
+ * «Foydali» ovozini almashtiradi: bosilmagan bo'lsa qo'yadi, bosilgan
+ * bo'lsa qaytarib oladi. Bir mijoz bir sharhga bitta ovoz — jadvalning
+ * birlamchi kaliti (reviewId, userId) buni bazada kafolatlaydi.
+ *
+ * O'z sharhiga ovoz berib bo'lmaydi: aks holda muallif o'z sharhini
+ * «eng foydali» qatoriga chiqarardi.
+ */
+export async function toggleHelpful(
+  userId: string,
+  reviewId: string,
+): Promise<{ helpful: boolean; helpfulCount: number }> {
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: { id: true, userId: true, isApproved: true },
+  });
+  if (!review || !review.isApproved) throw new ReviewError(404, 'NOT_FOUND', 'Sharh topilmadi');
+  if (review.userId === userId) {
+    throw new ReviewError(403, 'OWN_REVIEW', 'O`z sharhingizga ovoz bera olmaysiz');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const removed = await tx.reviewVote.deleteMany({ where: { reviewId, userId } });
+    if (removed.count === 0) {
+      // Parallel ikki bosish: ikkinchisi kalit to'qnashuvida jim o'tadi.
+      await tx.reviewVote.createMany({ data: [{ reviewId, userId }], skipDuplicates: true });
+    }
+    // Hisoblagich jadvaldan qayta sanaladi — +1/-1 emas: poyga bo'lsa ham
+    // son haqiqatdan uzoqlashmaydi.
+    const helpfulCount = await tx.reviewVote.count({ where: { reviewId } });
+    await tx.review.update({ where: { id: reviewId }, data: { helpfulCount } });
+    return { helpful: removed.count === 0, helpfulCount };
+  });
 }

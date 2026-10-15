@@ -384,7 +384,20 @@
     "deliveryFastShort": "2-3 дня",
     "noDescription": "Описание для этого товара пока не добавлено.",
     "noReviews": "На этот товар пока нет отзывов. Оставьте первый — после получения заказа.",
-    "noQuestions": "По этому товару пока нет вопросов."
+    "noQuestions": "По этому товару пока нет вопросов.",
+    "storeProducts": "{count} товаров",
+    "storeNoRating": "Пока без оценок",
+    "otherSellers": "В других магазинах",
+    "otherSellersHint": "Похожие товары — сначала надёжные магазины",
+    "spec": {
+      "material": "Материал",
+      "composition": "Состав",
+      "country": "Страна производства",
+      "season": "Сезон",
+      "care": "Уход",
+      "warranty": "Гарантия"
+    },
+    "specsTitle": "Характеристики"
   },
   "cart": {
     "title": "Корзина",
@@ -1064,7 +1077,22 @@
     "verified": "Подтверждённая покупка",
     "yours": "Ваш отзыв",
     "viewAll": "Все отзывы",
-    "ratingRequired": "Выберите оценку"
+    "ratingRequired": "Выберите оценку",
+    "addPhotos": "Добавить фото",
+    "photosHint": "Не больше 5 фото",
+    "photoUploadFailed": "Фото не загрузилось. Попробуйте снова или отправьте отзыв без фото.",
+    "removePhoto": "Убрать фото",
+    "photo": "Фото к отзыву",
+    "filterAll": "Все",
+    "filterPhotos": "С фото ({count})",
+    "filterStars": "{star} звезд.",
+    "showMore": "Показать ещё",
+    "noMatch": "Нет отзывов по этому фильтру",
+    "sortHelpful": "Самые полезные",
+    "sortNewest": "Новые",
+    "helpful": "Полезно",
+    "helpfulCount": "Полезно · {count}",
+    "helpfulLogin": "Войдите, чтобы оценить отзыв"
   },
   "brand": {
     "notFound": "Бренд не найден",

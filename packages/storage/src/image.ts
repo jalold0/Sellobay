@@ -34,6 +34,10 @@ export const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;
  * shuning uchun 4 MB amalda yetarli zahira.
  */
 export const MAX_DELIVERY_PROOF_BYTES = 4 * 1024 * 1024;
+/** Sharh surati — telefon kamerasi, klient kichraytirib yuboradi. */
+export const MAX_REVIEW_IMAGE_BYTES = 4 * 1024 * 1024;
+/** Bitta sharhga eng ko'pi bilan nechta surat. */
+export const MAX_REVIEW_IMAGES = 5;
 
 function startsWith(bytes: Uint8Array, signature: readonly number[]): boolean {
   if (bytes.length < signature.length) return false;

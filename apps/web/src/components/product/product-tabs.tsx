@@ -2,25 +2,16 @@
 
 // Mahsulot pastki tablari: tavsif, xususiyatlar, sharhlar (rating breakdown bilan)
 // va savol-javob.
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Rating,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@ecom/ui';
-import { Check, HelpCircle, Star, ThumbsUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ecom/ui';
+import { HelpCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { formatRelative } from '../../lib/format';
-import { type Locale, pickLocale, productImage } from '../../lib/mock-data';
+import { type Locale, pickLocale } from '../../lib/mock-data';
 import { type ProductFullDetail } from '../../lib/product-details';
 
-import { ReviewForm } from './review-form';
+import { ReviewsPanel } from './reviews-panel';
 
 interface Props {
   detail: ProductFullDetail;
@@ -29,12 +20,8 @@ interface Props {
 
 export function ProductTabs({ detail, locale }: Props) {
   const t = useTranslations('product');
-  const { product, description, features, specs, reviews, questions, ratingBreakdown } = detail;
-
-  const ratingBars = ([5, 4, 3, 2, 1] as const).map((star) => ({
-    star,
-    pct: ratingBreakdown[star] ?? 0,
-  }));
+  // Sharhlar tabi o'z ma'lumotini o'zi so'raydi (filtr va sahifalash bilan).
+  const { product, description, features, specs, questions } = detail;
 
   return (
     <section className="border-t pt-8">
@@ -69,9 +56,11 @@ export function ProductTabs({ detail, locale }: Props) {
             <div className="bg-card rounded-xl border p-4 text-sm">
               <div className="mb-3 font-semibold">{t('quickSpecs')}</div>
               <dl className="space-y-2">
-                {specs.slice(0, 4).map((s) => (
-                  <div key={s.value} className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">{pickLocale(s.label, locale)}</dt>
+                {specs.slice(0, 4).map((s, i) => (
+                  <div key={i} className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      {s.labelKey ? t(s.labelKey) : pickLocale(s.label, locale)}
+                    </dt>
                     <dd className="text-right font-medium">{s.value}</dd>
                   </div>
                 ))}
@@ -83,9 +72,11 @@ export function ProductTabs({ detail, locale }: Props) {
         <TabsContent value="specs">
           <div className="bg-card rounded-xl border">
             <dl className="divide-y">
-              {specs.map((s) => (
-                <div key={s.value} className="flex justify-between gap-3 px-4 py-3 text-sm">
-                  <dt className="text-muted-foreground">{pickLocale(s.label, locale)}</dt>
+              {specs.map((s, i) => (
+                <div key={i} className="flex justify-between gap-3 px-4 py-3 text-sm">
+                  <dt className="text-muted-foreground">
+                    {s.labelKey ? t(s.labelKey) : pickLocale(s.label, locale)}
+                  </dt>
                   <dd className="text-right font-medium">{s.value}</dd>
                 </div>
               ))}
@@ -94,84 +85,7 @@ export function ProductTabs({ detail, locale }: Props) {
         </TabsContent>
 
         <TabsContent value="reviews">
-          {reviews.length === 0 ? (
-            /* Sharh yo'q — ilgari bu yerda o'ylab topilgan sharhlar ko'rsatilardi. */
-            <div className="text-muted-foreground space-y-4 rounded-xl border border-dashed px-6 py-10 text-center text-sm">
-              <p>{t('noReviews')}</p>
-              <div className="flex justify-center">
-                <ReviewForm productId={product.id} slug={product.slug} />
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-8 md:grid-cols-3">
-              <aside className="space-y-4">
-                <div className="bg-card rounded-xl border p-5 text-center">
-                  <div className="text-5xl font-bold">{product.rating.toFixed(1)}</div>
-                  <div className="mt-2 flex justify-center">
-                    <Rating value={product.rating} size={18} />
-                  </div>
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    {t('reviewsBasedOn', { count: product.reviewCount })}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {ratingBars.map((b) => (
-                    <div key={b.star} className="flex items-center gap-2 text-xs">
-                      <span className="inline-flex w-6 items-center gap-0.5">
-                        {b.star} <Star size={10} className="fill-amber-400 text-amber-400" />
-                      </span>
-                      <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-                        <div
-                          className="h-full rounded-full bg-amber-400"
-                          style={{ width: `${b.pct}%` }}
-                        />
-                      </div>
-                      <span className="text-muted-foreground w-8 text-right">{b.pct}%</span>
-                    </div>
-                  ))}
-                </div>
-              </aside>
-              <div className="space-y-4 md:col-span-2">
-                <ReviewForm productId={product.id} slug={product.slug} />
-                {reviews.map((r) => (
-                  <article key={r.id} className="bg-card rounded-xl border p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          {r.avatarSeed && (
-                            <AvatarImage src={productImage(r.avatarSeed, 80)} alt={r.author} />
-                          )}
-                          <AvatarFallback>{r.author[0]}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="text-sm font-medium">{r.author}</div>
-                          <div className="text-muted-foreground text-[11px]">
-                            {formatRelative(r.createdAt)}
-                            {r.verifiedPurchase && (
-                              <span className="ml-2 inline-flex items-center gap-0.5 text-emerald-700">
-                                <Check size={10} /> {t('verifiedPurchase')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <Rating value={r.rating} size={14} />
-                    </div>
-                    {r.title && <div className="mt-3 text-sm font-medium">{r.title}</div>}
-                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{r.body}</p>
-                    <div className="mt-3 flex items-center gap-3 text-xs">
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                      >
-                        <ThumbsUp size={12} /> {t('helpful', { count: r.helpfulCount ?? 0 })}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          )}
+          <ReviewsPanel productId={product.id} slug={product.slug} />
         </TabsContent>
 
         <TabsContent value="qa">

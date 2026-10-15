@@ -3,7 +3,7 @@
 // POST: yangi mahsulot yaratish (status default — PENDING_REVIEW, admin tasdiqlashi shart).
 //       Testda darhol ACTIVE bo'lib chiqishi mumkin (Seller.status==ACTIVE va statusOverride=true).
 
-import { isValidCompareAtPrice } from '@ecom/core-domain';
+import { isValidCompareAtPrice, normalizeProductSpecs, readProductSpecs } from '@ecom/core-domain';
 import { Prisma } from '@ecom/database';
 import { isOwnPublicImageUrl } from '@ecom/storage';
 import { slugify } from '@ecom/utils';
@@ -33,6 +33,8 @@ const createSchema = z
     compareAtPrice: optionalMoneySchema,
     stock: z.coerce.number().int('Zaxira butun son bo‘lishi kerak').min(0).max(1_000_000),
     weightGrams: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+    // Xususiyatlar (material, tarkib...) — @ecom/core-domain normalizeProductSpecs tekshiradi.
+    specs: z.unknown().optional(),
     categorySlug: z.string().trim().min(1),
     brandSlug: z.string().trim().min(1).optional().nullable(),
     // Eski 1 ta rasm uchun yoki yangi ko'p rasm uchun:
@@ -111,6 +113,8 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'VALIDATION', parsed.error.issues[0]?.message ?? "Noto'g'ri ma'lumot");
   }
   const input = parsed.data;
+  const specs = normalizeProductSpecs(input.specs);
+  if (!specs.ok) return apiError(400, 'VALIDATION', specs.error);
 
   const { defaultFulfillmentModel: sellerModel } = await prisma.seller.findUniqueOrThrow({
     where: { id: seller.id },
@@ -205,6 +209,9 @@ export async function POST(req: NextRequest) {
           basePrice: input.basePrice,
           compareAtPrice: input.compareAtPrice ?? null,
           weightGrams: input.weightGrams ?? null,
+          ...(specs.specs.length > 0
+            ? { specs: specs.specs as unknown as Prisma.InputJsonValue }
+            : {}),
           publishedAt,
           categories: {
             create: [{ categoryId: category.id }],
@@ -379,6 +386,7 @@ export async function GET() {
       basePrice: true,
       compareAtPrice: true,
       description: true,
+      specs: true,
       fulfillmentModel: true,
       rating: true,
       reviewCount: true,
@@ -407,6 +415,7 @@ export async function GET() {
       sku: p.sku,
       name: p.name,
       description: p.description,
+      specs: readProductSpecs(p.specs),
       status: p.status,
       basePrice: Number(p.basePrice),
       compareAtPrice: p.compareAtPrice !== null ? Number(p.compareAtPrice) : null,

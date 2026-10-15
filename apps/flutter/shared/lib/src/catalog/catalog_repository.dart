@@ -45,6 +45,11 @@ class ProductQuery {
     this.sort = ProductSort.newest,
     this.scope = CatalogScope.local,
     this.featured,
+    this.sellerId,
+    this.sellerName,
+    this.excludeSellerId,
+    this.excludeId,
+    this.rankBySeller = false,
     this.page = 1,
     this.limit = 24,
   });
@@ -55,6 +60,21 @@ class ProductQuery {
   final ProductSort sort;
   final CatalogScope scope;
   final bool? featured;
+
+  /// Faqat shu do'kon tovarlari (do'kon sahifasi).
+  final String? sellerId;
+
+  /// Katalogdagi filtr chipi uchun nom — serverga yuborilmaydi.
+  final String? sellerName;
+
+  /// Shu do'kondan BOSHQA do'konlar (o'xshash tovarlar).
+  final String? excludeSellerId;
+
+  /// Ko'rilayotgan tovarning o'zi ro'yxatga tushmasin.
+  final String? excludeId;
+
+  /// Avval ishonchli (reytingi yuqori) do'kon. [sort] o'rniga ishlaydi.
+  final bool rankBySeller;
   final int page;
   final int limit;
 
@@ -65,6 +85,8 @@ class ProductQuery {
     ProductSort? sort,
     CatalogScope? scope,
     Object? featured = _unset,
+    Object? sellerId = _unset,
+    Object? sellerName = _unset,
     int? page,
     int? limit,
   }) {
@@ -78,6 +100,11 @@ class ProductQuery {
       sort: sort ?? this.sort,
       scope: scope ?? this.scope,
       featured: identical(featured, _unset) ? this.featured : featured as bool?,
+      sellerId: identical(sellerId, _unset) ? this.sellerId : sellerId as String?,
+      sellerName: identical(sellerName, _unset) ? this.sellerName : sellerName as String?,
+      excludeSellerId: excludeSellerId,
+      excludeId: excludeId,
+      rankBySeller: rankBySeller,
       page: page ?? this.page,
       limit: limit ?? this.limit,
     );
@@ -92,7 +119,10 @@ class ProductQuery {
       if (categorySlug != null) 'category': categorySlug,
       if (brandSlug != null) 'brand': brandSlug,
       if (featured == true) 'featured': 'true',
-      'sort': sort.value,
+      'seller': ?sellerId,
+      'excludeSeller': ?excludeSellerId,
+      'excludeId': ?excludeId,
+      'sort': rankBySeller ? 'seller-rating' : sort.value,
       'scope': scope.value,
       'page': '$page',
       'limit': '$limit',

@@ -24,6 +24,9 @@ class ProductReview {
     required this.userId,
     required this.isVerifiedPurchase,
     required this.createdAt,
+    this.images = const [],
+    this.helpfulCount = 0,
+    this.votedByMe = false,
     this.product,
   });
 
@@ -37,6 +40,9 @@ class ProductReview {
         userId: json['userId'] as String? ?? '',
         isVerifiedPurchase: json['isVerifiedPurchase'] as bool? ?? false,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
+        images: (json['images'] as List<dynamic>? ?? const []).whereType<String>().toList(),
+        helpfulCount: (json['helpfulCount'] as num?)?.toInt() ?? 0,
+        votedByMe: json['votedByMe'] as bool? ?? false,
         product: json['product'] is Map<String, dynamic>
             ? ReviewedProduct.fromJson(json['product'] as Map<String, dynamic>)
             : null,
@@ -55,6 +61,15 @@ class ProductReview {
 
   final bool isVerifiedPurchase;
   final DateTime? createdAt;
+
+  /// Mijoz biriktirgan suratlar (ochiq manzillar). Bo'sh bo'lishi mumkin.
+  final List<String> images;
+
+  /// «Foydali» deganlar soni.
+  final int helpfulCount;
+
+  /// Ko'ruvchi «foydali» bosganmi (mehmonda doim `false`).
+  final bool votedByMe;
 
   /// Faqat «mening sharhlarim» ro'yxatida bor.
   final ReviewedProduct? product;
@@ -90,6 +105,7 @@ class ReviewPage {
     required this.total,
     required this.hasMore,
     required this.eligibility,
+    this.summary,
   });
 
   factory ReviewPage.fromJson(Map<String, dynamic> json) => ReviewPage(
@@ -103,10 +119,62 @@ class ReviewPage {
         eligibility: json['eligibility'] == null
             ? null
             : ReviewEligibility.fromJson(json['eligibility'] as Map<String, dynamic>),
+        summary: json['summary'] is Map<String, dynamic>
+            ? ReviewSummary.fromJson(json['summary'] as Map<String, dynamic>)
+            : null,
       );
 
   final List<ProductReview> items;
   final int total;
   final bool hasMore;
   final ReviewEligibility? eligibility;
+
+  /// Faqat 1-sahifada keladi; filtrga bog'liq emas.
+  final ReviewSummary? summary;
+}
+
+/// Sharhlar xulosasi — BUTUN sharhlardan (yuklangan sahifadan emas).
+class ReviewSummary {
+  const ReviewSummary({
+    required this.total,
+    required this.average,
+    required this.breakdown,
+    required this.withPhotos,
+  });
+
+  factory ReviewSummary.fromJson(Map<String, dynamic> json) {
+    final raw = json['breakdown'] as Map<String, dynamic>? ?? const {};
+    return ReviewSummary(
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      average: (json['average'] as num?)?.toDouble() ?? 0,
+      breakdown: {for (var star = 1; star <= 5; star++) star: (raw['$star'] as num?)?.toInt() ?? 0},
+      withPhotos: (json['withPhotos'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  final int total;
+  final double average;
+
+  /// Yulduz (1..5) → sharhlar soni.
+  final Map<int, int> breakdown;
+  final int withPhotos;
+}
+
+/// Sharhlar ro'yxati filtri.
+sealed class ReviewFilter {
+  const ReviewFilter();
+}
+
+class AllReviews extends ReviewFilter {
+  const AllReviews();
+}
+
+class ReviewsWithPhotos extends ReviewFilter {
+  const ReviewsWithPhotos();
+}
+
+class ReviewsByStars extends ReviewFilter {
+  const ReviewsByStars(this.stars);
+
+  final int stars;
 }
