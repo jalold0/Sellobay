@@ -27,27 +27,32 @@ import { StoreSync } from '../../store/store-sync';
 
 import type { Metadata, Viewport } from 'next';
 
+// Shriftlar: `subsets` qaysi @font-face qo'shilishini emas, qaysisi oldindan (preload,
+// yuqori ustuvorlik bilan) yuklanishini belgilaydi — kirill @font-face'lari CSS'da baribir
+// bor va /ru sahifasida kerak bo'lganda yuklanadi.
+//
+// Kirill preload'dan OLIB TASHLANDI (mobil tezlik, 2026-10-16). Ilgari u /ru sarlavhalari
+// ko'z oldida almashmasligi uchun qo'shilgan edi, lekin preload barcha tillarda ishlaydi:
+// /uz (asosiy auditoriya, lotin) va /en sahifalari ham birinchi chizishdan oldin ~39 KB
+// keraksiz kirill shriftini sekin 4G'da CSS/JS bilan raqobatda yuklardi (jami 4 fayl,
+// ~125 KB). Endi /ru'da birinchi ochilishda sarlavha bir lahza zaxira shriftda ko'rinishi
+// mumkin — asosiy auditoriyaning tezligi uchun ongli kelishuv.
 const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
+  subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
 });
 
 // Playfair Display — Sellobay logotipi va bo'lim sarlavhalari.
 //
-// subsets'ga 'cyrillic' QO'SHILDI. Next.js'da subsets qaysi @font-face
-// qo'shilishini emas, qaysisi PRELOAD qilinishini belgilaydi: kirillcha
-// face baribir yuklanardi, lekin preload ro'yxatiga tushmagani uchun
-// /ru sahifasida kech kelardi va sarlavhalar ko'z oldida almashardi.
-// Inter'da 'cyrillic' bor edi, Playfair'da yo'q — nomutanosiblik.
+// Preload faqat lotin (yuqoridagi izohga qarang).
 //
 // Og'irliklar 600 va 700 gacha qisqartirildi. 500 va 900 yuklanardi,
 // lekin repo bo'ylab bironta ham font-serif ular bilan ishlatilmagan;
 // og'irliksiz font-serif esa faqat <h1>/<h2> da uchraydi — u yerda
-// brauzer standarti 700. Ikki og'irlik olib tashlanishi kirillchani
-// qo'shishdan kelgan preload o'sishini qoplaydi.
+// brauzer standarti 700.
 const playfair = Playfair_Display({
-  subsets: ['latin', 'cyrillic'],
+  subsets: ['latin'],
   weight: ['600', '700'],
   variable: '--font-serif',
   display: 'swap',
