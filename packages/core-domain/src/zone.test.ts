@@ -35,8 +35,10 @@ describe('looksLikeTashkentCityText (matn heuristikasi)', () => {
     expect(looksLikeTashkentCityText('', '')).toBe(false);
   });
 
-  it('hujjatlashtirilgan chekka holat: "Toshkent viloyati" ham qabul qilinadi', () => {
-    // Ataylab shunday (kuryer ops hal qiladi) — o‘zgarsa bu test signal beradi
-    expect(looksLikeTashkentCityText('Toshkent viloyati', 'Chirchiq')).toBe(true);
+  it('"Toshkent viloyati" — shahar EMAS (uygacha yetkazilmaydi)', () => {
+    // 2026-10-15 gacha bu holat ataylab qabul qilinardi (kuryer ops hal qilardi).
+    // Checkout endi hududni ro'yxatdan tanlatadi, shuning uchun qoida qat'iy:
+    // viloyat — faqat olib ketish punkti.
+    expect(looksLikeTashkentCityText('Toshkent viloyati', 'Chirchiq')).toBe(false);
   });
 });

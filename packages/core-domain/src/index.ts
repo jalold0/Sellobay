@@ -18,4 +18,5 @@ export * from './refund.ts';
 export * from './marketplace-settings.ts';
 export * from './carrier.ts';
 export * from './category-parent.ts';
+export * from './uz-regions.ts';
 export * from './product-specs.ts';

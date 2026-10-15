@@ -5,6 +5,7 @@
 import { normalizeUzPhone } from '@ecom/utils';
 import { z } from 'zod';
 
+import { serializeAddress } from '@/lib/address-dto';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
@@ -41,7 +42,7 @@ export async function GET() {
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
   });
 
-  return apiOk({ items });
+  return apiOk({ items: items.map(serializeAddress) });
 }
 
 export async function POST(req: NextRequest) {
@@ -85,5 +86,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return apiOk({ address: created }, { status: 201 });
+  return apiOk({ address: serializeAddress(created) }, { status: 201 });
 }

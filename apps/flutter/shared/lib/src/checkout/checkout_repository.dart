@@ -18,11 +18,14 @@ class CheckoutRepository {
   /// Saqlangan manzillar. AUTH talab qiladi — mehmonda chaqirmang.
   Future<List<SavedAddress>> fetchAddresses() => _addresses.fetchAll();
 
-  Future<List<PickupPoint>> fetchPickupPoints({String? region, String? city}) async {
+  /// [regionSlug] — checkout'dagi hudud tanlovi bo'yicha (server bazadagi
+  /// turlicha yozilgan hudud matnini o'zi moslaydi).
+  Future<List<PickupPoint>> fetchPickupPoints({String? region, String? city, String? regionSlug}) async {
     final data = await _api.get<Map<String, dynamic>>(
       '/api/pickup-points',
       query: {
         if (region != null && region.isNotEmpty) 'region': region,
+        'regionSlug': ?regionSlug,
         if (city != null && city.isNotEmpty) 'city': city,
       },
     );
@@ -94,6 +97,10 @@ class CheckoutRepository {
     required String city,
     required String street,
     String? apartment,
+    /// Xaritadagi nuqta — server hududni matndan emas, koordinatadan
+    /// tekshiradi (Toshkent shahri ichidami).
+    double? latitude,
+    double? longitude,
     required DeliveryMethod deliveryMethod,
     String? pickupPointId,
     required PaymentProvider paymentProvider,
@@ -129,6 +136,10 @@ class CheckoutRepository {
         'city': city.trim(),
         'street': street.trim(),
         if (apartment != null && apartment.trim().isNotEmpty) 'apartment': apartment.trim(),
+        if (latitude != null && longitude != null) ...{
+          'latitude': latitude,
+          'longitude': longitude,
+        },
         'deliveryMethod': deliveryMethod.value,
         'pickupPointId': ?pickupPointId,
         'paymentProvider': paymentProvider.value,

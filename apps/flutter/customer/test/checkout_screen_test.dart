@@ -262,13 +262,13 @@ void main() {
     expect(find.text("Bu maydonni to'ldiring"), findsNWidgets(3));
   });
 
-  testWidgets('viloyat OLDINDAN to`ldirilmaydi', (tester) async {
+  testWidgets('hudud RO`YXATDAN tanlanadi, standart — Toshkent shahri', (tester) async {
     await pumpCheckout(tester, _backend(), signedIn: true);
 
-    final region = tester.widget<TextField>(find.widgetWithText(TextField, 'Viloyat'));
-    expect(region.controller!.text, isEmpty);
-    // Maslahat sifatida ko'rinadi, qiymat sifatida emas.
-    expect(region.decoration!.hintText, 'Toshkent');
+    // Erkin matn maydoni emas — serverdagi ro'yxat (web bilan bir xil).
+    expect(find.widgetWithText(TextField, 'Viloyat'), findsNothing);
+    expect(find.text('Toshkent shahri'), findsOneWidget);
+    expect(find.text('Xaritadan belgilash'), findsOneWidget);
   });
 
   testWidgets('server xatosida tepadagi chiziq KO`RINADIGAN joyga suriladi', (tester) async {
@@ -309,8 +309,8 @@ void main() {
           'type': 'HOME',
           'recipientName': 'Dilnoza Karimova',
           'phone': '+998901112233',
-          'region': 'Samarqand',
-          'city': 'Samarqand',
+          'region': 'Toshkent',
+          'city': 'Yunusobod',
           'street': 'Registon 5',
           'apartment': null,
           'latitude': null,
@@ -677,6 +677,91 @@ void main() {
 
       expect(backend.countOf('/api/loyalty'), 0);
       expect(find.text('Sello Coins ishlatish'), findsNothing);
+    });
+  });
+
+  group('hudud va xarita', () {
+    Map<String, dynamic> address({
+      required String region,
+      required String city,
+      double? lat,
+      double? lng,
+    }) =>
+        {
+          'id': 'addr-${city.toLowerCase()}',
+          'label': city,
+          'type': 'HOME',
+          'recipientName': 'Dilnoza Karimova',
+          'phone': '+998901112233',
+          'region': region,
+          'city': city,
+          'street': 'Registon 5',
+          'apartment': null,
+          'latitude': lat,
+          'longitude': lng,
+          'isDefault': true,
+          'createdAt': '2026-10-01T00:00:00.000Z',
+        };
+
+    final samarqandPoint = {
+      'id': 'pp-sam',
+      'code': 'SAM-1',
+      'provider': 'SELLOBAY',
+      'name': {'uz': 'Samarqand markaz'},
+      'region': 'Samarqand',
+      'city': 'Samarqand',
+      'district': null,
+      'street': 'Registon ko`chasi 15',
+      'building': null,
+      'landmark': null,
+      'latitude': 39.65,
+      'longitude': 66.96,
+      'phone': null,
+      'workingHours': 'Du-Sha 09:00-19:00',
+      'type': 'PVZ',
+      'regionSlug': 'samarqand',
+    };
+
+    testWidgets('viloyat manzili — uy maydonlari yo`q, faqat filial', (tester) async {
+      final base = _backend();
+      final backend = FakeBackend((o, body) {
+        if (o.path == '/api/addresses') {
+          return apiOk({
+            'items': [address(region: 'Samarqand viloyati', city: 'Samarqand')],
+          });
+        }
+        if (o.path == '/api/pickup-points') return apiOk({'items': [samarqandPoint]});
+        return base.handler(o, body);
+      });
+      await pumpCheckout(tester, backend, signedIn: true);
+
+      expect(find.text('Samarqand viloyati'), findsOneWidget);
+      // Uygacha yetkazilmaydi — ko'cha va xarita so'ralmaydi.
+      expect(find.widgetWithText(TextField, "Ko'cha, uy raqami*"), findsNothing);
+      expect(find.text('Xaritadan belgilash'), findsNothing);
+      await scrollTo(tester, find.textContaining('filialdan olasiz').last);
+      expect(find.text('Uyga yetkazib berish'), findsNothing);
+    });
+
+    testWidgets('koordinatali Toshkent manzili — nuqta buyurtmaga ketadi', (tester) async {
+      final base = _backend(providers: const ['CASH_ON_DELIVERY']);
+      final backend = FakeBackend((o, body) {
+        if (o.path == '/api/addresses') {
+          return apiOk({
+            'items': [address(region: 'Toshkent', city: 'Yunusobod', lat: 41.3111, lng: 69.2797)],
+          });
+        }
+        return base.handler(o, body);
+      });
+      await pumpCheckout(tester, backend, signedIn: true);
+
+      expect(find.text('Nuqtani o‘zgartirish'), findsOneWidget);
+      await submit(tester);
+
+      final sent = backend.bodies[backend.calls.indexOf('/api/orders')]!;
+      expect(sent['latitude'], 41.3111);
+      expect(sent['longitude'], 69.2797);
+      expect(sent['region'], 'Toshkent shahri');
     });
   });
 }

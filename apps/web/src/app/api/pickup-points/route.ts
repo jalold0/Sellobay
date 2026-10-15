@@ -1,5 +1,10 @@
 // Topshirish punktlari (pickup points) — ommaviy ro'yxat
 // GET /api/pickup-points?region=&city=  — faol punktlar
+// GET /api/pickup-points?regionSlug=samarqand — checkout'dagi hudud tanlovi bo'yicha.
+//   Bazadagi hudud matni har xil yozilgan («Toshkent», «Farg'ona»...) — shuning
+//   uchun moslik @ecom/core-domain regionSlugFromText orqali.
+
+import { isUzRegionSlug, regionSlugFromText } from '@ecom/core-domain';
 
 import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -13,6 +18,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const region = searchParams.get('region')?.trim() || undefined;
   const city = searchParams.get('city')?.trim() || undefined;
+  const slugParam = searchParams.get('regionSlug');
+  const regionSlug = isUzRegionSlug(slugParam) ? slugParam : null;
 
   const items = await prisma.pickupPoint.findMany({
     where: { isActive: true, region, city },
@@ -37,11 +44,14 @@ export async function GET(req: NextRequest) {
   });
 
   // Decimal → number (lat/lng) — klientlar oddiy son kutadi
-  const mapped = items.map((p) => ({
-    ...p,
-    latitude: Number(p.latitude),
-    longitude: Number(p.longitude),
-  }));
+  const mapped = items
+    .map((p) => ({
+      ...p,
+      latitude: Number(p.latitude),
+      longitude: Number(p.longitude),
+      regionSlug: regionSlugFromText(p.region, p.city),
+    }))
+    .filter((p) => !regionSlug || p.regionSlug === regionSlug);
 
   return apiOk({ items: mapped });
 }

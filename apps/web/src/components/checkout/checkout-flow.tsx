@@ -8,7 +8,11 @@ import {
   SHIPPING_FEE,
   EXPRESS_FEE,
   FREE_SHIPPING_THRESHOLD,
-  looksLikeTashkentCityText,
+  TASHKENT_CITY_REGION,
+  regionAllowsHomeDelivery,
+  regionName,
+  regionSlugFromText,
+  type UzRegionSlug,
 } from '@ecom/core-domain';
 import { toast } from '@ecom/ui';
 import { Package, ShieldCheck } from 'lucide-react';
@@ -37,7 +41,9 @@ import type {
   PaymentCardDTO,
   PaymentProvider,
   PickupPointDTO,
+  SavedAddressDTO,
 } from './checkout-types';
+import type { PickedPoint } from '../map/map-picker-dialog';
 
 // Haqiqiy DB mahsuloti = UUID. Mock/demo (p1..p12) yoki eskirgan savat elementlari emas.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -79,6 +85,11 @@ export function CheckoutFlow() {
     notes: '',
   });
   const [deliveryType, setDeliveryType] = React.useState<DeliveryType>('TASHKENT_HOME');
+  // Hudud AVVAL tanlanadi: Toshkent shahri — uygacha, qolgan hudud — filial.
+  const [regionSlug, setRegionSlug] = React.useState<UzRegionSlug>(TASHKENT_CITY_REGION);
+  // Xaritadagi nuqta: server hududni koordinata bo'yicha tekshiradi.
+  const [point, setPoint] = React.useState<PickedPoint | { lat: number; lng: number } | null>(null);
+  const [saved, setSaved] = React.useState<SavedAddressDTO[]>([]);
   const [homeSpeed, setHomeSpeed] = React.useState<HomeSpeed>('STANDARD');
   const [payment, setPayment] = React.useState<PaymentProvider>('UZCARD');
   const [submitting, setSubmitting] = React.useState(false);
@@ -182,13 +193,48 @@ export function CheckoutFlow() {
     };
   }, []);
 
-  // Topshirish punktlari (REGION_PICKUP)
+  // Saqlangan manzillar (kirgan mijoz). Mehmonda 401 — ro'yxat bo'sh qoladi.
+  React.useEffect(() => {
+    let active = true;
+    fetch('/api/addresses', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (!active || !res?.success) return;
+        const rows = (res.data?.items ?? []) as Array<Record<string, unknown>>;
+        setSaved(
+          rows.map((a) => {
+            const lat = a.latitude == null ? null : Number(a.latitude);
+            const lng = a.longitude == null ? null : Number(a.longitude);
+            const region = String(a.region ?? '');
+            const city = String(a.city ?? '');
+            return {
+              id: String(a.id),
+              label: String(a.label ?? ''),
+              region,
+              city,
+              street: [a.street, a.building].filter(Boolean).join(', '),
+              apartment: String(a.apartment ?? ''),
+              regionSlug: regionSlugFromText(region, city),
+              latitude: Number.isFinite(lat) ? lat : null,
+              longitude: Number.isFinite(lng) ? lng : null,
+            };
+          }),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Topshirish punktlari — tanlangan hududniki.
   const [pickupPoints, setPickupPoints] = React.useState<PickupPointDTO[]>([]);
   const [selectedPickupId, setSelectedPickupId] = React.useState<string | null>(null);
   const selectedPickup = pickupPoints.find((p) => p.id === selectedPickupId) ?? null;
   React.useEffect(() => {
     let active = true;
-    fetch('/api/pickup-points')
+    setSelectedPickupId(null);
+    fetch(`/api/pickup-points?regionSlug=${regionSlug}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
         if (active && res?.success && res.data) setPickupPoints(res.data.items ?? []);
@@ -197,7 +243,22 @@ export function CheckoutFlow() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [regionSlug]);
+
+  const onRegion = (slug: UzRegionSlug) => {
+    setRegionSlug(slug);
+    // Boshqa hududda uygacha yetkazish yo'q — filialga o'tamiz; Toshkentga
+    // qaytsa, standart — uygacha.
+    setDeliveryType(regionAllowsHomeDelivery(slug) ? 'TASHKENT_HOME' : 'REGION_PICKUP');
+    setPoint(null);
+  };
+
+  const onUseSaved = (a: SavedAddressDTO) => {
+    setAddress((prev) => ({ ...prev, city: a.city, street: a.street, apartment: a.apartment }));
+    setPoint(
+      a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null,
+    );
+  };
 
   // Joylashuvga qarab yetkazish turi → backend deliveryMethod
   const deliveryMethod: 'HOME_DELIVERY' | 'PICKUP_POINT' | 'EXPRESS' =
@@ -206,10 +267,10 @@ export function CheckoutFlow() {
       : homeSpeed === 'EXPRESS'
         ? 'EXPRESS'
         : 'HOME_DELIVERY';
-  const homeOutsideTashkent =
-    deliveryType === 'TASHKENT_HOME' &&
-    Boolean(address.region.trim() || address.city.trim()) &&
-    !looksLikeTashkentCityText(address.region, address.city);
+  const isGlobal = items.length > 0 && items.every((i) => i.isGlobal);
+  // Uygacha faqat Toshkent shahrida (global buyurtmada kargo istalgan manzilga).
+  const homeAllowed = isGlobal || regionAllowsHomeDelivery(regionSlug);
+  const homeOutsideTashkent = deliveryType === 'TASHKENT_HOME' && !homeAllowed;
 
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   // GLOBAL buyurtmada lokal yetkazish narxi YO'Q: kargo tovarni to'g'ridan-to'g'ri
@@ -362,9 +423,9 @@ export function CheckoutFlow() {
       recipientName: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
       phone: address.phone.trim(),
       region:
-        (deliveryMethod === 'PICKUP_POINT' && selectedPickup
+        deliveryMethod === 'PICKUP_POINT' && selectedPickup
           ? selectedPickup.region
-          : address.region.trim()) || 'Toshkent',
+          : regionName(regionSlug),
       city:
         (deliveryMethod === 'PICKUP_POINT' && selectedPickup
           ? selectedPickup.city
@@ -374,6 +435,10 @@ export function CheckoutFlow() {
           ? selectedPickup.street
           : address.street.trim()) || 'Punkt',
       apartment: address.apartment.trim() || undefined,
+      // Xaritadagi nuqta — server hududni matndan emas, koordinatadan tekshiradi.
+      ...(deliveryMethod !== 'PICKUP_POINT' && point
+        ? { latitude: point.lat, longitude: point.lng }
+        : {}),
       deliveryMethod,
       pickupPointId:
         deliveryMethod === 'PICKUP_POINT' ? (selectedPickupId ?? undefined) : undefined,
@@ -486,8 +551,13 @@ export function CheckoutFlow() {
           <AddressSection
             address={address}
             onChange={setAddress}
-            homeOutsideTashkent={homeOutsideTashkent}
-            onSwitchToPickup={() => setDeliveryType('REGION_PICKUP')}
+            regionSlug={regionSlug}
+            onRegion={onRegion}
+            point={point}
+            onPoint={setPoint}
+            saved={saved}
+            onUseSaved={onUseSaved}
+            isGlobalOrder={isGlobal}
           />
 
           <ShippingSection
@@ -504,6 +574,7 @@ export function CheckoutFlow() {
             }}
             onSelectPickup={() => setDeliveryType('REGION_PICKUP')}
             onPickPoint={setSelectedPickupId}
+            homeAllowed={homeAllowed}
           />
 
           <PaymentSection

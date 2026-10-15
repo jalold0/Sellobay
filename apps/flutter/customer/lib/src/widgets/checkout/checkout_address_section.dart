@@ -49,6 +49,9 @@ class CheckoutAddressForm extends StatelessWidget {
     this.errors = const {},
     this.onChanged,
     this.onRegionChanged,
+    this.regionField,
+    this.homeAddress = true,
+    this.mapButton,
   });
 
   final Map<CheckoutField, TextEditingController> controllers;
@@ -65,6 +68,16 @@ class CheckoutAddressForm extends StatelessWidget {
   /// Viloyat o'zgarsa punktlar ro'yxati eskiradi — ekran uni
   /// tozalaydi.
   final VoidCallback? onRegionChanged;
+
+  /// Hudud ro'yxati (serverdan) — berilsa erkin matn maydoni o'rniga.
+  final Widget? regionField;
+
+  /// Uygacha yetkazish (Toshkent shahri): shahar/ko'cha/xonadon kerak.
+  /// Boshqa hududda tovar filialdan olinadi — bu maydonlar ko'rsatilmaydi.
+  final bool homeAddress;
+
+  /// «Xaritadan belgilash» — ko'cha maydonidan oldin.
+  final Widget? mapButton;
 
   @override
   Widget build(BuildContext context) => AutofillGroup(
@@ -85,6 +98,20 @@ class CheckoutAddressForm extends StatelessWidget {
               hint: true,
               autofill: AutofillHints.telephoneNumber,
             ),
+            if (regionField != null) ...[
+              regionField!,
+              const SizedBox(height: 12),
+              if (homeAddress) ...[
+                if (mapButton != null) ...[mapButton!, const SizedBox(height: 12)],
+                _field(
+                  context,
+                  CheckoutField.city,
+                  'city',
+                  hint: true,
+                  autofill: AutofillHints.addressCity,
+                ),
+              ],
+            ] else
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -113,7 +140,8 @@ class CheckoutAddressForm extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            if (regionField == null) const SizedBox(height: 12),
+            if (homeAddress) ...[
             _field(
               context,
               CheckoutField.street,
@@ -128,6 +156,7 @@ class CheckoutAddressForm extends StatelessWidget {
               hint: true,
               autofill: AutofillHints.streetAddressLine2,
             ),
+            ],
             _field(context, CheckoutField.notes, 'notes', hint: true, maxLines: 2, bottom: 0),
           ],
         ),

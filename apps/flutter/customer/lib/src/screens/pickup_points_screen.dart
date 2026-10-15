@@ -17,12 +17,20 @@ import '../map/sellobay_map.dart';
 /// `Navigator.pop` bilan qaytariladi. Profildan ochilganda `false`:
 /// faqat ko'rish uchun.
 class PickupPointsScreen extends StatefulWidget {
-  const PickupPointsScreen({super.key, this.selectable = false, this.initialCity});
+  const PickupPointsScreen({
+    super.key,
+    this.selectable = false,
+    this.initialCity,
+    this.regionSlug,
+  });
 
   final bool selectable;
 
   /// Mijozning manzilidagi shahar — shu shahar oldindan tanlanadi.
   final String? initialCity;
+
+  /// Faqat shu hudud filiallari (checkout'dagi hudud tanlovi).
+  final String? regionSlug;
 
   @override
   State<PickupPointsScreen> createState() => _PickupPointsScreenState();
@@ -51,7 +59,9 @@ class _PickupPointsScreenState extends State<PickupPointsScreen> {
       _error = null;
     });
     try {
-      final points = await SellobayRuntimeScope.of(context).checkout.fetchPickupPoints();
+      final points = await SellobayRuntimeScope.of(context)
+          .checkout
+          .fetchPickupPoints(regionSlug: widget.regionSlug);
       if (!mounted) return;
       setState(() {
         _all = points;

@@ -3,6 +3,7 @@
 import { normalizeUzPhone } from '@ecom/utils';
 import { z } from 'zod';
 
+import { serializeAddress } from '@/lib/address-dto';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
@@ -65,7 +66,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: input,
   });
 
-  return apiOk({ address: updated });
+  return apiOk({ address: serializeAddress(updated) });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {

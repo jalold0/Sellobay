@@ -36,6 +36,21 @@ export interface PickupPointDTO {
   longitude: number;
   phone: string | null;
   workingHours: string | null;
+  /** Hudud (server bazadagi matndan aniqlaydi). */
+  regionSlug: string | null;
+}
+
+/** Profildagi saqlangan manzil (`GET /api/addresses`), checkout uchun tayyorlangan. */
+export interface SavedAddressDTO {
+  id: string;
+  label: string;
+  region: string;
+  city: string;
+  street: string;
+  apartment: string;
+  regionSlug: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface PaymentCardDTO {
