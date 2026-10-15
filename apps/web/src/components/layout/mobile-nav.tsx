@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { Link } from '@/i18n/navigation';
+import { SUPPORT_CONTACT, SUPPORT_TEL_HREF } from '@/lib/contacts';
 
 import type { CategorySummary } from '../../lib/catalog';
 
@@ -160,11 +161,11 @@ export function MobileNav({ categories }: Props) {
 
         <div className="border-t p-4">
           <a
-            href="tel:+998712000000"
+            href={SUPPORT_TEL_HREF}
             className="bg-secondary/50 flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium"
           >
             <Phone size={16} className="text-primary" />
-            <span>+998 71 200 00 00</span>
+            <span>{SUPPORT_CONTACT.phoneDisplay}</span>
           </a>
           <div className="text-muted-foreground mt-1 px-3 text-xs">{nav('support247')}</div>
         </div>

@@ -4,6 +4,8 @@ import { Card, Input } from '@ecom/ui';
 import { ChevronDown, HelpCircle, Search } from 'lucide-react';
 import * as React from 'react';
 
+import { SUPPORT_CONTACT } from '@/lib/contacts';
+
 import { PageHero } from '../../../components/static/page-hero';
 
 const FAQ = [
@@ -33,7 +35,7 @@ const FAQ = [
       },
       {
         q: "To'lovim o'tmadi, nima qilay?",
-        a: "Karta mablag'ini va internetingizni tekshiring. Muammo davom etsa, support@example.uz ga yozing.",
+        a: `Karta mablag'ini va internetingizni tekshiring. Muammo davom etsa, ${SUPPORT_CONTACT.email} ga yozing.`,
       },
     ],
   },

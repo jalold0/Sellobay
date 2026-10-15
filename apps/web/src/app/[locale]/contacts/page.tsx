@@ -2,6 +2,8 @@ import { Button, Card, Input, Label, Textarea } from '@ecom/ui';
 import { Building2, Clock, Mail, MapPin, Phone, Send } from 'lucide-react';
 import { setRequestLocale } from 'next-intl/server';
 
+import { SUPPORT_CONTACT } from '@/lib/contacts';
+
 import { PageHero } from '../../../components/static/page-hero';
 
 export const metadata = { title: "Aloqa ma'lumotlari" };
@@ -10,11 +12,11 @@ const CONTACTS = [
   {
     icon: Phone,
     label: 'Telefon',
-    primary: '+998 71 200 00 00',
+    primary: SUPPORT_CONTACT.phoneDisplay,
     secondary: '24/7 qo`llab-quvvatlash',
   },
-  { icon: Mail, label: 'Email', primary: 'info@example.uz', secondary: 'Umumiy savollar' },
-  { icon: MapPin, label: 'Manzil', primary: 'Toshkent sh., IT Park', secondary: '5-bino, 3-qavat' },
+  { icon: Mail, label: 'Email', primary: SUPPORT_CONTACT.email, secondary: 'Umumiy savollar' },
+  { icon: MapPin, label: 'Manzil', primary: 'Toshkent sh.', secondary: 'Yakkasaroy tumani' },
   {
     icon: Clock,
     label: 'Ish vaqti',

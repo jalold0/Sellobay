@@ -3,6 +3,7 @@ import { HelpCircle, Mail, MessageCircle, Phone, Send, Truck, Undo2 } from 'luci
 import { setRequestLocale } from 'next-intl/server';
 
 import { Link } from '@/i18n/navigation';
+import { SUPPORT_CONTACT, SUPPORT_MAILTO_HREF, SUPPORT_TEL_HREF } from '@/lib/contacts';
 
 import { PageHero } from '../../../components/static/page-hero';
 
@@ -21,8 +22,8 @@ const QUICK = [
 ];
 
 const CONTACTS = [
-  { icon: Phone, label: 'Telefon', value: '+998 71 200 00 00', href: 'tel:+998712000000' },
-  { icon: Mail, label: 'Email', value: 'support@example.uz', href: 'mailto:support@example.uz' },
+  { icon: Phone, label: 'Telefon', value: SUPPORT_CONTACT.phoneDisplay, href: SUPPORT_TEL_HREF },
+  { icon: Mail, label: 'Email', value: SUPPORT_CONTACT.email, href: SUPPORT_MAILTO_HREF },
   { icon: Send, label: 'Telegram', value: '@ecom_uz_bot', href: 'https://t.me/' },
   { icon: MessageCircle, label: 'Live chat', value: '24/7 onlayn', href: '#' },
 ];

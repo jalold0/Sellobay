@@ -2,6 +2,7 @@ import { Facebook, Instagram, Mail, MapPin, Phone, Send, Youtube } from 'lucide-
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
+import { SUPPORT_CONTACT, SUPPORT_MAILTO_HREF, SUPPORT_TEL_HREF } from '@/lib/contacts';
 
 import { SellobayMark } from '../brand/sellobay-mark';
 
@@ -135,14 +136,14 @@ export function Footer() {
             <div className="space-y-1.5 text-sm">
               <div className="flex items-center gap-2 text-white/70">
                 <Phone size={14} />{' '}
-                <a href="tel:+998712000000" className="hover:text-white">
-                  +998 71 200 00 00
+                <a href={SUPPORT_TEL_HREF} className="hover:text-white">
+                  {SUPPORT_CONTACT.phoneDisplay}
                 </a>
               </div>
               <div className="flex items-center gap-2 text-white/70">
                 <Mail size={14} />{' '}
-                <a href="mailto:info@example.uz" className="hover:text-white">
-                  info@example.uz
+                <a href={SUPPORT_MAILTO_HREF} className="hover:text-white">
+                  {SUPPORT_CONTACT.email}
                 </a>
               </div>
               <div className="flex items-center gap-2 text-white/70">

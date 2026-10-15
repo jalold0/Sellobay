@@ -1,6 +1,8 @@
 import { Briefcase } from 'lucide-react';
 import { setRequestLocale } from 'next-intl/server';
 
+import { SUPPORT_MAILTO_HREF } from '@/lib/contacts';
+
 import { ComingSoon } from '../../../components/static/coming-soon';
 
 export const metadata = { title: "Bo'sh ish o'rinlari" };
@@ -18,7 +20,7 @@ export default function CareersPage({ params }: { params: { locale: string } }) 
         'DevOps va SRE muhandislar',
         'Marketing va Product menejerlar',
       ]}
-      cta={{ label: 'CV yuborish', href: 'mailto:hr@example.uz' }}
+      cta={{ label: 'CV yuborish', href: SUPPORT_MAILTO_HREF }}
     />
   );
 }
