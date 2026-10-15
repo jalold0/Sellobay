@@ -81,6 +81,8 @@ const PAY_METHODS: { name: string; color: string }[] = [
 
 // Ijtimoiy tarmoqlar `socialLinks()` dan (rasmiy profil yoki SOCIAL_* ENV). Ilgari bu yerda saytlarning bosh sahifalari
 // (`https://instagram.com`) turardi — Sellobay profili emas (audit TRU-01).
+// Profili hali yo'q tarmoq ham ko'rsatiladi, lekin havola emas — «tez orada» belgisi:
+// soxta yoki bosh sahifaga olib boradigan havola qaytmasin.
 function socials() {
   const links = socialLinks();
   return [
@@ -93,8 +95,11 @@ function socials() {
     { Icon: Facebook, href: links.facebook, hoverColor: 'hover:text-blue-600', label: 'Facebook' },
     { Icon: Send, href: links.telegram, hoverColor: 'hover:text-sky-500', label: 'Telegram' },
     { Icon: Youtube, href: links.youtube, hoverColor: 'hover:text-red-600', label: 'YouTube' },
-  ].filter((x): x is typeof x & { href: string } => x.href !== null);
+  ];
 }
+
+const SOCIAL_ICON_CLASS =
+  'grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/70';
 
 export function Footer() {
   const t = useTranslations('footer');
@@ -152,25 +157,32 @@ export function Footer() {
                 <span>{t('address')}</span>
               </div>
             </div>
-            {socialItems.length > 0 ? (
-              <div className="flex items-center gap-2 pt-3">
-                {socialItems.map(({ Icon, href, hoverColor, label }) => (
+            <div className="flex items-center gap-2 pt-3">
+              {socialItems.map(({ Icon, href, hoverColor, label }) =>
+                href ? (
                   <a
-                    key={href}
+                    key={label}
                     href={href}
                     target="_blank"
                     rel="noreferrer"
                     aria-label={label}
-                    className={
-                      'grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/70 transition-all hover:-translate-y-0.5 hover:border-white/30 ' +
-                      hoverColor
-                    }
+                    className={`${SOCIAL_ICON_CLASS} transition-all hover:-translate-y-0.5 hover:border-white/30 ${hoverColor}`}
                   >
                     <Icon size={16} />
                   </a>
-                ))}
-              </div>
-            ) : null}
+                ) : (
+                  <span
+                    key={label}
+                    role="img"
+                    aria-label={t('socialSoon', { name: label })}
+                    title={t('socialSoon', { name: label })}
+                    className={`${SOCIAL_ICON_CLASS} cursor-default opacity-50`}
+                  >
+                    <Icon size={16} aria-hidden />
+                  </span>
+                ),
+              )}
+            </div>
           </div>
 
           <div className="grid gap-8 md:col-span-8 md:grid-cols-4">
