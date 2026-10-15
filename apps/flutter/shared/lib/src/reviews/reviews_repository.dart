@@ -16,6 +16,7 @@ class ReviewsRepository {
     int page = 1,
     int limit = 10,
     ReviewFilter filter = const AllReviews(),
+    bool mostHelpful = false,
   }) async {
     final data = await _api.get<Map<String, dynamic>>(
       '/api/products/$slug/reviews',
@@ -24,6 +25,7 @@ class ReviewsRepository {
         'limit': '$limit',
         if (filter is ReviewsWithPhotos) 'withPhotos': '1',
         if (filter is ReviewsByStars) 'rating': '${filter.stars}',
+        if (mostHelpful) 'sort': 'helpful',
       },
     );
     return ReviewPage.fromJson(data);
@@ -50,6 +52,15 @@ class ReviewsRepository {
       },
     );
     return ProductReview.fromJson(data['review'] as Map<String, dynamic>);
+  }
+
+  /// «Foydali» ovozini almashtiradi. Server yangi holat va sonni qaytaradi.
+  Future<({bool helpful, int helpfulCount})> toggleHelpful(String reviewId) async {
+    final data = await _api.post<Map<String, dynamic>>('/api/reviews/$reviewId/helpful');
+    return (
+      helpful: data['helpful'] as bool? ?? false,
+      helpfulCount: (data['helpfulCount'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<void> delete(String reviewId) =>

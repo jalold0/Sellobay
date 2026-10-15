@@ -56,9 +56,11 @@ export function ProductTabs({ detail, locale }: Props) {
             <div className="bg-card rounded-xl border p-4 text-sm">
               <div className="mb-3 font-semibold">{t('quickSpecs')}</div>
               <dl className="space-y-2">
-                {specs.slice(0, 4).map((s) => (
-                  <div key={s.value} className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">{pickLocale(s.label, locale)}</dt>
+                {specs.slice(0, 4).map((s, i) => (
+                  <div key={i} className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      {s.labelKey ? t(s.labelKey) : pickLocale(s.label, locale)}
+                    </dt>
                     <dd className="text-right font-medium">{s.value}</dd>
                   </div>
                 ))}
@@ -70,9 +72,11 @@ export function ProductTabs({ detail, locale }: Props) {
         <TabsContent value="specs">
           <div className="bg-card rounded-xl border">
             <dl className="divide-y">
-              {specs.map((s) => (
-                <div key={s.value} className="flex justify-between gap-3 px-4 py-3 text-sm">
-                  <dt className="text-muted-foreground">{pickLocale(s.label, locale)}</dt>
+              {specs.map((s, i) => (
+                <div key={i} className="flex justify-between gap-3 px-4 py-3 text-sm">
+                  <dt className="text-muted-foreground">
+                    {s.labelKey ? t(s.labelKey) : pickLocale(s.label, locale)}
+                  </dt>
                   <dd className="text-right font-medium">{s.value}</dd>
                 </div>
               ))}

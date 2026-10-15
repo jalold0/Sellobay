@@ -32,6 +32,12 @@ import Link from 'next/link';
 import * as React from 'react';
 
 import { SellerProductStatusBadge } from '../../components/product-status-badge';
+import {
+  SpecsEditor,
+  specsPayload,
+  specsToRows,
+  type SpecRow,
+} from '../../components/products/specs-editor';
 import { formatMoney, formatNumber, pickLocalized } from '../../lib/format';
 
 type LocalizedText = { uz: string; ru?: string; en?: string };
@@ -42,6 +48,7 @@ interface ProductRow {
   sku: string;
   name: LocalizedText;
   description: LocalizedText | null;
+  specs?: { key?: string; label?: string; value: string }[];
   status: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'ARCHIVED' | 'OUT_OF_STOCK';
   basePrice: number;
   compareAtPrice: number | null;
@@ -229,6 +236,7 @@ export default function SellerProductsPage() {
     basePrice: '',
     compareAtPrice: '',
   });
+  const [specs, setSpecs] = React.useState<SpecRow[]>([]);
   const [saving, setSaving] = React.useState(false);
 
   const load = React.useCallback(async () => {
@@ -257,6 +265,7 @@ export default function SellerProductsPage() {
           basePrice: String(p.basePrice),
           compareAtPrice: p.compareAtPrice != null ? String(p.compareAtPrice) : '',
         });
+        setSpecs(specsToRows(p.specs));
         setEditing(p);
         return;
       }
@@ -291,6 +300,7 @@ export default function SellerProductsPage() {
       descriptionUz: form.descriptionUz.trim(),
       basePrice: form.basePrice.trim(),
       compareAtPrice: form.compareAtPrice.trim() || null,
+      specs: specsPayload(specs),
     });
     setSaving(false);
     if (!json.success) {
@@ -300,7 +310,7 @@ export default function SellerProductsPage() {
     toast({
       title: 'Saqlandi',
       description: json.data?.sentToReview
-        ? 'Nom yoki tavsif o‘zgargani uchun tovar qayta tekshiruvga yuborildi'
+        ? 'Matn o‘zgargani uchun tovar qayta tekshiruvga yuborildi'
         : undefined,
       variant: 'success',
     });
@@ -385,13 +395,14 @@ export default function SellerProductsPage() {
       )}
 
       <Dialog open={editing !== null} onOpenChange={(open) => (open ? null : setEditing(null))}>
-        <DialogContent>
+        {/* Xususiyatlar qo'shilgach forma uzun — dialog o'zi suriladi. */}
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <form onSubmit={saveEdit} className="space-y-4">
             <DialogHeader>
               <DialogTitle>Tovarni tahrirlash</DialogTitle>
               <DialogDescription>
-                Narx o‘zgarishi darhol kuchga kiradi. Nom yoki tavsif o‘zgarsa, sotuvdagi tovar
-                qayta tekshiruvga yuboriladi.
+                Narx o‘zgarishi darhol kuchga kiradi. Nom, tavsif yoki xususiyatlar o‘zgarsa,
+                sotuvdagi tovar qayta tekshiruvga yuboriladi.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-1">
@@ -433,6 +444,10 @@ export default function SellerProductsPage() {
                   onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Xususiyatlar</Label>
+              <SpecsEditor value={specs} onChange={setSpecs} idPrefix="edit-spec" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditing(null)}>

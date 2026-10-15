@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const url = new URL(req.url);
   const page = Math.max(Number(url.searchParams.get('page') ?? 1), 1);
   const limit = Number(url.searchParams.get('limit') ?? 10);
-  // Filtrlar: ?rating=5, ?withPhotos=1, ?sort=newest|rating-high|rating-low
+  // Filtrlar: ?rating=5, ?withPhotos=1, ?sort=newest|helpful|rating-high|rating-low
   const ratingParam = Number(url.searchParams.get('rating'));
   const rating =
     Number.isInteger(ratingParam) && ratingParam >= 1 && ratingParam <= 5 ? ratingParam : null;
@@ -42,9 +42,10 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     ? (sortParam as ReviewSort)
     : 'newest';
 
-  const [list, user, summary] = await Promise.all([
-    listProductReviews(product.id, { page, limit, rating, withPhotos, sort }),
-    getCurrentUser(),
+  // Foydalanuvchi AVVAL: ro'yxatda qaysi sharhlarga «foydali» bosgani belgilanadi.
+  const user = await getCurrentUser();
+  const [list, summary] = await Promise.all([
+    listProductReviews(product.id, { page, limit, rating, withPhotos, sort, viewerId: user?.id }),
     // Xulosa (yulduzlar taqsimoti, suratlilar soni) filtrga bog'liq emas
     // va faqat birinchi sahifada kerak — keyingi sahifalarda so'ralmaydi.
     page === 1 ? reviewSummary(product.id) : Promise.resolve(null),

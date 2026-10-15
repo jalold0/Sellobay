@@ -388,7 +388,16 @@
     "storeProducts": "{count} товаров",
     "storeNoRating": "Пока без оценок",
     "otherSellers": "В других магазинах",
-    "otherSellersHint": "Похожие товары — сначала надёжные магазины"
+    "otherSellersHint": "Похожие товары — сначала надёжные магазины",
+    "spec": {
+      "material": "Материал",
+      "composition": "Состав",
+      "country": "Страна производства",
+      "season": "Сезон",
+      "care": "Уход",
+      "warranty": "Гарантия"
+    },
+    "specsTitle": "Характеристики"
   },
   "cart": {
     "title": "Корзина",
@@ -1058,7 +1067,12 @@
     "filterPhotos": "С фото ({count})",
     "filterStars": "{star} звезд.",
     "showMore": "Показать ещё",
-    "noMatch": "Нет отзывов по этому фильтру"
+    "noMatch": "Нет отзывов по этому фильтру",
+    "sortHelpful": "Самые полезные",
+    "sortNewest": "Новые",
+    "helpful": "Полезно",
+    "helpfulCount": "Полезно · {count}",
+    "helpfulLogin": "Войдите, чтобы оценить отзыв"
   },
   "brand": {
     "notFound": "Бренд не найден",

@@ -107,7 +107,76 @@ class ReviewTile extends StatelessWidget {
             const SizedBox(height: 10),
             ReviewPhotoStrip(urls: review.images),
           ],
+          if (!isMine) ...[
+            const SizedBox(height: 8),
+            HelpfulButton(key: ValueKey(review.id), review: review),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// «Foydali» tugmasi. Holat va son SERVERdan (bosilgach javobdan) olinadi.
+///
+/// O'z sharhida ko'rsatilmaydi (server ham rad etadi). Mehmon bossa — kirish
+/// taklifi, ovoz yo'qolmaydi deb aldamaymiz.
+class HelpfulButton extends StatefulWidget {
+  const HelpfulButton({super.key, required this.review});
+
+  final ProductReview review;
+
+  @override
+  State<HelpfulButton> createState() => _HelpfulButtonState();
+}
+
+class _HelpfulButtonState extends State<HelpfulButton> {
+  late bool _voted = widget.review.votedByMe;
+  late int _count = widget.review.helpfulCount;
+  bool _busy = false;
+
+  Future<void> _toggle() async {
+    if (_busy) return;
+    if (AuthScope.read(context).status != AuthStatus.signedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.t('reviews.helpfulLogin'))),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final res = await SellobayRuntimeScope.of(context).reviews.toggleHelpful(widget.review.id);
+      if (!mounted) return;
+      setState(() {
+        _voted = res.helpful;
+        _count = res.helpfulCount;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.errorText(e))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _count > 0
+        ? context.t('reviews.helpfulCount', params: {'count': _count})
+        : context.t('reviews.helpful');
+    return Semantics(
+      toggled: _voted,
+      child: OutlinedButton.icon(
+        onPressed: _busy ? null : _toggle,
+        icon: Icon(_voted ? Icons.thumb_up : Icons.thumb_up_outlined, size: 15),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          foregroundColor: _voted ? SellobayColors.primary : SellobayColors.mutedText,
+          side: BorderSide(color: _voted ? SellobayColors.primary : SellobayColors.border),
+          textStyle: const TextStyle(fontSize: SellobayType.caption, fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
       ),
     );
   }

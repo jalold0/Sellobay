@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { ProductImageUploader } from '@/components/products/image-uploader';
+import { SpecsEditor, specsPayload, type SpecRow } from '@/components/products/specs-editor';
 import { meSeller } from '@/lib/auth/client';
 
 interface CategoryItem {
@@ -80,6 +81,7 @@ export default function SellerNewProductPage() {
     });
   }, []);
 
+  const [specs, setSpecs] = React.useState<SpecRow[]>([]);
   const [form, setForm] = React.useState({
     nameUz: '',
     nameRu: '',
@@ -189,6 +191,8 @@ export default function SellerNewProductPage() {
       payload.weightGrams = Number(form.weightGrams);
     if (form.brandSlug) payload.brandSlug = form.brandSlug;
     if (images.length > 0) payload.imageUrls = images;
+    const specRows = specsPayload(specs);
+    if (specRows.length > 0) payload.specs = specRows;
     // Variantlar (faqat bittasi bo'lsa ham yuboramiz, server color/size bo'sh bo'lganlarini skip qiladi)
     const filledVariants = variants
       .map((v) => ({
@@ -384,6 +388,15 @@ export default function SellerNewProductPage() {
             </CardHeader>
             <CardContent>
               <ProductImageUploader value={images} onChange={setImages} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Xususiyatlar</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SpecsEditor value={specs} onChange={setSpecs} idPrefix="new-spec" />
             </CardContent>
           </Card>
         </div>

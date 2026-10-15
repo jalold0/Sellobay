@@ -272,6 +272,9 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   final List<ProductReview> _items = [];
   ReviewSummary? _summary;
   ReviewFilter _filter = const AllReviews();
+
+  /// «Eng foydali» saralash (aks holda — yangilari birinchi).
+  bool _mostHelpful = false;
   int _page = 1;
   bool _hasMore = false;
   bool _loading = true;
@@ -296,7 +299,11 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       _error = null;
     });
     try {
-      final page = await _repo.fetchForProduct(widget.slug, filter: _filter);
+      final page = await _repo.fetchForProduct(
+        widget.slug,
+        filter: _filter,
+        mostHelpful: _mostHelpful,
+      );
       if (!mounted || id != _requestId) return;
       setState(() {
         _items
@@ -321,7 +328,12 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     final id = _requestId;
     setState(() => _loadingMore = true);
     try {
-      final page = await _repo.fetchForProduct(widget.slug, page: _page + 1, filter: _filter);
+      final page = await _repo.fetchForProduct(
+        widget.slug,
+        page: _page + 1,
+        filter: _filter,
+        mostHelpful: _mostHelpful,
+      );
       if (!mounted || id != _requestId) return;
       setState(() {
         _items.addAll(page.items);
@@ -461,6 +473,25 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
+          // Saralash — filtrlardan oldin, belgisi bilan ajralib turadi.
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.thumb_up_outlined, size: 15),
+              label: Text(context.t('reviews.sortHelpful')),
+              selected: _mostHelpful,
+              showCheckmark: false,
+              onSelected: (v) {
+                setState(() {
+                  _mostHelpful = v;
+                  _items.clear();
+                });
+                _load();
+              },
+              labelStyle: const TextStyle(fontSize: SellobayType.caption, fontWeight: FontWeight.w600),
+              side: const BorderSide(color: SellobayColors.border),
+            ),
+          ),
           for (final (filter, label, enabled) in chips)
             Padding(
               padding: const EdgeInsets.only(right: 8),

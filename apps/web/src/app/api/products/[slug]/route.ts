@@ -2,6 +2,7 @@
 // GET /api/products/[slug] — slug bo'yicha to'liq mahsulot
 
 import { ApiDomainError } from '@ecom/api-contract';
+import { readProductSpecs } from '@ecom/core-domain';
 
 import { withApi } from '@/lib/api-handler';
 import { PUBLIC_CATALOG } from '@/lib/product-visibility';
@@ -127,6 +128,8 @@ export const GET = withApi<{ slug: string }>(async (_req, { params }) => {
           productCount: product.seller._count.products,
         }
       : null,
+    // Xususiyatlar (material, tarkib...). Nomi klientda: key → tarjima, aks holda label.
+    specs: readProductSpecs(product.specs),
     images: product.images,
     categories: product.categories.map((c: (typeof product.categories)[number]) => c.category),
     stock,

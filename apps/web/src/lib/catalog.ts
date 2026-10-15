@@ -10,6 +10,7 @@
 //    serverless cold-start va connection overhead'ini tejaydi). 'products' tag
 //    orqali invalidatsiya qilinadi (mahsulot o'zgarsa revalidateTag('products')).
 
+import { readProductSpecs, type ProductSpecEntry } from '@ecom/core-domain';
 import { isRealProductImageUrl, picsumSeed } from '@ecom/utils';
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
@@ -344,6 +345,8 @@ export interface ProductDetailExtras {
   reviews: DbProductReview[]; // tasdiqlangan sharhlar (bo'lmasa bo'sh)
   /** Do'kon bloki. `null` — platformaning o'z tovari. */
   seller: ProductSellerInfo | null;
+  /** Sotuvchi kiritgan xususiyatlar. */
+  specs: ProductSpecEntry[];
 }
 
 export interface ProductSellerInfo {
@@ -386,6 +389,7 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
         sku: true,
         weightGrams: true,
         description: true,
+        specs: true,
         seller: {
           select: {
             id: true,
@@ -468,6 +472,7 @@ export async function fetchProductDetailExtras(slug: string): Promise<ProductDet
       sku: row.sku,
       weightGrams: row.weightGrams,
       description: (row.description as LocalizedText | null) ?? null,
+      specs: readProductSpecs(row.specs),
       seller: row.seller
         ? {
             id: row.seller.id,

@@ -4,6 +4,7 @@
 import { findById, type LocalizedText, type MockProduct, products } from './mock-data';
 
 import type { ProductSellerInfo, ProductVariantRow } from './catalog';
+import type { ProductSpecEntry } from '@ecom/core-domain';
 
 export interface ProductGalleryImage {
   seed: string;
@@ -47,7 +48,10 @@ export interface ProductQuestion {
 }
 
 export interface ProductSpec {
+  /** Sotuvchi yozgan yoki ichki nom. `labelKey` bo'lsa ishlatilmaydi. */
   label: LocalizedText;
+  /** Ma'lum xususiyat — nomi tarjimadan (`product.<labelKey>`). */
+  labelKey?: string;
   value: string;
 }
 
@@ -156,6 +160,8 @@ export interface ProductDetailRealExtras {
   variants?: ProductVariantRow[];
   /** Do'kon bloki uchun. */
   seller?: ProductSellerInfo | null;
+  /** Sotuvchi kiritgan xususiyatlar (material, tarkib...). */
+  specs?: ProductSpecEntry[];
 }
 
 // Keng tarqalgan rang nomlari → hex (variant rang tanlagichi uchun)
@@ -274,6 +280,16 @@ export function buildProductDetail(
     //   • "SKU: ECM-<id>"         — haqiqiy SKU bazada bor, u to'qishning hojati yo'q
     //   • "Reyting"               — reyting sahifaning boshqa joyida ko'rsatiladi
     specs: [
+      // Sotuvchi kiritgan xususiyatlar BIRINCHI — xaridor aynan shularni izlaydi.
+      ...(real?.specs ?? []).map((s) =>
+        s.key
+          ? {
+              label: { uz: s.key, ru: s.key, en: s.key },
+              labelKey: `spec.${s.key}`,
+              value: s.value,
+            }
+          : { label: { uz: s.label ?? '', ru: s.label ?? '', en: s.label ?? '' }, value: s.value },
+      ),
       ...(product.brand
         ? [{ label: { uz: 'Brend', ru: 'Бренд', en: 'Brand' }, value: product.brand }]
         : []),

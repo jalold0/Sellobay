@@ -325,6 +325,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   ),
                 ),
               ],
+              if (product.specs.isNotEmpty) ..._specsSection(context, product.specs),
               if (product.seller case final seller?) ...[
                 const SizedBox(height: 22),
                 SellerCard(seller: seller, onOpen: () => _openStore(seller)),
@@ -337,6 +338,64 @@ class _ProductScreenState extends State<ProductScreen> {
       ],
     );
   }
+
+  /// Xususiyatlar jadvali: material, tarkib, mamlakat... Ma'lum turlar
+  /// nomi tarjimadan, boshqasi — sotuvchi yozgan nom.
+  List<Widget> _specsSection(BuildContext context, List<ProductSpec> specs) => [
+        const SizedBox(height: 22),
+        Text(
+          context.t('product.specsTitle'),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: SellobayColors.border),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < specs.length; i++)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  decoration: BoxDecoration(
+                    border: i == 0
+                        ? null
+                        : const Border(top: BorderSide(color: SellobayColors.border)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          specs[i].key != null
+                              ? context.t('product.spec.${specs[i].key}')
+                              : specs[i].label ?? '',
+                          style: const TextStyle(
+                            fontSize: SellobayType.bodySm,
+                            color: SellobayColors.mutedText,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          specs[i].value,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            fontSize: SellobayType.bodySm,
+                            fontWeight: FontWeight.w600,
+                            color: SellobayColors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ];
 
   /// Do'konning boshqa tovarlari: katalog bo'limiga do'kon filtri bilan.
   void _openStore(SellerRef seller) {
