@@ -1,7 +1,8 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
 import * as React from 'react';
+
+import { captureExceptionLazy } from '../lib/sentry-lazy';
 
 /**
  * Root layout darajasidagi xatolar uchun. Bu yerga tushgan xato — sahifa
@@ -12,7 +13,8 @@ import * as React from 'react';
  */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   React.useEffect(() => {
-    Sentry.captureException(error);
+    // SDK kechiktirib yuklanadi (lib/sentry-lazy.ts) — xato baribir yuboriladi.
+    captureExceptionLazy(error);
   }, [error]);
 
   return (

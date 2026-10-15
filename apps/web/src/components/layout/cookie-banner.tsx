@@ -38,7 +38,7 @@ export function CookieBanner() {
               t.rich() ishlatiladi va havola joyi tarjimada belgilanadi. */}
           {t.rich('text', {
             policy: (chunks) => (
-              <Link href="/cookies" className="text-primary hover:underline">
+              <Link href="/cookies" prefetch={false} className="text-primary hover:underline">
                 {chunks}
               </Link>
             ),

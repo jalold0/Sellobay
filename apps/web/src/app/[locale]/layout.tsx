@@ -17,6 +17,7 @@ import { IosInstallSheet } from '../../components/pwa/ios-install-sheet';
 import { ServiceWorkerRegister } from '../../components/pwa/service-worker-register';
 import { StickyInstallBar } from '../../components/pwa/sticky-install-bar';
 import { OrganizationJsonLd } from '../../components/seo/structured-data';
+import { pickClientMessages } from '../../i18n/client-messages';
 import { routing } from '../../i18n/routing';
 import { fetchStorefrontCategories } from '../../lib/catalog';
 import { siteUrl } from '../../lib/site-url';
@@ -133,7 +134,7 @@ export default async function LocaleLayout({
     >
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <OrganizationJsonLd />
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <NextIntlClientProvider locale={locale} messages={pickClientMessages(messages)}>
           <QueryProvider>
             <TooltipProvider delayDuration={150}>
               <StoreHydrator />
