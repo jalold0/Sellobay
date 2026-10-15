@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/handover_card.dart';
 import '../widgets/order_status_chip.dart';
 
 /// Bitta buyurtma.
@@ -261,6 +262,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> with WidgetsBindi
         if (order.receiptResubmit != null) ...[
           const SizedBox(height: 10),
           _receiptRejected(context, order, order.receiptResubmit!),
+        ],
+        if (order.handover != null) ...[
+          const SizedBox(height: 16),
+          HandoverCard(handover: order.handover!),
+          const HandoverHint(),
         ],
         if (order.tracking != null) ...[
           const SizedBox(height: 20),

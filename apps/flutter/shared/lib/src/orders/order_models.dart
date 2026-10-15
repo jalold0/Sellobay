@@ -224,6 +224,7 @@ class OrderDetail {
     required this.paymentReview,
     this.receiptResubmit,
     this.tracking,
+    this.handover,
     required this.placedAt,
     required this.deliveredAt,
     required this.editable,
@@ -259,6 +260,7 @@ class OrderDetail {
       tracking: order['tracking'] == null
           ? null
           : OrderTracking.fromJson(order['tracking'] as Map<String, dynamic>),
+      handover: OrderHandover.maybe(order['handover']),
       placedAt: DateTime.tryParse(order['placedAt'] as String? ?? ''),
       deliveredAt: DateTime.tryParse(order['deliveredAt'] as String? ?? ''),
       editable: order['editable'] as bool? ?? false,
@@ -303,6 +305,9 @@ class OrderDetail {
 
   /// 3PL (ADR 0015): kim olib bormoqda va trek raqami. `null` — hali topshirilmagan.
   final OrderTracking? tracking;
+
+  /// Kuryer yo'lda — kuryerga ko'rsatiladigan kod (ADR 0017). `null` — hali kerak emas.
+  final OrderHandover? handover;
   final DateTime? placedAt;
   final DateTime? deliveredAt;
   final bool editable;
@@ -328,6 +333,28 @@ class ReceiptResubmit {
 
   final String? reason;
   final DateTime? deadline;
+}
+
+/// Mijozga topshirish kodi (ADR 0017): kuryer QR'ni skanerlaydi yoki 4 raqamni so'raydi.
+class OrderHandover {
+  const OrderHandover({required this.pin, required this.qrPayload, required this.parcelCode});
+
+  static OrderHandover? maybe(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final pin = json['pin'] as String?;
+    final qr = json['qrPayload'] as String?;
+    if (pin == null || qr == null) return null;
+    return OrderHandover(pin: pin, qrPayload: qr, parcelCode: json['parcelCode'] as String? ?? '');
+  }
+
+  /// Kuryerga aytiladigan 4 raqam.
+  final String pin;
+
+  /// Ekrandagi QR matni.
+  final String qrPayload;
+
+  /// Posilka yorlig'idagi kod — mijoz qo'lidagi posilkani solishtirishi uchun.
+  final String parcelCode;
 }
 
 /// Logistika kompaniyasi va trek raqami — mijoz kompaniya saytida kuzatishi uchun.
@@ -359,6 +386,7 @@ class TrackedOrder {
     required this.deliveryMethod,
     required this.itemCount,
     required this.timeline,
+    this.handover,
   });
 
   factory TrackedOrder.fromJson(Map<String, dynamic> json) {
@@ -375,6 +403,7 @@ class TrackedOrder {
           .cast<Map<String, dynamic>>()
           .map(TrackedStep.fromJson)
           .toList(),
+      handover: OrderHandover.maybe(order['handover']),
     );
   }
 
@@ -388,6 +417,9 @@ class TrackedOrder {
 
   /// Holat tarixi — eng eskisidan boshlab.
   final List<TrackedStep> timeline;
+
+  /// Mehmonning topshirish kodi — kabineti yo'q, kodni faqat shu yerda ko'radi.
+  final OrderHandover? handover;
 }
 
 /// Kuzatuvdagi bitta qadam.

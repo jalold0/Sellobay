@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
 
+import '../courier_location.dart';
 import '../widgets/delivery_card.dart';
 import 'courier_profile_screen.dart';
 import 'delivery_detail_screen.dart';
+import 'scan_screen.dart';
 
 /// Kuryerning topshiriqlari.
 ///
@@ -82,9 +84,50 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
     if (mounted) await _load();
   }
 
+  /// Yorliqlarni ketma-ket skanerlash (ADR 0017): har posilka darhol kuryerga
+  /// o'tadi va «olindi» bo'ladi, ekran keyingisi uchun ochiq qoladi.
+  Future<void> _scan() async {
+    final repo = _repo;
+    await Navigator.of(context).push(
+      MaterialPageRoute<String>(
+        builder: (scanContext) => ScanScreen(
+          title: scanContext.t('courier.scanTitle'),
+          onDetect: (raw) async {
+            try {
+              final gps = await CourierLocation.current();
+              final result = await repo.scanParcel(
+                raw,
+                latitude: gps?.latitude,
+                longitude: gps?.longitude,
+              );
+              if (!scanContext.mounted) return const ScanOutcome.ok(null);
+              final label = result.delivery.parcelCode ?? result.delivery.orderNumber;
+              final done = scanContext.t(
+                result.pickedUp ? 'courier.pickedUp' : 'courier.alreadyHeld',
+              );
+              return ScanOutcome.ok('$label: $done');
+            } catch (e) {
+              if (!scanContext.mounted) return const ScanOutcome.error(null);
+              return ScanOutcome.error(scanContext.errorText(e));
+            }
+          },
+        ),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _scan,
+        backgroundColor: SellobayColors.primary,
+        foregroundColor: Colors.white,
+        shape: const StadiumBorder(),
+        icon: const Icon(Icons.qr_code_scanner),
+        label: Text(context.t('courier.scan')),
+      ),
       appBar: AppBar(
         title: Text(context.t('courier.deliveriesTitle')),
         actions: [
@@ -138,7 +181,8 @@ class _DeliveriesScreenState extends State<DeliveriesScreen> {
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      // Pastda «Skanerlash» tugmasi uchun joy.
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
       children: [
         if (_stats != null) ...[
           _statsCard(context, _stats!),

@@ -39,20 +39,80 @@ enum DeliveryStatus {
   }
 }
 
+/// Variant tanlovi: «Rang — Qizil», «O'lcham — 42 EU».
+class DeliveryItemOption {
+  const DeliveryItemOption({required this.name, required this.value});
+
+  factory DeliveryItemOption.fromJson(Map<String, dynamic> json) => DeliveryItemOption(
+        name: LocalizedText.fromJson(json['name']),
+        value: LocalizedText.fromJson(json['value']),
+      );
+
+  final LocalizedText name;
+  final LocalizedText value;
+}
+
 /// Yetkazishdagi buyurtma pozitsiyasi.
+///
+/// Rasm, SKU va variant — kuryer posilka ichidagini tekshira olsin: bir xil
+/// nomli ikki rangdagi ko'ylakni nomidan ajratib bo'lmaydi.
 class DeliveryItem {
-  const DeliveryItem({required this.id, required this.name, required this.quantity});
+  const DeliveryItem({
+    required this.id,
+    required this.name,
+    required this.quantity,
+    this.sku,
+    this.imageUrl,
+    this.options = const [],
+  });
 
   factory DeliveryItem.fromJson(Map<String, dynamic> json) => DeliveryItem(
         id: json['id'] as String,
         // Buyurtma berilgan paytdagi nom, ko'p tilli.
         name: LocalizedText.fromJson(json['nameSnapshot']),
         quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+        sku: json['sku'] as String?,
+        imageUrl: json['imageUrl'] as String?,
+        options: (json['variant'] as List<dynamic>? ?? const [])
+            .cast<Map<String, dynamic>>()
+            .map(DeliveryItemOption.fromJson)
+            .toList(),
       );
 
   final String id;
   final LocalizedText name;
   final int quantity;
+  final String? sku;
+  final String? imageUrl;
+  final List<DeliveryItemOption> options;
+}
+
+/// Mijozga topshirish holati (ADR 0017). Kodning O'ZI bu yerda yo'q —
+/// server uni kuryerga hech qachon bermaydi.
+class HandoverState {
+  const HandoverState({
+    required this.required,
+    required this.attemptsLeft,
+    required this.locked,
+    required this.method,
+  });
+
+  factory HandoverState.fromJson(Map<String, dynamic>? json) => HandoverState(
+        required: json?['required'] as bool? ?? false,
+        attemptsLeft: (json?['attemptsLeft'] as num?)?.toInt() ?? 0,
+        locked: json?['locked'] as bool? ?? false,
+        method: json?['method'] as String?,
+      );
+
+  /// «Yetkazildi» uchun mijozning kodi kerakmi (qaytarishda — yo'q).
+  final bool required;
+  final int attemptsLeft;
+
+  /// Kod ko'p marta xato kiritilgan — faqat surat bilan topshirish qoldi.
+  final bool locked;
+
+  /// Qanday topshirilgan: QR / CODE / PHOTO / MANUAL (topshirilmagan — null).
+  final String? method;
 }
 
 /// Kuryerga ko'rinadigan yetkazish (`GET /api/courier/deliveries`).
@@ -79,6 +139,15 @@ class CourierDelivery {
     required this.recipientPhone,
     required this.itemCount,
     required this.items,
+    this.parcelCode,
+    this.codAmount,
+    this.notes,
+    this.handover = const HandoverState(
+      required: false,
+      attemptsLeft: 0,
+      locked: false,
+      method: null,
+    ),
   });
 
   factory CourierDelivery.fromJson(Map<String, dynamic> json) {
@@ -120,6 +189,11 @@ class CourierDelivery {
       recipientName: order['recipientName'] as String?,
       recipientPhone: order['recipientPhone'] as String?,
       itemCount: (order['itemCount'] as num?)?.toInt() ?? 0,
+      parcelCode: json['parcelCode'] as String?,
+      // Naqd summa — `null` bo'lsa buyurtma to'langan, pul olinmaydi.
+      codAmount: order['codAmount'] == null ? null : parseMoney(order['codAmount']),
+      notes: order['notes'] as String?,
+      handover: HandoverState.fromJson(json['handover'] as Map<String, dynamic>?),
       items: (order['items'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()
           .map(DeliveryItem.fromJson)
@@ -163,6 +237,32 @@ class CourierDelivery {
   final String? recipientPhone;
   final int itemCount;
   final List<DeliveryItem> items;
+
+  /// Yorliqdagi posilka kodi (`SB-XXXX-XXXX`) — skanerlangani shu ekanini solishtirish uchun.
+  final String? parcelCode;
+
+  /// Eshik oldida olinadigan naqd pul; `null` — to'langan.
+  final Decimal? codAmount;
+
+  /// Mijozning izohi (domofon, mo'ljal...). Faqat olgan kuryerga keladi.
+  final String? notes;
+
+  final HandoverState handover;
+}
+
+/// Yorliq skanerlash natijasi (`POST /api/courier/scan`).
+class ParcelScanResult {
+  const ParcelScanResult({required this.delivery, required this.pickedUp});
+
+  factory ParcelScanResult.fromJson(Map<String, dynamic> json) => ParcelScanResult(
+        delivery: CourierDelivery.fromJson(json['delivery'] as Map<String, dynamic>),
+        pickedUp: json['pickedUp'] as bool? ?? false,
+      );
+
+  final CourierDelivery delivery;
+
+  /// Shu skanda «olindi» bo'ldimi (`false` — posilka allaqachon kuryerda edi).
+  final bool pickedUp;
 }
 
 /// Ro'yxat javobi: o'ziniki va bo'shlari.

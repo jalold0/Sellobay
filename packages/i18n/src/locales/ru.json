@@ -1433,7 +1433,7 @@
     "torch": "Фонарик",
     "cameraDenied": "Нет доступа к камере. Включите его в настройках или введите код вручную.",
     "manualEntry": "Ввести код вручную",
-    "manualHint": "Код SB-XXXX-XXXX с этикетки",
+    "manualHint": "SB-XXXX-XXXX",
     "manualSubmit": "Забрать посылку",
     "pickedUp": "Посылка забрана",
     "alreadyHeld": "Эта посылка уже у вас",

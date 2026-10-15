@@ -1433,7 +1433,7 @@
     "torch": "Chiroq",
     "cameraDenied": "Kameraga ruxsat yo‘q. Sozlamalardan yoqing yoki kodni qo‘lda kiriting.",
     "manualEntry": "Kodni qo‘lda kiritish",
-    "manualHint": "Yorliqdagi SB-XXXX-XXXX kodi",
+    "manualHint": "SB-XXXX-XXXX",
     "manualSubmit": "Posilkani olish",
     "pickedUp": "Posilka olindi",
     "alreadyHeld": "Bu posilka allaqachon sizda",

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sellobay_courier/src/courier_location.dart';
 import 'package:sellobay_courier/src/screens/deliveries_screen.dart';
 import 'package:sellobay_courier/src/screens/delivery_detail_screen.dart';
 import 'package:sellobay_shared/sellobay_shared.dart';
@@ -113,6 +114,8 @@ Future<SellobayRuntime> pump(WidgetTester tester, FakeBackend backend, Widget ho
 
 void main() {
   setUpAll(() async {
+    // Testda GPS yo'q — joylashuvsiz yuboriladi (ilovada ham «iloji bo'lsa»).
+    CourierLocation.source = () async => null;
     TestWidgetsFlutterBinding.ensureInitialized();
     uz = LocaleController(initialLocale: 'uz');
     await uz.load();

@@ -28,6 +28,22 @@ class CourierRepository {
     return CourierDelivery.fromJson(data['delivery'] as Map<String, dynamic>);
   }
 
+  /// Posilka yorlig'ini skanerlab qo'lga olish (ADR 0017).
+  ///
+  /// [payload] — kamera o'qigan matn yoki qo'lda terilgan `SB-XXXX-XXXX`.
+  /// Egasiz posilka kuryerga biriktiriladi va «olindi» bo'ladi.
+  Future<ParcelScanResult> scanParcel(
+    String payload, {
+    double? latitude,
+    double? longitude,
+  }) async {
+    final data = await _api.post<Map<String, dynamic>>(
+      '/api/courier/scan',
+      body: {'payload': payload, 'latitude': ?latitude, 'longitude': ?longitude},
+    );
+    return ParcelScanResult.fromJson(data);
+  }
+
   /// Holatni oldinga surish.
   ///
   /// [status] `CourierDelivery.nextStatuses` dan olinadi — ro'yxatni
@@ -43,6 +59,7 @@ class CourierRepository {
     double? latitude,
     double? longitude,
     String? proofPhotoUrl,
+    HandoverProof? handover,
   }) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/api/courier/deliveries/$deliveryId/status',
@@ -52,6 +69,7 @@ class CourierRepository {
         'latitude': ?latitude,
         'longitude': ?longitude,
         'proofPhotoUrl': ?proofPhotoUrl,
+        'handover': ?handover?.toJson(),
       },
     );
     return CourierDelivery.fromJson(data['delivery'] as Map<String, dynamic>);
@@ -84,4 +102,17 @@ class CourierRepository {
     final data = await _api.get<Map<String, dynamic>>('/api/courier/stats');
     return CourierStats.fromJson(data['stats'] as Map<String, dynamic>);
   }
+}
+
+/// Mijozdan olingan topshirish kodi: QR'dagi butun matn yoki og'zaki 4 raqam.
+///
+/// Tekshiruv SERVERDA — ilova to'g'ri kodni bilmaydi.
+class HandoverProof {
+  const HandoverProof.qr(this.value) : method = 'QR';
+  const HandoverProof.code(this.value) : method = 'CODE';
+
+  final String method;
+  final String value;
+
+  Map<String, Object?> toJson() => {'method': method, 'value': value};
 }

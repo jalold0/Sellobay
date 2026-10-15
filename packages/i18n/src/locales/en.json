@@ -1433,7 +1433,7 @@
     "torch": "Torch",
     "cameraDenied": "No camera access. Turn it on in settings or type the code.",
     "manualEntry": "Type the code",
-    "manualHint": "The SB-XXXX-XXXX code on the label",
+    "manualHint": "SB-XXXX-XXXX",
     "manualSubmit": "Pick up parcel",
     "pickedUp": "Parcel picked up",
     "alreadyHeld": "This parcel is already with you",
