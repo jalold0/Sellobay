@@ -2,6 +2,7 @@ import { safeInternalPath } from '@ecom/utils';
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import { phoneLoginAvailable } from '@/lib/auth/sms';
 
 import { LoginFlow } from '../../../components/auth/login-flow';
 
@@ -23,5 +24,5 @@ export default async function LoginPage({
     // yo'llardi (audit SEC-03). safeInternalPath bunday qiymatni '/' ga aylantiradi.
     redirect(next ? safeInternalPath(next) : `/${params.locale}/profile`);
   }
-  return <LoginFlow />;
+  return <LoginFlow phoneLogin={phoneLoginAvailable()} />;
 }

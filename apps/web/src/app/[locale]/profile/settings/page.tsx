@@ -1,18 +1,24 @@
-'use client';
-
-import { Button, Card, Input, Label, Switch, toast } from '@ecom/ui';
+import { Card } from '@ecom/ui';
 import { AlertTriangle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-export default function ProfileSettingsPage() {
-  const t = useTranslations('profile.settingsPage');
+import { PasswordForm } from '../../../../components/profile/password-form';
+import { SupportChannels } from '../../../../components/support/support-channels';
+import { hasSupport, supportContacts } from '../../../../lib/support';
 
-  const notifications = [
-    { label: t('notifEmailLabel'), desc: t('notifEmailDesc') },
-    { label: t('notifSmsLabel'), desc: t('notifSmsDesc') },
-    { label: t('notifPushLabel'), desc: t('notifPushDesc') },
-    { label: t('notifMarketingLabel'), desc: t('notifMarketingDesc') },
-  ];
+/**
+ * Profil sozlamalari.
+ *
+ * Ilgari bu yerda uchta soxta boshqaruv bor edi (audit FUN-04):
+ *   • parol formasi faqat «parol yangilandi» xabarini ko'rsatardi — endi API'ga ulangan;
+ *   • bildirishnoma kalitlari hech qayerga saqlanmasdi — olib tashlandi (server tomoni
+ *     yo'q; qo'shilganda qaytadi);
+ *   • «Hisobni o'chirish» tugmasi hech narsa qilmasdi — endi qo'llab-quvvatlash orqali.
+ */
+export default async function ProfileSettingsPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
+  const t = await getTranslations('profile.settingsPage');
+  const support = supportContacts();
 
   return (
     <div className="space-y-6">
@@ -20,50 +26,15 @@ export default function ProfileSettingsPage() {
 
       <Card className="p-5">
         <h2 className="mb-4 font-semibold">{t('passwordTitle')}</h2>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <Label className="text-xs">{t('currentPassword')}</Label>
-            <Input type="password" />
-          </div>
-          <div className="md:col-span-2 grid gap-3 md:grid-cols-2">
-            <div>
-              <Label className="text-xs">{t('newPassword')}</Label>
-              <Input type="password" />
-            </div>
-            <div>
-              <Label className="text-xs">{t('confirmPassword')}</Label>
-              <Input type="password" />
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 flex justify-end">
-          <Button onClick={() => toast({ title: t('passwordUpdated'), variant: 'success' })}>
-            {t('update')}
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="p-5">
-        <h2 className="mb-4 font-semibold">{t('notificationsTitle')}</h2>
-        <div className="space-y-3">
-          {notifications.map((n, i) => (
-            <div key={n.label} className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <div className="text-sm font-medium">{n.label}</div>
-                <div className="text-xs text-muted-foreground">{n.desc}</div>
-              </div>
-              <Switch defaultChecked={i < 2} />
-            </div>
-          ))}
-        </div>
+        <PasswordForm />
       </Card>
 
       <Card className="border-red-200 p-5">
         <h2 className="mb-2 flex items-center gap-2 font-semibold text-red-700">
-          <AlertTriangle size={16} /> {t('dangerTitle')}
+          <AlertTriangle size={16} aria-hidden="true" /> {t('dangerTitle')}
         </h2>
-        <p className="mb-4 text-sm text-muted-foreground">{t('dangerDesc')}</p>
-        <Button variant="destructive">{t('deleteAccount')}</Button>
+        <p className="text-muted-foreground mb-4 text-sm">{t('dangerViaSupport')}</p>
+        {hasSupport(support) ? <SupportChannels support={support} /> : null}
       </Card>
     </div>
   );

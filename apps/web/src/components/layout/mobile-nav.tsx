@@ -8,6 +8,9 @@ import * as React from 'react';
 
 import { Link } from '@/i18n/navigation';
 
+import { telHref } from '../../lib/support';
+import { useSupportContacts } from '../../lib/use-support';
+
 import type { CategorySummary } from '../../lib/catalog';
 
 /**
@@ -57,6 +60,8 @@ export function MobileNav({ categories }: Props) {
   const common = useTranslations('common');
   const cat = useTranslations('categories');
   const footerLinks = useTranslations('footer.links');
+  // Telefon ENV dan; sozlanmagan bo'lsa blok ko'rsatilmaydi (audit TRU-01).
+  const support = useSupportContacts();
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -158,16 +163,18 @@ export function MobileNav({ categories }: Props) {
           </div>
         </div>
 
-        <div className="border-t p-4">
-          <a
-            href="tel:+998712000000"
-            className="bg-secondary/50 flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium"
-          >
-            <Phone size={16} className="text-primary" />
-            <span>+998 71 200 00 00</span>
-          </a>
-          <div className="text-muted-foreground mt-1 px-3 text-xs">{nav('support247')}</div>
-        </div>
+        {support.phone ? (
+          <div className="border-t p-4">
+            <a
+              href={telHref(support.phone)}
+              className="bg-secondary/50 flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium"
+            >
+              <Phone size={16} className="text-primary" />
+              <span>{support.phone}</span>
+            </a>
+            <div className="text-muted-foreground mt-1 px-3 text-xs">{nav('support247')}</div>
+          </div>
+        ) : null}
       </SheetContent>
     </Sheet>
   );

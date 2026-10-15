@@ -18,7 +18,7 @@ export default function CareersPage({ params }: { params: { locale: string } }) 
         'DevOps va SRE muhandislar',
         'Marketing va Product menejerlar',
       ]}
-      cta={{ label: 'CV yuborish', href: 'mailto:hr@example.uz' }}
+      cta={{ label: "Biz bilan bog'lanish", href: '/contacts' }}
     />
   );
 }

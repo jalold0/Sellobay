@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Card, toast } from '@ecom/ui';
+import { Button, Card, Skeleton, toast } from '@ecom/ui';
 import {
   CalendarCheck,
   Coins,
@@ -18,7 +18,6 @@ import * as React from 'react';
 
 import { formatNumber } from '../../../../lib/format';
 import {
-  MOCK_LOYALTY,
   TIERS,
   coinsToSom,
   currentTier,
@@ -27,36 +26,42 @@ import {
   type CoinTxn,
 } from '../../../../lib/loyalty';
 
+/** Faqat tugma yozuvi uchun — haqiqiy qiymatni server beradi (`lib/loyalty-server.ts`). */
 const CHECKIN_REWARD = 5;
 
 export default function LoyaltyPage() {
   const t = useTranslations('loyalty');
 
-  const [coins, setCoins] = React.useState(MOCK_LOYALTY.coins);
-  const [spent, setSpent] = React.useState(MOCK_LOYALTY.spentSom);
-  const [history, setHistory] = React.useState<CoinTxn[]>(MOCK_LOYALTY.history);
+  const common = useTranslations('common');
+  const [coins, setCoins] = React.useState(0);
+  const [spent, setSpent] = React.useState(0);
+  const [history, setHistory] = React.useState<CoinTxn[]>([]);
   const [checkedIn, setCheckedIn] = React.useState(false);
+  // Ilgari boshlang'ich holat MOCK_LOYALTY edi (1240 coin, soxta tarix) va API xatosida
+  // shu qolardi — har bir mijoz o'zinikimas balansni ko'rardi (audit FUN-05).
+  const [status, setStatus] = React.useState<'loading' | 'ready' | 'error'>('loading');
 
-  // Haqiqiy balans/tarix — /api/loyalty (login bo'lsa). Xato/empty bo'lsa mock qoladi.
-  React.useEffect(() => {
-    let active = true;
+  const load = React.useCallback(() => {
+    setStatus('loading');
     fetch('/api/loyalty', { credentials: 'same-origin' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
-        if (!active || !res?.success || !res.data) return;
-        // Login muvaffaqiyatli — har doim haqiqiy data (bo'sh tarix ham haqiqiy)
+        if (!res?.success || !res.data) {
+          setStatus('error');
+          return;
+        }
         setCoins(res.data.coins);
         setSpent(res.data.spentSom);
         setHistory((res.data.history ?? []) as CoinTxn[]);
         setCheckedIn(Boolean(res.data.checkedInToday));
+        setStatus('ready');
       })
-      .catch(() => {
-        // mock fallback — hech narsa qilmaymiz
-      });
-    return () => {
-      active = false;
-    };
+      .catch(() => setStatus('error'));
   }, []);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
 
   const cur = currentTier(spent);
   const next = nextTier(spent);
@@ -79,19 +84,39 @@ export default function LoyaltyPage() {
           toast({ title: t('checkinToast'), variant: 'success', duration: 2000 });
         }
       } else {
-        // Login emas / xato — optimistik fallback (mock rejim)
-        setCheckedIn(true);
-        setCoins((c) => c + CHECKIN_REWARD);
-        toast({ title: t('checkinToast'), variant: 'success', duration: 2000 });
+        // Xato — coin QO'SHILMAYDI. Ilgari bu yerda lokal +5 va «muvaffaqiyat» xabari
+        // ko'rsatilardi, serverda esa hech narsa yozilmasdi (audit FUN-05).
+        toast({ title: json?.error?.message ?? common('error'), variant: 'destructive' });
       }
     } catch {
-      setCheckedIn(true);
-      setCoins((c) => c + CHECKIN_REWARD);
-      toast({ title: t('checkinToast'), variant: 'success', duration: 2000 });
+      toast({ title: common('networkError'), variant: 'destructive' });
     } finally {
       setClaiming(false);
     }
   };
+
+  if (status !== 'ready') {
+    return (
+      <div className="space-y-6">
+        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight md:text-3xl">
+          <Coins className="text-amber-500" size={28} /> {t('title')}
+        </h1>
+        {status === 'loading' ? (
+          <div className="space-y-4" aria-busy="true">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : (
+          <Card className="p-6 text-center">
+            <p className="text-muted-foreground text-sm">{common('networkError')}</p>
+            <Button className="mt-3" variant="outline" onClick={load}>
+              {common('retry')}
+            </Button>
+          </Card>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

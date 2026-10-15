@@ -604,7 +604,8 @@
       "workingHours": "Ish vaqti: {hours}",
       "mapUnavailable": "Xarita yuklanmadi. Manzilni qo‘lda yozing.",
       "locationDenied": "Joylashuvni aniqlashga ruxsat berilmadi."
-    }
+    },
+    "paymentNotStarted": "Buyurtma qabul qilindi, lekin to‘lov boshlanmadi — keyingi sahifada qayta urinib ko‘ring"
   },
   "auth": {
     "loginForOnlinePayment": "Onlayn to'lov uchun ro'yxatdan o'ting",
@@ -778,7 +779,13 @@
       "notifMarketingDesc": "Yangi mahsulotlar haqida",
       "dangerTitle": "Xavfli zona",
       "dangerDesc": "Hisobni o'chirish — bu amal ortga qaytarilmaydi. Barcha ma'lumotlaringiz 30 kun ichida butunlay o'chiriladi.",
-      "deleteAccount": "Hisobni o'chirish"
+      "deleteAccount": "Hisobni o'chirish",
+      "passwordMismatch": "Yangi parollar mos emas",
+      "passwordHint": "Kamida 8 ta belgi, harf va raqam bilan",
+      "passwordSignedOut": "Boshqa qurilmalardagi sessiyalar yopildi",
+      "saving": "Saqlanmoqda…",
+      "dangerViaSupport": "Hisobingizni o'chirmoqchi bo'lsangiz, qo'llab-quvvatlash xizmatiga yozing — so'rovingizni tekshirib, hisob va shaxsiy ma'lumotlaringizni o'chiramiz.",
+      "contactSupport": "Qo'llab-quvvatlashga yozish"
     },
     "addressesPage": {
       "title": "Manzillar",
@@ -1057,7 +1064,14 @@
     "subtitle": "Buyurtmangizni tasdiqlash uchun operator siz bilan tez orada bog'lanadi.",
     "orderNumber": "Buyurtma raqami",
     "goToOrders": "Buyurtmalarimga o'tish",
-    "openInApp": "Ilovada ochish"
+    "openInApp": "Ilovada ochish",
+    "pendingTitle": "Buyurtma qabul qilindi — to‘lov kutilmoqda",
+    "pendingDesc": "To‘lov hali amalga oshmagan. Buyurtma to‘langandan keyin yig‘iladi; to‘lanmasa muddati o‘tib bekor bo‘ladi.",
+    "payWith": "{provider} orqali to‘lash",
+    "payFailed": "To‘lov sahifasini ochib bo‘lmadi. Qayta urinib ko‘ring.",
+    "paidTitle": "To‘lov qabul qilindi",
+    "trackOrder": "Buyurtmani kuzatish",
+    "checking": "To‘lov holati tekshirilmoqda…"
   },
   "wallet": {
     "title": "Hamyon"

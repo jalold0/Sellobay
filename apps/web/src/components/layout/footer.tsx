@@ -2,6 +2,7 @@ import { Facebook, Instagram, Mail, MapPin, Phone, Send, Youtube } from 'lucide-
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
+import { socialLinks, supportContacts, telHref } from '@/lib/support';
 
 import { SellobayMark } from '../brand/sellobay-mark';
 
@@ -72,39 +73,36 @@ const COLUMNS: {
 const PAY_METHODS: { name: string; color: string }[] = [
   { name: 'Click', color: 'text-sky-500' },
   { name: 'Payme', color: 'text-cyan-400' },
-  { name: 'Uzum', color: 'text-purple-500' },
   { name: 'Uzcard', color: 'text-blue-500' },
   { name: 'Humo', color: 'text-green-500' },
   { name: 'Visa', color: 'text-blue-700' },
   { name: 'Master', color: 'text-orange-500' },
 ];
 
-const SOCIALS: { Icon: typeof Instagram; href: string; hoverColor: string; label: string }[] = [
-  {
-    Icon: Instagram,
-    href: 'https://instagram.com',
-    hoverColor: 'hover:text-pink-500',
-    label: 'Instagram',
-  },
-  {
-    Icon: Facebook,
-    href: 'https://facebook.com',
-    hoverColor: 'hover:text-blue-600',
-    label: 'Facebook',
-  },
-  { Icon: Send, href: 'https://t.me', hoverColor: 'hover:text-sky-500', label: 'Telegram' },
-  {
-    Icon: Youtube,
-    href: 'https://youtube.com',
-    hoverColor: 'hover:text-red-600',
-    label: 'YouTube',
-  },
-];
+// Ijtimoiy tarmoqlar ENV dan (SOCIAL_*). Ilgari bu yerda saytlarning bosh sahifalari
+// (`https://instagram.com`) turardi — Sellobay profili emas (audit TRU-01).
+function socials() {
+  const links = socialLinks();
+  return [
+    {
+      Icon: Instagram,
+      href: links.instagram,
+      hoverColor: 'hover:text-pink-500',
+      label: 'Instagram',
+    },
+    { Icon: Facebook, href: links.facebook, hoverColor: 'hover:text-blue-600', label: 'Facebook' },
+    { Icon: Send, href: links.telegram, hoverColor: 'hover:text-sky-500', label: 'Telegram' },
+    { Icon: Youtube, href: links.youtube, hoverColor: 'hover:text-red-600', label: 'YouTube' },
+  ].filter((x): x is typeof x & { href: string } => x.href !== null);
+}
 
 export function Footer() {
   const t = useTranslations('footer');
   const common = useTranslations('common');
   const nav = useTranslations('nav');
+  // Aloqa ENV dan; sozlanmagani ko'rsatilmaydi (audit TRU-01).
+  const support = supportContacts();
+  const socialItems = socials();
 
   return (
     <footer className="mt-16">
@@ -133,40 +131,46 @@ export function Footer() {
             </div>
             <p className="max-w-[280px] text-[13px] leading-[1.65] text-white/60">{t('tagline')}</p>
             <div className="space-y-1.5 text-sm">
-              <div className="flex items-center gap-2 text-white/70">
-                <Phone size={14} />{' '}
-                <a href="tel:+998712000000" className="hover:text-white">
-                  +998 71 200 00 00
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-white/70">
-                <Mail size={14} />{' '}
-                <a href="mailto:info@example.uz" className="hover:text-white">
-                  info@example.uz
-                </a>
-              </div>
+              {support.phone ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Phone size={14} />{' '}
+                  <a href={telHref(support.phone)} className="hover:text-white">
+                    {support.phone}
+                  </a>
+                </div>
+              ) : null}
+              {support.email ? (
+                <div className="flex items-center gap-2 text-white/70">
+                  <Mail size={14} />{' '}
+                  <a href={`mailto:${support.email}`} className="hover:text-white">
+                    {support.email}
+                  </a>
+                </div>
+              ) : null}
               <div className="flex items-center gap-2 text-white/70">
                 <MapPin size={14} />
                 <span>{t('address')}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 pt-3">
-              {SOCIALS.map(({ Icon, href, hoverColor, label }) => (
-                <a
-                  key={href}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={label}
-                  className={
-                    'grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/70 transition-all hover:-translate-y-0.5 hover:border-white/30 ' +
-                    hoverColor
-                  }
-                >
-                  <Icon size={16} />
-                </a>
-              ))}
-            </div>
+            {socialItems.length > 0 ? (
+              <div className="flex items-center gap-2 pt-3">
+                {socialItems.map(({ Icon, href, hoverColor, label }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={label}
+                    className={
+                      'grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/70 transition-all hover:-translate-y-0.5 hover:border-white/30 ' +
+                      hoverColor
+                    }
+                  >
+                    <Icon size={16} />
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-8 md:col-span-8 md:grid-cols-4">

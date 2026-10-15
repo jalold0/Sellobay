@@ -3,29 +3,41 @@
 
 import { jsonLdHtml } from '../../lib/json-ld';
 import { siteUrl } from '../../lib/site-url';
+import { socialLinks, supportContacts } from '../../lib/support';
 
 interface OrgProps {}
 
 export function OrganizationJsonLd(_props: OrgProps = {}) {
+  // Telefon va ijtimoiy tarmoqlar ENV dan — ilgari Google'ga soxta raqam va saytlarning
+  // bosh sahifalari berilardi (audit TRU-01). Sozlanmagani yuborilmaydi.
+  const support = supportContacts();
+  const social = socialLinks();
+  const sameAs = [social.instagram, social.facebook, social.youtube, social.telegram].filter(
+    (x): x is string => x !== null,
+  );
   const data = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Sellobay',
     url: siteUrl(),
     logo: `${siteUrl()}/icon-512.png`,
-    contactPoint: {
-      '@type': 'ContactPoint',
-      telephone: '+998-71-200-00-00',
-      contactType: 'customer service',
-      areaServed: 'UZ',
-      availableLanguage: ['uz', 'ru', 'en'],
-    },
+    ...(support.phone
+      ? {
+          contactPoint: {
+            '@type': 'ContactPoint',
+            telephone: support.phone,
+            contactType: 'customer service',
+            areaServed: 'UZ',
+            availableLanguage: ['uz', 'ru', 'en'],
+          },
+        }
+      : {}),
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'UZ',
       addressLocality: 'Toshkent',
     },
-    sameAs: ['https://www.instagram.com/', 'https://www.facebook.com/', 'https://t.me/'],
+    ...(sameAs.length > 0 ? { sameAs } : {}),
   };
   return (
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />

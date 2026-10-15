@@ -31,6 +31,7 @@ import {
 import { locales } from '@ecom/i18n';
 
 import { withApi } from '@/lib/api-handler';
+import { supportContacts } from '@/lib/support';
 
 export const runtime = 'nodejs';
 // Qoidalar kamdan-kam o'zgaradi — 5 daqiqa kesh yetarli.
@@ -82,9 +83,5 @@ export const GET = withApi(async () => ({
    * o'zgarsa qiymat 5 daqiqagacha eskirgan bo'lishi mumkin.
    * Aloqa ma'lumoti kamdan-kam o'zgaradi — bu yetarli.
    */
-  support: {
-    phone: process.env.SUPPORT_PHONE || null,
-    email: process.env.SUPPORT_EMAIL || null,
-    telegram: process.env.SUPPORT_TELEGRAM || null,
-  },
+  support: supportContacts(),
 }));
