@@ -74,7 +74,9 @@ function PrintSheet() {
 
   return (
     <div className="min-h-screen bg-neutral-100 py-6 print:bg-white print:py-0">
-      <style>{PARCEL_LABEL_CSS + PAGE_CSS[format]}</style>
+      {/* Matn sifatida bersak, React SSR'da qo'shtirnoqni ekranlaydi va gidratsiya buziladi. */}
+      {/* eslint-disable-next-line react/no-danger -- CSS bizning konstantalarimiz */}
+      <style dangerouslySetInnerHTML={{ __html: PARCEL_LABEL_CSS + PAGE_CSS[format] }} />
       <div className="mx-auto mb-6 flex max-w-xl items-center justify-between gap-3 px-4 print:hidden">
         <div className="text-sm">
           {labels

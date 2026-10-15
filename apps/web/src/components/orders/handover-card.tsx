@@ -56,7 +56,7 @@ export function HandoverCard({ handover }: { handover: HandoverInfo }) {
         <div className="mt-4">
           <div className="text-muted-foreground text-[12px] font-semibold">{t('codeLabel')}</div>
           <div
-            className="text-brand-bordeaux font-serif text-5xl font-bold tabular-nums tracking-[0.3em]"
+            className="text-brand-bordeaux font-serif text-5xl font-bold lining-nums tabular-nums tracking-[0.3em]"
             aria-label={handover.pin.split('').join(' ')}
           >
             {handover.pin}
