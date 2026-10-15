@@ -1,3 +1,4 @@
+import { privateDisallowPaths } from '../lib/robots-rules';
 import { siteUrl } from '../lib/site-url';
 
 import type { MetadataRoute } from 'next';
@@ -10,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/profile', '/cart', '/checkout', '/orders/success'],
+        disallow: privateDisallowPaths(),
       },
       {
         userAgent: 'GPTBot',

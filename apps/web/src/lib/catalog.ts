@@ -23,6 +23,7 @@ import {
   type CategorySummary,
 } from './category-tree';
 import { prisma } from './db';
+import { discountedProducts } from './discount';
 import { products as mockProducts, type LocalizedText, type MockProduct } from './mock-data';
 import { PUBLIC_CATALOG } from './product-visibility';
 
@@ -505,6 +506,8 @@ export async function fetchHomeProducts(): Promise<{
   featured: MockProduct[];
   collection: MockProduct[];
   sale: MockProduct[];
+  /** Haqiqiy chegirmadagilar — «Aksiya» bo'limi uchun (bo'sh bo'lishi mumkin). */
+  discounted: MockProduct[];
   source: 'db' | 'mock';
 }> {
   const { items, source } = await fetchProducts({ sort: 'popularity', limit: 24 });
@@ -514,6 +517,7 @@ export async function fetchHomeProducts(): Promise<{
     featured: items.slice(0, 8),
     collection: items.slice(3, 6),
     sale: sale.length >= 4 ? sale : items.slice(0, 8),
+    discounted: discountedProducts(items),
     source,
   };
 }
