@@ -3,6 +3,8 @@
 // Checkout'ning sof prezentatsion elementlari — state'siz, props-only.
 // checkout-flow.tsx'dan ajratilgan (xatti-harakat o'zgarmagan).
 
+import { useId } from 'react';
+
 export function Step({
   index,
   label,
@@ -22,14 +24,14 @@ export function Step({
             ? 'bg-brand-ink text-brand-gold'
             : active
               ? 'bg-primary text-white'
-              : 'border-[1.5px] border-[#d5d5d9] text-[#9a9aa2]'
+              : 'text-muted-foreground border-[1.5px] border-[#d5d5d9]'
         }`}
       >
         {done ? '✓' : index}
       </span>
       <span
         className={`hidden text-[13px] font-bold sm:inline ${
-          done ? 'text-brand-ink' : active ? 'text-primary' : 'font-semibold text-[#9a9aa2]'
+          done ? 'text-brand-ink' : active ? 'text-primary' : 'text-muted-foreground font-semibold'
         }`}
       >
         {label}
@@ -51,14 +53,19 @@ export function TextField({
   placeholder?: string;
   className?: string;
 }) {
+  // Yorliq maydonga bog'langan — ekran o'qigich maydon nomini aytadi (audit A11Y-01).
+  const id = useId();
   return (
     <div className={className}>
-      <label className="text-brand-ink mb-1.5 block text-xs font-semibold">{label}</label>
+      <label htmlFor={id} className="text-brand-ink mb-1.5 block text-xs font-semibold">
+        {label}
+      </label>
       <input
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="border-border text-brand-ink focus:border-primary focus:ring-primary/15 h-11 w-full rounded-xl border bg-white px-3.5 text-sm outline-none transition placeholder:text-[#9a9aa2] focus:ring-2"
+        className="border-border text-brand-ink focus:border-primary focus:ring-primary/15 placeholder:text-muted-foreground h-11 w-full rounded-xl border bg-white px-3.5 text-sm outline-none transition focus:ring-2"
       />
     </div>
   );

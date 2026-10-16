@@ -166,13 +166,15 @@ export function AnimatedSearch({ className }: { className?: string }) {
           <input
             type="search"
             name="q"
+            // Placeholder aylanib turadi va yozganda yo'qoladi — doimiy nom kerak (audit A11Y-01).
+            aria-label={t('pageTitle')}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onFocus={() => setOpen(true)}
             placeholder={
               open ? t('placeholderLong') : `${suggestions[idx] ?? t('placeholderLong')}`
             }
-            className="h-full w-full rounded-full bg-transparent pl-12 pr-32 text-sm outline-none placeholder:text-[#9a9aa2]"
+            className="placeholder:text-muted-foreground h-full w-full rounded-full bg-transparent pl-12 pr-32 text-sm outline-none"
             autoComplete="off"
           />
           {value ? (

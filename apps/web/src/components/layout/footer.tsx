@@ -116,9 +116,9 @@ export function Footer() {
         <div className="container py-10 md:py-12">
           <div className="grid items-center gap-6 md:grid-cols-2">
             <div className="text-white">
-              <h3 className="text-2xl font-black leading-tight md:text-3xl">
+              <h2 className="text-2xl font-black leading-tight md:text-3xl">
                 {t('newsletterTitle')}
-              </h3>
+              </h2>
               <p className="mt-2 max-w-md text-sm text-white/85">{t('newsletterSubtitle')}</p>
             </div>
             <div className="rounded-2xl bg-white/95 p-2 shadow-2xl backdrop-blur md:p-3">
@@ -220,7 +220,7 @@ export function Footer() {
                 <span
                   key={m.name}
                   className={
-                    'rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-bold uppercase text-white/40 transition hover:border-white/30 hover:bg-white/10 ' +
+                    'rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-bold uppercase text-white/70 transition hover:border-white/30 hover:bg-white/10 ' +
                     'hover:' +
                     m.color
                   }

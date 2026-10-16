@@ -35,11 +35,14 @@ export function LocaleSwitcher({ current }: { current: string }) {
   const [Menu, setMenu] = React.useState<LocaleMenuType | null>(null);
   const preload = () => void loadMenu();
 
-  if (Menu) return <Menu current={current} label={t('label')} />;
+  // Nom ko'rinadigan matnni («uz») o'z ichiga olishi kerak (WCAG 2.5.3).
+  const label = `${t('label')}: ${current}`;
+
+  if (Menu) return <Menu current={current} label={label} />;
   return (
     <LocaleTrigger
       current={current}
-      aria-label={t('label')}
+      aria-label={label}
       aria-haspopup="menu"
       aria-expanded={false}
       onTouchStart={preload}

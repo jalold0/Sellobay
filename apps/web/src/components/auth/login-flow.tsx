@@ -125,7 +125,7 @@ function AuthForms({ phoneLogin }: { phoneLogin: boolean }) {
       {/* yoki ajratgich */}
       <div className="my-[26px] flex items-center gap-3.5">
         <div className="bg-border h-px flex-1" />
-        <span className="text-[12px] text-[#9a9aa2]">{t('or')}</span>
+        <span className="text-muted-foreground text-[12px]">{t('or')}</span>
         <div className="bg-border h-px flex-1" />
       </div>
 
@@ -152,7 +152,7 @@ function AuthForms({ phoneLogin }: { phoneLogin: boolean }) {
       </p>
 
       {/* Shartlar izohi */}
-      <p className="mt-5 text-center text-[11.5px] leading-[1.6] text-[#9a9aa2]">
+      <p className="text-muted-foreground mt-5 text-center text-[11.5px] leading-[1.6]">
         {t('termsPrefix')}{' '}
         <Link href="/offer" className="text-brand-ink border-b border-[#d5d5d9] font-semibold">
           {t('offerLink')}
@@ -173,6 +173,9 @@ function EmailForm() {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
+  // Yorliqlar maydonlarga dasturiy bog'langan — ekran o'qigich nomini aytadi (audit A11Y-01).
+  const emailId = React.useId();
+  const passwordId = React.useId();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,31 +192,37 @@ function EmailForm() {
 
   return (
     <form onSubmit={submit} className="mt-8">
-      <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('email')}</div>
+      <label htmlFor={emailId} className="text-brand-ink mb-2 block text-[12.5px] font-bold">
+        {t('email')}
+      </label>
       <input
+        id={emailId}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder={t('emailPlaceholder')}
         autoComplete="email"
         required
-        className="border-brand-ink text-brand-ink focus:ring-primary/20 h-[54px] w-full rounded-[14px] border-2 px-4 text-[15px] font-semibold outline-none placeholder:text-[#9a9aa2] focus:ring-2"
+        className="border-brand-ink text-brand-ink focus:ring-primary/20 placeholder:text-muted-foreground h-[54px] w-full rounded-[14px] border-2 px-4 text-[15px] font-semibold outline-none focus:ring-2"
       />
 
       <div className="mb-2 mt-5 flex items-center justify-between">
-        <span className="text-brand-ink text-[12.5px] font-bold">{t('password')}</span>
+        <label htmlFor={passwordId} className="text-brand-ink text-[12.5px] font-bold">
+          {t('password')}
+        </label>
         <Link href="/forgot-password" className="text-primary text-[11.5px] font-semibold">
           {t('forgotPassword')}
         </Link>
       </div>
       <input
+        id={passwordId}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder={t('passwordPlaceholder')}
         autoComplete="current-password"
         required
-        className="border-brand-ink text-brand-ink focus:ring-primary/20 h-[54px] w-full rounded-[14px] border-2 px-4 text-[15px] font-semibold outline-none placeholder:text-[#9a9aa2] focus:ring-2"
+        className="border-brand-ink text-brand-ink focus:ring-primary/20 placeholder:text-muted-foreground h-[54px] w-full rounded-[14px] border-2 px-4 text-[15px] font-semibold outline-none focus:ring-2"
       />
 
       <button
@@ -238,6 +247,8 @@ function PhoneOtpForm() {
   const [resendIn, setResendIn] = React.useState(0);
 
   const fullPhone = `+998${national}`;
+  const phoneId = React.useId();
+  const codeId = React.useId();
 
   React.useEffect(() => {
     if (resendIn <= 0) return;
@@ -302,20 +313,26 @@ function PhoneOtpForm() {
 
       {stage === 'phone' ? (
         <div className="mt-6">
-          <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('phone')}</div>
-          <label className="border-brand-ink focus-within:ring-primary/20 flex h-[54px] items-center overflow-hidden rounded-[14px] border-2 focus-within:ring-2">
-            <span className="bg-muted text-brand-ink border-border flex h-full items-center border-r px-4 text-[15px] font-bold">
+          <label htmlFor={phoneId} className="text-brand-ink mb-2 block text-[12.5px] font-bold">
+            {t('phone')}
+          </label>
+          <div className="border-brand-ink focus-within:ring-primary/20 flex h-[54px] items-center overflow-hidden rounded-[14px] border-2 focus-within:ring-2">
+            <span
+              aria-hidden="true"
+              className="bg-muted text-brand-ink border-border flex h-full items-center border-r px-4 text-[15px] font-bold"
+            >
               +998
             </span>
             <input
+              id={phoneId}
               value={formatNational(national)}
               onChange={(e) => setNational(e.target.value.replace(/\D/g, '').slice(0, 9))}
               placeholder={t('phonePlaceholderNational')}
               inputMode="numeric"
               autoComplete="tel-national"
-              className="text-brand-ink h-full flex-1 bg-transparent px-4 text-[15px] font-semibold outline-none placeholder:text-[#9a9aa2]"
+              className="text-brand-ink placeholder:text-muted-foreground h-full flex-1 bg-transparent px-4 text-[15px] font-semibold outline-none"
             />
-          </label>
+          </div>
           <button
             type="button"
             onClick={sendCode}
@@ -335,8 +352,12 @@ function PhoneOtpForm() {
           >
             <ArrowLeft size={12} /> {t('changePhone')}
           </button>
-          <div className="text-brand-ink mb-2 text-[12.5px] font-bold">{t('codeLabel')}</div>
+          <label htmlFor={codeId} className="text-brand-ink mb-2 block text-[12.5px] font-bold">
+            {t('codeLabel')}
+          </label>
           <input
+            id={codeId}
+            autoComplete="one-time-code"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="------"

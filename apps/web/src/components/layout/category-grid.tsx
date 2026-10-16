@@ -57,7 +57,8 @@ export function CategoryGrid({ locale, categories }: Props) {
                 // Kategoriyaning o'z ikonkasi bo'lmasa — slug'dan barqaror
                 // placeholder (har yuklanishda bir xil rasm chiqadi).
                 src={c.iconUrl ?? productImage(c.slug, 400)}
-                alt={pickLocale(c.name, locale)}
+                // Bezak: kategoriya nomi rasm ostida matn bo'lib turibdi — alt uni takrorlamaydi.
+                alt=""
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
