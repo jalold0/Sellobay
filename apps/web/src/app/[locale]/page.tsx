@@ -1,6 +1,7 @@
 import { SectionTitle } from '@ecom/ui';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { IntlScope } from '@/i18n/intl-scope';
 import { Link } from '@/i18n/navigation';
 
 import { CategoryGrid } from '../../components/layout/category-grid';
@@ -30,92 +31,93 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
   const t = await getTranslations('home');
 
   return (
-    <div className="space-y-10 md:space-y-16">
-      {/* 1. Banner + yon kartalar — 260px, konteyner ichida.
+    <IntlScope scope="home" locale={locale}>
+      <div className="space-y-10 md:space-y-16">
+        {/* 1. Banner + yon kartalar — 260px, konteyner ichida.
              Oldin bu yerda 620px to'liq kenglikdagi HeroSection va TrustStrip turardi;
              ikkalasi birgalikda mahsulotlarni ikkinchi ekranga surib yuborardi. */}
-      <div className="space-y-2.5">
-        <PromoBanner saleProducts={sale} />
+        <div className="space-y-2.5">
+          <PromoBanner saleProducts={sale} />
 
-        {/* 2. Xizmat va'dalari — raqamsiz, tekshirilishi mumkin */}
-        <QuickTiles />
-      </div>
+          {/* 2. Xizmat va'dalari — raqamsiz, tekshirilishi mumkin */}
+          <QuickTiles />
+        </div>
 
-      {/* 3. Mahsulotlar — birinchi ekranda ko'rinishi uchun yuqoriga ko'chirildi */}
-      <section>
-        <div className="mb-7 flex items-end justify-between">
-          <div>
-            <div className="text-primary text-[11.5px] font-bold uppercase tracking-[0.2em]">
-              {t('bestSellersEyebrow')}
+        {/* 3. Mahsulotlar — birinchi ekranda ko'rinishi uchun yuqoriga ko'chirildi */}
+        <section>
+          <div className="mb-7 flex items-end justify-between">
+            <div>
+              <div className="text-primary text-[11.5px] font-bold uppercase tracking-[0.2em]">
+                {t('bestSellersEyebrow')}
+              </div>
+              <h2 className="text-brand-ink mt-2 font-serif text-2xl font-semibold md:text-[32px]">
+                {t('bestSellersTitle')}
+              </h2>
             </div>
-            <h2 className="text-brand-ink mt-2 font-serif text-2xl font-semibold md:text-[32px]">
-              {t('bestSellersTitle')}
-            </h2>
+            <Link
+              href="/catalog?sort=popularity"
+              className="text-primary border-primary border-b-[1.5px] pb-0.5 text-[13.5px] font-semibold"
+            >
+              {t('viewAllLong')}
+            </Link>
           </div>
-          <Link
-            href="/catalog?sort=popularity"
-            className="text-primary border-primary border-b-[1.5px] pb-0.5 text-[13.5px] font-semibold"
-          >
-            {t('viewAllLong')}
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
-          {featured.map((p) => (
-            <ProductCardClient key={p.id} product={p} locale={locale} />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 lg:gap-4 xl:grid-cols-5">
+            {featured.map((p) => (
+              <ProductCardClient key={p.id} product={p} locale={locale} />
+            ))}
+          </div>
+        </section>
 
-      {/* 4-9 bo'limlar mobilda birinchi ekrandan pastda — `render-lazy` ularni ko'rinishga
+        {/* 4-9 bo'limlar mobilda birinchi ekrandan pastda — `render-lazy` ularni ko'rinishga
           yaqinlashguncha layout qilmaydi (birinchi layout ~2× tezroq; globals.css'dagi izoh). */}
-      {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
-      <div className="render-lazy">
-        <CategoryGrid locale={locale} categories={categories} />
-      </div>
-
-      {/* 5. Aksiya — editorialdan OLDIN: xarid niyati bilan kelgan odam
-          chegirmalarni birinchi ekrandan keyin darrov ko'rishi kerak. */}
-      {/* Faqat haqiqiy chegirma bo'lsa — aks holda «aksiya» va'da qilmaymiz (audit TRU-02). */}
-      {discounted.length > 0 ? (
+        {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
         <div className="render-lazy">
-          <SaleSection locale={locale} saleProducts={discounted} />
+          <CategoryGrid locale={locale} categories={categories} />
         </div>
-      ) : null}
 
-      {/* 6. Editorial kolleksiya — brend hikoyasi, xariddan keyin */}
-      <div className="render-lazy">
-        <FeaturedCollection saleProducts={sale} />
-      </div>
+        {/* 5. Aksiya — editorialdan OLDIN: xarid niyati bilan kelgan odam
+          chegirmalarni birinchi ekrandan keyin darrov ko'rishi kerak. */}
+        {/* Faqat haqiqiy chegirma bo'lsa — aks holda «aksiya» va'da qilmaymiz (audit TRU-02). */}
+        {discounted.length > 0 ? (
+          <div className="render-lazy">
+            <SaleSection locale={locale} saleProducts={discounted} />
+          </div>
+        ) : null}
 
-      {/* 7. Brendlar — navigatsiya bloki, CTA'lardan oldin.
+        {/* 6. Editorial kolleksiya — brend hikoyasi, xariddan keyin */}
+        <div className="render-lazy">
+          <FeaturedCollection saleProducts={sale} />
+        </div>
+
+        {/* 7. Brendlar — navigatsiya bloki, CTA'lardan oldin.
              Bazadagi aktiv brendlar. Ilgari bu yerda mock-data'dan 8 ta qotib
              yozilgan brend turardi (GUCCI, PRADA...) va sarlavhada
              "Sellobay × 8+" deb ko'rsatilardi — "+" ma'lumotni kattalashtirib
              ko'rsatardi, bazadagi haqiqiy brend esa ro'yxatga tushmasdi. */}
-      {brands.length > 0 ? (
-        <section className="render-lazy space-y-5">
-          <SectionTitle
-            title={t('popularBrands')}
-            description={t('brandsCount', { count: brands.length })}
-          />
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            {brands.map((b) => (
-              <Link
-                key={b.id}
-                href={`/catalog?brand=${b.slug}`}
-                className="bg-card text-foreground hover:border-brand-bordeaux group relative grid aspect-[3/2] place-items-center overflow-hidden rounded-2xl border px-2 text-center font-bold tracking-[0.15em] transition-all hover:-translate-y-1 hover:shadow-lg"
-              >
-                <span className="relative z-10 text-sm uppercase transition-transform group-hover:scale-110">
-                  {b.name}
-                </span>
-                <div className="from-brand-bordeaux/0 to-brand-bordeaux/0 group-hover:from-brand-bordeaux/5 group-hover:to-brand-bordeaux/10 absolute inset-0 bg-gradient-to-br transition-colors" />
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
+        {brands.length > 0 ? (
+          <section className="render-lazy space-y-5">
+            <SectionTitle
+              title={t('popularBrands')}
+              description={t('brandsCount', { count: brands.length })}
+            />
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+              {brands.map((b) => (
+                <Link
+                  key={b.id}
+                  href={`/catalog?brand=${b.slug}`}
+                  className="bg-card text-foreground hover:border-brand-bordeaux group relative grid aspect-[3/2] place-items-center overflow-hidden rounded-2xl border px-2 text-center font-bold tracking-[0.15em] transition-all hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <span className="relative z-10 text-sm uppercase transition-transform group-hover:scale-110">
+                    {b.name}
+                  </span>
+                  <div className="from-brand-bordeaux/0 to-brand-bordeaux/0 group-hover:from-brand-bordeaux/5 group-hover:to-brand-bordeaux/10 absolute inset-0 bg-gradient-to-br transition-colors" />
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-      {/*
+        {/*
         Mijoz fikrlari bo'limi OLIB TASHLANDI.
         U uchta o'ylab topilgan odamni ko'rsatardi: ismlari (Madina Karimova,
         Akmal Yusupov, Nilufar Rashidova), Unsplash'dan olingan begona
@@ -124,15 +126,16 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
         Haqiqiy sharh tizimi ishga tushgach, shu yerga HAQIQIY fikrlar qo'yiladi.
       */}
 
-      {/* 8. Sotuvchi CTA */}
-      <div className="render-lazy">
-        <SellerBanner />
-      </div>
+        {/* 8. Sotuvchi CTA */}
+        <div className="render-lazy">
+          <SellerBanner />
+        </div>
 
-      {/* 9. PWA install CTA */}
-      <div className="render-lazy">
-        <InstallHeroCard />
+        {/* 9. PWA install CTA */}
+        <div className="render-lazy">
+          <InstallHeroCard />
+        </div>
       </div>
-    </div>
+    </IntlScope>
   );
 }
