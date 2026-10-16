@@ -87,7 +87,7 @@ export default async function CatalogPage({ params, searchParams }: CatalogPageP
       <header className="space-y-3 pt-2">
         <nav
           aria-label="Breadcrumb"
-          className="flex flex-wrap items-center gap-1.5 text-xs text-[#9a9aa2]"
+          className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-xs"
         >
           <Link href="/" className="hover:text-brand-ink transition-colors">
             {product('breadcrumbHome')}

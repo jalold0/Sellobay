@@ -201,13 +201,15 @@ export function ProductDetail({ detail, locale }: Props) {
           </div>
 
           {product.badge && (
+            // Kartadagi nishonlar bilan bir xil ranglar (@ecom/ui product-card). Ilgari oq matn
+            // red/emerald/amber-500 fonda edi: 3,8 / 2,5 / 2,1:1 — WCAG AA (4,5:1) dan past.
             <Badge
-              className={`rounded-md text-white ${
+              className={`rounded-md ${
                 product.badge === 'SALE'
-                  ? 'bg-red-500 hover:bg-red-500'
+                  ? 'bg-primary hover:bg-primary text-white'
                   : product.badge === 'NEW'
-                    ? 'bg-emerald-500 hover:bg-emerald-500'
-                    : 'bg-amber-500 hover:bg-amber-500'
+                    ? 'bg-brand-ink hover:bg-brand-ink text-brand-gold-light'
+                    : 'bg-brand-gold hover:bg-brand-gold text-brand-crimson-deep'
               }`}
             >
               {product.badge}
@@ -322,6 +324,7 @@ export function ProductDetail({ detail, locale }: Props) {
                   if (Number.isFinite(v) && v >= 1) setQuantity(v);
                 }}
                 min={1}
+                aria-label={t('quantity')}
                 className="h-full w-14 bg-transparent text-center text-sm outline-none"
               />
               <button

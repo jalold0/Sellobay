@@ -69,7 +69,7 @@ export function OrderSummary({
                 <div className="text-brand-ink line-clamp-2 text-[13px] font-semibold leading-[1.35]">
                   {i.name}
                 </div>
-                <div className="mt-1 text-[11.5px] text-[#9a9aa2]">
+                <div className="text-muted-foreground mt-1 text-[11.5px]">
                   {t('pcs', { count: i.quantity })}
                 </div>
               </div>
@@ -155,7 +155,7 @@ export function OrderSummary({
           )}
         </button>
 
-        <div className="mt-3 flex items-center justify-center gap-1.5 text-[11.5px] text-[#9a9aa2]">
+        <div className="text-muted-foreground mt-3 flex items-center justify-center gap-1.5 text-[11.5px]">
           <ShieldCheck size={13} />
           {t('sslNote')}
         </div>

@@ -70,6 +70,8 @@ export function NewsletterForm() {
         <input
           type="email"
           required
+          aria-label={t('placeholder')}
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t('placeholder')}

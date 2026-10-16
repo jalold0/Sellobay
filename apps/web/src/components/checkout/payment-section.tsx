@@ -182,10 +182,14 @@ export function PaymentSection({
           </div>
 
           <div>
-            <label className="text-muted-foreground mb-1 block text-xs">
+            <label
+              htmlFor="checkout-receipt-note"
+              className="text-muted-foreground mb-1 block text-xs"
+            >
               {t('payment.receiptNoteLabel')}
             </label>
             <input
+              id="checkout-receipt-note"
               type="text"
               value={paymentNote}
               onChange={(e) => onPaymentNote(e.target.value)}

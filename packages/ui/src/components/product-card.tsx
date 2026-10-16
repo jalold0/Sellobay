@@ -131,7 +131,6 @@ export function ProductCard({
         'group relative flex flex-col overflow-hidden rounded-2xl bg-white transition-all duration-[250ms] ease-out',
         'border-border border',
         'hover:shadow-card-hover hover:-translate-y-1',
-        !inStock && 'opacity-70',
         className,
       )}
     >
@@ -143,7 +142,12 @@ export function ProductCard({
           alt={name}
           width={400}
           height={400}
-          className="duration-400 h-full w-full object-cover transition-transform ease-out group-hover:scale-[1.05]"
+          // «Sotuvda yo'q» — faqat rasm xiralashadi. Ilgari butun karta opacity-70 edi va
+          // narx/nom/brend matni ham o'qib bo'lmas darajada oqarardi (brend 2,98:1).
+          className={cn(
+            'duration-400 h-full w-full object-cover transition-transform ease-out group-hover:scale-[1.05]',
+            !inStock && 'opacity-70 grayscale',
+          )}
         />
 
         {/* Top-left badge pill'lar */}
@@ -229,7 +233,7 @@ export function ProductCard({
             {formatMoney(price, currency)}
           </span>
           {discounted && (
-            <span className="text-[12.5px] text-[#9a9aa2] line-through">
+            <span className="text-muted-foreground text-[12.5px] line-through">
               {formatMoney(oldPrice as number, currency)}
             </span>
           )}
@@ -255,7 +259,7 @@ export function ProductCard({
           <div className="flex items-center gap-[5px] text-xs">
             <Star size={12} className="fill-brand-gold text-brand-gold" />
             <span className="text-brand-ink font-bold">{rating.toFixed(1)}</span>
-            <span className="text-[#9a9aa2]">({reviewCount ?? 0})</span>
+            <span className="text-muted-foreground">({reviewCount ?? 0})</span>
           </div>
         )}
 

@@ -29,7 +29,7 @@ export function EmptyState({
       <div className="bg-soft text-muted-foreground grid h-16 w-16 place-items-center rounded-full">
         <Icon className="h-7 w-7" />
       </div>
-      <h3 className="text-brand-ink mt-5 font-serif text-xl font-semibold">{title}</h3>
+      <h2 className="text-brand-ink mt-5 font-serif text-xl font-semibold">{title}</h2>
       {description ? (
         <p className="text-muted-foreground mt-1.5 max-w-sm text-sm">{description}</p>
       ) : null}

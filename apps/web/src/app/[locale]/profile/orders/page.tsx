@@ -191,7 +191,7 @@ export default function MyOrdersPage() {
                         ? 'text-brand-ink font-semibold'
                         : active
                           ? 'text-primary font-bold'
-                          : 'font-semibold text-[#9a9aa2]',
+                          : 'text-muted-foreground font-semibold',
                     )}
                   >
                     {t(`timeline.${step}`)}
