@@ -110,7 +110,8 @@ export function Footer() {
   const socialItems = socials();
 
   return (
-    <footer className="mt-16">
+    // render-lazy: footer har sahifada birinchi ekrandan pastda (globals.css'dagi izoh).
+    <footer className="render-lazy mt-16">
       <section className="from-primary via-brand-red-bright to-brand-red-dark bg-gradient-to-br">
         <div className="container py-10 md:py-12">
           <div className="grid items-center gap-6 md:grid-cols-2">

@@ -66,16 +66,26 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
         </div>
       </section>
 
+      {/* 4-9 bo'limlar mobilda birinchi ekrandan pastda — `render-lazy` ularni ko'rinishga
+          yaqinlashguncha layout qilmaydi (birinchi layout ~2× tezroq; globals.css'dagi izoh). */}
       {/* 4. Kategoriyalar — endi mahsulotlardan keyin */}
-      <CategoryGrid locale={locale} categories={categories} />
+      <div className="render-lazy">
+        <CategoryGrid locale={locale} categories={categories} />
+      </div>
 
       {/* 5. Aksiya — editorialdan OLDIN: xarid niyati bilan kelgan odam
           chegirmalarni birinchi ekrandan keyin darrov ko'rishi kerak. */}
       {/* Faqat haqiqiy chegirma bo'lsa — aks holda «aksiya» va'da qilmaymiz (audit TRU-02). */}
-      {discounted.length > 0 ? <SaleSection locale={locale} saleProducts={discounted} /> : null}
+      {discounted.length > 0 ? (
+        <div className="render-lazy">
+          <SaleSection locale={locale} saleProducts={discounted} />
+        </div>
+      ) : null}
 
       {/* 6. Editorial kolleksiya — brend hikoyasi, xariddan keyin */}
-      <FeaturedCollection saleProducts={sale} />
+      <div className="render-lazy">
+        <FeaturedCollection saleProducts={sale} />
+      </div>
 
       {/* 7. Brendlar — navigatsiya bloki, CTA'lardan oldin.
              Bazadagi aktiv brendlar. Ilgari bu yerda mock-data'dan 8 ta qotib
@@ -83,7 +93,7 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
              "Sellobay × 8+" deb ko'rsatilardi — "+" ma'lumotni kattalashtirib
              ko'rsatardi, bazadagi haqiqiy brend esa ro'yxatga tushmasdi. */}
       {brands.length > 0 ? (
-        <section className="space-y-5">
+        <section className="render-lazy space-y-5">
           <SectionTitle
             title={t('popularBrands')}
             description={t('brandsCount', { count: brands.length })}
@@ -115,10 +125,14 @@ export default async function HomePage({ params }: { params: { locale: Locale } 
       */}
 
       {/* 8. Sotuvchi CTA */}
-      <SellerBanner />
+      <div className="render-lazy">
+        <SellerBanner />
+      </div>
 
       {/* 9. PWA install CTA */}
-      <InstallHeroCard />
+      <div className="render-lazy">
+        <InstallHeroCard />
+      </div>
     </div>
   );
 }

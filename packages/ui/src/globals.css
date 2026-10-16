@@ -144,6 +144,19 @@
     );
   }
 
+  /* Ekrandan pastdagi blok: brauzer uni ko'rinish yaqinlashguncha layout/paint qilmaydi.
+     NEGA: bosh sahifaning birinchi layout'i mobilda (4× sekin CPU) ~2,9 s edi — vaqtning
+     ko'pi ~1150 obyektdagi matnni shakllantirish va shrift qidirishga ketardi, ularning
+     yarmidan ko'pi esa ekrandan ancha pastda. Bu klass bilan birinchi layout ~1,5 s.
+     `auto 600px` — o'lchamni bilmaguncha 600px deb oladi, bir marta chizgach haqiqiysini
+     eslab qoladi (skrollbar sakramaydi). content-visibility paint'ni blok chegarasida
+     kesadi — `overflow-clip-margin` hover soyalari va ko'tarilish effektiga joy beradi. */
+  .render-lazy {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+    overflow-clip-margin: 24px;
+  }
+
   /* Rasm ustidagi suzuvchi panel. */
   .glass {
     backdrop-filter: blur(12px);
