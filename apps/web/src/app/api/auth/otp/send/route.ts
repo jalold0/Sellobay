@@ -5,6 +5,7 @@ import { normalizeUzPhone } from '@ecom/utils';
 
 import { OTP_RESEND_COOLDOWN_SEC, OTP_TTL_MINUTES } from '@/lib/auth/constants';
 import { apiError, apiOk } from '@/lib/auth/errors';
+import { OTP_SEND_LIMITS, otpSendRetryAfter } from '@/lib/auth/otp-login';
 import { phoneLoginAvailable } from '@/lib/auth/sms';
 import { otpSendSchema } from '@/lib/auth/validators';
 import { prisma } from '@/lib/db';
@@ -40,15 +41,30 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'VALIDATION', "Telefon raqami noto'g'ri (+998XXXXXXXXX kerak)");
   }
 
-  // Spam himoyasi: telefon bo'yicha cooldown ichida bitta marta
-  const recent = await prisma.otpCode.findFirst({
+  // Spam va taxmin himoyasi raqam bo'yicha (DB'dan — Redis'ga bog'liq emas, audit SEC-05):
+  // cooldown ichida bitta kod, soatiga va kuniga chegara (`OTP_SEND_LIMITS`).
+  const now = new Date();
+  const longestWindowSec = Math.max(...OTP_SEND_LIMITS.map((l) => l.windowSec));
+  const sent = await prisma.otpCode.findMany({
     where: {
       recipient: normalized,
       channel: 'PHONE',
-      createdAt: { gte: new Date(Date.now() - OTP_RESEND_COOLDOWN_SEC * 1000) },
+      createdAt: { gte: new Date(now.getTime() - longestWindowSec * 1000) },
     },
-    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
   });
+  const sentAt = sent.map((o) => o.createdAt);
+  const capRetry = otpSendRetryAfter(sentAt, now);
+  if (capRetry !== null) {
+    const res = apiError(
+      429,
+      'RATE_LIMIT',
+      "Bu raqamga juda ko'p kod so'raldi. Keyinroq urinib ko'ring yoki email bilan kiring.",
+    );
+    res.headers.set('Retry-After', String(capRetry));
+    return res;
+  }
+  const recent = sentAt.some((d) => d.getTime() > now.getTime() - OTP_RESEND_COOLDOWN_SEC * 1000);
   if (recent) {
     const res = apiError(
       429,
