@@ -245,11 +245,14 @@ export function ProductCard({
             {brand}
           </div>
         )}
+        {/* Bosish maydoni: bir qatorli nom ~18px edi (WCAG 2.5.8 — 24px). py-1/-my-1
+            maydonni 26px qiladi, joylashuv o'zgarmaydi; line-clamp ichki span'da — aks holda
+            uchinchi qator padding ichidan ko'rinib qolardi. */}
         <LinkComponent
           href={href}
-          className="text-brand-ink hover:text-primary line-clamp-2 text-[13.5px] font-medium leading-[1.35] transition"
+          className="text-brand-ink hover:text-primary -my-1 block py-1 text-[13.5px] font-medium leading-[1.35] transition"
         >
-          {name}
+          <span className="line-clamp-2">{name}</span>
         </LinkComponent>
 
         {/* 3. Reyting FAQAT haqiqiy sharh bo'lganda ko'rsatiladi.

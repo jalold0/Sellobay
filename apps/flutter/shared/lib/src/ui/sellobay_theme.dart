@@ -24,7 +24,9 @@ abstract final class SellobayColors {
   static const border = Color(0xFFEAEAEC);
 
   static const success = Color(0xFF1F8A5B);
-  static const destructive = Color(0xFFEF4444);
+  /// `--destructive` — #B81E2B, oq fonda 6,44:1. Ilgari #EF4444 edi (3,8:1 — WCAG AA'dan
+  /// past, audit A11Y-02) va web'dagi tokendan ajralib qolgan edi.
+  static const destructive = Color(0xFFB81E2B);
 }
 
 ThemeData buildSellobayTheme() {
