@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 
 import { ProfileShell } from '../../../components/profile/profile-shell';
+import { IntlScope } from '../../../i18n/intl-scope';
 import { PRIVATE_PAGE_ROBOTS } from '../../../lib/seo';
 
 import type { Metadata } from 'next';
@@ -21,5 +22,9 @@ export default async function ProfileLayout({
   if (!user) {
     redirect(`/${params.locale}/login?next=/${params.locale}/profile`);
   }
-  return <ProfileShell user={user}>{children}</ProfileShell>;
+  return (
+    <IntlScope scope="profile" locale={params.locale}>
+      <ProfileShell user={user}>{children}</ProfileShell>
+    </IntlScope>
+  );
 }
