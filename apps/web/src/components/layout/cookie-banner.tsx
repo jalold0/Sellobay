@@ -7,28 +7,37 @@ import * as React from 'react';
 
 import { Link } from '@/i18n/navigation';
 
-const STORAGE_KEY = 'ecom_cookie_consent_v1';
+export const COOKIE_CONSENT_KEY = 'ecom_cookie_consent_v1';
 
+/**
+ * Banner birinchi chizishdayoq server HTML'ida keladi.
+ *
+ * NEGA: ilgari u gidratatsiyadan 1,5 s keyin paydo bo'lardi. Matni bosh sahifadagi
+ * eng katta matn bo'lgani uchun birinchi marta kirgan HAR bir foydalanuvchida LCP
+ * shu kech paydo bo'lgan paragrafga surilardi (Lighthouse mobil: LCP ~5,3 s, banner
+ * sarlavhasi esa ~2,7 s da tayyor edi).
+ *
+ * Rozilik bergan foydalanuvchida banner ko'rinmasligi uchun `CookieConsentScript`
+ * bo'yashdan OLDIN `<html data-cookie-consent>` qo'yadi va banner CSS bilan yashirinadi —
+ * sahifa statik qoladi (cookie o'qish uchun server render kerak emas).
+ */
 export function CookieBanner() {
   const t = useTranslations('cookieBanner');
-  const [visible, setVisible] = React.useState(false);
+  // Server va birinchi client render bir xil (ko'rinadi) — gidratatsiya mos keladi.
+  const [visible, setVisible] = React.useState(true);
 
   React.useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) return undefined;
-    // Sahifa to'liq yuklangandan keyin ko'rsatish
-    const t2 = setTimeout(() => setVisible(true), 1500);
-    return () => clearTimeout(t2);
+    if (window.localStorage.getItem(COOKIE_CONSENT_KEY)) setVisible(false);
   }, []);
 
   const accept = (mode: 'all' | 'essential') => {
-    window.localStorage.setItem(STORAGE_KEY, mode);
+    window.localStorage.setItem(COOKIE_CONSENT_KEY, mode);
     setVisible(false);
   };
 
   if (!visible) return null;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 md:bottom-4">
+    <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-4 md:bottom-4 [[data-cookie-consent]_&]:hidden">
       <div className="bg-background mx-auto flex max-w-4xl flex-col items-start gap-3 rounded-2xl border p-4 shadow-2xl md:flex-row md:items-center">
         <div className="bg-primary/10 text-primary grid h-10 w-10 shrink-0 place-items-center rounded-full">
           <Cookie size={18} />
@@ -62,5 +71,20 @@ export function CookieBanner() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Bo'yashdan oldin ishlaydi: rozilik saqlangan bo'lsa `<html data-cookie-consent>`.
+ * `<CookieBanner />` dan OLDIN render qilinadi (server komponentda).
+ */
+export function CookieConsentScript() {
+  return (
+    <script
+      // Statik qator, foydalanuvchi ma'lumoti yo'q. localStorage bloklangan bo'lsa — banner ko'rinadi.
+      dangerouslySetInnerHTML={{
+        __html: `try{if(localStorage.getItem(${JSON.stringify(COOKIE_CONSENT_KEY)}))document.documentElement.setAttribute('data-cookie-consent','')}catch(e){}`,
+      }}
+    />
   );
 }

@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 
-import { CookieBanner } from '../../components/layout/cookie-banner';
+import { CookieBanner, CookieConsentScript } from '../../components/layout/cookie-banner';
 import { Footer } from '../../components/layout/footer';
 import { Header } from '../../components/layout/header';
 import { ScrollToTop } from '../../components/layout/scroll-to-top';
@@ -153,6 +153,7 @@ export default async function LocaleLayout({
                 <Footer />
               </div>
               <ScrollToTop />
+              <CookieConsentScript />
               <CookieBanner />
               <InstallPrompt />
               <IosInstallSheet />
