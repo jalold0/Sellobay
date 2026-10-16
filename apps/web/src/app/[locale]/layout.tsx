@@ -1,7 +1,7 @@
 import '@ecom/ui/globals.css';
 
 import { locales } from '@ecom/i18n';
-import { Toaster, TooltipProvider } from '@ecom/ui';
+import { Toaster } from '@ecom/ui';
 import { Inter, Playfair_Display } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
@@ -141,26 +141,26 @@ export default async function LocaleLayout({
         <OrganizationJsonLd />
         <NextIntlClientProvider locale={locale} messages={pickMessages(messages, BASE_NAMESPACES)}>
           <QueryProvider>
-            <TooltipProvider delayDuration={150}>
-              <StoreHydrator />
-              <StoreSync />
-              <SkipLink />
-              <div className="flex min-h-screen flex-col">
-                <Header categories={navCategories} />
-                <main id="main" className="container flex-1 py-6 md:py-10">
-                  {children}
-                </main>
-                <Footer />
-              </div>
-              <ScrollToTop />
-              <CookieConsentScript />
-              <CookieBanner />
-              <InstallPrompt />
-              <IosInstallSheet />
-              <StickyInstallBar />
-              <ServiceWorkerRegister />
-              <Toaster />
-            </TooltipProvider>
+            {/* TooltipProvider yo'q: web'da Tooltip ishlatilmaydi, provider esa Radix Tooltip va
+                floating-ui'ni har sahifaga olib kelardi. */}
+            <StoreHydrator />
+            <StoreSync />
+            <SkipLink />
+            <div className="flex min-h-screen flex-col">
+              <Header categories={navCategories} />
+              <main id="main" className="container flex-1 py-6 md:py-10">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <ScrollToTop />
+            <CookieConsentScript />
+            <CookieBanner />
+            <InstallPrompt />
+            <IosInstallSheet />
+            <StickyInstallBar />
+            <ServiceWorkerRegister />
+            <Toaster />
           </QueryProvider>
         </NextIntlClientProvider>
       </body>

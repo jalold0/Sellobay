@@ -1,37 +1,54 @@
 'use client';
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  toast,
-} from '@ecom/ui';
-import { LogOut, Package, User as UserIcon, Heart, Settings } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@ecom/ui';
+import { User as UserIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import * as React from 'react';
 
-import { Link, useRouter } from '@/i18n/navigation';
-import { logout, type AuthUser } from '@/lib/auth/client';
-import { useForgetMe, useMe } from '@/lib/auth/use-me';
+import { Link } from '@/i18n/navigation';
+import { type AuthUser } from '@/lib/auth/client';
+import { useMe } from '@/lib/auth/use-me';
+
+// Ochiladigan menyu (Radix DropdownMenu + floating-ui) birinchi bosishda yuklanadi —
+// `locale-switcher.tsx`dagi kabi. Tugma darhol chiziladi; modul tayyor bo'lgach menyu
+// ochiq holda uning o'rniga keladi.
+const loadDropdown = () => import('./auth-dropdown');
+type AuthDropdownType = Awaited<ReturnType<typeof loadDropdown>>['AuthDropdown'];
+
+type TriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  user: AuthUser;
+  displayName: string;
+  fallbackLabel: string;
+};
+
+/** Profil tugmasi — lazy menyu ichida ham aynan shu (asChild orqali) ishlatiladi. */
+export const AuthTrigger = React.forwardRef<HTMLButtonElement, TriggerProps>(
+  ({ user, displayName, fallbackLabel, ...props }, ref) => (
+    <button
+      ref={ref}
+      type="button"
+      className="hidden flex-col items-center gap-[3px] md:flex"
+      aria-label={displayName}
+      {...props}
+    >
+      {/* Sevimlilar va savat bilan bir xil shakl: 22px belgi + kichik yorliq */}
+      <Avatar className="h-[22px] w-[22px]">
+        <AvatarImage src={user.avatarUrl ?? ''} alt="" />
+        <AvatarFallback className="text-[9px]">{getInitials(user)}</AvatarFallback>
+      </Avatar>
+      <span className="max-w-[72px] truncate text-[10.5px] font-semibold text-[#55555c]">
+        {user.firstName || fallbackLabel}
+      </span>
+    </button>
+  ),
+);
+AuthTrigger.displayName = 'AuthTrigger';
 
 export function AuthMenu() {
-  const router = useRouter();
   const nav = useTranslations('nav');
   const { data: user } = useMe();
-  const forgetMe = useForgetMe();
-
-  const handleSignOut = async () => {
-    await logout();
-    forgetMe();
-    toast({ title: nav('signedOut'), variant: 'success' });
-    router.push('/');
-    router.refresh();
-  };
+  const [Dropdown, setDropdown] = React.useState<AuthDropdownType | null>(null);
+  const preload = () => void loadDropdown();
 
   // Javob kelguncha ham «Kirish» ko'rinadi: ilgari o'rnida 96px bo'sh joy turardi va javob
   // kelgach u torayib, yonidagi sevimlilar/savat ikonkalari o'ngga sakrardi.
@@ -44,63 +61,24 @@ export function AuthMenu() {
     );
   }
 
-  const initials = getInitials(user);
   const displayName =
     [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
     user.email ||
     user.phone ||
     nav('user');
 
+  if (Dropdown) return <Dropdown user={user} displayName={displayName} />;
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="hidden flex-col items-center gap-[3px] md:flex"
-          aria-label={displayName}
-        >
-          {/* Sevimlilar va savat bilan bir xil shakl: 22px belgi + kichik yorliq */}
-          <Avatar className="h-[22px] w-[22px]">
-            <AvatarImage src={user.avatarUrl ?? ''} alt="" />
-            <AvatarFallback className="text-[9px]">{initials}</AvatarFallback>
-          </Avatar>
-          <span className="max-w-[72px] truncate text-[10.5px] font-semibold text-[#55555c]">
-            {user.firstName || nav('profile')}
-          </span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/profile" className="cursor-pointer">
-            <UserIcon size={14} className="mr-2" /> {nav('profile')}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/profile/orders" className="cursor-pointer">
-            <Package size={14} className="mr-2" /> {nav('myOrders')}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/profile/wishlist" className="cursor-pointer">
-            <Heart size={14} className="mr-2" /> {nav('wishlist')}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/profile/settings" className="cursor-pointer">
-            <Settings size={14} className="mr-2" /> {nav('settings')}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={handleSignOut}
-          className="cursor-pointer text-red-600 focus:text-red-600"
-        >
-          <LogOut size={14} className="mr-2" /> {nav('logout')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <AuthTrigger
+      user={user}
+      displayName={displayName}
+      fallbackLabel={nav('profile')}
+      aria-haspopup="menu"
+      aria-expanded={false}
+      onPointerEnter={preload}
+      onFocus={preload}
+      onClick={() => void loadDropdown().then((m) => setDropdown(() => m.AuthDropdown))}
+    />
   );
 }
 
