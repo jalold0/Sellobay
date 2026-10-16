@@ -20,7 +20,10 @@ let loading: Promise<SentryModule | null> | null = null;
 export function loadSentry(): Promise<SentryModule | null> {
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
   if (!dsn || typeof window === 'undefined') return Promise.resolve(null);
-  loading ??= import('@sentry/nextjs')
+  // `webpackExports` — faqat shu ikki eksport. Usiz `import()` butun namespace'ni oladi va
+  // webpack Session Replay'ni (rrweb, ~100 KB) ham alohida bo'lak qilib birga yuklardi —
+  // replay ishlatilmasa ham (next.config.mjs: excludeReplay* faqat iframe/worker'ni oladi).
+  loading ??= import(/* webpackExports: ["init", "captureException"] */ '@sentry/nextjs')
     .then((Sentry) => {
       Sentry.init({
         dsn,
