@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
       data: {
         phone: check.phone,
         firstName: msg.contact.first_name ?? from.first_name ?? null,
+        lastName: msg.contact.last_name ?? from.last_name ?? null,
         verifiedAt: now,
       },
     });

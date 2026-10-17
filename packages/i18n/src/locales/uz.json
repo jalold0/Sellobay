@@ -714,7 +714,18 @@
       "cancel": "Bekor qilish",
       "expired": "So‘rov muddati tugadi.",
       "retry": "Qaytadan urinish",
-      "failed": "Telegram orqali kirib bo‘lmadi. Qaytadan urinib ko‘ring yoki email bilan kiring."
+      "failed": "Telegram orqali kirib bo‘lmadi. Qaytadan urinib ko‘ring yoki email bilan kiring.",
+      "nameTitle": "Ism va familiyangizni tasdiqlang",
+      "nameHint": "Buyurtmalaringiz va profilingizda shu ism ko‘rinadi. Kerak bo‘lsa, o‘zgartiring.",
+      "confirm": "Tasdiqlash",
+      "linkTitle": "Bu raqam bilan hisobingiz bor",
+      "linkHint": "{email} hisobi. Parolini kiriting — shu hisobga kirasiz, raqamingiz tasdiqlanadi.",
+      "linkHintNoEmail": "Parolini kiriting — shu hisobga kirasiz, raqamingiz tasdiqlanadi.",
+      "linkSubmit": "Hisobga kirish",
+      "createNew": "Parolni bilmayman — yangi hisob ochish",
+      "wrongPassword": "Parol noto‘g‘ri. Qolgan urinishlar: {left}.",
+      "tooManyAttempts": "Urinishlar tugadi. Yangi hisob oching yoki qaytadan boshlang.",
+      "register": "Telegram bilan ro‘yxatdan o‘tish"
     }
   },
   "profile": {

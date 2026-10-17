@@ -707,7 +707,18 @@
       "cancel": "Cancel",
       "expired": "The request has expired.",
       "retry": "Try again",
-      "failed": "Couldn’t sign in with Telegram. Try again or sign in with email."
+      "failed": "Couldn’t sign in with Telegram. Try again or sign in with email.",
+      "nameTitle": "Confirm your first and last name",
+      "nameHint": "This name appears on your orders and profile. Edit it if needed.",
+      "confirm": "Confirm",
+      "linkTitle": "You already have an account with this number",
+      "linkHint": "Account {email}. Enter its password to sign in — your number will be confirmed.",
+      "linkHintNoEmail": "Enter the account password to sign in — your number will be confirmed.",
+      "linkSubmit": "Sign in to account",
+      "createNew": "I don’t know the password — create a new account",
+      "wrongPassword": "Wrong password. Attempts left: {left}.",
+      "tooManyAttempts": "No attempts left. Create a new account or start over.",
+      "register": "Sign up with Telegram"
     }
   },
   "profile": {
