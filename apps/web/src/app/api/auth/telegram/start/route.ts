@@ -5,7 +5,8 @@
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 import { enforceRateLimit } from '@/lib/rate-limit';
-import { telegramConfig } from '@/lib/telegram/bot-api';
+import { siteUrl } from '@/lib/site-url';
+import { ensureWebhook, telegramConfig } from '@/lib/telegram/bot-api';
 import {
   hashLoginToken,
   newLoginCode,
@@ -30,6 +31,9 @@ export async function POST(req: NextRequest) {
 
   const limited = await enforceRateLimit(req, 'telegram-start', { limit: 10, windowSec: 60 });
   if (limited) return limited;
+
+  // Bot foydalanuvchi havolani ochganda tayyor tursin: webhook shu yerda (bir marta) o'rnatiladi.
+  await ensureWebhook(siteUrl());
 
   const token = newLoginToken();
   const code = newLoginCode();
