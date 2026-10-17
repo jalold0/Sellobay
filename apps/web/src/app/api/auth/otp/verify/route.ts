@@ -3,7 +3,8 @@ import { normalizeUzPhone } from '@ecom/utils';
 
 import { OTP_MAX_ATTEMPTS } from '@/lib/auth/constants';
 import { apiError, apiOk } from '@/lib/auth/errors';
-import { decideOtpLogin, otpHashEquals } from '@/lib/auth/otp-login';
+import { otpHashEquals } from '@/lib/auth/otp-login';
+import { loginWithVerifiedPhone } from '@/lib/auth/phone-login';
 import { createSession, requestMeta, setCookies } from '@/lib/auth/session';
 import { otpVerifySchema } from '@/lib/auth/validators';
 import { prisma } from '@/lib/db';
@@ -13,16 +14,6 @@ import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const userSelect = {
-  id: true,
-  status: true,
-  email: true,
-  phone: true,
-  firstName: true,
-  lastName: true,
-  phoneVerifiedAt: true,
-} as const;
 
 export async function POST(req: NextRequest) {
   // OTP kod brute-force himoyasi: bitta IP'dan 60 soniyada 10 urinish
@@ -100,66 +91,21 @@ export async function POST(req: NextRequest) {
     return apiError(400, 'OTP_EXPIRED', "Kod allaqachon ishlatilgan. Yangi kod so'rang.");
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { phone: normalized },
-    select: userSelect,
+  const result = await loginWithVerifiedPhone({
+    phone: normalized,
+    firstName: parsed.data.firstName,
+    ip: clientIp(req),
+    via: 'otp-login',
   });
-
-  const decision = decideOtpLogin(existing);
-  if (decision === 'reject-blocked') {
-    return apiError(403, 'ACCOUNT_BLOCKED', 'Hisob bloklangan');
-  }
-  if (decision === 'reject-pending') {
-    return apiError(403, 'ACCOUNT_PENDING', 'Hisob hali tasdiqlanmagan');
-  }
-
-  let user = existing;
-  if (decision === 'create' || decision === 'release-and-create') {
-    const ip = clientIp(req);
-    try {
-      user = await prisma.$transaction(async (tx) => {
-        if (decision === 'release-and-create' && existing) {
-          // Shart UPDATE ichida: shu orada raqam tasdiqlangan bo'lsa — bo'shatmaymiz.
-          const released = await tx.user.updateMany({
-            where: { id: existing.id, phone: normalized, phoneVerifiedAt: null },
-            data: { phone: null },
-          });
-          if (released.count === 0) throw new PhoneStateChanged();
-        }
-        const created = await tx.user.create({
-          data: {
-            phone: normalized,
-            firstName: parsed.data.firstName,
-            status: 'ACTIVE',
-            phoneVerifiedAt: now,
-            roles: { create: { role: 'CUSTOMER' } },
-          },
-          select: userSelect,
-        });
-        if (decision === 'release-and-create' && existing) {
-          await tx.auditLog.create({
-            data: {
-              userId: created.id,
-              action: 'PHONE_RELEASED_UNVERIFIED',
-              resource: 'User',
-              resourceId: existing.id,
-              ipAddress: ip,
-              meta: { reason: 'otp-login', newUserId: created.id },
-            },
-          });
-        }
-        return created;
-      });
-    } catch (e) {
-      // Raqam holati o'zgargan yoki parallel so'rov hisobni allaqachon ochgan (unique).
-      if (e instanceof PhoneStateChanged || isUniqueViolation(e)) {
-        return apiError(409, 'OTP_RETRY', "Qayta urinib ko'ring.");
-      }
-      throw e;
+  if (!result.ok) {
+    if (result.reason === 'blocked') return apiError(403, 'ACCOUNT_BLOCKED', 'Hisob bloklangan');
+    if (result.reason === 'pending') {
+      return apiError(403, 'ACCOUNT_PENDING', 'Hisob hali tasdiqlanmagan');
     }
+    return apiError(409, 'OTP_RETRY', "Qayta urinib ko'ring.");
   }
 
-  if (!user) return apiError(500, 'INTERNAL', 'Ichki xato');
+  const { user } = result;
   const tokens = await createSession(user.id, requestMeta());
   const res = apiOk({
     user: {
@@ -173,10 +119,4 @@ export async function POST(req: NextRequest) {
   });
   setCookies(res, tokens.access, tokens.refresh);
   return res;
-}
-
-class PhoneStateChanged extends Error {}
-
-function isUniqueViolation(e: unknown): boolean {
-  return typeof e === 'object' && e !== null && (e as { code?: unknown }).code === 'P2002';
 }

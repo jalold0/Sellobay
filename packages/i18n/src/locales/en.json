@@ -697,6 +697,17 @@
       "profileHint": "Your addresses, wishlist and Sello Coins are kept in your account.",
       "wishlistTitle": "Sign in to save favourites",
       "wishlistHint": "Saved items stay in your account and show up on any device."
+    },
+    "telegram": {
+      "title": "Sign in with Telegram",
+      "instruction": "Open the Sellobay bot in Telegram and tap “Share phone number”.",
+      "codeHint": "The bot should show the same code:",
+      "open": "Open Telegram",
+      "waiting": "Waiting for confirmation…",
+      "cancel": "Cancel",
+      "expired": "The request has expired.",
+      "retry": "Try again",
+      "failed": "Couldn’t sign in with Telegram. Try again or sign in with email."
     }
   },
   "profile": {
@@ -1507,5 +1518,15 @@
     "codeLabel": "Handover code",
     "parcel": "Parcel {code}",
     "qrAlt": "Handover QR code"
+  },
+  "telegramBot": {
+    "welcome": "Hello! This is the official Sellobay bot.\n\nTo sign in on the website with Telegram, tap “Sign in with Telegram” on sellobay.uz.",
+    "loginPrompt": "Sign-in request for Sellobay.\n\nCode on the website: {code}\n\nIf it matches the website, share your phone number with the button below. If you didn’t just try to sign in yourself, don’t tap anything.",
+    "shareButton": "Share phone number",
+    "expired": "This link has expired or was already used. Tap “Sign in with Telegram” on the website again.",
+    "notOwnContact": "Send only your own number, using the “Share phone number” button below.",
+    "notUzNumber": "Only Uzbekistan numbers (+998) are accepted for now. Sign in with email.",
+    "noActiveRequest": "No active sign-in request. Tap “Sign in with Telegram” on the website again.",
+    "done": "Done! Your number is confirmed. Go back to the website — you’ll be signed in automatically."
   }
 }

@@ -12,6 +12,8 @@ import { loginWithEmail, sendOtp, verifyOtp } from '@/lib/auth/client';
 
 import { SellobayMark } from '../brand/sellobay-mark';
 
+import { TelegramLogin } from './telegram-login';
+
 type OtpStage = 'phone' | 'code';
 // Kirish usuli — email asosiy (SMS hali yoqilmagan), telefon ikkilamchi.
 type Method = 'email' | 'phone';
@@ -38,8 +40,17 @@ function goAfterAuth(nextHref: string) {
   window.location.assign(nextHref);
 }
 
-/** [phoneLogin] — SMS kod yuboriladimi (server aytadi, `lib/auth/sms.ts`). */
-export function LoginFlow({ phoneLogin = true }: { phoneLogin?: boolean }) {
+/**
+ * [phoneLogin] — SMS kod yuboriladimi (server aytadi, `lib/auth/sms.ts`).
+ * [telegramLogin] — Telegram bot sozlanganmi (`lib/telegram/bot-api.ts`, ADR 0018).
+ */
+export function LoginFlow({
+  phoneLogin = true,
+  telegramLogin = false,
+}: {
+  phoneLogin?: boolean;
+  telegramLogin?: boolean;
+}) {
   const t = useTranslations('auth');
 
   return (
@@ -77,15 +88,17 @@ export function LoginFlow({ phoneLogin = true }: { phoneLogin?: boolean }) {
 
         {/* O'ng forma paneli */}
         <div className="flex items-center justify-center px-6 py-16 md:p-14">
-          <AuthForms phoneLogin={phoneLogin} />
+          <AuthForms phoneLogin={phoneLogin} telegramLogin={telegramLogin} />
         </div>
       </div>
     </div>
   );
 }
 
-function AuthForms({ phoneLogin }: { phoneLogin: boolean }) {
+function AuthForms({ phoneLogin, telegramLogin }: { phoneLogin: boolean; telegramLogin: boolean }) {
   const t = useTranslations('auth');
+  const nextHref = useNextHref();
+  const onTelegramSuccess = React.useCallback(() => goAfterAuth(nextHref), [nextHref]);
   // SMS hali yoqilmagani uchun email asosiy usul.
   const [method, setMethod] = React.useState<Method>('email');
 
@@ -122,26 +135,18 @@ function AuthForms({ phoneLogin }: { phoneLogin: boolean }) {
 
       {method === 'email' || !phoneLogin ? <EmailForm /> : <PhoneOtpForm />}
 
-      {/* yoki ajratgich */}
-      <div className="my-[26px] flex items-center gap-3.5">
-        <div className="bg-border h-px flex-1" />
-        <span className="text-muted-foreground text-[12px]">{t('or')}</span>
-        <div className="bg-border h-px flex-1" />
-      </div>
-
-      {/* Telegram outline pill */}
-      <button
-        type="button"
-        onClick={() =>
-          toast({ title: t('oauthSoon', { provider: t('loginWithTelegram') }), duration: 2000 })
-        }
-        className="border-border text-brand-ink hover:bg-muted flex h-[52px] items-center justify-center gap-2.5 rounded-full border-[1.5px] text-sm font-semibold transition"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#229ED9" aria-hidden>
-          <path d="M21.9 4.3L18.8 19.2c-.2 1-.9 1.3-1.7.8l-4.8-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8L18 6.6c.4-.3-.1-.5-.6-.2L6.7 13.2l-4.6-1.4c-1-.3-1-1 .2-1.5L20.5 3c.8-.3 1.6.2 1.4 1.3z" />
-        </svg>
-        {t('loginWithTelegram')}
-      </button>
+      {/* Telegram orqali kirish — bot sozlangan bo'lsagina (ilgari «tez orada» deyuvchi
+          soxta tugma turardi). Telegram tasdiqlagan raqam bilan kiradi, SMS'siz. */}
+      {telegramLogin ? (
+        <>
+          <div className="my-[26px] flex items-center gap-3.5">
+            <div className="bg-border h-px flex-1" />
+            <span className="text-muted-foreground text-[12px]">{t('or')}</span>
+            <div className="bg-border h-px flex-1" />
+          </div>
+          <TelegramLogin onSuccess={onTelegramSuccess} />
+        </>
+      ) : null}
 
       {/* Ro'yxatdan o'tish havolasi */}
       <p className="text-muted-foreground mt-6 text-center text-sm">

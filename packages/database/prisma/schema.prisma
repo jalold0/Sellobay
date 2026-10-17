@@ -400,6 +400,28 @@ model OtpCode {
   @@index([recipient, channel])
 }
 
+/// Telegram orqali kirish so'rovi (ADR 0018). Brauzer/ilova so'rov ochadi va bot havolasini
+/// oladi; foydalanuvchi botda «Raqamni ulashish»ni bosgach Telegram tasdiqlagan raqam shu
+/// yerga yoziladi; brauzer so'rovni bir marta iste'mol qilib sessiya oladi.
+/// Token o'zi saqlanmaydi — faqat SHA-256 xeshi (sizib chiqsa ham ishlatib bo'lmaydi).
+model TelegramLogin {
+  id         String    @id @default(uuid()) @db.Uuid
+  tokenHash  String    @unique
+  /// Sayt va botda bir xil ko'rsatiladigan qisqa kod — begona havola bilan aldashga qarshi.
+  code       String
+  /// /start bosgan Telegram foydalanuvchisi (from.id).
+  telegramId String?
+  /// Telegram tasdiqlagan raqam (E.164), contact.user_id === from.id bo'lganda.
+  phone      String?
+  firstName  String?
+  verifiedAt DateTime?
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([telegramId])
+}
+
 model PushToken {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
