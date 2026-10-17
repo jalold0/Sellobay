@@ -80,8 +80,13 @@ kechiring.
 
 ## Ish holati (kompyuterlar o'rtasida)
 
-Joriy holat — merge kutayotgan MR'lar, ochiq vazifalar, har kompyuterdagi push qilinmagan ish
-va ish jurnali — git'ga bog'liq emas, claude.ai'dagi «Sellobay holati» sahifasida turadi:
+**Asosiy manba — repo'dagi [`docs/HOLAT.md`](docs/HOLAT.md)**: prod qayerda, nima qilingan
+(MR'lar), ENV nomlari, foydalanuvchidagi ochiq vazifalar, keyingi rejalar, tuzoqlar. Istalgan
+kompyuter va **istalgan akkauntdan** `git pull` bilan topiladi. Har katta ish bo'lagidan keyin
+(MR bilan) yangilanadi.
+
+Qo'shimcha (faqat shu claude.ai akkauntida ochiladi) — «Sellobay holati» sahifasi: merge
+kutayotgan MR'lar, har kompyuterdagi push qilinmagan ish va ish jurnali:
 https://claude.ai/artifact/C6nvKSPdxN3URUmu4i5fqJ
 
 - Sessiya boshida o'qing: `Artifact read` (sahifa) va `ArtifactData list` — `holat`,

@@ -4,6 +4,10 @@
 > belgilangan. Maqsad: **bitta ishni ikki marta qilmaslik.** Boshqa kompyuter/dasturda
 > `git pull` qilib shu fayldan davom eting.
 >
+> **Joriy operatsion holat (prod, MR'lar, ochiq vazifalar) — [`HOLAT.md`](HOLAT.md)** (2026-10-17:
+> mobil tezlik 79, accessibility, SEC-04/05, Telegram orqali kirish; keyingi — Flutter'da Telegram,
+> OneID, Eskiz SMS). Quyidagi reja 2026-07-10 holatida.
+>
 > **Oxirgi yangilanish:** 2026-07-10 · **MVP launch:** 2026-07-13
 >
 > **2026-07-10:** **Sotuvchi go-live + to'lov** — ombor/inventar buyurtma oqimiga ulandi
