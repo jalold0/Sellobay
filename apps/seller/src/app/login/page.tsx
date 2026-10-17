@@ -101,11 +101,17 @@ function SellerLoginForm() {
                   />
                 </div>
               </div>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
-                <span>Meni eslab qol</span>
-                <span className="text-muted-foreground text-xs">(30 kun)</span>
-              </label>
+              <div className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  id="remember"
+                  checked={remember}
+                  onCheckedChange={(v) => setRemember(v === true)}
+                />
+                <Label htmlFor="remember" className="cursor-pointer font-normal">
+                  Meni eslab qol
+                  <span className="text-muted-foreground ml-1 text-xs">(30 kun)</span>
+                </Label>
+              </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Kirish
