@@ -1,15 +1,10 @@
 'use client';
 
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  Input,
   Label,
   PageHeader,
   Select,
@@ -23,375 +18,28 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  toast,
-  PasswordInput,
 } from '@ecom/ui';
-import { Lock, ShieldCheck, User2, Webhook } from 'lucide-react';
+import { Webhook } from 'lucide-react';
 import * as React from 'react';
 
 import { Breadcrumbs } from '../../components/layout/breadcrumbs';
-import {
-  changeAdminPassword,
-  listAdminUsers,
-  meAdmin,
-  updateAdminProfile,
-  type AdminStaffUser,
-} from '../../lib/auth/client';
-import { formatRelative, initials } from '../../lib/format';
-
-const ROLES = [
-  { key: 'SUPER_ADMIN', label: 'Super Admin', desc: 'Barcha huquqlar' },
-  { key: 'ADMIN', label: 'Admin', desc: 'Asosiy boshqaruv' },
-  { key: 'MARKETING_MANAGER', label: 'Marketing menejeri', desc: 'Kampaniyalar, promo' },
-  { key: 'FINANCE_MANAGER', label: 'Moliya menejeri', desc: 'Hisob, payout' },
-  { key: 'SUPPORT_AGENT', label: 'Qo`llab-quvvatlash', desc: 'Tikets, mijoz' },
-  { key: 'WAREHOUSE_STAFF', label: 'Ombor xodimi', desc: 'WMS, inventar' },
-];
 
 export default function AdminSettingsPage() {
-  // Profil HAQIQIY sessiyadan yuklanadi. Ilgari bu yerda qotib qolgan
-  // "Demo Admin / admin@example.uz" turardi va "Saqlash" hech nima qilmasdi.
-  const [profile, setProfile] = React.useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-  });
-  const [loadingProfile, setLoadingProfile] = React.useState(true);
-  const [savingProfile, setSavingProfile] = React.useState(false);
-
-  React.useEffect(() => {
-    let alive = true;
-    void meAdmin().then((res) => {
-      if (!alive) return;
-      if (res.success) {
-        const u = res.data.user;
-        setProfile({
-          firstName: u.firstName ?? '',
-          lastName: u.lastName ?? '',
-          email: u.email ?? '',
-          phone: u.phone ?? '',
-        });
-      }
-      setLoadingProfile(false);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // Panel xodimlari HAQIQIY bazadan. Ilgari bu yerda to'qima ismlar va
-  // rollar ko'rsatilardi — admin kimda qanday huquq borligini bilish uchun
-  // kirsa, haqiqatga aloqasi yo'q ro'yxatni ko'rardi.
-  const [staff, setStaff] = React.useState<AdminStaffUser[]>([]);
-  const [loadingStaff, setLoadingStaff] = React.useState(true);
-
-  React.useEffect(() => {
-    let alive = true;
-    void listAdminUsers().then((res) => {
-      if (!alive) return;
-      if (res.success) setStaff(res.data.items);
-      setLoadingStaff(false);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const onSaveProfile = async () => {
-    if (savingProfile) return;
-    setSavingProfile(true);
-    const res = await updateAdminProfile({
-      firstName: profile.firstName.trim() || null,
-      lastName: profile.lastName.trim() || null,
-      email: profile.email.trim() || null,
-      phone: profile.phone.trim() || null,
-    });
-    setSavingProfile(false);
-    // Muvaffaqiyat xabari FAQAT server tasdiqlagach.
-    if (res.success) {
-      toast({ title: 'Profil saqlandi', variant: 'success' });
-    } else {
-      toast({ title: res.error.message, variant: 'destructive' });
-    }
-  };
-
-  // Parol almashtirish — ilgari forma hech qayerga ulanmagan edi (audit O8).
-  const [pw, setPw] = React.useState({ current: '', next: '', repeat: '' });
-  const [savingPw, setSavingPw] = React.useState(false);
-  const onChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pw.next !== pw.repeat) {
-      toast({ title: 'Yangi parollar mos emas', variant: 'destructive' });
-      return;
-    }
-    setSavingPw(true);
-    const res = await changeAdminPassword(pw.current, pw.next);
-    setSavingPw(false);
-    if (!res.success) {
-      toast({ title: res.error.message, variant: 'destructive' });
-      return;
-    }
-    setPw({ current: '', next: '', repeat: '' });
-    toast({
-      title: 'Parol yangilandi',
-      description:
-        res.data.otherSessionsSignedOut > 0
-          ? `Boshqa qurilmalardagi ${res.data.otherSessionsSignedOut} ta sessiya yopildi`
-          : undefined,
-      variant: 'success',
-    });
-  };
-
   return (
     <div className="space-y-6">
       <PageHeader
         breadcrumbs={<Breadcrumbs />}
         title="Sozlamalar"
-        description="Tizim sozlamalari, foydalanuvchilar, rollar va integratsiyalar"
+        description="Integratsiyalar va umumiy sozlamalar. Xodimlar va rollar — «Xodimlar» bo'limida, shaxsiy profil va parol — «Hisobim»da."
       />
 
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue="integrations">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="profile">
-            <User2 className="mr-1 h-3.5 w-3.5" /> Profil
-          </TabsTrigger>
-          <TabsTrigger value="users">
-            <User2 className="mr-1 h-3.5 w-3.5" /> Foydalanuvchilar
-          </TabsTrigger>
-          <TabsTrigger value="roles">
-            <ShieldCheck className="mr-1 h-3.5 w-3.5" /> Rollar
-          </TabsTrigger>
-          <TabsTrigger value="security">
-            <Lock className="mr-1 h-3.5 w-3.5" /> Xavfsizlik
-          </TabsTrigger>
           <TabsTrigger value="integrations">
             <Webhook className="mr-1 h-3.5 w-3.5" /> Integratsiyalar
           </TabsTrigger>
           <TabsTrigger value="general">Umumiy</TabsTrigger>
         </TabsList>
-
-        {/* Profile */}
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>Shaxsiy profil</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
-                  <AvatarFallback>
-                    {initials(`${profile.firstName} ${profile.lastName}`.trim()) || '—'}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="firstName">Ism</Label>
-                  <Input
-                    id="firstName"
-                    value={profile.firstName}
-                    disabled={loadingProfile}
-                    onChange={(e) => setProfile((p) => ({ ...p, firstName: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Familiya</Label>
-                  <Input
-                    id="lastName"
-                    value={profile.lastName}
-                    disabled={loadingProfile}
-                    onChange={(e) => setProfile((p) => ({ ...p, lastName: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profile.email}
-                    disabled={loadingProfile}
-                    onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Telefon</Label>
-                  <Input
-                    id="phone"
-                    value={profile.phone}
-                    disabled={loadingProfile}
-                    placeholder="+998XXXXXXXXX"
-                    onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={onSaveProfile} disabled={loadingProfile || savingProfile}>
-                  {savingProfile ? 'Saqlanmoqda...' : 'Saqlash'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Users */}
-        <TabsContent value="users">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle>Admin foydalanuvchilar</CardTitle>
-              {/* «Yangi» tugmasi olib tashlandi — xodim qo'shish API'si hali yo'q (onClick'siz edi). */}
-            </CardHeader>
-            <CardContent className="p-0">
-              {loadingStaff ? (
-                <div className="text-muted-foreground p-10 text-center text-sm">Yuklanmoqda...</div>
-              ) : staff.length === 0 ? (
-                <div className="text-muted-foreground p-10 text-center text-sm">
-                  Panelga kirish huquqi bor xodim topilmadi.
-                </div>
-              ) : (
-                <ul className="divide-y">
-                  {staff.map((u) => (
-                    <li key={u.id} className="flex items-center gap-3 px-6 py-3 text-sm">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={u.avatarUrl ?? undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {initials(`${u.firstName} ${u.lastName}`.trim()) || '—'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium">
-                          {`${u.firstName} ${u.lastName}`.trim() || u.email || u.phone}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          {u.email ?? u.phone ?? '—'}
-                        </div>
-                      </div>
-                      <div className="hidden gap-1 md:flex">
-                        {u.roles.map((r) => (
-                          <StatusBadge key={r} tone="info" dot={false}>
-                            {r}
-                          </StatusBadge>
-                        ))}
-                      </div>
-                      <div className="text-muted-foreground hidden text-xs md:block">
-                        {u.lastLoginAt ? formatRelative(u.lastLoginAt) : 'hech qachon'}
-                      </div>
-                      {/*
-                        "Tahrirlash" tugmasi olib tashlandi — u onClick'siz edi
-                        va rol o'zgartirish API'si hali yo'q.
-                      */}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Roles */}
-        <TabsContent value="roles">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rol va huquqlar (RBAC)</CardTitle>
-              <p className="text-muted-foreground text-xs">
-                Hozircha admin panelga faqat ADMIN va SUPER_ADMIN kiradi va ularning huquqi bir xil.
-                Qolgan rollar sxemada bor, lekin alohida huquqlar keyingi bosqichda ulanadi.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {ROLES.map((r) => (
-                <div
-                  key={r.key}
-                  className="flex items-center justify-between rounded-md border p-3"
-                >
-                  <div>
-                    <div className="font-medium">{r.label}</div>
-                    <div className="text-muted-foreground text-xs">{r.desc}</div>
-                  </div>
-                  <StatusBadge
-                    tone={r.key === 'ADMIN' || r.key === 'SUPER_ADMIN' ? 'success' : 'muted'}
-                    dot={false}
-                  >
-                    {r.key === 'ADMIN' || r.key === 'SUPER_ADMIN' ? 'Faol' : 'Rejada'}
-                  </StatusBadge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Security */}
-        <TabsContent value="security">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Parol almashtirish</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={onChangePassword} className="space-y-3">
-                  <div>
-                    <Label htmlFor="pw-current">Joriy parol</Label>
-                    <PasswordInput
-                      id="pw-current"
-                      autoComplete="current-password"
-                      value={pw.current}
-                      onChange={(e) => setPw({ ...pw, current: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="pw-next">Yangi parol</Label>
-                    <PasswordInput
-                      id="pw-next"
-                      autoComplete="new-password"
-                      minLength={8}
-                      value={pw.next}
-                      onChange={(e) => setPw({ ...pw, next: e.target.value })}
-                      required
-                    />
-                    <p className="text-muted-foreground mt-1 text-[11px]">
-                      Kamida 8 ta belgi, harf va raqam aralash
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="pw-repeat">Yangi parolni takrorlang</Label>
-                    <PasswordInput
-                      id="pw-repeat"
-                      autoComplete="new-password"
-                      value={pw.repeat}
-                      onChange={(e) => setPw({ ...pw, repeat: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={savingPw}>
-                    {savingPw ? 'Yangilanmoqda…' : 'Parolni yangilash'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Ikki bosqichli himoya (2FA)</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {/*
-                  Ilgari bu yerda ishlamaydigan SMS/TOTP tugmalari va «3 ta qurilma» degan
-                  to'qima son turardi (audit O8). Haqiqatda bor himoya — quyida.
-                */}
-                <p className="text-muted-foreground">
-                  2FA hali ulanmagan. Hozir ishlayotgan himoya:
-                </p>
-                <ul className="text-muted-foreground list-disc space-y-1 pl-5">
-                  <li>
-                    login urinishlari cheklangan (daqiqasiga 10, bitta hisobga 15 daqiqada 10);
-                  </li>
-                  <li>parol almashganda boshqa qurilmalardagi sessiyalar yopiladi;</li>
-                  <li>moderatsiya, to‘lov va buyurtma amallari audit jurnaliga yoziladi.</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
         {/* Integrations */}
         <TabsContent value="integrations">

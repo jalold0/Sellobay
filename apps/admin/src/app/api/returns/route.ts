@@ -5,7 +5,7 @@
 // ochilmaydi: asossiz so'rov ham kuryerni yo'lga chiqarardi. Shuning
 // uchun avval admin shu ro'yxatda ko'radi va tasdiqlaydi.
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiOk } from '@/lib/auth/errors';
 import { listPendingReturns } from '@/lib/returns-server';
 
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('returns.manage');
   if (err) return err;
 
   return apiOk({ items: await listPendingReturns() });

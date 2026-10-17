@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -30,7 +30,7 @@ const TRANSITION = {
 } as const;
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('sellers.manage');
   if (err) return err;
 
   const sellerId = params.id;

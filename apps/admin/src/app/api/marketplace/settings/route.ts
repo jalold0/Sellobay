@@ -9,7 +9,7 @@ import { DEFAULT_MARKETPLACE_SETTINGS, resolveMarketplaceSettings } from '@ecom/
 import { MARKETPLACE_SETTING_ID } from '@ecom/order-ops';
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -54,13 +54,13 @@ async function load() {
 }
 
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('settings.manage');
   if (err) return err;
   return apiOk(await load());
 }
 
 export async function PATCH(req: NextRequest) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('settings.manage');
   if (err) return err;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

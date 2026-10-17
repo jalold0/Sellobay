@@ -10,10 +10,10 @@ import { onOrderPaid } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
-import { prisma } from '@/lib/db';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
+import { apiError, apiOk } from '@/lib/auth/errors';
+import { prisma } from '@/lib/db';
 
 import type { NextRequest } from 'next/server';
 
@@ -40,11 +40,8 @@ class PaymentStateChangedError extends Error {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser();
-  if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => ['ADMIN', 'SUPER_ADMIN'].includes(r))) {
-    return apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
-  }
+  const { err, userId } = await requirePermission('payments.review');
+  if (err) return err;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -130,7 +127,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         : {}),
       verification: {
         receivedAmount: received.toString(),
-        verifiedBy: user.id,
+        verifiedBy: userId,
         verifiedAt: now.toISOString(),
       },
     } satisfies Prisma.InputJsonValue;
@@ -158,7 +155,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
               create: {
                 status: 'PAID',
                 comment: comment ?? `Karta to'lovi tasdiqlandi: chekda ${received.toString()} so'm`,
-                changedBy: user.id,
+                changedBy: userId,
               },
             },
           },
@@ -169,7 +166,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         await onOrderPaid(tx, order.id, now);
         await writeAudit(
           {
-            userId: user.id,
+            userId: userId,
             action: 'payment.verify',
             resource: 'Payment',
             resourceId: payment.id,
@@ -203,7 +200,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         !Array.isArray(payment.rawPayload)
           ? (payment.rawPayload as Prisma.JsonObject)
           : {}),
-        rejection: { comment: comment ?? null, rejectedBy: user.id, rejectedAt: now.toISOString() },
+        rejection: { comment: comment ?? null, rejectedBy: userId, rejectedAt: now.toISOString() },
       } satisfies Prisma.InputJsonValue;
       const pMoved = await tx.payment.updateMany({
         where: { id: payment.id, status: 'PENDING' },
@@ -218,14 +215,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             create: {
               status: order.status,
               comment: comment ? `To'lov rad etildi: ${comment}` : 'Karta to`lovi cheki rad etildi',
-              changedBy: user.id,
+              changedBy: userId,
             },
           },
         },
       });
       await writeAudit(
         {
-          userId: user.id,
+          userId: userId,
           action: 'payment.reject',
           resource: 'Payment',
           resourceId: payment.id,

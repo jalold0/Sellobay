@@ -1,9 +1,11 @@
-import { NextRequest } from 'next/server';
-import { z } from 'zod';
 import { normalizeUzPhone } from '@ecom/utils';
-import { prisma } from '@/lib/db';
+import { z } from 'zod';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
+import { prisma } from '@/lib/db';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,6 +53,10 @@ export async function PATCH(req: NextRequest) {
 
   if (input.email !== undefined) {
     const normalizedEmail = input.email ? input.email.toLowerCase().trim() : null;
+    // Panelga email bilan kiriladi — uni o'chirib qo'yish hisobni qulflab qo'yadi.
+    if (!normalizedEmail && current.email) {
+      return apiError(400, 'VALIDATION', 'Email kerak — panelga u bilan kirasiz');
+    }
     if (normalizedEmail && normalizedEmail !== current.email) {
       const exists = await prisma.user.findFirst({
         where: { email: normalizedEmail, NOT: { id: current.id } },

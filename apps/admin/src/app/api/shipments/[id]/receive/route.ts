@@ -5,7 +5,7 @@
 import { receiveSellerShipment, ShipmentStateError } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -22,7 +22,7 @@ const HTTP: Record<ShipmentStateError['code'], number> = {
 };
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('warehouse.manage');
   if (err) return err;
 
   if (!/^[a-f0-9-]{36}$/i.test(params.id)) {

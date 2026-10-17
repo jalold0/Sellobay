@@ -14,7 +14,7 @@ import {
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -40,7 +40,7 @@ const HTTP: Record<CarrierStateError['code'], number> = {
 };
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('orders.manage');
   if (err) return err;
 
   if (!/^[a-f0-9-]{36}$/i.test(params.id)) return apiError(400, 'VALIDATION', "ID noto'g'ri");

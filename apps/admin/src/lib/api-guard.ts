@@ -1,28 +1,46 @@
-// Admin API route'lari uchun umumiy rol qo'riqchisi.
+// Admin API route'lari uchun umumiy ruxsat qo'riqchisi (ADR 0019).
 //
-// Ilgari bu tekshiruv har bir route faylida qayta-qayta yozilardi (aynan bir
-// xil 8 qator). Bitta joyda turgani ma'qul: yangi route yozilganda uni
-// qo'shishni unutish qiyinroq bo'ladi va ruxsat ro'yxati bitta joydan
-// boshqariladi.
+// Har bir route bitta ruxsatni talab qiladi: `requirePermission('orders.manage')`.
+// Qaysi rol qaysi ruxsatga ega — faqat `lib/permissions.ts` da. Ilgari har route'da
+// `['ADMIN','SUPER_ADMIN']` qo'lda yozilardi va panel boshqa bo'lim xodimlariga yopiq edi.
 
 import { apiError } from '@/lib/auth/errors';
 import { getCurrentUser } from '@/lib/auth/session';
-
-/** Admin API'lariga kirish huquqi bor rollar. */
-export const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'] as const;
+import { can, isStaff, type Permission } from '@/lib/permissions';
 
 /** Ruxsat bo'lmasa — tayyor javob (`err`); bo'lsa — foydalanuvchi id'si (`userId`). */
-export type AdminGuardResult = { err: Response; userId: null } | { err: null; userId: string };
+export type AdminGuardResult =
+  | { err: Response; userId: null; roles: null }
+  | { err: null; userId: string; roles: string[] };
 
-export async function assertAdmin(): Promise<AdminGuardResult> {
+export async function requirePermission(permission: Permission): Promise<AdminGuardResult> {
   const user = await getCurrentUser();
   if (!user) {
-    return { err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan'), userId: null };
+    return {
+      err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan'),
+      userId: null,
+      roles: null,
+    };
   }
-  if (!user.roles?.some((r) => (ADMIN_ROLES as readonly string[]).includes(r))) {
-    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)"), userId: null };
+  if (!isStaff(user.roles)) {
+    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q"), userId: null, roles: null };
   }
-  return { err: null, userId: user.id };
+  // Vaqtinchalik parol bilan kirgan xodim avval o'z parolini qo'yadi — boshqa amal yo'q.
+  if (user.mustChangePassword) {
+    return {
+      err: apiError(403, 'PASSWORD_CHANGE_REQUIRED', 'Avval vaqtinchalik parolni almashtiring'),
+      userId: null,
+      roles: null,
+    };
+  }
+  if (!can(user.roles, permission)) {
+    return {
+      err: apiError(403, 'FORBIDDEN', "Bu bo'lim sizning rolingiz uchun yopiq"),
+      userId: null,
+      roles: null,
+    };
+  }
+  return { err: null, userId: user.id, roles: user.roles };
 }
 
 /**

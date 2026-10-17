@@ -6,7 +6,7 @@
 
 import { OPEN_SHIPMENT_STATUSES } from '@ecom/order-ops';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
@@ -14,7 +14,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('warehouse.manage');
   if (err) return err;
 
   const rows = await prisma.sellerShipment.findMany({

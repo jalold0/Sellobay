@@ -1,27 +1,18 @@
 // GET /api/orders — barcha buyurtmalar (admin). Faqat ADMIN/SUPER_ADMIN.
 
 import { adminFulfillmentTargets, orderPaymentState } from '@ecom/core-domain';
-import { NextRequest } from 'next/server';
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/api-guard';
+import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user) return { err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan') };
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  if (!user.roles?.some((r) => allowed.includes(r))) {
-    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)") };
-  }
-  return { err: null };
-}
-
 export async function GET(req: NextRequest) {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('orders.view');
   if (err) return err;
 
   const status = req.nextUrl.searchParams.get('status');

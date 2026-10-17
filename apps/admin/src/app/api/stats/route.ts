@@ -10,8 +10,8 @@
 
 import { lastTashkentDays, NON_REVENUE_ORDER_STATUSES, tashkentDateKey } from '@ecom/core-domain';
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/api-guard';
+import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -20,18 +20,8 @@ export const dynamic = 'force-dynamic';
 const WINDOW_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user) return { err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan') };
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  if (!user.roles?.some((r) => allowed.includes(r))) {
-    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)") };
-  }
-  return { err: null };
-}
-
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('analytics.view');
   if (err) return err;
 
   const now = new Date();

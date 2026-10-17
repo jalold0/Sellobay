@@ -1,23 +1,13 @@
 // Barcha sotuvchilar ro'yxati (status filtri bilan). Faqat ADMIN/SUPER_ADMIN.
 
-import { NextRequest } from 'next/server';
-
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/api-guard';
+import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user) return { err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan') };
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  if (!user.roles?.some((r) => allowed.includes(r))) {
-    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)") };
-  }
-  return { err: null };
-}
 
 const STATUS_MAP: Record<string, ('PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BLOCKED')[]> = {
   pending: ['PENDING'],
@@ -26,7 +16,7 @@ const STATUS_MAP: Record<string, ('PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BLOCKED'
 };
 
 export async function GET(req: NextRequest) {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('sellers.view');
   if (err) return err;
 
   const statusParam = req.nextUrl.searchParams.get('status') ?? 'all';

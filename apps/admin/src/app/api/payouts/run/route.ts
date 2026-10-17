@@ -4,7 +4,7 @@
 
 import { runSellerPayouts } from '@ecom/order-ops';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -13,7 +13,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('payouts.manage');
   if (err) return err;
 
   const result = await runSellerPayouts(prisma, new Date(), { force: true });

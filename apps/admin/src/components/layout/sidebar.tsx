@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
 import { adminNav, groupNav } from '../../lib/nav';
+import { canOpenPage } from '../../lib/permissions';
 import { useSession } from '../../providers/session-provider';
 import { SellobayMark } from '../brand/sellobay-mark';
 
@@ -18,9 +19,10 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, className }: SidebarProps) {
   const pathname = usePathname() ?? '';
-  const { has } = useSession();
+  const { session } = useSession();
 
-  const visible = adminNav.filter((item) => !item.roles || has(...item.roles));
+  // Xodim faqat o'z bo'limlarini ko'radi — sahifa ruxsati bilan bir xil xarita (middleware ham shuni tekshiradi).
+  const visible = adminNav.filter((item) => canOpenPage(session?.roles, item.href));
   const groups = groupNav(visible);
   // Faqat ENG ANIQ mos bo'lim faol: /orders/payment-review da «Buyurtmalar» ham yonib turmasin.
   const activeHref = visible

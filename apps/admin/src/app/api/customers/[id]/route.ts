@@ -5,8 +5,8 @@
 // qilardi. UUID hech qachon `cu-N` bilan mos kelmagani uchun mijoz ismini
 // bosish HAR DOIM "Topilmadi" sahifasini ochardi.
 
+import { requirePermission } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
@@ -15,18 +15,8 @@ export const dynamic = 'force-dynamic';
 /** Mijoz kartochkasida ko'rsatiladigan oxirgi buyurtmalar soni. */
 const RECENT_ORDERS = 20;
 
-async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user) return { err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan') };
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  if (!user.roles?.some((r) => allowed.includes(r))) {
-    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)") };
-  }
-  return { err: null };
-}
-
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('customers.view');
   if (err) return err;
 
   // Id UUID bo'lmasa Prisma xato tashlaydi — oldindan 404 qaytaramiz

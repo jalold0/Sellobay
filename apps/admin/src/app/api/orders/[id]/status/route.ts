@@ -26,10 +26,10 @@ import {
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
-import { prisma } from '@/lib/db';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
+import { apiError, apiOk } from '@/lib/auth/errors';
+import { prisma } from '@/lib/db';
 
 import type { NextRequest } from 'next/server';
 
@@ -42,11 +42,8 @@ const schema = z.object({
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser();
-  if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => ['ADMIN', 'SUPER_ADMIN'].includes(r))) {
-    return apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
-  }
+  const { err, userId } = await requirePermission('orders.manage');
+  if (err) return err;
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
@@ -103,10 +100,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   let result;
   try {
     result = await prisma.$transaction(async (tx) => {
-      const r = await applyFulfillmentTransition(tx, order, next, { changedBy: user.id, comment });
+      const r = await applyFulfillmentTransition(tx, order, next, { changedBy: userId, comment });
       await writeAudit(
         {
-          userId: user.id,
+          userId: userId,
           action: 'order.status',
           resource: 'Order',
           resourceId: order.id,

@@ -15,11 +15,12 @@ import { LogOut, Moon, Settings, Sun, User } from 'lucide-react';
 import Link from 'next/link';
 
 import { initials } from '../../lib/format';
+import { ROLE_LABELS, STAFF_ROLES } from '../../lib/permissions';
 import { useSession } from '../../providers/session-provider';
 import { useTheme } from '../../providers/theme-provider';
 
 export function UserMenu() {
-  const { session, signOut } = useSession();
+  const { session, signOut, can } = useSession();
   const { resolved, toggle } = useTheme();
   const name = `${session?.firstName ?? ''} ${session?.lastName ?? ''}`.trim() || 'Admin';
 
@@ -33,12 +34,11 @@ export function UserMenu() {
         <div className="hidden text-left leading-tight md:block">
           <div className="text-sm font-medium">{name}</div>
           <div className="text-muted-foreground text-[10px]">
-            {/* Eng yuqori rol: ilgari birinchisi ko'rsatilardi va admin «CUSTOMER» bo'lib turardi. */}
-            {session?.roles.includes('SUPER_ADMIN')
-              ? 'SUPER_ADMIN'
-              : session?.roles.includes('ADMIN')
-                ? 'ADMIN'
-                : (session?.roles[0] ?? '—')}
+            {/* Eng yuqori xodim roli (STAFF_ROLES tartibida) — CUSTOMER emas. */}
+            {(() => {
+              const top = STAFF_ROLES.find((r) => session?.roles.includes(r));
+              return top ? ROLE_LABELS[top] : '—';
+            })()}
           </div>
         </div>
       </DropdownMenuTrigger>
@@ -49,15 +49,17 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings" className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" /> Profil
+          <Link href="/account" className="cursor-pointer">
+            <User className="mr-2 h-4 w-4" /> Hisobim
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" /> Sozlamalar
-          </Link>
-        </DropdownMenuItem>
+        {can('settings.manage') && (
+          <DropdownMenuItem asChild>
+            <Link href="/settings" className="cursor-pointer">
+              <Settings className="mr-2 h-4 w-4" /> Sozlamalar
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={toggle}>
           {resolved === 'dark' ? (
             <>

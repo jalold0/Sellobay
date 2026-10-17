@@ -1,9 +1,11 @@
 // Session boshqaruvi: JWT issue/verify + refresh rotation + cookie set/clear
 import crypto from 'node:crypto';
-import { cookies, headers } from 'next/headers';
-import { NextResponse } from 'next/server';
+
 import { signAccessToken, verifyToken, type AccessPayload } from '@ecom/auth';
+import { cookies, headers } from 'next/headers';
+
 import { prisma } from '@/lib/db';
+
 import {
   requireAccessSecret,
   ACCESS_TTL,
@@ -13,6 +15,8 @@ import {
   REFRESH_TTL_DAYS,
   SESSION_ONLY_TTL_HOURS,
 } from './constants';
+
+import type { NextResponse } from 'next/server';
 
 const REFRESH_TTL_MS = REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000;
 const SESSION_ONLY_TTL_MS = SESSION_ONLY_TTL_HOURS * 60 * 60 * 1000;
@@ -199,10 +203,15 @@ export async function getCurrentUser() {
         loyaltyPoints: true,
         gender: true,
         birthDate: true,
+        mustChangePassword: true,
+        roles: { select: { role: true } },
       },
     });
     if (!user || user.status === 'BLOCKED' || user.status === 'DELETED') return null;
-    return { ...user, roles: payload.roles ?? [] };
+    // Rollar bazadan (token ichidagisidan emas): xodimdan rol olinsa yoki u bloklansa,
+    // API'lar darhol ruxsat bermaydi — access token tugashini (15 daqiqa) kutmasdan.
+    const { roles, ...rest } = user;
+    return { ...rest, roles: roles.map((r) => r.role as string) };
   } catch {
     return null;
   }

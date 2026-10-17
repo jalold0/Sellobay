@@ -1,23 +1,14 @@
 // Tasdiq kutilayotgan sotuvchilar ro'yxati. Faqat ADMIN/SUPER_ADMIN kira oladi.
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/api-guard';
+import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user) return { user: null, err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan') };
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  const ok = user.roles?.some((r) => allowed.includes(r));
-  if (!ok) return { user, err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)") };
-  return { user, err: null };
-}
-
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('sellers.manage');
   if (err) return err;
 
   const items = await prisma.seller.findMany({

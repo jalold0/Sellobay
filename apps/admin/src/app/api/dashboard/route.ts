@@ -14,8 +14,8 @@
 
 import { lastTashkentDays, NON_REVENUE_ORDER_STATUSES, tashkentDateKey } from '@ecom/core-domain';
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/api-guard';
+import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 import { adminProductImage } from '@/lib/product-image';
 
@@ -50,11 +50,8 @@ function netRevenue(order: PaidOrderRow): number {
 }
 
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => ['ADMIN', 'SUPER_ADMIN'].includes(r))) {
-    return apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
-  }
+  const { err } = await requirePermission('dashboard.view');
+  if (err) return err;
 
   const now = Date.now();
   const windowStart = new Date(now - WINDOW_DAYS * DAY_MS);

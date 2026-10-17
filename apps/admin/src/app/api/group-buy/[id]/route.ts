@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 const schema = z.object({ action: z.literal('cancel') });
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('promo.manage');
   if (err) return err;
 
   const body = await req.json().catch(() => null);

@@ -1,11 +1,14 @@
-import { NextRequest } from 'next/server';
 import { verifyPassword } from '@ecom/auth';
 import { normalizeUzPhone } from '@ecom/utils';
-import { prisma } from '@/lib/db';
-import { loginSchema } from '@/lib/auth/validators';
+
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { issueSession, requestMeta } from '@/lib/auth/session';
+import { loginSchema } from '@/lib/auth/validators';
+import { prisma } from '@/lib/db';
+import { isStaff } from '@/lib/permissions';
 import { enforceRateLimit } from '@/lib/rate-limit';
+
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -43,6 +46,7 @@ export async function POST(req: NextRequest) {
       phone: true,
       firstName: true,
       lastName: true,
+      mustChangePassword: true,
       roles: { select: { role: true } },
     },
   });
@@ -59,11 +63,10 @@ export async function POST(req: NextRequest) {
     return apiError(401, 'INVALID_CREDENTIALS', "Email/telefon yoki parol noto'g'ri");
   }
 
-  // Admin paneliga faqat ADMIN/SUPER_ADMIN rollar kira oladi
+  // Panelga xodim rollari kiradi (bosh admin, admin, operator, moliya, kontent, ombor) —
+  // nimani ko'rishi lib/permissions.ts da. Mijoz/sotuvchi/kuryer — yo'q.
   const roleNames = user.roles.map((r: { role: string }) => r.role);
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  const hasAccess = roleNames.some((r) => allowed.includes(r));
-  if (!hasAccess) {
+  if (!isStaff(roleNames)) {
     return apiError(403, 'NOT_AN_ADMIN', "Bu hisobga admin paneliga kirish ruxsati yo'q");
   }
 
@@ -79,6 +82,7 @@ export async function POST(req: NextRequest) {
       lastName: user.lastName,
       status: user.status,
       roles: roleNames,
+      mustChangePassword: user.mustChangePassword,
     },
   });
   // «Meni eslab qol» — faqat aniq true bo'lsa uzoq muddatli sessiya.

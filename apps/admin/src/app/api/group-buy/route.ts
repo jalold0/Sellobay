@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
@@ -29,7 +29,7 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('promo.manage');
   if (err) return err;
 
   const rows = await prisma.groupBuy.findMany({
@@ -76,7 +76,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('promo.manage');
   if (err) return err;
 
   const body = await req.json().catch(() => null);

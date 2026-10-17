@@ -7,7 +7,7 @@
 import { wouldCreateCycle } from '@ecom/core-domain';
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
@@ -29,7 +29,7 @@ const patchSchema = z
   .refine((v) => Object.keys(v).length > 0, "O'zgartirish yo'q");
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('catalog.manage');
   if (err) return err;
 
   const parsed = patchSchema.safeParse(await req.json().catch(() => null));

@@ -51,6 +51,8 @@ export interface AdminUser {
   lastName: string | null;
   status?: string;
   roles?: string[];
+  /** Vaqtinchalik parol — avval almashtirish kerak (ADR 0019). */
+  mustChangePassword?: boolean;
 }
 
 export function loginAdmin(identifier: string, password: string, remember = false) {
@@ -738,12 +740,45 @@ export interface AdminStaffUser {
   avatarUrl: string | null;
   status: string;
   roles: string[];
+  mustChangePassword: boolean;
   lastLoginAt: string | null;
   createdAt: string;
 }
 
 export function listAdminUsers() {
   return api<{ items: AdminStaffUser[] }>('/api/admin-users');
+}
+
+export interface CreateStaffInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  roles: string[];
+}
+
+/** Yangi xodim — javobdagi `tempPassword` faqat shu yerda bir marta keladi. */
+export function createStaffUser(input: CreateStaffInput) {
+  return api<{ staff: AdminStaffUser; tempPassword: string }>('/api/admin-users', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateStaffUser(
+  id: string,
+  input: { roles?: string[]; status?: 'ACTIVE' | 'BLOCKED' },
+) {
+  return api<{ staff: AdminStaffUser }>(`/api/admin-users/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function resetStaffPassword(id: string) {
+  return api<{ tempPassword: string }>(`/api/admin-users/${id}/reset-password`, {
+    method: 'POST',
+  });
 }
 
 // ─── Bosh sahifa ko'rsatkichlari ──────────────────────────────────

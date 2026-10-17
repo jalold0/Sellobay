@@ -6,7 +6,7 @@
 // Ilgari admin inventar sahifasi `mockProducts` ni ko'rsatardi — jami stok,
 // inventar qiymati va "tugagan" soni to'qima edi.
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 const LOW_STOCK_THRESHOLD = 10;
 
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('warehouse.manage');
   if (err) return err;
 
   const products = await prisma.product.findMany({

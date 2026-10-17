@@ -6,7 +6,7 @@ import { parseMoneyInput } from '@ecom/core-domain';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { recordRefund, REFUND_METHODS, RefundError, type RefundMethod } from '@/lib/refund-server';
 
@@ -23,7 +23,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('refunds.manage');
   if (err) return err;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));

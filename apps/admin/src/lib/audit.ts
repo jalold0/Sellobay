@@ -6,8 +6,8 @@
 // Holat o'zgarishi bilan BIR tranzaksiyada yoziladi (`tx` beriladi): amal bekor bo'lsa,
 // jurnalda ham yolg'on yozuv qolmaydi.
 
-import { prisma } from '@/lib/db';
 import { requestMeta } from '@/lib/auth/session';
+import { prisma } from '@/lib/db';
 
 import type { Prisma } from '@ecom/database';
 
@@ -35,7 +35,12 @@ export type AuditAction =
   | 'payout.create'
   | 'payout.paid'
   | 'payout.cancel'
-  | 'auth.password_change';
+  | 'auth.password_change'
+  | 'staff.create'
+  | 'staff.roles'
+  | 'staff.block'
+  | 'staff.unblock'
+  | 'staff.password_reset';
 
 export interface AuditEntry {
   userId: string;

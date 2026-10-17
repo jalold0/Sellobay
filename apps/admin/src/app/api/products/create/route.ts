@@ -17,10 +17,10 @@
 import { isOwnPublicImageUrl } from '@ecom/storage';
 import { z } from 'zod';
 
-import { assertAdmin, slugify } from '@/lib/api-guard';
+import { requirePermission, slugify } from '@/lib/api-guard';
+import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
-import { writeAudit } from '@/lib/audit';
 
 import type { NextRequest } from 'next/server';
 
@@ -65,7 +65,7 @@ const createSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('catalog.manage');
   if (err) return err;
 
   const body = await req.json().catch(() => null);

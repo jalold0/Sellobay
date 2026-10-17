@@ -1,5 +1,6 @@
 // Markazlashtirilgan navigatsiya. Yangi bo'lim qo'shilsa shu yerga
 // — sidebar, breadcrumb, command palette avtomatik yangilanadi.
+// Kim nimani ko'radi — lib/permissions.ts (sahifa -> ruxsat xaritasi), bu yerda emas.
 
 import {
   Banknote,
@@ -21,17 +22,14 @@ import {
   Tags,
   type LucideIcon,
   Undo2,
+  UserCog,
   Users,
 } from 'lucide-react';
-
-import type { UserRole } from '@ecom/database';
 
 export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
-  // Faqat shu rollar ushbu bo'limni ko'rishi mumkin
-  roles?: UserRole[];
   // Sidebar group
   group?: string;
   // Notification dot uchun keyinchalik
@@ -92,14 +90,13 @@ export const adminNav: NavItem[] = [
     label: 'Marketplace tariflari',
     icon: Percent,
     group: 'Tizim',
-    roles: ['ADMIN', 'SUPER_ADMIN'],
   },
+  { href: '/staff', label: 'Xodimlar', icon: UserCog, group: 'Tizim' },
   {
     href: '/settings',
     label: 'Sozlamalar',
     icon: Settings,
     group: 'Tizim',
-    roles: ['ADMIN', 'SUPER_ADMIN'],
   },
 ];
 

@@ -1,25 +1,15 @@
 // GET /api/products — barcha mahsulotlar (admin, hamma status). Faqat ADMIN/SUPER_ADMIN.
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
+import { requirePermission } from '@/lib/api-guard';
+import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 import { adminProductImage } from '@/lib/product-image';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function assertAdmin() {
-  const user = await getCurrentUser();
-  if (!user) return { err: apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan') };
-  const allowed = ['ADMIN', 'SUPER_ADMIN'];
-  if (!user.roles?.some((r) => allowed.includes(r))) {
-    return { err: apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)") };
-  }
-  return { err: null };
-}
-
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('catalog.manage');
   if (err) return err;
 
   const products = await prisma.product.findMany({

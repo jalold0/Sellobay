@@ -17,9 +17,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { loginAdmin } from '@/lib/auth/client';
+import { useSession } from '@/providers/session-provider';
 
 function LoginForm() {
   const router = useRouter();
+  const { reload } = useSession();
   const params = useSearchParams();
   const nextPath = params?.get('next') || '/';
   const [email, setEmail] = React.useState('');
@@ -41,8 +43,12 @@ function LoginForm() {
       toast({ title: result.error.message, variant: 'destructive' });
       return;
     }
+    // Sessiya konteksti /login ochilganda (kirilmagan holatda) yuklangan — yangilamasak menyu,
+    // rollar va «parolni almashtiring» holati sahifa qayta yuklanmaguncha eskicha qoladi.
+    await reload();
     toast({ title: 'Kirildi', variant: 'success' });
-    router.push(nextPath);
+    // Vaqtinchalik parol — avval o'z parolini qo'yadi.
+    router.push(result.data.user.mustChangePassword ? '/account' : nextPath);
     router.refresh();
   };
 
@@ -120,7 +126,7 @@ function LoginForm() {
               </Button>
             </form>
             <p className="text-muted-foreground mt-4 text-center text-xs">
-              Faqat ADMIN va SUPER_ADMIN ruxsatlari bor foydalanuvchilar kira oladi
+              Panelga faqat Sellobay xodimlari kiradi. Hisobni bosh admin ochib beradi.
             </p>
           </CardContent>
         </Card>

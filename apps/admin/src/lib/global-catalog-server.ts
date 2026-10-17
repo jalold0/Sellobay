@@ -25,6 +25,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { getGlobalSettings } from '@/lib/global-settings-server';
+import { can } from '@/lib/permissions';
 
 export class GlobalCatalogError extends Error {
   constructor(
@@ -104,14 +105,20 @@ export const repriceGlobalProductSchema = z.object({
 });
 export type RepriceGlobalProductInput = z.infer<typeof repriceGlobalProductSchema>;
 
-type Operator = { id: string; roles?: string[] } | null;
-
-const OPERATOR_ROLES = ['ADMIN', 'SUPER_ADMIN'];
+type Operator = { id: string; roles?: string[]; mustChangePassword?: boolean } | null;
 
 function assertOperator(user: Operator): asserts user is { id: string; roles: string[] } {
   if (!user) throw new GlobalCatalogError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => OPERATOR_ROLES.includes(r))) {
-    throw new GlobalCatalogError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
+  if (user.mustChangePassword) {
+    throw new GlobalCatalogError(
+      403,
+      'PASSWORD_CHANGE_REQUIRED',
+      'Avval vaqtinchalik parolni almashtiring',
+    );
+  }
+  // Ruxsat xaritasi — lib/permissions.ts (ADR 0019).
+  if (!can(user.roles, 'global.catalog')) {
+    throw new GlobalCatalogError(403, 'FORBIDDEN', "Bu bo'lim sizning rolingiz uchun yopiq");
   }
 }
 

@@ -63,7 +63,11 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(newPassword);
   await prisma.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: user.id }, data: { passwordHash } });
+    // Vaqtinchalik parol (yangi xodim / tiklangan) shu yerda almashtiriladi — belgi olinadi.
+    await tx.user.update({
+      where: { id: user.id },
+      data: { passwordHash, mustChangePassword: false },
+    });
     await writeAudit(
       { userId: user.id, action: 'auth.password_change', resource: 'User', resourceId: user.id },
       tx,

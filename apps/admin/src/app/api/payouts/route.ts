@@ -1,10 +1,10 @@
 // GET /api/payouts — sotuvchilarga to'lovlar (ADR 0015): to'lash kerak bo'lganlar, sotuvchilar
 // balansi (qaytarish muddatida / to'lovga tayyor) va oxirgi to'langanlar.
 
-import { loadMarketplaceSettings, payoutDayNoon } from '@ecom/order-ops';
 import { Prisma } from '@ecom/database';
+import { loadMarketplaceSettings, payoutDayNoon } from '@ecom/order-ops';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
 
@@ -28,7 +28,7 @@ const payoutSelect = {
 } as const;
 
 export async function GET() {
-  const { err } = await assertAdmin();
+  const { err } = await requirePermission('payouts.manage');
   if (err) return err;
 
   const now = new Date();

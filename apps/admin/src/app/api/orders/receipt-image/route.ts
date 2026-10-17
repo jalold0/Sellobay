@@ -7,8 +7,8 @@
 
 import { readPrivateImage, StorageNotConfiguredError } from '@ecom/storage';
 
+import { requirePermission } from '@/lib/api-guard';
 import { apiError } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
 
 import type { NextRequest } from 'next/server';
 
@@ -16,11 +16,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => ['ADMIN', 'SUPER_ADMIN'].includes(r))) {
-    return apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
-  }
+  const { err } = await requirePermission('payments.review');
+  if (err) return err;
 
   const pathname = req.nextUrl.searchParams.get('p');
   // `p` klientdan keladi, shuning uchun u faqat cheklar papkasini ko'rsata olishi

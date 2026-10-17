@@ -6,7 +6,7 @@
 //   • STIR kiritilmagan ariza tasdiqlanmaydi (kim bilan ishlayotganimiz noma'lum);
 //   • bloklangan/o'chirilgan foydalanuvchi shartsiz ACTIVE qilinmaydi.
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 class StateChangedError extends Error {}
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('sellers.manage');
   if (err) return err;
 
   const sellerId = params.id;

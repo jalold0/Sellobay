@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { prisma } from '@/lib/db';
@@ -56,7 +56,7 @@ const RULES: Record<
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('catalog.manage');
   if (err) return err;
 
   const productId = params.id;

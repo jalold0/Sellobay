@@ -13,10 +13,10 @@ import { releaseCancelledOrder } from '@ecom/order-ops';
 import { getPushService } from '@ecom/push';
 import { z } from 'zod';
 
-import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
-import { prisma } from '@/lib/db';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
+import { apiError, apiOk } from '@/lib/auth/errors';
+import { prisma } from '@/lib/db';
 
 import type { NextRequest } from 'next/server';
 
@@ -35,11 +35,8 @@ class OrderStateChangedError extends Error {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser();
-  if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => ['ADMIN', 'SUPER_ADMIN'].includes(r))) {
-    return apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
-  }
+  const { err, userId } = await requirePermission('orders.manage');
+  if (err) return err;
 
   const parsed = schema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -77,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         data: {
           orderId: order.id,
           status: 'CANCELLED',
-          changedBy: user.id,
+          changedBy: userId,
           comment: refundRequired
             ? `Admin bekor qildi: ${reason}. To'lov qaytarilishi kerak.`
             : `Admin bekor qildi: ${reason}`,
@@ -95,7 +92,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       await writeAudit(
         {
-          userId: user.id,
+          userId: userId,
           action: 'order.cancel',
           resource: 'Order',
           resourceId: order.id,

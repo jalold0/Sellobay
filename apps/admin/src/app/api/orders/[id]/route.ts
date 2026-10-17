@@ -9,8 +9,8 @@ import {
   orderPaymentState,
 } from '@ecom/core-domain';
 
+import { requirePermission } from '@/lib/api-guard';
 import { apiError, apiOk } from '@/lib/auth/errors';
-import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { adminProductImage } from '@/lib/product-image';
 import { manualCardPayload, receiptSrc } from '@/lib/receipt';
@@ -90,11 +90,8 @@ function custodyView(d: CustodyDelivery | undefined) {
 }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getCurrentUser();
-  if (!user) return apiError(401, 'UNAUTHENTICATED', 'Tizimga kirilmagan');
-  if (!user.roles?.some((r) => ['ADMIN', 'SUPER_ADMIN'].includes(r))) {
-    return apiError(403, 'FORBIDDEN', "Ruxsat yo'q (faqat admin)");
-  }
+  const { err } = await requirePermission('orders.view');
+  if (err) return err;
 
   const o = await prisma.order.findUnique({
     where: { id: params.id },

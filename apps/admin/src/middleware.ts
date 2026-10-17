@@ -2,32 +2,32 @@
 // Auth cookie'siz yo'l: foydalanuvchi /login ga redirect bo'ladi.
 
 import { jwtVerify } from 'jose';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { COOKIE_ACCESS, COOKIE_REFRESH, accessSecretOrNull } from '@/lib/auth/constants';
+import { canOpenPage, homeFor, isStaff } from '@/lib/permissions';
+
+import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/login'];
 const PUBLIC_PREFIXES = ['/api/auth/', '/_next/', '/favicon', '/icon', '/apple-icon', '/manifest'];
 
 const encoder = new TextEncoder();
 
-// Ruxsat etilgan rollar. Web (mijoz) ilovasi ham AYNI shu JWT_SECRET va
-// `sb_at` cookie nomidan foydalanadi — ya'ni oddiy xaridorning tokeni ham
-// imzo tekshiruvidan o'tadi. Shuning uchun imzo yetarli emas: rol ham
-// tekshirilishi kerak (API route'larda rol tekshiruvi bor, bu esa panel
-// sahifalari uchun ikkinchi qatlam).
-const ALLOWED_ROLES = ['ADMIN', 'SUPER_ADMIN'];
-
-async function isValidAccess(token: string): Promise<boolean> {
+// Web (mijoz) ilovasi ham AYNI shu JWT_SECRET va `sb_at` cookie nomidan foydalanadi —
+// ya'ni oddiy xaridorning tokeni ham imzo tekshiruvidan o'tadi. Shuning uchun imzo yetarli
+// emas: xodim roli ham tekshiriladi (API route'larda `requirePermission` bor, bu esa panel
+// sahifalari uchun ikkinchi qatlam). Qaytadi: token rollari yoki null (token yaroqsiz).
+async function accessRoles(token: string): Promise<string[] | null> {
   try {
     const secret = accessSecretOrNull();
     // Kalit yo'q/juda qisqa bo'lsa hech qanday token qabul qilinmaydi.
-    if (!secret) return false;
+    if (!secret) return null;
     const { payload } = await jwtVerify(token, encoder.encode(secret));
     const roles = Array.isArray(payload.roles) ? (payload.roles as string[]) : [];
-    return roles.some((r) => ALLOWED_ROLES.includes(r));
+    return isStaff(roles) ? roles : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -57,9 +57,9 @@ export async function middleware(req: NextRequest) {
   }
 
   const token = req.cookies.get(COOKIE_ACCESS)?.value;
-  const validAccess = token ? await isValidAccess(token) : false;
+  const roles = token ? await accessRoles(token) : null;
 
-  if (!validAccess) {
+  if (!roles) {
     // Access 15 daqiqada tugaydi, refresh cookie 30 kun yashaydi: avval sessiyani yangilaymiz.
     // Rotatsiya Prisma talab qiladi (middleware Edge'da) — ish /api/auth/refresh ga beriladi.
     // Sahifa va GET so'rov — 302 (fetch redirect'ni o'zi kuzatadi); boshqa metodlar 401 oladi
@@ -85,6 +85,14 @@ export async function middleware(req: NextRequest) {
       loginUrl.searchParams.set('next', pathname);
     }
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Bo'lim ruxsati (ADR 0019): masalan ombor xodimi /payouts ni ochsa — o'z bosh sahifasiga.
+  // API'lar bu yerda emas, har route'ning o'zida (`requirePermission`) tekshiriladi.
+  if (!pathname.startsWith('/api/') && !canOpenPage(roles, pathname)) {
+    const home = new URL(homeFor(roles), req.url);
+    home.searchParams.set('denied', pathname);
+    return NextResponse.redirect(home);
   }
 
   return NextResponse.next();

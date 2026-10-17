@@ -6,7 +6,7 @@
 // takrorlangan holat bo'lardi va ikkalasi vaqt o'tib bir-biriga mos
 // kelmay qolishi mumkin edi.
 
-import { assertAdmin } from '@/lib/api-guard';
+import { requirePermission } from '@/lib/api-guard';
 import { writeAudit } from '@/lib/audit';
 import { apiError, apiOk } from '@/lib/auth/errors';
 import { createReturnDeliveries, ReturnError } from '@/lib/returns-server';
@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(_req: Request, { params }: { params: { orderId: string } }) {
-  const { err, userId } = await assertAdmin();
+  const { err, userId } = await requirePermission('returns.manage');
   if (err) return err;
 
   try {
