@@ -15,6 +15,9 @@ import type { PrismaClient } from '@ecom/database';
 import type { NextRequest } from 'next/server';
 
 const DB = process.env.TEST_DATABASE_URL;
+// Har ishga tushirishda noyob raqamlar — test bazasini tozalamasdan qayta-qayta ishlatish mumkin.
+const RUN = String(Date.now() % 100_000).padStart(5, '0');
+const testPhone = (n: number) => `+99890${RUN}${String(n).padStart(2, '0')}`;
 
 // Sessiya (cookie, next/headers) bu testning mavzusi emas.
 vi.mock('@/lib/auth/session', () => ({
@@ -62,16 +65,22 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
     ({ POST: send } = await import('./send/route'));
     ({ POST: verify } = await import('./verify/route'));
     ({ hashOtp } = await import('@ecom/auth'));
-  });
+    // Route modullarini sovuq import qilish butun to'plam parallel ishlaganda 10 s dan oshadi.
+  }, 60_000);
 
   afterAll(async () => {
     await prisma?.$disconnect();
   });
 
   it('SEC-04: raqam tasdiqlanmagan hisobga kiritmaydi — raqam bo`shatiladi, egasiga yangi hisob', async () => {
-    const phone = '+998901110001';
+    const phone = testPhone(1);
     const attacker = await prisma.user.create({
-      data: { email: 'attacker-sec04@test.local', phone, status: 'ACTIVE', phoneVerifiedAt: null },
+      data: {
+        email: `attacker-sec04-${RUN}@test.local`,
+        phone,
+        status: 'ACTIVE',
+        phoneVerifiedAt: null,
+      },
     });
     await plantCode(phone, '123456');
 
@@ -91,7 +100,7 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
   });
 
   it('raqami tasdiqlangan faol hisobga kiritadi', async () => {
-    const phone = '+998901110002';
+    const phone = testPhone(2);
     const owner = await prisma.user.create({
       data: { phone, status: 'ACTIVE', phoneVerifiedAt: new Date() },
     });
@@ -103,7 +112,7 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
   });
 
   it('tasdiq kutayotgan (PENDING) hisob faollashmaydi', async () => {
-    const phone = '+998901110003';
+    const phone = testPhone(3);
     const pending = await prisma.user.create({
       data: { phone, status: 'PENDING', phoneVerifiedAt: new Date() },
     });
@@ -114,7 +123,7 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
   });
 
   it('SEC-05: 20 ta parallel noto`g`ri urinish — hisoblagich OTP_MAX_ATTEMPTS dan oshmaydi', async () => {
-    const phone = '+998901110004';
+    const phone = testPhone(4);
     const otp = await plantCode(phone, '444444');
     const results = await Promise.all(
       Array.from({ length: 20 }, (_, i) => verify(req({ phone, code: String(100000 + i) }))),
@@ -129,7 +138,7 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
   });
 
   it('SEC-05: to`g`ri kod bilan ikki parallel so`rov — faqat bittasi kiradi', async () => {
-    const phone = '+998901110005';
+    const phone = testPhone(5);
     await prisma.user.create({ data: { phone, status: 'ACTIVE', phoneVerifiedAt: new Date() } });
     await plantCode(phone, '555555');
     const [a, b] = await Promise.all([
@@ -140,7 +149,7 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
   });
 
   it('SEC-05: bitta raqamga soatiga 5 tadan ortiq kod yuborilmaydi', async () => {
-    const phone = '+998901110006';
+    const phone = testPhone(6);
     // 5 ta kod oxirgi soatda (cooldown'dan tashqarida) yuborilgan.
     for (let i = 0; i < 5; i++) {
       await prisma.otpCode.create({
@@ -157,6 +166,6 @@ describe.skipIf(!DB)('OTP kirish (integratsiya)', () => {
     expect(res.status).toBe(429);
     expect(Number(res.headers.get('Retry-After'))).toBeGreaterThan(60);
     // Boshqa raqam — ruxsat.
-    expect((await send(req({ phone: '+998901110007' }))).status).toBe(200);
+    expect((await send(req({ phone: testPhone(7) }))).status).toBe(200);
   });
 });

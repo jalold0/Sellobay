@@ -24,14 +24,35 @@ pnpm dev
 1. **DB migration:** `pnpm --filter @ecom/database migrate:deploy`
 2. **Deploy:** Next.js app'lar (`web`, `admin`, `seller`, `telegram-mini-app`)
    **Vercel**'da — `main`ga merge avtomatik deploy qiladi
-3. **Bot:** `telegram-bot` alohida hostda (Docker image `docker.yml` orqali
-   faqat versiya tegi yoki qo'lda build qilinadi)
+3. **Bot:** Sellobay boti `apps/web` dagi webhook orqali ishlaydi (`/api/telegram/webhook`,
+   ADR 0018) — alohida server kerak emas. `apps/telegram-bot` (long polling) skelet, deploy
+   qilinmaydi: bitta token bilan webhook va polling birga ishlamaydi.
 4. **Health check:** `/api/health`
 5. **Secrets:** Vercel environment variables (`.env.example` shablon)
 
 K8s/Helm/ArgoCD hozircha ishlatilmaydi (qarang
 `infrastructure/kubernetes/README.md`) — quyidagi bo'lim kelajak rejasi
 sifatida saqlanadi.
+
+## Telegram bot (Telegram orqali kirish, ADR 0018)
+
+1. @BotFather'da bot oching (`/newbot`), tokenni oling. Bot nomi masalan `SellobayBot`.
+2. Vercel → `apps/web` → Environment Variables (Production):
+   - `TELEGRAM_BOT_TOKEN` — BotFather bergan token;
+   - `TELEGRAM_BOT_USERNAME` — bot nomi, @ belgisisiz;
+   - `TELEGRAM_WEBHOOK_SECRET` — `openssl rand -hex 32`.
+3. Redeploy (ENV yangi build bilan o'qiladi).
+4. Webhook'ni BIR MARTA o'rnating (token va sirni o'zingiz qo'ying, hech kimga ko'rsatmang):
+
+   ```bash
+   curl -s "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d url=https://www.sellobay.uz/api/telegram/webhook \
+     -d secret_token=<TELEGRAM_WEBHOOK_SECRET> \
+     -d 'allowed_updates=["message"]'
+   ```
+
+5. Tekshiruv: `https://api.telegram.org/bot<TOKEN>/getWebhookInfo` — `url` to'g'ri,
+   `last_error_message` yo'q. Login sahifasida «Telegram bilan kirish» tugmasi chiqadi.
 
 ## Backup va DR
 

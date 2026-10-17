@@ -704,6 +704,17 @@
       "profileHint": "Manzillar, sevimlilar va Sello Coins hisobingizda saqlanadi.",
       "wishlistTitle": "Sevimlilarni saqlash uchun kiring",
       "wishlistHint": "Yoqqan mahsulotlar hisobingizda saqlanadi va istalgan qurilmada ko'rinadi."
+    },
+    "telegram": {
+      "title": "Telegram orqali kirish",
+      "instruction": "Telegram’da Sellobay botini oching va «Raqamni ulashish» tugmasini bosing.",
+      "codeHint": "Botda ham shu kod chiqishi kerak:",
+      "open": "Telegram’ni ochish",
+      "waiting": "Tasdiqlash kutilmoqda…",
+      "cancel": "Bekor qilish",
+      "expired": "So‘rov muddati tugadi.",
+      "retry": "Qaytadan urinish",
+      "failed": "Telegram orqali kirib bo‘lmadi. Qaytadan urinib ko‘ring yoki email bilan kiring."
     }
   },
   "profile": {
@@ -1507,5 +1518,15 @@
     "codeLabel": "Topshirish kodi",
     "parcel": "Posilka {code}",
     "qrAlt": "Topshirish QR kodi"
+  },
+  "telegramBot": {
+    "welcome": "Assalomu alaykum! Bu Sellobay’ning rasmiy boti.\n\nSaytga Telegram orqali kirish uchun sellobay.uz’da «Telegram orqali kirish» tugmasini bosing.",
+    "loginPrompt": "Sellobay’ga kirish so‘rovi.\n\nSaytdagi kod: {code}\n\nKod saytdagi bilan bir xil bo‘lsa, pastdagi tugma orqali raqamingizni ulashing. Hozir saytda kirishni o‘zingiz so‘ramagan bo‘lsangiz — hech narsa bosmang.",
+    "shareButton": "Raqamni ulashish",
+    "expired": "Bu havola eskirgan yoki allaqachon ishlatilgan. Saytda «Telegram orqali kirish»ni qaytadan bosing.",
+    "notOwnContact": "Faqat o‘zingizning raqamingizni pastdagi «Raqamni ulashish» tugmasi orqali yuboring.",
+    "notUzNumber": "Hozircha faqat O‘zbekiston raqamlari (+998) qabul qilinadi. Saytga email bilan kiring.",
+    "noActiveRequest": "Faol kirish so‘rovi topilmadi. Saytda «Telegram orqali kirish»ni qaytadan bosing.",
+    "done": "Tayyor! Raqamingiz tasdiqlandi. Saytga qayting — tizimga avtomatik kirasiz."
   }
 }

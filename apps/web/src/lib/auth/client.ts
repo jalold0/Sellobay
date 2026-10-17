@@ -90,6 +90,22 @@ export function verifyOtp(phone: string, code: string, firstName?: string) {
   });
 }
 
+/** Telegram orqali kirish so'rovi (ADR 0018). */
+export function startTelegramLogin() {
+  return api<{ token: string; code: string; botUrl: string; expiresInSec: number }>(
+    '/api/auth/telegram/start',
+    { method: 'POST' },
+  );
+}
+
+/** `pending` — botda hali raqam ulashilmagan; `ok` — kirildi (cookie o'rnatildi). */
+export function pollTelegramLogin(token: string) {
+  return api<{ status: 'pending' } | { status: 'ok'; user: AuthUser }>('/api/auth/telegram/poll', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
+}
+
 export function logout() {
   return api<{ loggedOut: true }>('/api/auth/logout', { method: 'POST' });
 }

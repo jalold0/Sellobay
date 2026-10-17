@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/lib/auth/session';
 import { phoneLoginAvailable } from '@/lib/auth/sms';
+import { telegramLoginAvailable } from '@/lib/telegram/bot-api';
 
 import { LoginFlow } from '../../../components/auth/login-flow';
 
@@ -24,5 +25,5 @@ export default async function LoginPage({
     // yo'llardi (audit SEC-03). safeInternalPath bunday qiymatni '/' ga aylantiradi.
     redirect(next ? safeInternalPath(next) : `/${params.locale}/profile`);
   }
-  return <LoginFlow phoneLogin={phoneLoginAvailable()} />;
+  return <LoginFlow phoneLogin={phoneLoginAvailable()} telegramLogin={telegramLoginAvailable()} />;
 }
