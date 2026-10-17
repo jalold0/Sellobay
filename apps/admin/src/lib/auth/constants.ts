@@ -53,6 +53,10 @@ export const REFRESH_TTL_DAYS = 30;
 
 export const COOKIE_ACCESS = 'sb_at';
 export const COOKIE_REFRESH = 'sb_rt';
+/** «Meni eslab qol» belgisi — refresh rotatsiyasida rejim saqlanishi uchun ('0' — sessiya). */
+export const COOKIE_REMEMBER = 'sb_rm';
+/** «Eslab qolinmagan» sessiya: refresh token qisqa, cookie'lar brauzer yopilganda o'chadi. */
+export const SESSION_ONLY_TTL_HOURS = 12;
 
 export const OTP_TTL_MINUTES = 5;
 export const OTP_MAX_ATTEMPTS = 5;

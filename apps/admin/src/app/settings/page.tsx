@@ -24,6 +24,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
+  PasswordInput,
 } from '@ecom/ui';
 import { Lock, ShieldCheck, User2, Webhook } from 'lucide-react';
 import * as React from 'react';
@@ -330,9 +331,8 @@ export default function AdminSettingsPage() {
                 <form onSubmit={onChangePassword} className="space-y-3">
                   <div>
                     <Label htmlFor="pw-current">Joriy parol</Label>
-                    <Input
+                    <PasswordInput
                       id="pw-current"
-                      type="password"
                       autoComplete="current-password"
                       value={pw.current}
                       onChange={(e) => setPw({ ...pw, current: e.target.value })}
@@ -341,9 +341,8 @@ export default function AdminSettingsPage() {
                   </div>
                   <div>
                     <Label htmlFor="pw-next">Yangi parol</Label>
-                    <Input
+                    <PasswordInput
                       id="pw-next"
-                      type="password"
                       autoComplete="new-password"
                       minLength={8}
                       value={pw.next}
@@ -356,9 +355,8 @@ export default function AdminSettingsPage() {
                   </div>
                   <div>
                     <Label htmlFor="pw-repeat">Yangi parolni takrorlang</Label>
-                    <Input
+                    <PasswordInput
                       id="pw-repeat"
-                      type="password"
                       autoComplete="new-password"
                       value={pw.repeat}
                       onChange={(e) => setPw({ ...pw, repeat: e.target.value })}

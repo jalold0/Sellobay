@@ -1,6 +1,17 @@
 'use client';
 
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, toast } from '@ecom/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Input,
+  Label,
+  PasswordInput,
+  toast,
+} from '@ecom/ui';
 import { Loader2, Lock, Mail } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
@@ -13,6 +24,8 @@ function SellerLoginForm() {
   const nextPath = params?.get('next') || '/';
   const [submitting, setSubmitting] = React.useState(false);
   const [form, setForm] = React.useState({ identifier: '', password: '' });
+  // «Meni eslab qol» — belgilanmasa sessiya brauzer yopilganda tugaydi.
+  const [remember, setRemember] = React.useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +34,7 @@ function SellerLoginForm() {
       return;
     }
     setSubmitting(true);
-    const result = await loginSeller(form.identifier.trim(), form.password);
+    const result = await loginSeller(form.identifier.trim(), form.password, remember);
     setSubmitting(false);
     if (!result.success) {
       toast({ title: result.error.message, variant: 'destructive' });
@@ -77,9 +90,9 @@ function SellerLoginForm() {
               <div>
                 <Label>Parol</Label>
                 <div className="relative">
-                  <Lock className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-                  <Input
-                    type="password"
+                  {/* z-10: PasswordInput o'z konteyneriga ega — input foni belgini yopmasin. */}
+                  <Lock className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2" />
+                  <PasswordInput
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="pl-9"
@@ -88,6 +101,11 @@ function SellerLoginForm() {
                   />
                 </div>
               </div>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
+                <span>Meni eslab qol</span>
+                <span className="text-muted-foreground text-xs">(30 kun)</span>
+              </label>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Kirish

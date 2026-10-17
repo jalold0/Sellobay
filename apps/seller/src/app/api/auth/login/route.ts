@@ -116,6 +116,8 @@ export async function POST(req: NextRequest) {
       roles: roleNames,
     },
   });
-  await issueSession(res, user.id, requestMeta());
+  // «Meni eslab qol» — faqat aniq true bo'lsa uzoq muddatli sessiya.
+  const remember = (body as { remember?: unknown } | null)?.remember === true;
+  await issueSession(res, user.id, requestMeta(), remember);
   return res;
 }

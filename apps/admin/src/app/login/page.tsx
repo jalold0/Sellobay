@@ -1,6 +1,17 @@
 'use client';
 
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, toast } from '@ecom/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Input,
+  Label,
+  PasswordInput,
+  toast,
+} from '@ecom/ui';
 import { Loader2, Lock, Mail } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
@@ -13,6 +24,8 @@ function LoginForm() {
   const nextPath = params?.get('next') || '/';
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  // «Meni eslab qol» — belgilanmasa sessiya brauzer yopilganda tugaydi (umumiy kompyuterda xavfsiz).
+  const [remember, setRemember] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -22,7 +35,7 @@ function LoginForm() {
       return;
     }
     setSubmitting(true);
-    const result = await loginAdmin(email.trim(), password);
+    const result = await loginAdmin(email.trim(), password, remember);
     setSubmitting(false);
     if (!result.success) {
       toast({ title: result.error.message, variant: 'destructive' });
@@ -71,7 +84,7 @@ function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-9"
-                    placeholder="admin@test.uz"
+                    placeholder="admin@sellobay.uz"
                     autoComplete="username"
                   />
                 </div>
@@ -79,9 +92,9 @@ function LoginForm() {
               <div>
                 <Label>Parol</Label>
                 <div className="relative">
-                  <Lock className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-                  <Input
-                    type="password"
+                  {/* z-10: PasswordInput o'z konteyneriga ega — input foni belgini yopmasin. */}
+                  <Lock className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2" />
+                  <PasswordInput
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9"
@@ -90,6 +103,11 @@ function LoginForm() {
                   />
                 </div>
               </div>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
+                <span>Meni eslab qol</span>
+                <span className="text-muted-foreground text-xs">(30 kun)</span>
+              </label>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Kirish

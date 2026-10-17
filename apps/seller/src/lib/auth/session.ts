@@ -9,10 +9,18 @@ import {
   ACCESS_TTL,
   COOKIE_ACCESS,
   COOKIE_REFRESH,
+  COOKIE_REMEMBER,
   REFRESH_TTL_DAYS,
+  SESSION_ONLY_TTL_HOURS,
 } from './constants';
 
 const REFRESH_TTL_MS = REFRESH_TTL_DAYS * 24 * 60 * 60 * 1000;
+const SESSION_ONLY_TTL_MS = SESSION_ONLY_TTL_HOURS * 60 * 60 * 1000;
+
+/** Refresh token muddati: «Meni eslab qol» — REFRESH_TTL_DAYS kun, aks holda SESSION_ONLY_TTL_HOURS soat. */
+function refreshExpiry(remember: boolean): Date {
+  return new Date(Date.now() + (remember ? REFRESH_TTL_MS : SESSION_ONLY_TTL_MS));
+}
 
 function generateOpaqueToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -36,6 +44,8 @@ export async function issueSession(
   res: NextResponse,
   userId: string,
   meta: { deviceName?: string; userAgent?: string; ipAddress?: string } = {},
+  /** «Meni eslab qol» — false bo'lsa cookie'lar brauzer yopilganda o'chadi. */
+  remember = true,
 ): Promise<NextResponse> {
   const roles = await fetchUserRoles(userId);
 
@@ -55,7 +65,7 @@ export async function issueSession(
 
   const refreshRaw = generateOpaqueToken();
   const refreshHash = hashToken(refreshRaw);
-  const expiresAt = new Date(Date.now() + REFRESH_TTL_MS);
+  const expiresAt = refreshExpiry(remember);
 
   await prisma.refreshToken.create({
     data: { userId, tokenHash: refreshHash, expiresAt },
@@ -66,11 +76,11 @@ export async function issueSession(
     data: { lastLoginAt: new Date() },
   });
 
-  setCookies(res, access, refreshRaw);
+  setCookies(res, access, refreshRaw, remember);
   return res;
 }
 
-export function setCookies(res: NextResponse, access: string, refresh: string) {
+export function setCookies(res: NextResponse, access: string, refresh: string, remember = true) {
   const isProd = process.env.NODE_ENV === 'production';
   res.cookies.set({
     name: COOKIE_ACCESS,
@@ -80,7 +90,7 @@ export function setCookies(res: NextResponse, access: string, refresh: string) {
     secure: isProd,
     path: '/',
     // Access cookie qisqa muddatli — JWT ichida expiry bor, cookie ham mosroq
-    maxAge: 60 * 60, // 1h cap (JWT 15min bilan tekshiriladi)
+    ...(remember ? { maxAge: 60 * 60 } : {}), // 1h cap (JWT 15min bilan tekshiriladi)
   });
   res.cookies.set({
     name: COOKIE_REFRESH,
@@ -89,13 +99,24 @@ export function setCookies(res: NextResponse, access: string, refresh: string) {
     sameSite: 'lax',
     secure: isProd,
     path: '/',
-    maxAge: REFRESH_TTL_DAYS * 24 * 60 * 60,
+    // Eslab qolinmagan bo'lsa maxAge yo'q — sessiya cookie, brauzer yopilganda o'chadi.
+    ...(remember ? { maxAge: REFRESH_TTL_DAYS * 24 * 60 * 60 } : {}),
+  });
+  res.cookies.set({
+    name: COOKIE_REMEMBER,
+    value: remember ? '1' : '0',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProd,
+    path: '/',
+    ...(remember ? { maxAge: REFRESH_TTL_DAYS * 24 * 60 * 60 } : {}),
   });
 }
 
 export function clearCookies(res: NextResponse) {
   res.cookies.delete(COOKIE_ACCESS);
   res.cookies.delete(COOKIE_REFRESH);
+  res.cookies.delete(COOKIE_REMEMBER);
 }
 
 // Refresh token rotation: eskini revoke qiladi, yangisini chiqaradi
@@ -113,7 +134,9 @@ export async function rotateRefresh(
   // Eski tokenni revoke qilamiz, yangisini ulashtirib qo'yamiz (replacedById)
   const newRaw = generateOpaqueToken();
   const newHash = hashToken(newRaw);
-  const newExpires = new Date(Date.now() + REFRESH_TTL_MS);
+  // Login paytidagi «Meni eslab qol» tanlovi rotatsiyada ham saqlanadi.
+  const remember = cookies().get(COOKIE_REMEMBER)?.value !== '0';
+  const newExpires = refreshExpiry(remember);
 
   const newToken = await prisma.refreshToken.create({
     data: { userId: current.userId, tokenHash: newHash, expiresAt: newExpires },
@@ -130,7 +153,7 @@ export async function rotateRefresh(
     { secret: requireAccessSecret(), expiresIn: ACCESS_TTL, issuer: 'sellobay' },
   );
 
-  setCookies(res, access, newRaw);
+  setCookies(res, access, newRaw, remember);
   return res;
 }
 

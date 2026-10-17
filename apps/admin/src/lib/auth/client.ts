@@ -22,7 +22,18 @@ async function api<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
       });
       if (refreshed.ok) res = await send();
     }
-    const json = (await res.json()) as ApiResult<T>;
+    // Server JSON o'rniga xato sahifasini qaytarsa (500) — bu tarmoq emas, server xatosi.
+    // Ilgari ikkalasi ham «Tarmoq xatosi. Internetingizni tekshiring» deb ko'rinardi.
+    const json = (await res.json().catch(() => null)) as ApiResult<T> | null;
+    if (!json) {
+      return {
+        success: false,
+        error: {
+          code: 'SERVER',
+          message: `Server xatosi (${res.status}). Birozdan keyin qayta urinib ko'ring.`,
+        },
+      };
+    }
     return json;
   } catch {
     return {
@@ -42,10 +53,10 @@ export interface AdminUser {
   roles?: string[];
 }
 
-export function loginAdmin(identifier: string, password: string) {
+export function loginAdmin(identifier: string, password: string, remember = false) {
   return api<{ user: AdminUser }>('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ identifier, password }),
+    body: JSON.stringify({ identifier, password, remember }),
   });
 }
 
