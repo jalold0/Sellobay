@@ -21,7 +21,7 @@
 | Telegram bot   | **@sellobay26Bot** (ko'rinadigan nomi `sellobay_help`), webhook `apps/web`da                                      |
 
 **Ish tartibi:** `main`ga to'g'ridan-to'g'ri push qilinmaydi — branch → MR → foydalanuvchi merge
-qiladi. **Prod migratsiyalarni foydalanuvchi o'zi, merge'dan OLDIN qo'llaydi** (7-bo'limga qarang).
+qiladi. **Prod migratsiyalarni foydalanuvchi o'zi, merge'dan OLDIN qo'llaydi** (8-bo'limga qarang).
 
 ## 2. 2026-10-14 … 10-17 da qilinganlar (hammasi prod'da)
 
@@ -42,6 +42,8 @@ qiladi. **Prod migratsiyalarni foydalanuvchi o'zi, merge'dan OLDIN qo'llaydi** (
 | !75      | **Telegram orqali kirish** (ADR 0018) — telefon raqami bepul tasdiqlanadi                                                   | migratsiya `20261017065723_telegram_login`           |
 | !76      | Webhook'ni prod server o'zi o'rnatadi (qo'lda `setWebhook` kerak emas)                                                      |                                                      |
 | !77      | Telegram: ism/familiya tasdiqlash, parolli eski hisobga qaytish, ro'yxatdan o'tishda tugma, checkout profildan to'ldiriladi | migratsiya `20261017161246_telegram_login_name_link` |
+| !78      | Shu fayl (HOLAT.md) va `audit-output/` repo'da                                                                              |                                                      |
+| !79      | **FUN-07**: web'da qaytarishni so'rash (buyurtma sahifasida panel, ixtiyoriy sabab)                                         |                                                      |
 
 **Natijalar (prod, Lighthouse mobil):** bosh sahifa 33 → **79**, mahsulot 58 → **79**; LCP 7,4 → ~3,0 s;
 TBT 2,1 → ~0,5 s; CLS 0. Accessibility: katalog, mahsulot, checkout, login, savatcha, «biz haqimizda»
@@ -71,7 +73,20 @@ faqat yuboruvchi qo'shiladi.
 
 **Hech qachon:** token, parol, `DATABASE_URL` chatga, kodga yoki commit'ga yozilmaydi.
 
-## 5. Ochiq vazifalar — foydalanuvchida
+## 5. Audit (2026-10-14) bo'yicha qolgan ishlar
+
+Har topilmaning holati [`audit-output/audit-findings.md`](../audit-output/audit-findings.md) da
+(«Tuzatish» qaydlari). Audit ustuvorligi bo'yicha qolganlari:
+
+- [ ] **SEC-06** — CSP (nonce, avval report-only).
+- [ ] **MOB-01…05** — Flutter'ni do'konga tayyorlash: sessiya muddati, chiqishda savat, release imzo, iOS sozlamalari, crash monitoring.
+- [ ] **FUN-08** — katalogda sahifalash (48 tadan ko'p mahsulot ko'rinmaydi).
+- [ ] **SEO-02** — metadata va statik sahifalar tarjimasi.
+- [ ] **UX-02, UX-03, UX-04** — gorizontal aylantirish, pastki qatlamlar, xato «bo'sh ro'yxat» bo'lib ko'rinishi.
+- [ ] **I18N-01** — server xatolari, valyuta, oy nomlari faqat o'zbekcha.
+- [ ] **FUN-03** (qisman) — haqiqiy parol tiklash.
+
+## 6. Ochiq vazifalar — foydalanuvchida
 
 - [ ] Vercel'da `UPSTASH_REDIS_REST_URL` va `UPSTASH_REDIS_REST_TOKEN` bormi — tekshirish (yo'q bo'lsa login/register IP cheklovi har server nusxasida alohida, zaif). OTP/Telegram himoyasi bunga bog'liq emas.
 - [ ] GitLab'da !61 ni yopish (eskirgan, !60 bilan to'qnashadi).
@@ -79,7 +94,7 @@ faqat yuboruvchi qo'shiladi.
 - [ ] Kuryerlar yangi kuryer APK'ni o'rnatishi (eski ilova «Yetkazildi»ni yubora olmaydi).
 - [ ] Mijoz APK'ni qayta yig'ish (Flutter xato rangi va boshqa o'zgarishlar).
 
-## 6. Keyingi rejalar (navbat bo'yicha)
+## 7. Keyingi rejalar (navbat bo'yicha)
 
 1. **Flutter mijoz ilovasiga Telegram orqali kirish** — o'sha endpointlar (`start` → deep link `t.me/…` → `poll`), ism tasdiqlash oynasi.
 2. **OneID orqali kirish** (davlat identifikatsiyasi — xavfsizlikni oshirish uchun). Foydalanuvchi qarori 2026-10-17. Kerak: OneID integratsiya shartnomasi/kalitlari; ADR yoziladi; `UserIdentity` provider qo'shiladi.
@@ -87,7 +102,7 @@ faqat yuboruvchi qo'shiladi.
 4. Email tasdiqlash va haqiqiy parol tiklash (hozir «Parolni unutdingizmi?» halol sahifa, xat yuborilmaydi).
 5. Sentry'ni faqat xatoda yuklash — **qilinmaydi** (breadcrumb'lar kerak, foyda kichik).
 
-## 7. Muhim ish usullari va tuzoqlar
+## 8. Muhim ish usullari va tuzoqlar
 
 - **Prod migratsiya** (PowerShell; `set` emas!):
   ```powershell
@@ -111,7 +126,7 @@ faqat yuboruvchi qo'shiladi.
 - `prettier`ni papka bo'yicha ishga tushirmang — CRLF fayllarni LF qilib, ko'p begona faylni «o'zgartiradi».
 - Flutter: `flutter test tool/screens.dart --update-goldens` (skrinshotlar `tool/shots/`, git'da emas).
 
-## 8. Hujjatlar
+## 9. Hujjatlar
 
 - Audit (2026-10-14): [`audit-output/`](../audit-output/) — `audit-findings.md` (har topilmada tuzatish qaydi), `frontend-audit-report.html`.
 - ADR: 0016 manzil/hudud, 0017 posilka yorlig'i, **0018 Telegram orqali kirish**.

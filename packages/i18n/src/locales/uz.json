@@ -895,7 +895,12 @@
       "requestReturn": "Qaytarishni so'rash",
       "returnConfirm": "Buyurtmani qaytarishni so'raysizmi?",
       "returnRequested": "Qaytarish so'rovi yuborildi",
-      "returnWindow": "Yetkazilgandan keyin {days} kun ichida qaytarish mumkin"
+      "returnWindow": "Yetkazilgandan keyin {days} kun ichida qaytarish mumkin",
+      "returnHint": "So‘rov operatorga boradi: tovarni olib ketish kunini va pulni qaytarishni siz bilan kelishadi. Tovar va qadoqni saqlab turing.",
+      "returnReasonLabel": "Sabab (ixtiyoriy)",
+      "returnReasonPlaceholder": "Masalan: o‘lcham to‘g‘ri kelmadi",
+      "returnSubmit": "So‘rovni yuborish",
+      "returnKeep": "Qaytarmayman"
     },
     "orderDetail": {
       "back": "Buyurtmalarga qaytish",

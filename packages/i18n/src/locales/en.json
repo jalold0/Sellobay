@@ -888,7 +888,12 @@
       "requestReturn": "Request a return",
       "returnConfirm": "Request a return for this order?",
       "returnRequested": "Return request sent",
-      "returnWindow": "Returns are accepted within {days} days of delivery"
+      "returnWindow": "Returns are accepted within {days} days of delivery",
+      "returnHint": "Your request goes to an operator, who will agree with you on a pickup day and the refund. Keep the item and its packaging.",
+      "returnReasonLabel": "Reason (optional)",
+      "returnReasonPlaceholder": "For example: the size didn’t fit",
+      "returnSubmit": "Send request",
+      "returnKeep": "Keep the order"
     },
     "orderDetail": {
       "back": "Back to orders",

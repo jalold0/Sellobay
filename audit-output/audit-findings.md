@@ -36,6 +36,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 - Ta'sir: skript xaridor nomidan `/api/*` so'rovlarini yubora oladi (manzillar, profil, buyurtmalar). Cookie'lar httpOnly bo'lgani uchun tokenning o'zi o'g'irlanmaydi.
 - Tavsiya: `JSON.stringify(data).replace(/</g, '\\u003c')` (U+2028/2029 ham ekranlansin), keyin CSP qo'shilsin. Murakkablik: juda past.
 - Tekshirish kerak: sotuvchi mahsuloti moderatsiyadan o'tadimi (`SELLER_PRODUCT_AUTOAPPROVE`)?
+- **Tuzatish (2026-10-15, !59):** JSON-LD `jsonLdHtml` bilan ekranlanadi (`< > & U+2028 U+2029`).
 
 ### SEC-02 · OTP orqali kirish bloklangan yoki o'chirilgan akkauntni qayta faollashtiradi
 
@@ -48,6 +49,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 - Nima bo'ladi: birinchi urinish 403 qaytaradi, lekin bazada akkaunt allaqachon `ACTIVE` bo'lib qoladi. Ikkinchi OTP kirish muvaffaqiyatli o'tadi. Admin bergan bloklash va o'chirish bekor bo'ladi.
 - Ta'sir: hozir SMS yetkazilmaydi (FUN-01), shuning uchun amalda ishlamaydi. SMS ulangan kuni ochiladi.
 - Tavsiya: avval BLOCKED/DELETED holatini tekshirish, yangilashni faqat `PENDING` holatda qilish. Murakkablik: past. SMS'ni ulashdan **oldin** tuzatilishi shart.
+- **Tuzatish (2026-10-15, !59; 2026-10-17, !72):** bloklangan/o‘chirilgan hisob hech narsa yozmasdan rad etiladi; PENDING SMS/Telegram bilan faollashmaydi.
 
 ### FUN-01 · Telefon (OTP) bilan kirish prod'da ishlamaydi
 
@@ -58,6 +60,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 - Ta'sir: mijozga «kod yuborildi» deyiladi, lekin kod kelmaydi. Telefon orqali ro'yxatdan o'tmoqchi bo'lgan mijoz yo'qotiladi. Flutter ilovasi ham shu oqimga tayanadi.
 - Tavsiya: Eskiz (yoki boshqa SMS provayder) ulansin. Ulanguncha «Telefon» tabi yashirilsin. Avval SEC-02 va SEC-05 tuzatilsin.
 - Bog'liqlik: SMS provayder hisobi (biznes qarori).
+- **Tuzatish (2026-10-15, !60; 2026-10-17, !75–!77):** SMS yo‘qligida «Telefon» tabi yashirin, `otp/send` 503. Raqam endi **Telegram orqali bepul tasdiqlanadi** (ADR 0018); SMS kodi Eskiz uchun tayyor.
 
 ### FUN-02 · Prod katalogida demo va test mahsulotlar sotuvda turibdi
 
@@ -77,6 +80,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 - Dalil: `apps/web/src/app/[locale]/forgot-password/page.tsx:14-21` — 600 ms kutib, «Email yuborildi» deb ko'rsatadi. Hech qanday API chaqirilmaydi.
 - Ta'sir: parolini unutgan mijozga «xat yuborildi» deyiladi, lekin xat yuborilmaydi va mijoz akkauntiga qaytib kira olmaydi. Flutter ilovasida parolni tiklash umuman yo'q.
 - Tavsiya: haqiqiy tiklash oqimi (email havolasi yoki SMS kod). Murakkablik: o'rta.
+- **Qisman (2026-10-15, !60):** soxta «xat yuborildi» o‘rniga qo‘llab-quvvatlash yo‘li. Haqiqiy parol tiklash (email/SMS) — hali ochiq.
 
 ### FUN-04 · Profil «Sozlamalar» sahifasi soxta
 
@@ -87,6 +91,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
   - :66 — «Akkauntni o'chirish» tugmasida handler yo'q.
 - Ta'sir: mijoz parolini o'zgartirdim deb o'ylaydi, aslida o'zgarmagan. Bu xavfsizlik nuqtai nazaridan ham chalg'itadi.
 - Tavsiya: ishlamaydigan boshqaruvlarni yashirish yoki ularni haqiqiy API'ga ulash. Murakkablik: past (yashirish) / o'rta (ulash).
+- **Tuzatish (2026-10-15, !60):** haqiqiy parol almashtirish (`POST /api/auth/password`), saqlanmaydigan kalitlar va ishlamaydigan o‘chirish tugmasi olib tashlandi.
 
 ### FUN-05 · Sello Coins sahifasi soxta balans ko'rsatadi
 
@@ -96,6 +101,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
   - :81-90 — API xatosida check-in coin'larni lokal qo'shib, «muvaffaqiyat» deb ko'rsatadi.
 - Ta'sir: har bir mijoz bir lahzaga, API ishlamasa esa doimiy ravishda, o'ziga tegishli bo'lmagan balansni ko'radi. Coin'lar haqida noto'g'ri tasavvur paydo bo'ladi.
 - Tavsiya: mock boshlang'ich holat skeleton bilan almashtirilsin, xatoda xato ko'rsatilsin. Murakkablik: past.
+- **Tuzatish (2026-10-15, !60):** mock boshlang‘ich balans va soxta +5 coin olib tashlandi.
 
 ### FUN-06 · Onlayn to'lov boshlanmasa ham «buyurtma qabul qilindi» deb ko'rsatiladi
 
@@ -106,6 +112,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
   - Flutter'da xuddi shu holat: `apps/flutter/customer/lib/src/screens/checkout_screen.dart:551-569`.
 - Ta'sir: Click/Payme buyurtmasi to'lanmay qoladi, mijoz esa to'ladim deb o'ylaydi. Buyurtma muddati o'tib bekor bo'ladi, mijoz noroziligi yuzaga keladi.
 - Tavsiya: success sahifasida to'lov holati («kutilmoqda — hozir to'lash») ko'rsatilsin, web'ga «to'lash» tugmasi qo'shilsin (Flutter'da bor). Murakkablik: o'rta.
+- **Tuzatish (2026-10-15, !60):** `GET /api/orders/[id]/payment-status`; success sahifasi to‘lovni tekshiradi, «To‘lash» tugmasi.
 
 ### TRU-01 · Prod'da vaqtinchalik (placeholder) kontaktlar va ishlamaydigan aloqa formasi
 
@@ -116,6 +123,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
   - Aloqa formasida `onSubmit` va `name` atributlari yo'q, «Live chat» `href="#"`.
 - Ta'sir: mijoz yordam so'ray olmaydi. Xabar jimgina yo'qoladi, soxta email va telefon esa brendga bo'lgan ishonchni pasaytiradi.
 - Tavsiya: kontaktlar `/api/config` dagi `SUPPORT_*` qiymatlaridan olinsin (u allaqachon mavjud). Forma ulansin yoki olib tashlansin. Murakkablik: past.
+- **Tuzatish (2026-10-15, !60, !64, !65):** kontaktlar `lib/support.ts` (rasmiy kanallar + ENV), soxta raqam/forma/«Live chat» olib tashlandi.
 
 ### UX-01 · Mahsulot sahifasi telefonda ekrandan kengayib ketadi
 
@@ -131,12 +139,15 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 
 ## P2 — o'rta
 
+- **Tuzatish (2026-10-15, !59):** mahsulot tablari o‘z ichida aylanadi (sahifa 457 → 375 px).
+
 ### SEC-03 · Kirishdan keyin tashqi saytga yo'naltirish (open redirect)
 
 - Dalil:
   - `apps/web/src/app/[locale]/login/page.tsx:21` va `components/auth/login-flow.tsx:20-21` — `next.startsWith('/')` tekshiruvi `//evil.com` manzilini o'tkazib yuboradi.
   - Xavfsiz yordamchi `packages/utils/src/safe-redirect.ts` (`safeInternalPath`) mavjud, lekin bu joylarda ishlatilmagan.
 - Ta'sir: fishing havolalari uchun qulay. Ishonch: Yuqori. Murakkablik: juda past.
+- **Tuzatish (2026-10-15, !59):** `?next=` uchun `safeInternalPath`.
 
 ### SEC-04 · Telefon yoki emailni tasdiqlamasdan o'zgartirish mumkin
 
@@ -167,6 +178,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
   - `/uz/cart` sahifasida `<meta name="robots" content="index, follow">` turibdi.
   - Kodda: `apps/web/src/app/robots.ts:13`, `app/[locale]/layout.tsx:79`.
 - Ta'sir: savat, checkout va profil sahifalari qidiruvda indekslanishi mumkin. Murakkablik: juda past.
+- **Tuzatish (2026-10-15, !59):** robots til prefiksi bilan; savat/checkout/profil/buyurtmalar `noindex`.
 
 ### SEO-02 · Metadata va statik sahifalar tarjima qilinmagan
 
@@ -218,6 +230,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 ### FUN-07 · Web'da qaytarish so'rovini yuborib bo'lmaydi
 
 - Dalil: `/api/orders/[id]/return` mavjud, lekin web kodida u hech qayerda chaqirilmaydi. `returns` sahifasi faqat matndan iborat. Flutter'da bu funksiya bor.
+- **Tuzatish (2026-10-17, !79):** buyurtma sahifasida «Qaytarishni so‘rash» paneli (nima bo‘lishi, ixtiyoriy sabab); oynani server hisoblaydi (`returnable`), muddat o‘tgan bo‘lsa sababi ko‘rsatiladi.
 
 ### FUN-08 · Katalogda sahifalash yo'q (48 tadan ko'p mahsulot ko'rinmaydi)
 
@@ -227,11 +240,13 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 ### FUN-09 · Uzum logotipi ko'rsatilgan, lekin u bilan to'lab bo'lmaydi
 
 - Dalil: `components/layout/footer.tsx:75` (logotip), `lib/payments.ts:113-114` (faqat CLICK, PAYME, COD).
+- **Tuzatish (2026-10-15, !60):** Uzum footer va FAQ’dan olib tashlandi.
 
 ### TRU-02 · Bosh sahifadagi «chegirma» foizi o'ylab topilgan
 
 - Dalil: `components/layout/sale-section.tsx:128` — eski narx bo'lmasa `price*1.3` deb hisoblab «−23%» ko'rsatadi. `lib/catalog.ts:511-516` — chegirmasiz mahsulotlar ham «SALE» ro'yxatiga qo'shiladi.
 - Ta'sir: noto'g'ri reklama, iste'molchi huquqlari bo'yicha xavf. Murakkablik: juda past.
+- **Tuzatish (2026-10-15, !59):** «Aksiya» faqat haqiqiy chegirmada, foiz eski narxdan.
 
 ### PERF-01 · Bosh sahifa telefonda sekin
 
@@ -248,6 +263,7 @@ Barcha yo'llar repo ildiziga nisbatan (`apps/web/src/...`). P0 topilma yo'q.
 
 - Ta'sir: sekin mobil internetda xaridor sahifa ochilishini kutmay chiqib ketishi mumkin.
 - Tavsiya: bosh sahifadagi animatsiyalar va client komponentlarni profillash, og'ir chunk tarkibini aniqlash (bundle analyzer). Bir nechta o'lchov bilan solishtirish.
+- **Tuzatish (2026-10-16…17, !63, !66–!71):** bosh sahifa Lighthouse mobil 33 → 79 (LCP 7,4 → ~3,0 s, TBT 2,1 → ~0,5 s), mahsulot 58 → 79.
 
 ### MOB-01 · Flutter: sessiya muddati tugaganini ilova sezmaydi
 

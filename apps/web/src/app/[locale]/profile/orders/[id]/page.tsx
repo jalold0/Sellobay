@@ -15,6 +15,7 @@ import {
 import { HandoverCard, type HandoverInfo } from '../../../../../components/orders/handover-card';
 import { OrderPayNow } from '../../../../../components/orders/order-pay-now';
 import { ReceiptResubmit } from '../../../../../components/orders/receipt-resubmit';
+import { ReturnRequest } from '../../../../../components/orders/return-request';
 import { formatDate as fmtDate, formatMoney } from '../../../../../lib/format';
 
 type OrderStatus =
@@ -53,6 +54,9 @@ interface OrderDetail {
   /** Kuryer yo'lda — mijoz kuryerga aytadigan kod (ADR 0017). */
   handover: HandoverInfo | null;
   editable: boolean;
+  /** Qaytarish mumkinmi — oynani server hisoblaydi (ADR 0015). */
+  returnable?: boolean;
+  returnWindowDays?: number;
   shippingAddress: {
     recipientName: string;
     phone: string;
@@ -427,6 +431,15 @@ export default function OrderDetailPage() {
           <X size={15} /> {t('cancel')}
         </button>
       ) : null}
+
+      {/* Qaytarish (yetkazilgan, muddat ichida) — audit FUN-07 */}
+      <ReturnRequest
+        orderId={order.id}
+        returnable={Boolean(order.returnable)}
+        delivered={order.status === 'DELIVERED'}
+        windowDays={order.returnWindowDays ?? 0}
+        onDone={load}
+      />
     </div>
   );
 }
