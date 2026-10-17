@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser } from '@/lib/auth/session';
+import { telegramLoginAvailable } from '@/lib/telegram/bot-api';
 
 import { RegisterForm } from '../../../components/auth/register-form';
 
@@ -12,5 +13,5 @@ export default async function RegisterPage({ params }: { params: { locale: strin
   if (user) {
     redirect(`/${params.locale}/profile`);
   }
-  return <RegisterForm />;
+  return <RegisterForm telegramLogin={telegramLoginAvailable()} />;
 }

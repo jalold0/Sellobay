@@ -1,8 +1,12 @@
-// POST /api/auth/telegram/poll { token } — botda raqam ulashildimi? (ADR 0018)
-//   202 — hali kutilmoqda; 200 — kirildi (cookie o'rnatiladi); 410 — eskirgan/ishlatilgan.
+// POST /api/auth/telegram/poll { token, action? } — botda raqam ulashildimi? (ADR 0018)
+//   202 — hali kutilmoqda;
+//   200 { status: 'ok', isNew } — kirildi (cookie o'rnatildi); isNew — ismni tasdiqlash oynasi;
+//   200 { status: 'link', maskedEmail } — raqam parolli eski hisobda tasdiqlanmagan:
+//       parol bilan bog'lash (/link) yoki action: 'create-new' bilan yangi hisob;
+//   410 — eskirgan/ishlatilgan.
 
 import { apiError, apiOk } from '@/lib/auth/errors';
-import { loginWithVerifiedPhone } from '@/lib/auth/phone-login';
+import { linkOfferFor, loginWithVerifiedPhone } from '@/lib/auth/phone-login';
 import { createSession, requestMeta, setCookies } from '@/lib/auth/session';
 import { prisma } from '@/lib/db';
 import { clientIp, enforceRateLimit } from '@/lib/rate-limit';
@@ -18,18 +22,28 @@ export async function POST(req: NextRequest) {
   const limited = await enforceRateLimit(req, 'telegram-poll', { limit: 60, windowSec: 60 });
   if (limited) return limited;
 
-  const body = (await req.json().catch(() => null)) as { token?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as {
+    token?: unknown;
+    action?: unknown;
+  } | null;
   if (!isLoginToken(body?.token)) return apiError(400, 'VALIDATION', "Noto'g'ri so'rov");
+  const createNew = body.action === 'create-new';
 
   const now = new Date();
   const login = await prisma.telegramLogin.findUnique({
     where: { tokenHash: hashLoginToken(body.token) },
   });
-  if (!login || login.consumedAt || (!login.verifiedAt && login.expiresAt <= now)) {
+  if (!login || login.consumedAt || login.expiresAt <= now) {
     return apiError(410, 'TELEGRAM_EXPIRED', "So'rov muddati tugadi");
   }
   if (!login.verifiedAt || !login.phone || !login.telegramId) {
     return apiOk({ status: 'pending' as const }, { status: 202 });
+  }
+
+  // Parolli eski hisob — so'rovni iste'mol qilmasdan bog'lashni taklif qilamiz.
+  if (!createNew) {
+    const offer = await linkOfferFor(login.phone);
+    if (offer) return apiOk({ status: 'link' as const, maskedEmail: offer.maskedEmail });
   }
 
   // Bir marta: ikki parallel so'rovdan faqat bittasi sessiya oladi.
@@ -44,6 +58,7 @@ export async function POST(req: NextRequest) {
   const result = await loginWithVerifiedPhone({
     phone: login.phone,
     firstName: login.firstName ?? undefined,
+    lastName: login.lastName ?? undefined,
     ip: clientIp(req),
     via: 'telegram-login',
     telegram: { id: login.telegramId },
@@ -60,6 +75,7 @@ export async function POST(req: NextRequest) {
   const tokens = await createSession(user.id, requestMeta());
   const res = apiOk({
     status: 'ok' as const,
+    isNew: result.created,
     user: {
       id: user.id,
       email: user.email,

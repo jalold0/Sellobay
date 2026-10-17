@@ -98,11 +98,25 @@ export function startTelegramLogin() {
   );
 }
 
-/** `pending` — botda hali raqam ulashilmagan; `ok` — kirildi (cookie o'rnatildi). */
-export function pollTelegramLogin(token: string) {
-  return api<{ status: 'pending' } | { status: 'ok'; user: AuthUser }>('/api/auth/telegram/poll', {
+export type TelegramPollData =
+  | { status: 'pending' }
+  /** Kirildi (cookie o'rnatildi); `isNew` — yangi hisob, ismni tasdiqlash kerak. */
+  | { status: 'ok'; isNew: boolean; user: AuthUser }
+  /** Raqam parolli eski hisobda — parol bilan bog'lash yoki yangi hisob. */
+  | { status: 'link'; maskedEmail: string | null };
+
+export function pollTelegramLogin(token: string, action?: 'create-new') {
+  return api<TelegramPollData>('/api/auth/telegram/poll', {
     method: 'POST',
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, action }),
+  });
+}
+
+/** Raqami tasdiqlanmagan eski hisobga parol bilan qaytish. */
+export function linkTelegramLogin(token: string, password: string) {
+  return api<{ status: 'ok'; isNew: false; user: AuthUser }>('/api/auth/telegram/link', {
+    method: 'POST',
+    body: JSON.stringify({ token, password }),
   });
 }
 

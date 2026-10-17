@@ -9,10 +9,14 @@ import * as React from 'react';
 import { Link } from '@/i18n/navigation';
 import { registerWithEmail } from '@/lib/auth/client';
 
-export function RegisterForm() {
+import { TelegramLogin } from './telegram-login';
+
+/** [telegramLogin] — Telegram bot sozlanganmi (server aytadi, ADR 0018). */
+export function RegisterForm({ telegramLogin = false }: { telegramLogin?: boolean }) {
   const t = useTranslations('auth');
   const params = useSearchParams();
   const isSellerRole = params.get('role') === 'seller';
+  const onTelegramSuccess = React.useCallback(() => window.location.assign('/profile'), []);
 
   const [form, setForm] = React.useState({
     firstName: '',
@@ -83,6 +87,19 @@ export function RegisterForm() {
               {isSellerRole ? t('sellerSubtitle') : t('registerSubtitle')}
             </p>
           </div>
+
+          {/* Mijoz uchun eng tez yo'l — Telegram tasdiqlagan raqam bilan bir bosishda hisob
+              (ism tasdiqlanadi). Sotuvchi arizasi KYC talab qiladi — u faqat forma orqali. */}
+          {telegramLogin && !isSellerRole ? (
+            <>
+              <TelegramLogin onSuccess={onTelegramSuccess} label={t('telegram.register')} />
+              <div className="flex items-center gap-3.5">
+                <div className="bg-border h-px flex-1" />
+                <span className="text-muted-foreground text-[12px]">{t('or')}</span>
+                <div className="bg-border h-px flex-1" />
+              </div>
+            </>
+          ) : null}
 
           <form onSubmit={submit} className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">

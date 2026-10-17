@@ -17,6 +17,13 @@ const testPhone = (n: number) => `+99890${RUN}${String(n).padStart(2, '0')}`;
 const tg = (n: number) => Number(RUN) * 10_000 + n;
 const SECRET = 'test-webhook-secret-0123456789';
 
+type PollData = {
+  status: string;
+  isNew?: boolean;
+  maskedEmail?: string | null;
+  user?: { id: string; firstName: string | null; lastName: string | null };
+};
+
 vi.mock('@/lib/auth/session', () => ({
   createSession: vi.fn(async () => ({ access: 'a', refresh: 'r' })),
   requestMeta: vi.fn(() => ({})),
@@ -36,6 +43,8 @@ describe.skipIf(!DB)('Telegram orqali kirish (integratsiya)', () => {
   let start: (req: NextRequest) => Promise<Response>;
   let poll: (req: NextRequest) => Promise<Response>;
   let webhook: (req: NextRequest) => Promise<Response>;
+  let link: (req: NextRequest) => Promise<Response>;
+  let hashPassword: (plain: string) => Promise<string>;
   let ipSeq = 0;
 
   const req = (body: unknown, headers: Record<string, string> = {}) => {
@@ -65,7 +74,7 @@ describe.skipIf(!DB)('Telegram orqali kirish (integratsiya)', () => {
       message: {
         chat: { id: fromId, type: 'private' },
         from: { id: fromId, first_name: 'Ali' },
-        contact: { phone_number: phone, user_id: userId, first_name: 'Ali' },
+        contact: { phone_number: phone, user_id: userId, first_name: 'Ali', last_name: 'Valiyev' },
       },
     });
   const newLogin = async () => {
@@ -75,8 +84,23 @@ describe.skipIf(!DB)('Telegram orqali kirish (integratsiya)', () => {
   };
   const pollStatus = async (token: string) => {
     const res = await poll(req({ token }));
-    const body = (await res.json()) as { data?: { status: string; user?: { id: string } } };
+    const body = (await res.json()) as { data?: PollData };
     return { status: res.status, data: body.data };
+  };
+  const pollAction = async (token: string, action: 'create-new') => {
+    const res = await poll(req({ token, action }));
+    return { status: res.status, data: ((await res.json()) as { data?: PollData }).data };
+  };
+  const linkWith = async (token: string, password: string) => {
+    const res = await link(req({ token, password }));
+    return { status: res.status, data: ((await res.json()) as { data?: PollData }).data };
+  };
+  /** Kontakt ulashilgan (tasdiqlangan) so'rov. */
+  const verifiedLogin = async (fromId: number, phone: string) => {
+    const { token } = await newLogin();
+    await startCmd(fromId, token);
+    await shareContact(fromId, phone.slice(1));
+    return token;
   };
 
   beforeAll(async () => {
@@ -88,6 +112,8 @@ describe.skipIf(!DB)('Telegram orqali kirish (integratsiya)', () => {
     ({ POST: start } = await import('./start/route'));
     ({ POST: poll } = await import('./poll/route'));
     ({ POST: webhook } = await import('../../telegram/webhook/route'));
+    ({ POST: link } = await import('./link/route'));
+    ({ hashPassword } = await import('@ecom/auth'));
     // Route modullarini sovuq import qilish butun to'plam parallel ishlaganda 10 s dan oshadi.
   }, 60_000);
   beforeEach(() => {
@@ -187,5 +213,99 @@ describe.skipIf(!DB)('Telegram orqali kirish (integratsiya)', () => {
     });
     expect(res.status).toBe(200);
     expect(sent.length).toBe(0);
+  });
+
+  it('yangi hisob: isNew, ism va familiya Telegram kontaktidan', async () => {
+    const token = await verifiedLogin(tg(1010), testPhone(10));
+    const done = await pollStatus(token);
+    expect(done.status).toBe(200);
+    expect(done.data?.isNew).toBe(true);
+    expect(done.data?.user).toMatchObject({ firstName: 'Ali', lastName: 'Valiyev' });
+  });
+
+  it('raqami tasdiqlangan mavjud hisob — o`sha hisobga, isNew=false', async () => {
+    const owner = await prisma.user.create({
+      data: {
+        phone: testPhone(11),
+        status: 'ACTIVE',
+        phoneVerifiedAt: new Date(),
+        firstName: 'Eski',
+      },
+    });
+    const done = await pollStatus(await verifiedLogin(tg(1011), testPhone(11)));
+    expect(done.status).toBe(200);
+    expect(done.data?.isNew).toBe(false);
+    expect(done.data?.user?.id).toBe(owner.id);
+  });
+
+  it('parolli eski hisob (raqam tasdiqlanmagan): bog`lash taklifi -> to`g`ri parol -> eski hisob', async () => {
+    const old = await prisma.user.create({
+      data: {
+        email: `eski-${RUN}@test.local`,
+        phone: testPhone(12),
+        passwordHash: await hashPassword('Eski12345'),
+        status: 'ACTIVE',
+        phoneVerifiedAt: null,
+      },
+    });
+    const token = await verifiedLogin(tg(1012), testPhone(12));
+
+    const offer = await pollStatus(token);
+    expect(offer.status).toBe(200);
+    expect(offer.data?.status).toBe('link');
+    expect(offer.data?.maskedEmail).toBe('e***@test.local');
+    // Taklif so'rovni iste'mol qilmaydi.
+    expect((await pollStatus(token)).data?.status).toBe('link');
+
+    expect((await linkWith(token, 'notogri')).status).toBe(401);
+    const ok = await linkWith(token, 'Eski12345');
+    expect(ok.status).toBe(200);
+    expect(ok.data?.user?.id).toBe(old.id);
+
+    const after = await prisma.user.findUnique({ where: { id: old.id } });
+    expect(after?.phone).toBe(testPhone(12));
+    expect(after?.phoneVerifiedAt).not.toBeNull();
+    const identity = await prisma.userIdentity.findUnique({
+      where: { provider_providerUid: { provider: 'TELEGRAM', providerUid: String(tg(1012)) } },
+    });
+    expect(identity?.userId).toBe(old.id);
+    expect((await pollStatus(token)).status).toBe(410);
+  });
+
+  it('parolni bilmasa — yangi hisob, eski hisobdan raqam olinadi', async () => {
+    const old = await prisma.user.create({
+      data: {
+        email: `squat2-${RUN}@test.local`,
+        phone: testPhone(13),
+        passwordHash: await hashPassword('Boshqa12345'),
+        status: 'ACTIVE',
+        phoneVerifiedAt: null,
+      },
+    });
+    const token = await verifiedLogin(tg(1013), testPhone(13));
+    expect((await pollStatus(token)).data?.status).toBe('link');
+    const fresh = await pollAction(token, 'create-new');
+    expect(fresh.status).toBe(200);
+    expect(fresh.data?.isNew).toBe(true);
+    expect(fresh.data?.user?.id).not.toBe(old.id);
+    expect((await prisma.user.findUnique({ where: { id: old.id } }))?.phone).toBeNull();
+  });
+
+  it('parol taxmini: 5 ta noto`g`ri urinishdan keyin 429 (to`g`ri parol ham o`tmaydi)', async () => {
+    await prisma.user.create({
+      data: {
+        phone: testPhone(14),
+        passwordHash: await hashPassword('Togri12345'),
+        status: 'ACTIVE',
+        phoneVerifiedAt: null,
+      },
+    });
+    const token = await verifiedLogin(tg(1014), testPhone(14));
+    const results = await Promise.all(
+      Array.from({ length: 8 }, (_, i) => linkWith(token, `xato${i}`)),
+    );
+    expect(results.filter((r) => r.status === 401).length).toBe(5);
+    expect(results.filter((r) => r.status === 429).length).toBe(3);
+    expect((await linkWith(token, 'Togri12345')).status).toBe(429);
   });
 });

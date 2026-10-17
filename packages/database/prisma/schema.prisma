@@ -405,19 +405,23 @@ model OtpCode {
 /// yerga yoziladi; brauzer so'rovni bir marta iste'mol qilib sessiya oladi.
 /// Token o'zi saqlanmaydi — faqat SHA-256 xeshi (sizib chiqsa ham ishlatib bo'lmaydi).
 model TelegramLogin {
-  id         String    @id @default(uuid()) @db.Uuid
-  tokenHash  String    @unique
+  id           String    @id @default(uuid()) @db.Uuid
+  tokenHash    String    @unique
   /// Sayt va botda bir xil ko'rsatiladigan qisqa kod — begona havola bilan aldashga qarshi.
-  code       String
+  code         String
   /// /start bosgan Telegram foydalanuvchisi (from.id).
-  telegramId String?
+  telegramId   String?
   /// Telegram tasdiqlagan raqam (E.164), contact.user_id === from.id bo'lganda.
-  phone      String?
-  firstName  String?
-  verifiedAt DateTime?
-  consumedAt DateTime?
-  expiresAt  DateTime
-  createdAt  DateTime  @default(now())
+  phone        String?
+  firstName    String?
+  /// Telegram kontaktidagi familiya — ismni tasdiqlash oynasida oldindan to'ldiriladi.
+  lastName     String?
+  /// Raqam tasdiqlanmagan eski hisobga parol bilan bog'lash urinishlari (ko'pi 5).
+  linkAttempts Int       @default(0)
+  verifiedAt   DateTime?
+  consumedAt   DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
 
   @@index([telegramId])
 }

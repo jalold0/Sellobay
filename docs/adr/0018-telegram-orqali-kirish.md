@@ -42,6 +42,24 @@ O'zbekistonda Telegram deyarli hammada bor.
 6. **Yoqish ENV bilan**: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`.
    Uchalasi bo'lmasa tugma ko'rinmaydi, endpointlar 503/404.
 
+## Yangilanish (2026-10-17) — ism tasdiqlash va eski hisobni bog'lash
+
+Foydalanuvchi qarorlari:
+
+1. **Telegram — kirish ham, ro'yxatdan o'tish ham.** Raqam yangi bo'lsa hisob ochiladi va
+   darhol **ism va familiyani tasdiqlash** oynasi chiqadi (Telegram'dagi bilan oldindan
+   to'ldirilgan, ikkalasi majburiy; o'zgartirib tasdiqlash mumkin). Manzil va tug'ilgan sana
+   so'ralmaydi — mijoz profildan o'zi qo'shadi; checkout ism/familiya/telefonni profildan
+   to'ldiradi. «Ro'yxatdan o'tish» sahifasida ham Telegram tugmasi (sotuvchi arizasida yo'q —
+   u KYC talab qiladi).
+2. **Raqami tasdiqlanmagan parolli eski hisob** — avtomatik kiritilmaydi (SEC-04), lekin
+   mijozga «Bu raqam bilan hisobingiz bor (a\*\*\*@gmail.com) — parolini kiriting» taklif
+   qilinadi (`POST /api/auth/telegram/link`). Parol to'g'ri bo'lsa eski hisobga kiradi, raqam
+   tasdiqlanadi (AuditLog `PHONE_VERIFIED_LINKED`), Telegram bog'lanadi. Urinishlar har so'rovga
+   5 ta, atomar hisoblanadi (`TelegramLogin.linkAttempts`). Parolni bilmasa — «Yangi hisob
+   ochish» (raqam eski hisobdan olinadi, SEC-04 qoidasi). Hujumchi qurbon raqamini o'z hisobiga
+   yozgan bo'lsa, qurbon uning parolini bilmaydi — yangi hisob ochadi.
+
 ## Oqibatlar
 
 - (+) Bepul, raqam haqiqatan tasdiqlanadi (SMS'dan ham ishonchliroq: SIM almashtirish hujumi yo'q).

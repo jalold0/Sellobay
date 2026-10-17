@@ -107,8 +107,14 @@ export function resetWebhookEnsuredForTests(): void {
 export interface TelegramUpdate {
   message?: {
     chat: { id: number; type: string };
-    from?: { id: number; first_name?: string; username?: string; language_code?: string };
+    from?: {
+      id: number;
+      first_name?: string;
+      last_name?: string;
+      username?: string;
+      language_code?: string;
+    };
     text?: string;
-    contact?: { phone_number?: string; user_id?: number; first_name?: string };
+    contact?: { phone_number?: string; user_id?: number; first_name?: string; last_name?: string };
   };
 }

@@ -15,6 +15,7 @@ import {
   type UzRegionSlug,
 } from '@ecom/core-domain';
 import { toast } from '@ecom/ui';
+import { formatUzPhone } from '@ecom/utils';
 import { Package, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -22,6 +23,7 @@ import { useTranslations } from 'next-intl';
 import * as React from 'react';
 
 import { Link, useRouter } from '@/i18n/navigation';
+import { useMe } from '@/lib/auth/use-me';
 
 import { COIN_VALUE_SOM } from '../../lib/loyalty';
 import { isOnlineProvider } from '../../lib/payments';
@@ -84,6 +86,21 @@ export function CheckoutFlow() {
     apartment: '',
     notes: '',
   });
+  // Profildagi ism, familiya va telefon — faqat mijoz hali yozmagan maydonlarga. Telegram
+  // orqali kirgan mijozning raqami tasdiqlangan va ismi tasdiqlangan — qayta so'ramaymiz.
+  const { data: me } = useMe();
+  React.useEffect(() => {
+    if (!me) return;
+    setAddress((prev) => ({
+      ...prev,
+      firstName: prev.firstName || me.firstName || '',
+      lastName: prev.lastName || me.lastName || '',
+      phone:
+        prev.phone.replace(/\D/g, '').length > 3 || !me.phone
+          ? prev.phone
+          : (formatUzPhone(me.phone) ?? prev.phone),
+    }));
+  }, [me]);
   const [deliveryType, setDeliveryType] = React.useState<DeliveryType>('TASHKENT_HOME');
   // Hudud AVVAL tanlanadi: Toshkent shahri — uygacha, qolgan hudud — filial.
   const [regionSlug, setRegionSlug] = React.useState<UzRegionSlug>(TASHKENT_CITY_REGION);
