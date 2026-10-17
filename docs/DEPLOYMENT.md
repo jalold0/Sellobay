@@ -40,19 +40,16 @@ sifatida saqlanadi.
 2. Vercel → `apps/web` → Environment Variables (Production):
    - `TELEGRAM_BOT_TOKEN` — BotFather bergan token;
    - `TELEGRAM_BOT_USERNAME` — bot nomi, @ belgisisiz;
-   - `TELEGRAM_WEBHOOK_SECRET` — `openssl rand -hex 32`.
+   - `TELEGRAM_WEBHOOK_SECRET` — faqat `A-Z a-z 0-9 _ -`, masalan
+     `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+     Boshqa belgi bo'lsa Telegram kirishi o'chiq turadi (logda sabab yoziladi).
 3. Redeploy (ENV yangi build bilan o'qiladi).
-4. Webhook'ni BIR MARTA o'rnating (token va sirni o'zingiz qo'ying, hech kimga ko'rsatmang):
-
-   ```bash
-   curl -s "https://api.telegram.org/bot<TOKEN>/setWebhook" \
-     -d url=https://www.sellobay.uz/api/telegram/webhook \
-     -d secret_token=<TELEGRAM_WEBHOOK_SECRET> \
-     -d 'allowed_updates=["message"]'
-   ```
-
-5. Tekshiruv: `https://api.telegram.org/bot<TOKEN>/getWebhookInfo` — `url` to'g'ri,
-   `last_error_message` yo'q. Login sahifasida «Telegram bilan kirish» tugmasi chiqadi.
+4. Webhook'ni qo'lda o'rnatish SHART EMAS: prod server birinchi «Telegram bilan kirish»
+   so'rovida o'zi `setWebhook` chaqiradi — Vercel'dagi o'sha token va sir bilan (har server
+   nusxasida bir marta). Token terminalga ko'chirilmaydi, sir har doim mos.
+5. Tekshiruv: login sahifasida «Telegram bilan kirish»ni bosing, botda Start — bot kodni
+   ko'rsatishi kerak. Ixtiyoriy: `https://api.telegram.org/bot<TOKEN>/getWebhookInfo` —
+   `url` = `https://www.sellobay.uz/api/telegram/webhook`, `last_error_message` yo'q.
 
 ## Backup va DR
 
