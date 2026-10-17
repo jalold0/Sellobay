@@ -26,7 +26,8 @@
     "migrate:status": "prisma migrate status",
     "check:payment-dupes": "node scripts/tekshir-tolov-dublikat.mjs",
     "categories:tree": "tsx scripts/kategoriya-daraxti.ts",
-    "sellers:rating": "tsx scripts/sotuvchi-reyting.ts"
+    "sellers:rating": "tsx scripts/sotuvchi-reyting.ts",
+    "admin:yaratish": "tsx scripts/admin-yaratish.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0"
